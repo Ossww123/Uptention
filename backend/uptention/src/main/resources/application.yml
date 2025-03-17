@@ -1,3 +1,7 @@
 spring:
   application:
     name: uptention
+
+springdoc:
+  swagger-ui:
+    path: /api/swagger-ui.html
