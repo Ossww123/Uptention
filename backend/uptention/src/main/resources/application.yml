@@ -2,6 +2,19 @@ spring:
   application:
     name: uptention
 
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          time_zone=UTC:
+
+  profiles:
+    group:
+      local:
+        - local
+      prod:
+        - prod
+
 springdoc:
   swagger-ui:
     path: /api/swagger-ui.html

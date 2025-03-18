@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  spring-app:
+    build:
+      context: .  # Dockerfile이 위치한 폴더
+      dockerfile: Dockerfile-local  # Spring Boot Dockerfile 이름
+    restart: always
+    ports:
+      - "8080:8080"  # Spring Boot 애플리케이션 포트 매핑
+    environment:
+      SPRING_PROFILES_ACTIVE: local  # Spring Boot 활성 프로파일 설정
+      TZ: UTC
+    depends_on:
+      - mysql
+  mysql:
+    image: mysql:8.0.36
+    restart: always
+    ports:
+      - "3300:3306"
+    volumes:
+      - uptention-mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: uptention
+      MYSQL_USER: local
+      MYSQL_PASSWORD: local
+      MYSQL_ROOT_PASSWORD: root
+      TZ: UTC
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+00:00
+
+volumes:
+  uptention-mysql:  # MySQL 데이터 저장소
