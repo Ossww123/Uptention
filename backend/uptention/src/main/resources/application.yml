@@ -6,7 +6,7 @@ spring:
     properties:
       hibernate:
         jdbc:
-          time_zone=UTC:
+          time_zone: UTF
 
   profiles:
     group:
