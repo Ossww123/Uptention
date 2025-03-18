@@ -1,7 +1,8 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
+import RecordScreen from '../screens/RecordScreen';
+import StoreScreen from '../screens/StoreScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-import SettingsScreen from '../screens/SettingsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 
@@ -11,20 +12,23 @@ const BottomTabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
+        headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Record') {
+            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          } else if (route.name === 'Store') {
+            iconName = focused ? 'storefront' : 'storefront-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
-          } else if (route.name === 'Settings') {
-            iconName = focused ? 'settings' : 'settings-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#007AFF',
+        tabBarActiveTintColor: '#FF8C00',
         tabBarInactiveTintColor: '#8E8E93',
         tabBarStyle: {
           height: Platform.OS === 'ios' ? 85 : 60,
@@ -38,19 +42,6 @@ const BottomTabNavigator = () => {
           fontSize: 12,
           fontWeight: '500',
         },
-        headerStyle: {
-          backgroundColor: '#FFFFFF',
-          elevation: 0,
-          shadowOpacity: 0.3,
-          shadowOffset: {
-            width: 0,
-            height: 2,
-          },
-        },
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: 17,
-        },
       })}
     >
       <Tab.Screen 
@@ -58,7 +49,20 @@ const BottomTabNavigator = () => {
         component={HomeScreen}
         options={{
           title: '홈',
-          headerTitleAlign: 'center',
+        }}
+      />
+      <Tab.Screen 
+        name="Record" 
+        component={RecordScreen}
+        options={{
+          title: '기록',
+        }}
+      />
+      <Tab.Screen 
+        name="Store" 
+        component={StoreScreen}
+        options={{
+          title: '상점',
         }}
       />
       <Tab.Screen 
@@ -66,15 +70,6 @@ const BottomTabNavigator = () => {
         component={ProfileScreen}
         options={{
           title: '프로필',
-          headerTitleAlign: 'center',
-        }}
-      />
-      <Tab.Screen 
-        name="Settings" 
-        component={SettingsScreen}
-        options={{
-          title: '설정',
-          headerTitleAlign: 'center',
         }}
       />
     </Tab.Navigator>
