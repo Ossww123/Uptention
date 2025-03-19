@@ -87,4 +87,17 @@ public class ItemRepositoryTest extends RepositoryTestSupport {
 		assertThat(foundItem.get().getImages()).hasSize(3);
 	}
 
+	@Test
+	@DisplayName("상품 ID로 조회할 때 활성화된 상품이 존재하지 않으면 빈 Optional을 반환한다")
+	void findActiveByIdWithImages_NotFound() {
+		// given
+		Integer nonExistentItemId = 999; // 존재하지 않는 상품 ID
+
+		// when
+		Optional<Item> foundItem = itemRepository.findActiveByIdWithImages(nonExistentItemId);
+
+		// then
+		assertThat(foundItem).isNotPresent(); // 빈 Optional이어야 함
+	}
+
 }
