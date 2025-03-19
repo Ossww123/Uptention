@@ -37,8 +37,9 @@ public class Example {
 	@Column(columnDefinition = "TEXT")
 	private String description;
 
-	@Column(columnDefinition = "TINYINT(1) DEFAULT 1")
-	private Boolean active;
+	@Column(nullable = false)
+	@Builder.Default
+	private Boolean active = true;
 
 	@CreatedDate
 	@Column(updatable = false)
