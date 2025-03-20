@@ -15,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.repository.ItemRepository;
 import com.otoki.uptention.domain.item.service.ItemServiceImpl;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 @ExtendWith(MockitoExtension.class)
 public class ItemServiceTest {
@@ -37,24 +39,23 @@ public class ItemServiceTest {
 		when(itemRepository.findActiveByIdWithImages(itemId)).thenReturn(Optional.of(expectedItem));
 
 		// when
-		Optional<Item> actualItem = itemService.getItemDetails(itemId);
+		Item actualItem = itemService.getItemDetails(itemId);
 
 		// then
-		assertThat(actualItem).isPresent();
-		assertThat(actualItem.get().getId()).isEqualTo(expectedItem.getId());
+		assertThat(actualItem).isNotNull();
+		assertThat(actualItem.getId()).isEqualTo(expectedItem.getId());
 	}
 
 	@Test
-	@DisplayName("상품 ID로 조회할 때 활성화된 상품이 존재하지 않으면 빈 Optional을 반환한다")
+	@DisplayName("상품 ID로 조회할 때 활성화된 상품이 존재하지 않으면 예외가 발생한다")
 	void testGetItemDetails_ItemDoesNotExist() {
 		// given
 		Integer itemId = 2;
 		when(itemRepository.findActiveByIdWithImages(itemId)).thenReturn(Optional.empty());
 
-		// when
-		Optional<Item> actualItem = itemService.getItemDetails(itemId);
-
-		// then
-		assertThat(actualItem).isEmpty();
+		// when & then
+		assertThatThrownBy(() -> itemService.getItemDetails(itemId))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.ITEM_NOT_FOUND);
 	}
 }
