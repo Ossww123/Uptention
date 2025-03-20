@@ -1,4 +1,4 @@
-package com.otoki.uptention.application.example.dto.service;
+package com.otoki.uptention.application.example.service;
 
 import org.springframework.stereotype.Service;
 

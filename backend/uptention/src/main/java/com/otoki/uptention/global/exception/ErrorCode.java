@@ -8,7 +8,9 @@ import lombok.Getter;
 public enum ErrorCode {
 	EXAMPLE_NOT_FOUND(HttpStatus.NOT_FOUND, "X001", "예제 에러 코드입니다"),
 	INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "X002", "잘못된 파라미터가 전달되었습니다."),
-	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "X003", "서버 에러가 발생했습니다.");
+	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "X003", "서버 에러가 발생했습니다."),
+
+	ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "ITEM_001", "상품이 존재하지 않습니다.");
 
 	// http 상태 코드
 	private final HttpStatus status;
