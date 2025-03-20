@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,8 +19,6 @@ import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemServiceImpl;
-import com.otoki.uptention.global.exception.CustomException;
-import com.otoki.uptention.global.exception.ErrorCode;
 
 class ItemAppServiceTest extends AppServiceTestSupport {
 
@@ -39,7 +36,7 @@ class ItemAppServiceTest extends AppServiceTestSupport {
 		Item item = createItem(itemId);
 		List<Image> images = createImages(item, 2);
 
-		when(itemService.getItemDetails(itemId)).thenReturn(Optional.of(item));
+		when(itemService.getItemDetails(itemId)).thenReturn(item);
 
 		// when
 		ItemResponseDto response = itemAppService.getItemDetails(itemId);
@@ -60,20 +57,7 @@ class ItemAppServiceTest extends AppServiceTestSupport {
 		);
 	}
 
-	@Test
-	@DisplayName("존재하지 않는 아이템 ID로 조회 시 예외가 발생한다")
-	void getItemDetails_WithInvalidId_ThrowsItemNotFoundException() {
-		// given
-		Integer nonExistentItemId = 999;
-		when(itemService.getItemDetails(nonExistentItemId)).thenReturn(Optional.empty());
-
-		// when & then
-		assertThatThrownBy(() -> itemAppService.getItemDetails(nonExistentItemId))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.ITEM_NOT_FOUND);
-	}
-
-	// 헬퍼 메서드들
+	// 헬퍼 메서드들 (변경 없음)
 	private Category createCategory() {
 		return Category.builder()
 			.id(1)
