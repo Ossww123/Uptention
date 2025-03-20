@@ -1,15 +1,15 @@
 package com.otoki.uptention.application.item.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
-import com.otoki.uptention.global.exception.CustomException;
-import com.otoki.uptention.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
+@Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
 public class ItemAppServiceImpl implements ItemAppService {
@@ -18,10 +18,8 @@ public class ItemAppServiceImpl implements ItemAppService {
 
 	@Override
 	public ItemResponseDto getItemDetails(Integer itemId) {
-		Item item = itemService.getItemDetails(itemId)
-			.orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND)); // CustomException 던지기
+		Item item = itemService.getItemDetails(itemId);
 
 		return ItemResponseDto.from(item, item.getImages());
 	}
-
 }
