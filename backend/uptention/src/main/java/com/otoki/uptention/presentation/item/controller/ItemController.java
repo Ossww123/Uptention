@@ -12,7 +12,7 @@ import com.otoki.uptention.application.item.service.ItemAppService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/item")
+@RequestMapping("/api/items")
 @RequiredArgsConstructor
 public class ItemController {
 	private final ItemAppService itemAppService;
