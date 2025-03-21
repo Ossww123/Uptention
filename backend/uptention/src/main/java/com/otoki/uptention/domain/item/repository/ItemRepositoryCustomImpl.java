@@ -2,8 +2,8 @@ package com.otoki.uptention.domain.item.repository;
 
 import java.util.List;
 
+import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.image.entity.QImage;
-import com.otoki.uptention.domain.item.dto.CursorDto;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.QItem;
 import com.otoki.uptention.domain.item.enums.SortType;

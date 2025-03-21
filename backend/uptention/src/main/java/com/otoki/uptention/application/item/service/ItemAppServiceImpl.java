@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.otoki.uptention.application.item.dto.response.ItemListResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
 import com.otoki.uptention.domain.category.repository.CategoryRepository;
-import com.otoki.uptention.domain.item.dto.CursorDto;
+import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.enums.SortType;

@@ -1,4 +1,4 @@
-package com.otoki.uptention.domain.item.dto;
+package com.otoki.uptention.domain.common;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
