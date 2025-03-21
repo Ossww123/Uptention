@@ -82,33 +82,39 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 	 * 커서 기반 페이징을 위한 조건을 생성합니다.
 	 */
 	private BooleanExpression getCursorCondition(QItem item, CursorDto cursor, SortType sortType) {
-		return switch (sortType) {
-			case LOW_PRICE -> item.price.gt(cursor.getValue())
+		if (sortType == SortType.LOW_PRICE) {
+			return item.price.gt(cursor.getValue())
 				.or(item.price.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
-			case HIGH_PRICE -> item.price.lt(cursor.getValue())
+		} else if (sortType == SortType.HIGH_PRICE) {
+			return item.price.lt(cursor.getValue())
 				.or(item.price.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
-			case SALES, default -> item.salesCount.lt(cursor.getValue())
+		} else {
+			// SALES 또는 기본값
+			return item.salesCount.lt(cursor.getValue())
 				.or(item.salesCount.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
-		};
+		}
 	}
 
 	/**
 	 * 정렬 표현식을 가져옵니다.
 	 */
 	private com.querydsl.core.types.OrderSpecifier<?>[] getOrderByExpression(QItem item, SortType sortType) {
-		return switch (sortType) {
-			case LOW_PRICE -> new com.querydsl.core.types.OrderSpecifier<?>[] {
+		if (sortType == SortType.LOW_PRICE) {
+			return new com.querydsl.core.types.OrderSpecifier<?>[] {
 				item.price.asc(),
 				item.id.desc()
 			};
-			case HIGH_PRICE -> new com.querydsl.core.types.OrderSpecifier<?>[] {
+		} else if (sortType == SortType.HIGH_PRICE) {
+			return new com.querydsl.core.types.OrderSpecifier<?>[] {
 				item.price.desc(),
 				item.id.desc()
 			};
-			case SALES, default -> new com.querydsl.core.types.OrderSpecifier<?>[] {
+		} else {
+			// SALES 또는 기본값
+			return new com.querydsl.core.types.OrderSpecifier<?>[] {
 				item.salesCount.desc(),
 				item.id.desc()
 			};
-		};
+		}
 	}
 }

@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.item.dto.response.ItemListResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
+import com.otoki.uptention.domain.category.repository.CategoryRepository;
 import com.otoki.uptention.domain.item.dto.CursorDto;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class ItemAppServiceImpl implements ItemAppService {
 
 	private final ItemService itemService;
+	private final CategoryRepository categoryRepository;
 
 	@Override
 	public ItemResponseDto getItemDetails(Integer itemId) {
@@ -33,6 +35,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 	@Override
 	public ItemListResponseDto getItems(Integer categoryId, String keyword, String cursorStr,
 		SortType sortType, int size) {
+
 		// 커서 디코딩
 		CursorDto cursor = CursorDto.decode(cursorStr);
 
@@ -54,11 +57,15 @@ public class ItemAppServiceImpl implements ItemAppService {
 	}
 
 	private String createNextCursor(ItemDto lastItem, SortType sortType) {
-		Integer value = switch (sortType) {
-			case SALES -> lastItem.getSalesCount();
-			case HIGH_PRICE, LOW_PRICE -> lastItem.getPrice();
-			default -> throw new CustomException(ErrorCode.ITEM_INVALID_SORT_TYPE);
-		};
+		Integer value;
+
+		if (sortType == SortType.SALES) {
+			value = lastItem.getSalesCount();
+		} else if (sortType == SortType.HIGH_PRICE || sortType == SortType.LOW_PRICE) {
+			value = lastItem.getPrice();
+		} else {
+			throw new CustomException(ErrorCode.ITEM_INVALID_SORT_TYPE);
+		}
 
 		return new CursorDto(value, lastItem.getItemId()).encode();
 	}
