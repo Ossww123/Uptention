@@ -94,6 +94,7 @@ pipeline {
                                       -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
                                       -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
                                       ${DOCKER_IMAGE}:latest
+                                    docker image prune -f
                                 """.stripIndent()
                             )
                         ]
