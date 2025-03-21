@@ -1,0 +1,118 @@
+pipeline {
+    agent any
+
+    environment {
+        // Docker Hub에 push/pull 할 이미지 이름 (예: Docker Hub 사용자/레포지토리 형식)
+        DOCKER_IMAGE = 'uptention-spring-image'
+        DOCKER_CONTAINER = 'uptention-spring-container'
+        DOCKER_PORT = 9090
+
+        // EC2 관련 정보
+        EC2_USER = credentials('EC2_USER')
+        EC2_IP = credentials('EC2_IP')
+        SSH_KEY = credentials('SSH_KEY')
+
+        // Spring 관련 환경 변수
+        SPRING_PROFILES_ACTIVE = 'prod'
+        SPRING_DATASOURCE_URL = credentials('SPRING_DATASOURCE_URL')
+        SPRING_DATASOURCE_USERNAME = credentials('SPRING_DATASOURCE_USERNAME')
+        SPRING_DATASOURCE_PASSWORD = credentials('SPRING_DATASOURCE_PASSWORD')
+
+    }
+
+    tools {
+        // Global Tool Configuration에서 'JDK17'으로 등록한 JDK를 사용
+        jdk 'JDK17'
+
+        // gradle 'Gradle 8.5'  // Gradle Wrapper 사용으로 인해 제거
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                echo 'Cloning the repository...'
+                git branch: 'be',
+                    url: 'https://lab.ssafy.com/s12-blockchain-nft-sub1/S12P21D211.git',
+                    credentialsId: '0d048b2d-2bdf-4166-a809-76e195d64abb'
+            }
+        }
+        stage('Build Application') {
+            steps {
+                echo 'Building the application with Gradle Wrapper...'
+                dir('backend/uptention') {
+                    sh 'chmod +x gradlew'
+                    sh './gradlew clean build'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building the Docker image...'
+                dir('backend/uptention') {
+                    // jar 파일이 빌드된 위치를 확인 (선택사항)
+                    sh 'ls -al build/libs'
+
+                    // Dockerfile이 같은 디렉토리에 있으며, build/libs 폴더 내 jar 파일을 참조하므로 바로 docker build를 수행
+                    sh 'docker build -t ${DOCKER_IMAGE}:latest -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
+                }
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                echo 'Pushing Docker image to Docker Hub...'
+                // Docker Hub 인증 정보(credentialsId: 'docker-hub')는 "Username with password" 타입을 사용하세요.
+                withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PSW')]) {
+                    sh """
+                        echo '${DOCKERHUB_PSW}' | docker login -u '${DOCKERHUB_USER}' --password-stdin
+                        docker push ${DOCKER_IMAGE}:latest
+                        docker logout
+                    """
+                }
+            }
+        }
+        stage('Deploy to EC2') {
+            steps {
+                echo 'Deploying the application on EC2 using Docker Hub image...'
+                sshPublisher(publishers: [
+                    sshPublisherDesc(
+                        configName: 'EC2-Server',
+                        transfers: [
+                            sshTransfer(
+                                execCommand: """
+                                    docker stop ${DOCKER_CONTAINER} || true
+                                    docker rm ${DOCKER_CONTAINER} || true
+                                    docker rmi ${DOCKER_IMAGE}:latest || true
+                                    docker pull ${DOCKER_IMAGE}:latest
+                                    docker run -d --name ${DOCKER_CONTAINER} \\
+                                      -p ${DOCKER_PORT}:${DOCKER_PORT} \\
+                                      -e SPRING_PROFILES_ACTIVE=prod \\
+                                      -e TZ=UTC \\
+                                      -e SERVER_PORT=${DOCKER_PORT} \\
+                                      -e SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL} \\
+                                      -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
+                                      -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
+                                      ${DOCKER_IMAGE}:latest
+                                """.stripIndent()
+                            )
+                        ]
+                    )
+                ])
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning workspace...'
+            cleanWs()
+        }
+        success {
+            echo 'Deployment successful!'
+        }
+        failure {
+            echo 'Deployment failed.'
+        }
+    }
+}
