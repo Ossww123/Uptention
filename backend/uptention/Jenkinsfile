@@ -31,23 +31,23 @@ pipeline {
                     credentialsId: '0d048b2d-2bdf-4166-a809-76e195d64abb'
             }
         }
-        stage('Test Application') {
-            steps {
-                echo 'Running tests with Gradle Wrapper...'
-                dir('backend/uptention') {
-                    sh 'chmod +x gradlew'
-                    // 테스트 단계: test 태스크를 실행하여 /src/test 내의 테스트 코드들을 수행합니다.
-                    sh './gradlew clean test -Dspring.profiles.active=test'
-                }
-            }
-        }
         stage('Build Application') {
             steps {
                 echo 'Building the application with Gradle Wrapper...'
                 dir('backend/uptention') {
                     sh 'chmod +x gradlew'
-                    // 빌드 단계: 테스트를 건너뛰고(prod profile 사용) 빌드를 수행합니다.
-                    sh './gradlew build -x test -Dspring.profiles.active=prod'
+                    // prod 프로파일로 빌드
+                    sh './gradlew clean build -Dspring.profiles.active=prod'
+                }
+            }
+        }
+        stage('Test Application') {
+            steps {
+                echo 'Running tests with Gradle Wrapper...'
+                dir('backend/uptention') {
+                    sh 'chmod +x gradlew'
+                    // test 프로파일로 테스트
+                    sh './gradlew clean test -Dspring.profiles.active=test'
                 }
             }
         }
