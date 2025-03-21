@@ -41,7 +41,8 @@ pipeline {
                 echo 'Building the application with Gradle Wrapper...'
                 dir('backend/uptention') {
                     sh 'chmod +x gradlew'
-                    sh './gradlew clean build'
+                    // 테스트는 test 프로파일로 실행하여 테스트 환경에 맞는 설정을 적용
+                    sh './gradlew clean build -Dspring.profiles.active=test'
                 }
             }
         }
