@@ -2,7 +2,10 @@ package com.otoki.uptention;
 
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+
+import com.otoki.uptention.global.config.QuerydslConfig;
 
 /**
  * JPA Repository 테스트용 기본 지원 클래스.
@@ -14,5 +17,6 @@ import org.springframework.test.context.ActiveProfiles;
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(QuerydslConfig.class)
 public abstract class RepositoryTestSupport {
 }

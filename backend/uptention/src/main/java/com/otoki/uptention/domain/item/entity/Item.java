@@ -7,6 +7,7 @@ import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.global.entity.TimeStampEntity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -57,7 +58,7 @@ public class Item extends TimeStampEntity {
 	@JoinColumn(name = "category_id")
 	private Category category;
 
-	@OneToMany(mappedBy = "item")
+	@OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
 	@Builder.Default
 	private List<Image> images = new ArrayList<>();
 }

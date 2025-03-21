@@ -54,19 +54,20 @@ public class ItemRepositoryTest extends RepositoryTestSupport {
 	private List<Image> createImages(Item item, int count) {
 		List<Image> images = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
-			Image image = imageRepository.save(
-				Image.builder()
-					.url("http://example.com/image" + (i + 1) + ".jpg")
-					.build()
-			);
-			images.add(image);
+			Image image = Image.builder()
+				.url("http://example.com/image" + (i + 1) + ".jpg")
+				.item(item)
+				.build();
+
+			// Image를 Item의 images 컬렉션에도 추가
+			item.getImages().add(image);
+
+			images.add(imageRepository.save(image));
 		}
 
-		// 이미지를 아이템에 연결하고 다시 저장
-		item.getImages().addAll(images);
+		// 변경사항 저장
 		itemRepository.save(item);
-
-		return images;
+		return item.getImages();
 	}
 
 	@Test
