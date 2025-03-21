@@ -45,7 +45,7 @@ pipeline {
                 echo 'Running tests with Gradle Wrapper...'
                 dir('backend/uptention') {
                     sh 'chmod +x gradlew'
-                    sh './gradlew test --info'
+                    sh './gradlew test --info -Dspring.profiles.active=test'
                 }
             }
         }
