@@ -36,6 +36,11 @@ public class ItemAppServiceImpl implements ItemAppService {
 	public ItemListResponseDto getItems(Integer categoryId, String keyword, String cursorStr,
 		SortType sortType, int size) {
 
+		// 카테고리 존재 여부 검증
+		if (categoryId != null && !categoryRepository.existsById(categoryId)) {
+			throw new CustomException(ErrorCode.ITEM_CATEGORY_NOT_FOUND);
+		}
+
 		// 커서 디코딩
 		CursorDto cursor = CursorDto.decode(cursorStr);
 
