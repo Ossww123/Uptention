@@ -25,23 +25,15 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 		int size) {
 		QItem item = QItem.item;
 		QImage image = QImage.image;
+		QImage subImage = new QImage("subImage");
 
-		// 기본 조건
+		// 기본 조건과 커서 조건 결합
 		BooleanExpression conditions = getBaseConditions(item, categoryId, keyword);
-
-		// 커서 조건 추가
 		if (cursor != null) {
 			conditions = conditions.and(getCursorCondition(item, cursor, sortType));
 		}
 
-		// URL 문자열 기준 첫 이미지 가져오기
-		// var thumbnailSubquery = JPAExpressions
-		// 	.select(image.url.min())  // MIN 함수 사용
-		// 	.from(image)
-		// 	.where(image.item.eq(item));
-
-		// ID 순서대로 첫 이미지 가져오기
-		QImage subImage = new QImage("subImage");
+		// ID 순서대로 첫 이미지 가져오기 (최적화된 서브쿼리)
 		var thumbnailSubquery = JPAExpressions
 			.select(image.url)
 			.from(image)
@@ -90,47 +82,33 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 	 * 커서 기반 페이징을 위한 조건을 생성합니다.
 	 */
 	private BooleanExpression getCursorCondition(QItem item, CursorDto cursor, SortType sortType) {
-		switch (sortType) {
-			case SALES:
-				return item.salesCount.lt(cursor.getValue())
-					.or(item.salesCount.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
-			case HIGH_PRICE:
-				return item.price.lt(cursor.getValue())
-					.or(item.price.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
-			case LOW_PRICE:
-				return item.price.gt(cursor.getValue())
-					.or(item.price.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
-			default:
-				return item.salesCount.lt(cursor.getValue())
-					.or(item.salesCount.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
-		}
+		return switch (sortType) {
+			case LOW_PRICE -> item.price.gt(cursor.getValue())
+				.or(item.price.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
+			case HIGH_PRICE -> item.price.lt(cursor.getValue())
+				.or(item.price.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
+			case SALES, default -> item.salesCount.lt(cursor.getValue())
+				.or(item.salesCount.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
+		};
 	}
 
 	/**
 	 * 정렬 표현식을 가져옵니다.
 	 */
 	private com.querydsl.core.types.OrderSpecifier<?>[] getOrderByExpression(QItem item, SortType sortType) {
-		switch (sortType) {
-			case SALES:
-				return new com.querydsl.core.types.OrderSpecifier<?>[] {
-					item.salesCount.desc(),
-					item.id.desc()
-				};
-			case HIGH_PRICE:
-				return new com.querydsl.core.types.OrderSpecifier<?>[] {
-					item.price.desc(),
-					item.id.desc()
-				};
-			case LOW_PRICE:
-				return new com.querydsl.core.types.OrderSpecifier<?>[] {
-					item.price.asc(),
-					item.id.desc()
-				};
-			default:
-				return new com.querydsl.core.types.OrderSpecifier<?>[] {
-					item.salesCount.desc(),
-					item.id.desc()
-				};
-		}
+		return switch (sortType) {
+			case LOW_PRICE -> new com.querydsl.core.types.OrderSpecifier<?>[] {
+				item.price.asc(),
+				item.id.desc()
+			};
+			case HIGH_PRICE -> new com.querydsl.core.types.OrderSpecifier<?>[] {
+				item.price.desc(),
+				item.id.desc()
+			};
+			case SALES, default -> new com.querydsl.core.types.OrderSpecifier<?>[] {
+				item.salesCount.desc(),
+				item.id.desc()
+			};
+		};
 	}
 }
