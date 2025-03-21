@@ -12,6 +12,8 @@ import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.enums.SortType;
 import com.otoki.uptention.domain.item.service.ItemService;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -55,7 +57,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 		Integer value = switch (sortType) {
 			case SALES -> lastItem.getSalesCount();
 			case HIGH_PRICE, LOW_PRICE -> lastItem.getPrice();
-			default -> throw new IllegalArgumentException("지원하지 않는 정렬 방식입니다.");
+			default -> throw new CustomException(ErrorCode.ITEM_INVALID_SORT_TYPE);
 		};
 
 		return new CursorDto(value, lastItem.getItemId()).encode();

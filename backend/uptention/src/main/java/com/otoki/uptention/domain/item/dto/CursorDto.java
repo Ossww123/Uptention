@@ -5,6 +5,8 @@ import java.util.Base64;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,7 +28,7 @@ public class CursorDto {
 			String json = mapper.writeValueAsString(this);
 			return Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8));
 		} catch (JsonProcessingException e) {
-			throw new RuntimeException("커서 인코딩 실패", e);
+			throw new CustomException(ErrorCode.CURSOR_ENCODING_FAILED);
 		}
 	}
 
@@ -42,7 +44,7 @@ public class CursorDto {
 			ObjectMapper mapper = new ObjectMapper();
 			return mapper.readValue(json, CursorDto.class);
 		} catch (Exception e) {
-			throw new RuntimeException("커서 디코딩 실패", e);
+			throw new CustomException(ErrorCode.CURSOR_DECODING_FAILED);
 		}
 	}
 }
