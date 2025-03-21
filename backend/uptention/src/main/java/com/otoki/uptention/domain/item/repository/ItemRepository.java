@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import com.otoki.uptention.domain.item.entity.Item;
 
 @Repository
-public interface ItemRepository extends JpaRepository<Item, Integer> {
+public interface ItemRepository extends JpaRepository<Item, Integer>, ItemRepositoryCustom {
 
 	// 상세 조회용 - Item과 연관된 모든 이미지 가져오기
 	@Query("SELECT i FROM Item i LEFT JOIN FETCH i.images WHERE i.id = :itemId AND i.status = true")

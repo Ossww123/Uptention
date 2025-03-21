@@ -49,6 +49,10 @@ public class Item extends TimeStampEntity {
 	@Column(name = "status")
 	private Boolean status;
 
+	@Builder.Default
+	@Column(name = "sales_count")
+	private Integer salesCount = 0;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "category_id")
 	private Category category;
