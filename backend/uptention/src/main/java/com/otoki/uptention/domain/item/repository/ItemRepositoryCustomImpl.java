@@ -34,25 +34,24 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 			conditions = conditions.and(getCursorCondition(item, cursor, sortType));
 		}
 
-		// 첫 번째 이미지 URL 가져오기 (단일 서브쿼리 사용)
+		// URL 문자열 기준 첫 이미지 가져오기
+		// var thumbnailSubquery = JPAExpressions
+		// 	.select(image.url.min())  // MIN 함수 사용
+		// 	.from(image)
+		// 	.where(image.item.eq(item));
+
+		// ID 순서대로 첫 이미지 가져오기
+		QImage subImage = new QImage("subImage");
 		var thumbnailSubquery = JPAExpressions
 			.select(image.url)
 			.from(image)
-			.where(image.item.eq(item))
-			.orderBy(image.id.asc())
-			.limit(1);
-
-		// 서브쿼리로 첫 번째 이미지 URL 가져오기
-		// var thumbnailSubquery = JPAExpressions
-		// 	.select(image.url)
-		// 	.from(image)
-		// 	.where(image.item.eq(item)
-		// 		.and(image.id.eq(
-		// 			JPAExpressions
-		// 				.select(subImage.id.min())
-		// 				.from(subImage)
-		// 				.where(subImage.item.eq(item))
-		// 		)));
+			.where(image.item.eq(item)
+				.and(image.id.eq(
+					JPAExpressions
+						.select(subImage.id.min())
+						.from(subImage)
+						.where(subImage.item.eq(item))
+				)));
 
 		return queryFactory
 			.select(Projections.fields(ItemDto.class,
