@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Docker Hub에 push/pull 할 이미지 이름 (예: Docker Hub 사용자/레포지토리 형식)
+        // Docker 관련 환경 변수
         DOCKER_IMAGE = 'uptention-spring-image'
         DOCKER_CONTAINER = 'uptention-spring-container'
         DOCKER_PORT = 9090
@@ -12,19 +12,15 @@ pipeline {
         EC2_IP = credentials('EC2_IP')
         SSH_KEY = credentials('SSH_KEY')
 
-        // Spring 관련 환경 변수
-        SPRING_PROFILES_ACTIVE = 'prod'
+        // Spring DataSource 관련 환경 변수
         SPRING_DATASOURCE_URL = credentials('SPRING_DATASOURCE_URL')
         SPRING_DATASOURCE_USERNAME = credentials('SPRING_DATASOURCE_USERNAME')
         SPRING_DATASOURCE_PASSWORD = credentials('SPRING_DATASOURCE_PASSWORD')
-
+        // SPRING_PROFILES_ACTIVE 는 빌드와 배포 단계에서 개별적으로 지정
     }
 
     tools {
-        // Global Tool Configuration에서 'JDK17'으로 등록한 JDK를 사용
         jdk 'JDK17'
-
-        // gradle 'Gradle 8.5'  // Gradle Wrapper 사용으로 인해 제거
     }
 
     stages {
@@ -41,29 +37,24 @@ pipeline {
                 echo 'Building the application with Gradle Wrapper...'
                 dir('backend/uptention') {
                     sh 'chmod +x gradlew'
-                    // 테스트는 test 프로파일로 실행하여 테스트 환경에 맞는 설정을 적용
+                    // 빌드 및 테스트 단계에서는 test 프로파일 사용
                     sh './gradlew clean build -Dspring.profiles.active=test'
                 }
             }
         }
-
         stage('Build Docker Image') {
             steps {
                 echo 'Building the Docker image...'
                 dir('backend/uptention') {
-                    // jar 파일이 빌드된 위치를 확인 (선택사항)
+                    // 빌드된 jar 파일 확인
                     sh 'ls -al build/libs'
-
-                    // Dockerfile이 같은 디렉토리에 있으며, build/libs 폴더 내 jar 파일을 참조하므로 바로 docker build를 수행
                     sh 'docker build -t ${DOCKER_IMAGE}:latest -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
                 }
             }
         }
-
         stage('Push Docker Image to Docker Hub') {
             steps {
                 echo 'Pushing Docker image to Docker Hub...'
-                // Docker Hub 인증 정보(credentialsId: 'docker-hub')는 "Username with password" 타입을 사용하세요.
                 withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PSW')]) {
                     sh """
                         echo '${DOCKERHUB_PSW}' | docker login -u '${DOCKERHUB_USER}' --password-stdin
@@ -76,6 +67,7 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 echo 'Deploying the application on EC2 using Docker Hub image...'
+                // 배포 단계에서는 prod 프로파일로 실행
                 sshPublisher(publishers: [
                     sshPublisherDesc(
                         configName: 'EC2-Server',
