@@ -4,10 +4,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.otoki.uptention.application.item.dto.response.ItemListResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
 import com.otoki.uptention.application.item.service.ItemAppService;
+import com.otoki.uptention.domain.item.enums.SortType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,5 +25,17 @@ public class ItemController {
 		ItemResponseDto itemResponseDto = itemAppService.getItemDetails(itemId);
 
 		return ResponseEntity.ok(itemResponseDto);
+	}
+
+	@GetMapping("")
+	public ResponseEntity<ItemListResponseDto> getItems(
+		@RequestParam(required = false) Integer categoryId,
+		@RequestParam(required = false) String keyword,
+		@RequestParam(required = false) String cursor,
+		@RequestParam(defaultValue = "20") int size,
+		@RequestParam(defaultValue = "SALES") SortType sort) {
+
+		ItemListResponseDto response = itemAppService.getItems(categoryId, keyword, cursor, sort, size);
+		return ResponseEntity.ok(response);
 	}
 }
