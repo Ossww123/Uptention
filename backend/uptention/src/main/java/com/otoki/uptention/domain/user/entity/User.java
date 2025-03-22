@@ -36,7 +36,7 @@ public class User extends TimeStampEntity {
 	@Column(length = 31)
 	private String username;
 
-	@Column(length = 31)
+	@Column(length = 100)
 	private String password;
 
 	@Column(length = 31)
