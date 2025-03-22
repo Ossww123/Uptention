@@ -46,60 +46,64 @@ const UserManagementPage = () => {
 
   return (
     <div className="user-management">
-      <div className="user-management-header">
-        <h1 className="page-title">회원 목록</h1>
-        
-        <div className="user-stats">
-          <div className="stat-box">
-            <span className="stat-label">총회원수</span>
-            <span className="stat-value">{users.length}명</span>
+      {/* 상단 검색바 영역 */}
+      <div className="search-bar">
+        <form onSubmit={handleSearch}>
+          <input
+            type="text"
+            placeholder="회원 검색"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="search-input"
+          />
+          <button type="submit" className="search-button">검색</button>
+        </form>
+      </div>
+      
+      {/* 회원 목록 영역 - 흰색 카드 */}
+      <div className="content-card">
+        <div className="user-management-header">
+          <h1 className="page-title">회원 목록</h1>
+          
+          <div className="user-stats">
+            <div className="stat-box">
+              <span className="stat-label">총회원수</span>
+              <span className="stat-value">{users.length}명</span>
+            </div>
           </div>
         </div>
         
-        <div className="search-bar">
-          <form onSubmit={handleSearch}>
-            <input
-              type="text"
-              placeholder="회원 검색"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="search-input"
-            />
-            <button type="submit" className="search-button">검색</button>
-          </form>
-        </div>
-      </div>
-      
-      <div className="user-table-container">
-        <table className="user-table">
-          <thead>
-            <tr>
-              <th>사원번호</th>
-              <th>회원아이디</th>
-              <th>이름</th>
-              <th>가입날짜</th>
-              <th>회원삭제</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.id}>
-                <td>{user.id}</td>
-                <td>{user.userId}</td>
-                <td>{user.name}</td>
-                <td>{user.joinDate}</td>
-                <td>
-                  <button 
-                    className="delete-button"
-                    onClick={() => handleDeleteUser(user.id)}
-                  >
-                    삭제하기
-                  </button>
-                </td>
+        <div className="user-table-container">
+          <table className="user-table">
+            <thead>
+              <tr>
+                <th>사원번호</th>
+                <th>회원아이디</th>
+                <th>이름</th>
+                <th>가입날짜</th>
+                <th>회원삭제</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.id}</td>
+                  <td>{user.userId}</td>
+                  <td>{user.name}</td>
+                  <td>{user.joinDate}</td>
+                  <td>
+                    <button 
+                      className="delete-button"
+                      onClick={() => handleDeleteUser(user.id)}
+                    >
+                      삭제하기
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       
       <div className="action-buttons">

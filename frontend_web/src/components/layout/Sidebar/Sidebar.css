@@ -11,12 +11,25 @@
     top: 0;
   }
   
-  .sidebar-header {
+  /* 주황색 상단 영역 */
+  .sidebar-orange-header {
+    height: 70px;
+    width: 100%;
     background-color: #FF8C00;
+  }
+  
+  /* 로고 및 타이틀이 들어가는 영역 */
+  .sidebar-header {
+    background-color: white;
     padding: 20px 15px;
     display: flex;
     align-items: center;
-    color: white;
+    color: black;
+  }
+  
+  .sidebar-logo-container {
+    display: flex;
+    align-items: center;
   }
   
   .sidebar-logo {
@@ -43,17 +56,18 @@
     color: #666;
     text-decoration: none;
     transition: all 0.3s;
+    margin-bottom: 5px;
   }
   
   .sidebar-nav-item:hover {
-    background-color: #f8f9fa;
     color: #FF8C00;
   }
   
   .sidebar-nav-item.active {
-    background-color: #f8f9fa;
     color: #FF8C00;
+    font-weight: bold;
     border-left: 4px solid #FF8C00;
+    background-color: rgba(255, 140, 0, 0.1);
   }
   
   .sidebar-icon {
@@ -71,7 +85,7 @@
   
   .sidebar-footer {
     padding: 20px;
-    border-top: 1px solid #eee;
+    margin-top: auto;
   }
   
   .sidebar-logout {
