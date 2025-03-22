@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './App.css';
 import LoginPage from './pages/Login/LoginPage';
 import UserManagementPage from './pages/Users/UserManagementPage';
+import UserCreatePage from './pages/Users/UserCreatePage';
 import AdminLayout from './components/layout/AdminLayout/AdminLayout';
 
 // 임시 인증 상태 체크 함수 (나중에 실제 인증 로직으로 대체)
@@ -36,6 +37,17 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <UserManagementPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/users/create" 
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <UserCreatePage />
               </AdminLayout>
             </ProtectedRoute>
           } 
