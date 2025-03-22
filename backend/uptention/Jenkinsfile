@@ -6,6 +6,11 @@ pipeline {
         DOCKER_IMAGE = 'jodaeseong/uptention-spring-image'
         DOCKER_CONTAINER = 'uptention-spring-container'
         DOCKER_PORT = 9090
+
+        // Spring DataSource 관련 환경 변수
+        SPRING_DATASOURCE_URL = credentials('SPRING_DATASOURCE_URL')
+        SPRING_DATASOURCE_USERNAME = credentials('SPRING_DATASOURCE_USERNAME')
+        SPRING_DATASOURCE_PASSWORD = credentials('SPRING_DATASOURCE_PASSWORD')
     }
 
     tools {
@@ -73,9 +78,9 @@ pipeline {
                                       -e SPRING_PROFILES_ACTIVE=prod \\
                                       -e TZ=UTC \\
                                       -e SERVER_PORT=${DOCKER_PORT} \\
-                                      -e SPRING_DATASOURCE_URL=\$SPRING_DATASOURCE_URL \\
-                                      -e SPRING_DATASOURCE_USERNAME=\$SPRING_DATASOURCE_USERNAME \\
-                                      -e SPRING_DATASOURCE_PASSWORD=\$SPRING_DATASOURCE_PASSWORD \\
+                                      -e SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL} \\
+                                      -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
+                                      -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
                                       ${DOCKER_IMAGE}:latest
                                     docker image prune -f
                                 """.stripIndent()
