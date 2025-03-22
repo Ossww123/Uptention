@@ -1,17 +1,112 @@
-import { NativeModules, Platform } from 'react-native';
+// ScreenTime.js
+import { NativeModules } from 'react-native';
+const { ScreenTimeModule } = NativeModules;
 
-console.log('Available Native Modules:', Object.keys(NativeModules));
+/**
+ * 앱 이름 캐싱을 위한 객체
+ */
+const appNameCache = {};
 
-// 직접 NativeModules에서 접근
-const ScreenTime = Platform.OS === 'android' 
-  ? NativeModules.ScreenTimeModule 
-  : {
-      hasUsageStatsPermission: () => Promise.resolve(false),
-      openUsageSettings: () => {},
-      getDailyScreenTime: () => Promise.resolve({ hasPermission: false }),
-      getWeeklyScreenTime: () => Promise.resolve({ hasPermission: false }),
-    };
+/**
+ * ScreenTime 관련 기능을 제공하는 유틸리티 클래스
+ */
+class ScreenTime {
+  /**
+   * 사용량 통계 권한이 있는지 확인
+   * @returns {Promise<boolean>} 권한 여부
+   */
+  static hasUsageStatsPermission() {
+    return ScreenTimeModule.hasUsageStatsPermission();
+  }
 
-console.log('ScreenTime module:', ScreenTime);
+  /**
+   * 사용량 통계 설정 화면 열기
+   */
+  static openUsageSettings() {
+    ScreenTimeModule.openUsageSettings();
+  }
+
+  /**
+   * 패키지명으로 앱 이름 가져오기
+   * @param {string} packageName 패키지명
+   * @returns {Promise<string>} 앱 이름
+   */
+  static async getAppName(packageName) {
+    // 캐시에 있으면 캐시된 값 반환
+    if (appNameCache[packageName]) {
+      return appNameCache[packageName];
+    }
+    
+    // 네이티브 모듈에서 앱 이름 가져오기
+    const appName = await ScreenTimeModule.getAppName(packageName);
+    // 캐시에 저장
+    appNameCache[packageName] = appName;
+    return appName;
+  }
+
+  /**
+   * 여러 패키지명의 앱 이름을 한 번에 가져오기
+   * @param {string[]} packageNames 패키지명 배열
+   * @returns {Promise<Object>} 패키지명과 앱 이름 매핑 객체
+   */
+  static async getAllAppNames(packageNames) {
+    // 캐시되지 않은 패키지명만 필터링
+    const uncachedPackages = packageNames.filter(pkg => !appNameCache[pkg]);
+    
+    if (uncachedPackages.length > 0) {
+      // 캐시되지 않은 패키지명들의 앱 이름 가져오기
+      const newAppNames = await ScreenTimeModule.getAllAppNames(uncachedPackages);
+      
+      // 캐시에 저장
+      Object.keys(newAppNames).forEach(pkg => {
+        appNameCache[pkg] = newAppNames[pkg];
+      });
+    }
+    
+    // 요청된 모든 패키지명에 대한 앱 이름 반환
+    const result = {};
+    packageNames.forEach(pkg => {
+      result[pkg] = appNameCache[pkg];
+    });
+    
+    return result;
+  }
+
+  /**
+   * 일일 스크린 타임 데이터 가져오기
+   * @returns {Promise<Object>} 스크린 타임 데이터
+   */
+  static async getDailyScreenTime() {
+    const data = await ScreenTimeModule.getDailyScreenTime();
+    
+    if (data.hasPermission && data.appUsage) {
+      // 앱 이름 정보 가져오기
+      const packageNames = Object.keys(data.appUsage);
+      const appNames = await this.getAllAppNames(packageNames);
+      
+      // 앱 사용 데이터에 앱 이름 정보 추가
+      const appUsageWithNames = {};
+      Object.entries(data.appUsage).forEach(([packageName, usageTime]) => {
+        const appName = appNames[packageName] || packageName;
+        appUsageWithNames[packageName] = {
+          usageTime: usageTime,
+          appName: appName
+        };
+      });
+      
+      data.appUsageWithNames = appUsageWithNames;
+    }
+    
+    return data;
+  }
+
+  /**
+   * 주간 스크린 타임 데이터 가져오기
+   * @returns {Promise<Object>} 주간 스크린 타임 데이터
+   */
+  static getWeeklyScreenTime() {
+    return ScreenTimeModule.getWeeklyScreenTime();
+  }
+}
 
 export default ScreenTime;
