@@ -2,20 +2,9 @@ pipeline {
     agent any
 
     environment {
-        // Docker 관련 환경 변수
         DOCKER_IMAGE = 'uptention-spring-image'
         DOCKER_CONTAINER = 'uptention-spring-container'
         DOCKER_PORT = 9090
-
-        // EC2 관련 정보
-        EC2_USER = credentials('EC2_USER')
-        EC2_IP = credentials('EC2_IP')
-        SSH_KEY = credentials('SSH_KEY')
-
-        // Spring DataSource 관련 환경 변수
-        SPRING_DATASOURCE_URL = credentials('SPRING_DATASOURCE_URL')
-        SPRING_DATASOURCE_USERNAME = credentials('SPRING_DATASOURCE_USERNAME')
-        SPRING_DATASOURCE_PASSWORD = credentials('SPRING_DATASOURCE_PASSWORD')
     }
 
     tools {
@@ -40,40 +29,34 @@ pipeline {
                 }
             }
         }
-//         stage('Test Application') {
-//             steps {
-//                 echo 'Running tests with Gradle Wrapper...'
-//                 dir('backend/uptention') {
-//                     sh 'chmod +x gradlew'
-//                     sh './gradlew test -Dspring.profiles.active=test'
-//                 }
-//             }
-//         }
         stage('Build Docker Image') {
             steps {
-                echo 'Building the Docker image...'
-                dir('backend/uptention') {
-                    // 빌드된 jar 파일 확인 후 Docker 이미지를 생성합니다.
-                    sh 'ls -al build/libs'
-                    sh 'docker build -t ${DOCKER_IMAGE}:latest -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .'
+                script {
+                    // Docker Pipeline 플러그인을 사용하여 Docker 이미지 빌드
+                    dir('backend/uptention') {
+                        // 이미지 이름과 태그 지정
+                        def appImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}", ".")
+                        // 결과 이미지 정보를 환경변수에 저장하거나 이후 스텝에서 활용할 수 있음
+                        env.APP_IMAGE = "${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
+                    }
                 }
             }
         }
         stage('Push Docker Image to Docker Hub') {
             steps {
-                echo 'Pushing Docker image to Docker Hub...'
-                withCredentials([usernamePassword(credentialsId: 'docker-hub', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PSW')]) {
-                    sh """
-                        echo '${DOCKERHUB_PSW}' | docker login -u '${DOCKERHUB_USER}' --password-stdin
-                        docker push ${DOCKER_IMAGE}:latest
-                        docker logout
-                    """
+                script {
+                    // Docker Hub credentials (docker-hub ID) 활용
+                    docker.withRegistry('', 'docker-hub') {
+                        // 위 단계에서 빌드한 이미지를 푸시
+                        docker.image(env.APP_IMAGE).push()
+                    }
                 }
             }
         }
         stage('Deploy to EC2') {
             steps {
                 echo 'Deploying the application on EC2 using Docker Hub image...'
+                // 배포 스크립트는 기존과 동일하게 SSHPublisher나 다른 방법을 사용하여 원격 서버에서 실행
                 sshPublisher(publishers: [
                     sshPublisherDesc(
                         configName: 'EC2-Server',
@@ -89,9 +72,9 @@ pipeline {
                                       -e SPRING_PROFILES_ACTIVE=prod \\
                                       -e TZ=UTC \\
                                       -e SERVER_PORT=${DOCKER_PORT} \\
-                                      -e SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL} \\
-                                      -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
-                                      -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
+                                      -e SPRING_DATASOURCE_URL=\$SPRING_DATASOURCE_URL \\
+                                      -e SPRING_DATASOURCE_USERNAME=\$SPRING_DATASOURCE_USERNAME \\
+                                      -e SPRING_DATASOURCE_PASSWORD=\$SPRING_DATASOURCE_PASSWORD \\
                                       ${DOCKER_IMAGE}:latest
                                     docker image prune -f
                                 """.stripIndent()
