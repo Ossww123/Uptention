@@ -1,0 +1,136 @@
+/* src/pages/Users/UserManagement.css */
+.user-management {
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+  }
+  
+  .user-management-header {
+    margin-bottom: 25px;
+  }
+  
+  .page-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .user-stats {
+    display: flex;
+    margin-bottom: 20px;
+  }
+  
+  .stat-box {
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+  }
+  
+  .stat-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+  }
+  
+  .stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .search-bar {
+    margin-bottom: 20px;
+  }
+  
+  .search-bar form {
+    display: flex;
+    max-width: 500px;
+  }
+  
+  .search-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+    font-size: 14px;
+    outline: none;
+  }
+  
+  .search-button {
+    background-color: #FF8C00;
+    color: white;
+    border: none;
+    padding: 0 20px;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  
+  .user-table-container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  
+  .user-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .user-table th,
+  .user-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .user-table th {
+    background-color: #f8f9fa;
+    color: #666;
+    font-weight: 500;
+  }
+  
+  .user-table tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .delete-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  
+  .delete-button:hover {
+    background-color: #c0392b;
+  }
+  
+  .action-buttons {
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .add-button {
+    background-color: #FF8C00;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  
+  .add-button:hover {
+    background-color: #e67e00;
+  }
