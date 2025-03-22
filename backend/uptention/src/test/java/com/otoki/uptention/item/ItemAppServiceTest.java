@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.TestPropertySource;
 
 import com.otoki.uptention.AppServiceTestSupport;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
@@ -20,6 +21,15 @@ import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemServiceImpl;
 
+@TestPropertySource(properties = {
+	"spring.datasource.url=jdbc:h2:mem:testdb",
+	"spring.datasource.driver-class-name=org.h2.Driver",
+	"spring.datasource.username=sa",
+	"spring.datasource.password=",
+	"spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+	"spring.jpa.hibernate.ddl-auto=create-drop",
+	"spring.jpa.show-sql=true"
+})
 class ItemAppServiceTest extends AppServiceTestSupport {
 
 	@Autowired
