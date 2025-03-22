@@ -77,7 +77,6 @@ pipeline {
                                     docker pull ${DOCKER_IMAGE}:latest
                                     docker run -d --name ${DOCKER_CONTAINER} \\
                                       --network uptention_network \\
-                                      -p ${DOCKER_PORT}:${DOCKER_PORT} \\
                                       -e SPRING_PROFILES_ACTIVE=prod \\
                                       -e TZ=UTC \\
                                       -e SERVER_PORT=${DOCKER_PORT} \\
