@@ -110,12 +110,15 @@ const StoreScreen = () => {
 
   // 상품 아이템 렌더링
   const renderProductItem = ({ item }) => (
-    <View style={styles.productItem}>
+    <TouchableOpacity 
+      style={styles.productItem} 
+      onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+    >
       <Image source={item.image} style={styles.productImage} />
       <Text style={styles.productBrand}>{item.brand}</Text>
       <Text style={styles.productName}>{item.name}</Text>
       <Text style={styles.productPrice}>{item.price}</Text>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
