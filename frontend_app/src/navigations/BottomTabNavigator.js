@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
 import RecordScreen from '../screens/RecordScreen';
-import StoreScreen from '../screens/StoreScreen';
+import StoreStackNavigator from './StoreStackNavigator';
 import ProfileScreen from '../screens/ProfileScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
@@ -60,7 +60,7 @@ const BottomTabNavigator = () => {
       />
       <Tab.Screen 
         name="Store" 
-        component={StoreScreen}
+        component={StoreStackNavigator} // StoreScreen 대신 StoreStackNavigator 사용
         options={{
           title: '상점',
         }}
