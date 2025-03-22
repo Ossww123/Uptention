@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import ScreenTime from "../utils/ScreenTime"; // 경로는 실제 프로젝트 구조에 맞게 조정해주세요
 
@@ -67,7 +68,9 @@ const RecordScreen = () => {
 
       if (dailyData.hasPermission) {
         setDailyScreenTime(dailyData.totalScreenTimeMinutes);
-        setAppUsage(dailyData.appUsage || {});
+        
+        // 수정된 부분: 앱 이름이 포함된 appUsageWithNames 사용
+        setAppUsage(dailyData.appUsageWithNames || {});
       } else {
         setHasPermission(false);
       }
@@ -104,12 +107,6 @@ const RecordScreen = () => {
     })`;
   };
 
-  // 패키지 이름에서 앱 이름 추출 (실제로는 앱 이름 매핑 테이블이 필요할 수 있음)
-  const getAppName = (packageName) => {
-    const parts = packageName.split(".");
-    return parts[parts.length - 1];
-  };
-
   const renderPermissionRequest = () => (
     <View style={styles.centerContainer}>
       <Text style={styles.permissionText}>
@@ -134,12 +131,18 @@ const RecordScreen = () => {
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>앱별 사용 시간</Text>
         {Object.entries(appUsage)
-          .sort(([, timeA], [, timeB]) => timeB - timeA)
+          .sort(([, dataA], [, dataB]) => dataB.usageTime - dataA.usageTime)
           .slice(0, 10) // 상위 10개 앱만 표시
-          .map(([packageName, minutes], index) => (
+          .map(([packageName, data], index) => (
             <View key={packageName} style={styles.appItem}>
-              <Text style={styles.appName}>{getAppName(packageName)}</Text>
-              <Text style={styles.appTime}>{formatTime(minutes)}</Text>
+              {/* 앱 아이콘 영역 (추후 실제 앱 아이콘 구현 가능) */}
+              <View style={styles.appIconContainer}>
+                <View style={styles.appIcon}>
+                  <Text style={styles.appIconText}>{data.appName.charAt(0)}</Text>
+                </View>
+                <Text style={styles.appName}>{data.appName}</Text>
+              </View>
+              <Text style={styles.appTime}>{formatTime(data.usageTime)}</Text>
             </View>
           ))}
       </View>
@@ -318,13 +321,34 @@ const styles = StyleSheet.create({
   appItem: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
+  appIconContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  appIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: "#E5E5EA",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  appIconText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333333",
+  },
   appName: {
     fontSize: 15,
     color: "#333333",
+    flex: 1,
   },
   appTime: {
     fontSize: 15,
