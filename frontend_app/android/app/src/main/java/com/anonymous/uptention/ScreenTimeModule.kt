@@ -5,6 +5,7 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
@@ -42,6 +43,50 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         reactApplicationContext.startActivity(intent)
+    }
+
+    // 패키지명에서 앱 이름을 가져오는 새로운 메서드
+    @ReactMethod
+    fun getAppName(packageName: String, promise: Promise) {
+        try {
+            val pm = reactApplicationContext.packageManager
+            val appInfo = pm.getApplicationInfo(packageName, 0)
+            val appName = pm.getApplicationLabel(appInfo).toString()
+            promise.resolve(appName)
+        } catch (e: Exception) {
+            // 패키지가 설치되어 있지 않거나, 접근할 수 없는 경우
+            // 패키지명의 마지막 부분을 반환
+            val parts = packageName.split(".")
+            val lastPart = parts.lastOrNull() ?: packageName
+            promise.resolve(lastPart.capitalize())
+        }
+    }
+
+    // 모든 앱 이름을 한 번에 가져오는 메서드
+    @ReactMethod
+    fun getAllAppNames(packageNames: ReadableArray, promise: Promise) {
+        try {
+            val pm = reactApplicationContext.packageManager
+            val result = Arguments.createMap()
+            
+            for (i in 0 until packageNames.size()) {
+                val packageName = packageNames.getString(i)
+                try {
+                    val appInfo = pm.getApplicationInfo(packageName, 0)
+                    val appName = pm.getApplicationLabel(appInfo).toString()
+                    result.putString(packageName, appName)
+                } catch (e: Exception) {
+                    // 패키지가 설치되어 있지 않거나, 접근할 수 없는 경우
+                    val parts = packageName.split(".")
+                    val lastPart = parts.lastOrNull() ?: packageName
+                    result.putString(packageName, lastPart.capitalize())
+                }
+            }
+            
+            promise.resolve(result)
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
     }
 
     @ReactMethod
