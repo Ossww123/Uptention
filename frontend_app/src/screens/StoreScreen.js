@@ -9,7 +9,11 @@ import {
   TextInput,
   SafeAreaView,
   ScrollView,
+  Dimensions,
 } from 'react-native';
+
+// 화면 너비 가져오기
+const { width } = Dimensions.get('window');
 
 // 더미 데이터: 카테고리
 const categories = [
@@ -70,7 +74,7 @@ const products = [
 ];
 
 const StoreScreen = () => {
-  const [showCategories, setShowCategories] = useState(false);
+  const [showCategories, setShowCategories] = useState(true); // 기본적으로 카테고리 보이게 설정
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   // 카테고리 아이콘 렌더링
@@ -91,10 +95,12 @@ const StoreScreen = () => {
   // 카테고리 아이템 렌더링
   const renderCategoryItem = ({ item }) => (
     <TouchableOpacity 
-      style={styles.categoryItem} 
+      style={[
+        styles.sidebarCategoryItem,
+        selectedCategory === item.id && styles.selectedCategory
+      ]} 
       onPress={() => {
-        setSelectedCategory(item.id);
-        setShowCategories(false);
+        setSelectedCategory(selectedCategory === item.id ? null : item.id);
       }}
     >
       <Image source={item.icon} style={styles.categoryIcon} />
@@ -131,7 +137,7 @@ const StoreScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 카테고리 및 정렬 옵션 */}
+      {/* 필터/정렬 옵션 */}
       <View style={styles.filterContainer}>
         {renderCategoryIcon()}
         <TouchableOpacity style={styles.sortButton}>
@@ -139,39 +145,30 @@ const StoreScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 카테고리 목록 (토글) */}
-      {showCategories && (
-        <View style={styles.categoriesContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryItem,
-                  selectedCategory === category.id && styles.selectedCategory,
-                ]}
-                onPress={() => {
-                  setSelectedCategory(
-                    selectedCategory === category.id ? null : category.id
-                  );
-                }}
-              >
-                <Image source={category.icon} style={styles.categoryIcon} />
-                <Text style={styles.categoryName}>{category.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+      {/* 메인 컨텐츠 영역: 카테고리 사이드바 + 상품 목록 */}
+      <View style={styles.contentContainer}>
+        {/* 카테고리 사이드바 */}
+        {showCategories && (
+          <View style={styles.sidebar}>
+            <FlatList
+              data={categories}
+              renderItem={renderCategoryItem}
+              keyExtractor={item => item.id}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        )}
 
-      {/* 상품 그리드 */}
-      <FlatList
-        data={products}
-        renderItem={renderProductItem}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={styles.productList}
-      />
+        {/* 상품 그리드 */}
+        <FlatList
+          data={products}
+          renderItem={renderProductItem}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          contentContainerStyle={styles.productList}
+          style={styles.productsGrid}
+        />
+      </View>
     </SafeAreaView>
   );
 };
@@ -228,19 +225,23 @@ const styles = StyleSheet.create({
     color: '#FF8C00',
     fontSize: 14,
   },
-  categoriesContainer: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+  contentContainer: {
+    flex: 1,
+    flexDirection: 'row',
   },
-  categoryItem: {
+  sidebar: {
+    width: width * 0.22, // 화면 너비의 22% 차지
+    borderRightWidth: 1,
+    borderRightColor: '#f0f0f0',
+    backgroundColor: '#fff',
+  },
+  sidebarCategoryItem: {
     alignItems: 'center',
-    marginHorizontal: 10,
+    paddingVertical: 10,
     paddingHorizontal: 5,
   },
   selectedCategory: {
     backgroundColor: '#f8f8f8',
-    borderRadius: 10,
   },
   categoryIcon: {
     width: 40,
@@ -250,12 +251,16 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 12,
     marginTop: 5,
+    textAlign: 'center',
     color: '#333',
+  },
+  productsGrid: {
+    flex: 1,
   },
   productList: {
     paddingHorizontal: 10,
     paddingTop: 10,
-    paddingBottom: 20, // 바텀 여백
+    paddingBottom: 20,
   },
   productItem: {
     flex: 1,
