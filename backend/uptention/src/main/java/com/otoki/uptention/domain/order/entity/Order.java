@@ -1,7 +1,6 @@
 package com.otoki.uptention.domain.order.entity;
 
 import com.otoki.uptention.domain.gift.entity.Gift;
-import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.global.entity.TimeStampEntity;
 
@@ -38,17 +37,8 @@ public class Order extends TimeStampEntity {
 	@JoinColumn(name = "user_id", nullable = false)
 	private User user;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "item_id", nullable = false)
-	private Item item;
-
 	@Column(length = 127)
 	private String address;
-
-	private Integer quantity;
-
-	@Column(name = "total_price")
-	private Integer totalPrice;
 
 	@OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
 	private Gift gift;
