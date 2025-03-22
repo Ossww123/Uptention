@@ -5,6 +5,7 @@ import StoreStackNavigator from './StoreStackNavigator';
 import ProfileScreen from '../screens/ProfileScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator();
 
@@ -30,14 +31,24 @@ const BottomTabNavigator = () => {
         },
         tabBarActiveTintColor: '#FF8C00',
         tabBarInactiveTintColor: '#8E8E93',
-        tabBarStyle: {
-          height: Platform.OS === 'ios' ? 85 : 60,
-          paddingBottom: Platform.OS === 'ios' ? 30 : 10,
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E5EA',
-          elevation: 0,
-        },
+        tabBarStyle: (() => {
+          const routeName = getFocusedRouteNameFromRoute(route) ?? '';
+          
+          // Store 스택에서 ProductDetail 화면일 때 탭바 숨기기
+          if (route.name === 'Store' && routeName === 'ProductDetail') {
+            return { display: 'none' };
+          }
+          
+          // 기본 탭바 스타일
+          return {
+            height: Platform.OS === 'ios' ? 85 : 60,
+            paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+            backgroundColor: '#FFFFFF',
+            borderTopWidth: 1,
+            borderTopColor: '#E5E5EA',
+            elevation: 0,
+          };
+        })(),
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
@@ -60,10 +71,24 @@ const BottomTabNavigator = () => {
       />
       <Tab.Screen 
         name="Store" 
-        component={StoreStackNavigator} // StoreScreen 대신 StoreStackNavigator 사용
-        options={{
+        component={StoreStackNavigator}
+        options={({ route }) => ({
           title: '상점',
-        }}
+          tabBarStyle: (() => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? '';
+            if (routeName === 'ProductDetail') {
+              return { display: 'none' };
+            }
+            return {
+              height: Platform.OS === 'ios' ? 85 : 60,
+              paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+              backgroundColor: '#FFFFFF',
+              borderTopWidth: 1,
+              borderTopColor: '#E5E5EA',
+              elevation: 0,
+            };
+          })(),
+        })}
       />
       <Tab.Screen 
         name="Profile" 
@@ -76,4 +101,4 @@ const BottomTabNavigator = () => {
   );
 };
 
-export default BottomTabNavigator; 
+export default BottomTabNavigator;
