@@ -2,8 +2,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import Login from './pages/Login/Login';
-import UserManagement from './pages/Users/UserManagement';
+import LoginPage from './pages/Login/LoginPage';
+import UserManagementPage from './pages/Users/UserManagementPage';
 import AdminLayout from './components/layout/AdminLayout/AdminLayout';
 
 // 임시 인증 상태 체크 함수 (나중에 실제 인증 로직으로 대체)
@@ -27,7 +27,7 @@ function App() {
     <Router>
       <Routes>
         {/* 공개 라우트 */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LoginPage />} />
         
         {/* 관리자 라우트 */}
         <Route 
@@ -35,7 +35,7 @@ function App() {
           element={
             <ProtectedRoute>
               <AdminLayout>
-                <UserManagement />
+                <UserManagementPage />
               </AdminLayout>
             </ProtectedRoute>
           } 

@@ -1,9 +1,9 @@
-// src/pages/Login/Login.jsx
+// src/pages/Login/LoginPage.jsx
 import React, { useState } from 'react';
-import './Login.css';
+import './LoginPage.css';
 import logoImage from '../../assets/images/logo.png'; // 로고 이미지 경로 지정 필요
 
-const Login = () => {
+const LoginPage = () => {
   const [credentials, setCredentials] = useState({
     username: '',
     password: ''
@@ -75,4 +75,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginPage;

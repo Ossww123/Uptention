@@ -1,8 +1,8 @@
-// src/pages/Users/UserManagement.jsx
+// src/pages/Users/UserManagementPage.jsx
 import React, { useState } from 'react';
-import './UserManagement.css';
+import './UserManagementPage.css';
 
-const UserManagement = () => {
+const UserManagementPage = () => {
   // 더미 데이터
   const [users, setUsers] = useState([
     { id: '21100001', userId: 'admin123', name: '대성생', joinDate: '2000. 01. 01' },
@@ -109,4 +109,4 @@ const UserManagement = () => {
   );
 };
 
-export default UserManagement;
+export default UserManagementPage;
