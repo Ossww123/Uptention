@@ -1,0 +1,58 @@
+/* src/assets/styles/variables.css */
+
+:root {
+    /* 색상 변수 - UPTENTION 앱의 스타일에 맞춤 */
+    --primary-color: #FF8C00;
+    --primary-color-dark: #e67e00;
+    --primary-color-light: #FFB347;
+    
+    --secondary-color: #1C6BF9;
+    --secondary-color-dark: #0052cc;
+    --secondary-color-light: #5494F7;
+    
+    --black: #000000;
+    --dark-gray: #333333;
+    --medium-gray: #666666;
+    --light-gray: #999999;
+    --very-light-gray: #f8f9fa;
+    --white: #FFFFFF;
+    
+    --error-color: #e74c3c;
+    --success-color: #2ecc71;
+    --warning-color: #f39c12;
+    --info-color: #3498db;
+    
+    /* 그림자 */
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --box-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.15);
+    
+    /* 폰트 */
+    --font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    
+    /* 폰트 크기 */
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-md: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-xxl: 24px;
+    
+    /* 간격 */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-xxl: 48px;
+    
+    /* 테두리 반경 */
+    --border-radius-sm: 4px;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-pill: 50px;
+    
+    /* 트랜지션 */
+    --transition-fast: 0.2s;
+    --transition-normal: 0.3s;
+    --transition-slow: 0.5s;
+  }
