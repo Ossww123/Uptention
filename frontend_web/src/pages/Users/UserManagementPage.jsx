@@ -1,5 +1,6 @@
 // src/pages/Users/UserManagementPage.jsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './UserManagementPage.css';
 
 const UserManagementPage = () => {
@@ -38,10 +39,11 @@ const UserManagementPage = () => {
     }
   };
 
+  const navigate = useNavigate();
+
   // 사용자 추가 버튼 핸들러
   const handleAddUser = () => {
-    // 사용자 추가 페이지로 이동하거나 모달을 표시합니다.
-    console.log('사용자 추가 버튼 클릭');
+    navigate('/admin/users/create');
   };
 
   return (
