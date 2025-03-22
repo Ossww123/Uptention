@@ -2,16 +2,20 @@ pipeline {
     agent any
 
     environment {
+        // Docker Hub 사용자 네임스페이스를 포함한 이미지 이름
         DOCKER_IMAGE = 'jodaeseong/uptention-spring-image'
         DOCKER_CONTAINER = 'uptention-spring-container'
         DOCKER_PORT = 9090
 
+        // Spring DataSource 관련 환경 변수
         SPRING_DATASOURCE_URL = credentials('SPRING_DATASOURCE_URL')
         SPRING_DATASOURCE_USERNAME = credentials('SPRING_DATASOURCE_USERNAME')
         SPRING_DATASOURCE_PASSWORD = credentials('SPRING_DATASOURCE_PASSWORD')
     }
 
-    tools { jdk 'JDK17' }
+    tools {
+        jdk 'JDK17'
+    }
 
     stages {
         stage('Clone Repository') {
@@ -34,17 +38,25 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // 매 빌드마다 고정 태그 "latest"로 이미지를 빌드
-                    def appImage = docker.build("${DOCKER_IMAGE}:latest", ".")
-                    env.APP_IMAGE = "${DOCKER_IMAGE}:latest"
+                    // Docker Pipeline 플러그인을 사용하여 Docker 이미지 빌드
+                    dir('backend/uptention') {
+                        // 이미지 이름과 태그 지정: 예) jodaeseong/uptention-spring-image:BUILD_NUMBER
+//                         def appImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}", ".")
+//                         env.APP_IMAGE = "${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
+                        def appImage = docker.build("${DOCKER_IMAGE}:latest", ".")
+                        env.APP_IMAGE = "${DOCKER_IMAGE}:latest"
+                    }
                 }
             }
         }
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
+                    // Docker Hub credentials (docker-hub ID) 활용
                     docker.withRegistry('', 'docker-hub') {
+                        // 빌드한 이미지를 푸시하고, latest 태그도 갱신
                         docker.image(env.APP_IMAGE).push()
+//                         docker.image(env.APP_IMAGE).push('latest')
                     }
                 }
             }
@@ -52,6 +64,7 @@ pipeline {
         stage('Deploy to EC2') {
             steps {
                 echo 'Deploying the application on EC2 using Docker Hub image...'
+                // 배포 스크립트는 기존과 동일하게 SSHPublisher 등을 사용하여 원격 서버에서 실행
                 sshPublisher(publishers: [
                     sshPublisherDesc(
                         configName: 'EC2-Server',
@@ -68,8 +81,8 @@ pipeline {
                                       -e TZ=UTC \\
                                       -e SERVER_PORT=${DOCKER_PORT} \\
                                       -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \\
-                                      -e SPRING_DATASOURCE_USERNAME="${SPRING_DATASOURCE_USERNAME}" \\
-                                      -e SPRING_DATASOURCE_PASSWORD="${SPRING_DATASOURCE_PASSWORD}" \\
+                                      -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
+                                      -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
                                       ${DOCKER_IMAGE}:latest
                                     docker image prune -f
                                 """.stripIndent()
@@ -86,7 +99,11 @@ pipeline {
             echo 'Cleaning workspace...'
             cleanWs()
         }
-        success { echo 'Deployment successful!' }
-        failure { echo 'Deployment failed.' }
+        success {
+            echo 'Deployment successful!'
+        }
+        failure {
+            echo 'Deployment failed.'
+        }
     }
 }
