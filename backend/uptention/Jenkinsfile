@@ -78,7 +78,7 @@ pipeline {
                                       -e SPRING_PROFILES_ACTIVE=prod \\
                                       -e TZ=UTC \\
                                       -e SERVER_PORT=${DOCKER_PORT} \\
-                                      -e SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL} \\
+                                      -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \\
                                       -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
                                       -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
                                       ${DOCKER_IMAGE}:latest
