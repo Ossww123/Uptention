@@ -18,7 +18,10 @@ public enum ErrorCode {
 	// 커서 관련 에러
 	CURSOR_ENCODING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CURSOR_001", "커서 인코딩에 실패했습니다."),
 	CURSOR_DECODING_FAILED(HttpStatus.BAD_REQUEST, "CURSOR_002", "커서 디코딩에 실패했습니다."),
-	CURSOR_INVALID_FORMAT(HttpStatus.BAD_REQUEST, "CURSOR_003", "유효하지 않은 커서 형식입니다.");
+	CURSOR_INVALID_FORMAT(HttpStatus.BAD_REQUEST, "CURSOR_003", "유효하지 않은 커서 형식입니다."),
+
+	// 사용자 관련 에러
+	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다.");
 
 	// http 상태 코드
 	private final HttpStatus status;
