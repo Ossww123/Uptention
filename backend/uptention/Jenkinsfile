@@ -43,7 +43,6 @@ pipeline {
                         // 이미지 이름과 태그 지정: 예) jodaeseong/uptention-spring-image:BUILD_NUMBER
                         // def appImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}", ".")
                         // env.APP_IMAGE = "${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
-
                         def appImage = docker.build("${DOCKER_IMAGE}:latest", ".")
                         env.APP_IMAGE = "${DOCKER_IMAGE}:latest"
                     }
