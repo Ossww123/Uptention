@@ -43,6 +43,8 @@ pipeline {
         }
         stage('Update Static Files on EC2') {
             steps {
+                echo 'Cleaning old static files from host volume...'
+                sh "rm -rf ${FRONTEND_BUILD_DIR}/*"
                 echo 'Updating static files to Nginx host volume...'
                 sh "docker run -v ${FRONTEND_BUILD_DIR}:/usr/share/nginx/html ${STATIC_UPDATE_IMAGE}"
             }
