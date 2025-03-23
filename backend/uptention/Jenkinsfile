@@ -106,22 +106,24 @@ pipeline {
         success {
             echo 'Deployment successful!'
             script {
+                def successMsg = '[BE] 빌드 성공: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + '\n(<' + env.BUILD_URL + '|Details>)'
                 mattermostSend(color: 'good',
-                    message: "[BE] 빌드 성공: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n(<${env.BUILD_URL}|Details>)",
+                    message: successMsg,
                     endpoint: env.MATTERMOST_ENDPOINT,
-                    channel: 'Jenkins_Build_Result'
+                    channel: env.MATTERMOST_CHANNEL
                 )
             }
         }
         failure {
             echo 'Deployment failed.'
             script {
+                def failureMsg = '[BE] 빌드 실패: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + '\n(<' + env.BUILD_URL + '|Details>)'
                 mattermostSend(color: 'danger',
-                    message: "[BE] 빌드 실패: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n(<${env.BUILD_URL}|Details>)",
+                    message: failureMsg,
                     endpoint: env.MATTERMOST_ENDPOINT,
-                    channel: 'Jenkins_Build_Result'
+                    channel: env.MATTERMOST_CHANNEL
                 )
             }
         }
-    }
+     }
 }
