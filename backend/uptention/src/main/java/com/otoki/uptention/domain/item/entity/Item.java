@@ -61,4 +61,9 @@ public class Item extends TimeStampEntity {
 	@OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
 	@Builder.Default
 	private List<Image> images = new ArrayList<>();
+
+	// 판매량 증가 메서드
+	public void increaseSalesCount(int quantity) {
+		this.salesCount += quantity;
+	}
 }

@@ -8,7 +8,6 @@ import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.enums.SortType;
 
 public interface ItemService {
-	Item getItemDetails(Integer itemId);
-
+	Item getItemDetails(Integer id);
 	List<ItemDto> findItemsByCursor(Integer categoryId, String keyword, CursorDto cursor, SortType sortType, int size);
 }
