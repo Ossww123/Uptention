@@ -25,10 +25,13 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 echo 'Installing dependencies and building the frontend with npm...'
-                // frontend_web 디렉터리 내의 package.json 기준으로 진행
-                dir('frontend_web') {
-                    sh 'npm install'
-                    sh 'npm run build'
+                // withNodeJS 블록 내에서 실행하면 NodeJS18이 PATH에 추가됩니다.
+                withNodeJS('NodeJS18') {
+                    dir('frontend_web') {
+                        sh 'npm --version'  // 설치된 npm 버전을 확인해볼 수 있음
+                        sh 'npm install'
+                        sh 'npm run build'
+                    }
                 }
             }
         }
