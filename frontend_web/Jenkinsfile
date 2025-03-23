@@ -57,9 +57,21 @@ pipeline {
         }
         success {
             echo 'Frontend static files updated successfully!'
+            script {
+                def successMsg = ':tada: [FE] 빌드 성공: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + ' :tada:' + '\n(<' + env.BUILD_URL + '|Details>)'
+                mattermostSend(color: 'good',
+                    message: successMsg,
+                )
+            }
         }
         failure {
             echo 'Deployment failed.'
+            script {
+                def failureMsg = ':x: [FE] 빌드 실패: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + ' :x:' + '\n(<' + env.BUILD_URL + '|Details>)'
+                mattermostSend(color: 'danger',
+                    message: failureMsg,
+                )
+            }
         }
-    }
+     }
 }
