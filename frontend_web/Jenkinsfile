@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    environment {
+        // EC2 상의 Nginx가 서빙하는 정적 파일 경로 (docker run 시 마운트할 host 경로)
+        FRONTEND_BUILD_DIR = '/home/ubuntu/uptention/frontend/build'
+        // 정적 파일 업데이트용 Docker 이미지 이름
+        STATIC_UPDATE_IMAGE = 'static-update:latest'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                echo 'Cloning the repository from branch fe-web...'
+                git branch: 'fe-web',
+                    url: 'https://lab.ssafy.com/s12-blockchain-nft-sub1/S12P21D211.git',
+                    credentialsId: '0d048b2d-2bdf-4166-a809-76e195d64abb'
+            }
+        }
+        stage('Build Frontend') {
+            steps {
+                echo 'Installing dependencies and building the frontend with npm...'
+                // frontend_web 디렉터리 내의 package.json 기준으로 진행
+                dir('frontend_web') {
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
+            }
+        }
+        stage('Build Static Update Image') {
+            steps {
+                echo 'Building Docker image for static file update...'
+                // 빌드 결과물은 frontend_web/build 폴더에 생성되므로, Jenkins workspace 내의 해당 경로를 사용
+                // 만약 필요하다면, 현재 작업 디렉터리에서 build 폴더가 있는지 확인
+                sh 'cp -R frontend_web/build ./build'
+                sh "docker build -t ${STATIC_UPDATE_IMAGE} ."
+            }
+        }
+        stage('Update Static Files on EC2') {
+            steps {
+                echo 'Updating static files to Nginx host volume...'
+                // 도커 run 시 호스트의 FRONTEND_BUILD_DIR를 컨테이너의 /usr/share/nginx/html로 마운트
+                sh "docker run -v ${FRONTEND_BUILD_DIR}:/usr/share/nginx/html ${STATIC_UPDATE_IMAGE}"
+            }
+        }
+    }
+    post {
+        always {
+            echo 'Cleaning workspace...'
+            cleanWs()
+        }
+        success {
+            echo 'Frontend static files updated successfully!'
+        }
+        failure {
+            echo 'Deployment failed.'
+        }
+    }
+}
