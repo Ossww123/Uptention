@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
-import com.otoki.uptention.application.order.service.OrderAppServiceImpl;
+import com.otoki.uptention.application.order.service.OrderAppService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OrderController {
 
-	private final OrderAppServiceImpl orderAppService;
+	private final OrderAppService orderAppService;
 
 	@PostMapping("/purchase")
 	public ResponseEntity<String> purchaseOrder(@Valid @RequestBody OrderRequestDto orderRequestDto){
