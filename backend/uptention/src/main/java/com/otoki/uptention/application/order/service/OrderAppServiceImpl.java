@@ -5,13 +5,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.domain.item.entity.Item;
-import com.otoki.uptention.domain.item.service.ItemServiceImpl;
+import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Order;
-import com.otoki.uptention.domain.order.service.OrderServiceImpl;
+import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.domain.orderitem.entity.OrderItem;
-import com.otoki.uptention.domain.orderitem.service.OrderItemServiceImpl;
+import com.otoki.uptention.domain.orderitem.service.OrderItemService;
 import com.otoki.uptention.domain.user.entity.User;
-import com.otoki.uptention.domain.user.service.UserServiceImpl;
+import com.otoki.uptention.domain.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,10 +20,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class OrderAppServiceImpl implements OrderAppService{
 
-	private final OrderServiceImpl orderService;
-	private final OrderItemServiceImpl orderItemService;
-	private final ItemServiceImpl itemService;
-	private final UserServiceImpl userService;
+	private final OrderService orderService;
+	private final OrderItemService orderItemService;
+	private final ItemService itemService;
+	private final UserService userService;
 
 	@Transactional
 	@Override

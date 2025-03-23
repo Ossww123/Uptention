@@ -14,20 +14,20 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 import com.otoki.uptention.AppServiceTestSupport;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
-import com.otoki.uptention.application.item.service.ItemAppServiceImpl;
+import com.otoki.uptention.application.item.service.ItemAppService;
 import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.category.repository.CategoryRepository;
 import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.item.entity.Item;
-import com.otoki.uptention.domain.item.service.ItemServiceImpl;
+import com.otoki.uptention.domain.item.service.ItemService;
 
 class ItemAppServiceTest extends AppServiceTestSupport {
 
 	@Autowired
-	private ItemAppServiceImpl itemAppService;
+	private ItemAppService itemAppService;
 
 	@MockBean
-	private ItemServiceImpl itemService;
+	private ItemService itemService;
 
 	@MockBean
 	private CategoryRepository categoryRepository;

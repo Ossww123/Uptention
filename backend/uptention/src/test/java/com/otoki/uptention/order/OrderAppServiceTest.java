@@ -1,11 +1,8 @@
 package com.otoki.uptention.order;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import java.util.List;
 
@@ -16,32 +13,32 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 import com.otoki.uptention.AppServiceTestSupport;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
-import com.otoki.uptention.application.order.service.OrderAppServiceImpl;
+import com.otoki.uptention.application.order.service.OrderAppService;
 import com.otoki.uptention.domain.item.entity.Item;
-import com.otoki.uptention.domain.item.service.ItemServiceImpl;
+import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Order;
-import com.otoki.uptention.domain.order.service.OrderServiceImpl;
+import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.domain.orderitem.entity.OrderItem;
-import com.otoki.uptention.domain.orderitem.service.OrderItemServiceImpl;
+import com.otoki.uptention.domain.orderitem.service.OrderItemService;
 import com.otoki.uptention.domain.user.entity.User;
-import com.otoki.uptention.domain.user.service.UserServiceImpl;
+import com.otoki.uptention.domain.user.service.UserService;
 
 public class OrderAppServiceTest extends AppServiceTestSupport {
 
 	@Autowired
-	private OrderAppServiceImpl orderAppService;
+	private OrderAppService orderAppService;
 
 	@MockBean
-	private OrderServiceImpl orderService;
+	private OrderService orderService;
 
 	@MockBean
-	private OrderItemServiceImpl orderItemService;
+	private OrderItemService orderItemService;
 
 	@MockBean
-	private ItemServiceImpl itemService;
+	private ItemService itemService;
 
 	@MockBean
-	private UserServiceImpl userService;
+	private UserService userService;
 
 	@Test
 	@DisplayName("사용자가 상품을 주문하면 주문과 각 주문상품이 생성되고 각 상품의 판매량이 각각 증가한다")
