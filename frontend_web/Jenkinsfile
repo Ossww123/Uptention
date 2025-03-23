@@ -20,7 +20,6 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 echo 'Installing dependencies and building the frontend with npm...'
-                // Declarative Pipeline에서 공식 문서가 제시한 nodejs 빌드 래퍼 사용
                 nodejs(nodeJSInstallationName: 'NodeJS18') {
                     dir('frontend_web') {
                         sh 'npm --version'
@@ -33,15 +32,18 @@ pipeline {
         stage('Build Static Update Image') {
             steps {
                 echo 'Building Docker image for static file update...'
-                // 빌드 결과물은 frontend_web/build 폴더에 생성되므로, 이를 workspace의 루트(build 폴더)로 복사
+                // build 폴더를 workspace 루트로 복사
                 sh 'cp -R frontend_web/build ./build'
+                // Dockerfile과 entrypoint.sh도 workspace 루트로 복사
+                sh 'cp frontend_web/Dockerfile .'
+                sh 'cp frontend_web/entrypoint.sh .'
+                // 현재 디렉터리(즉, workspace 루트)에 Dockerfile과 build 폴더가 있으므로, docker build가 성공함
                 sh "docker build -t ${STATIC_UPDATE_IMAGE} ."
             }
         }
         stage('Update Static Files on EC2') {
             steps {
                 echo 'Updating static files to Nginx host volume...'
-                // 도커 run 시 호스트의 FRONTEND_BUILD_DIR를 컨테이너의 /usr/share/nginx/html로 마운트
                 sh "docker run -v ${FRONTEND_BUILD_DIR}:/usr/share/nginx/html ${STATIC_UPDATE_IMAGE}"
             }
         }
