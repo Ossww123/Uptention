@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    // NodeJS 플러그인에서 Global Tool Configuration에 등록한 이름을 사용
+    tools {
+        nodejs 'nodejs-18.20.6'
+    }
+
     environment {
         // EC2 상의 Nginx가 서빙하는 정적 파일 경로 (docker run 시 마운트할 host 경로)
         FRONTEND_BUILD_DIR = '/home/ubuntu/uptention/frontend/build'
@@ -31,7 +36,6 @@ pipeline {
             steps {
                 echo 'Building Docker image for static file update...'
                 // 빌드 결과물은 frontend_web/build 폴더에 생성되므로, Jenkins workspace 내의 해당 경로를 사용
-                // 만약 필요하다면, 현재 작업 디렉터리에서 build 폴더가 있는지 확인
                 sh 'cp -R frontend_web/build ./build'
                 sh "docker build -t ${STATIC_UPDATE_IMAGE} ."
             }
