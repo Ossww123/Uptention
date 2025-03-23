@@ -3,7 +3,7 @@ pipeline {
 
     // NodeJS 플러그인에서 Global Tool Configuration에 등록한 이름을 사용
     tools {
-        nodejs 'nodejs-18.20.7'
+        nodejs 'NodeJS18'
     }
 
     environment {
