@@ -109,7 +109,7 @@ pipeline {
                 mattermostSend(color: 'good',
                     message: "[BE] 빌드 성공: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n(<${env.BUILD_URL}|Details>)",
                     endpoint: env.MATTERMOST_ENDPOINT,
-//                     channel: env.MATTERMOST_CHANNEL
+                    channel: 'Jenkins_Build_Result'
                 )
             }
         }
@@ -119,7 +119,7 @@ pipeline {
                 mattermostSend(color: 'danger',
                     message: "[BE] 빌드 실패: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n(<${env.BUILD_URL}|Details>)",
                     endpoint: env.MATTERMOST_ENDPOINT,
-//                     channel: env.MATTERMOST_CHANNEL
+                    channel: 'Jenkins_Build_Result'
                 )
             }
         }
