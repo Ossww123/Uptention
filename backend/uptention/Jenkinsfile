@@ -106,7 +106,7 @@ pipeline {
         success {
             echo 'Deployment successful!'
             script {
-                def successMsg = ':tada: [BE] 빌드 성공: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + '\n(<' + env.BUILD_URL + '|Details>)'
+                def successMsg = ':tada: [BE] 빌드 성공: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + ' :tada:' + '\n(<' + env.BUILD_URL + '|Details>)'
                 mattermostSend(color: 'good',
                     message: successMsg,
                 )
@@ -115,7 +115,7 @@ pipeline {
         failure {
             echo 'Deployment failed.'
             script {
-                def failureMsg = ':x: [BE] 빌드 실패: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + '\n(<' + env.BUILD_URL + '|Details>)'
+                def failureMsg = ':x: [BE] 빌드 실패: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + ' :x:' + '\n(<' + env.BUILD_URL + '|Details>)'
                 mattermostSend(color: 'danger',
                     message: failureMsg,
                 )
