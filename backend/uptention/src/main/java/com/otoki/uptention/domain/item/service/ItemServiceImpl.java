@@ -21,12 +21,6 @@ public class ItemServiceImpl implements ItemService {
 	private final ItemRepository itemRepository;
 
 	@Override
-	public Item getItemById(Integer id){
-		return itemRepository.findById(id)
-			.orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
-	}
-
-	@Override
 	public Item getItemDetails(Integer id) {
 		return itemRepository.findActiveByIdWithImages(id)
 			.orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
