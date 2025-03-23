@@ -3,6 +3,7 @@ package com.otoki.uptention.application.order.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
@@ -39,7 +40,7 @@ public class OrderAppServiceImpl implements OrderAppService{
 		Order savedOrder = orderService.createOrderPurchase(order);
 
 		// 2. OrderItem 생성 및 저장
-		for (OrderRequestDto.OrderItemRequestDto itemRequest : orderRequestDto.getItems()) {
+		for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
 			Item item = itemService.getItemDetails(itemRequest.getItemId());
 
 			OrderItem orderItem = OrderItem.builder()

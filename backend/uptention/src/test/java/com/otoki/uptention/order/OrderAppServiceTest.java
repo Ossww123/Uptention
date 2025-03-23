@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import com.otoki.uptention.AppServiceTestSupport;
+import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
 import com.otoki.uptention.domain.item.entity.Item;
@@ -52,9 +53,9 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		OrderRequestDto orderRequestDto = createOrderRequestDto(
 			"서울시 강남구 테스트로 123",
 			List.of(
-				createOrderItemRequestDto(1, 2),
-				createOrderItemRequestDto(2, 1),
-				createOrderItemRequestDto(3, 3)
+				createItemQuantityRequestDto(1, 2),
+				createItemQuantityRequestDto(2, 1),
+				createItemQuantityRequestDto(3, 3)
 			)
 		);
 
@@ -113,15 +114,15 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 			.build();
 	}
 
-	private OrderRequestDto createOrderRequestDto(String address, List<OrderRequestDto.OrderItemRequestDto> items) {
+	private OrderRequestDto createOrderRequestDto(String address, List<ItemQuantityRequestDto> items) {
 		return OrderRequestDto.builder()
 			.items(items)
 			.address(address)
 			.build();
 	}
 
-	private OrderRequestDto.OrderItemRequestDto createOrderItemRequestDto(Integer itemId, int quantity) {
-		return OrderRequestDto.OrderItemRequestDto.builder()
+	private ItemQuantityRequestDto createItemQuantityRequestDto(Integer itemId, int quantity) {
+		return ItemQuantityRequestDto.builder()
 			.itemId(itemId)
 			.quantity(quantity)
 			.build();
