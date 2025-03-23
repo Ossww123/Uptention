@@ -11,6 +11,10 @@ pipeline {
         SPRING_DATASOURCE_URL = credentials('SPRING_DATASOURCE_URL')
         SPRING_DATASOURCE_USERNAME = credentials('SPRING_DATASOURCE_USERNAME')
         SPRING_DATASOURCE_PASSWORD = credentials('SPRING_DATASOURCE_PASSWORD')
+
+        // Mattermost Notification 관련 환경 변수
+        MATTERMOST_ENDPOINT = credentials('mattermost-webhook')
+        MATTERMOST_CHANNEL = credentials('mattermost-channel-id')
     }
 
     tools {
@@ -101,9 +105,23 @@ pipeline {
         }
         success {
             echo 'Deployment successful!'
+            script {
+                mattermostSend(color: 'good',
+                    message: "[BE] 빌드 성공: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n(<${env.BUILD_URL}|Details>)",
+                    endpoint: env.MATTERMOST_ENDPOINT,
+                    channel: env.MATTERMOST_CHANNEL
+                )
+            }
         }
         failure {
             echo 'Deployment failed.'
+            script {
+                mattermostSend(color: 'danger',
+                    message: "[BE] 빌드 실패: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n(<${env.BUILD_URL}|Details>)",
+                    endpoint: env.MATTERMOST_ENDPOINT,
+                    channel: env.MATTERMOST_CHANNEL
+                )
+            }
         }
     }
-}
+
