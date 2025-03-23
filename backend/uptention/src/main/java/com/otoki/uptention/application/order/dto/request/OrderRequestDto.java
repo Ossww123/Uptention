@@ -16,20 +16,9 @@ import lombok.NoArgsConstructor;
 public class OrderRequestDto {
 
 	@NotEmpty(message = "주문 상품 목록은 필수입니다.")
-	private List<OrderItemRequestDto> items;
+	private List<ItemQuantityRequestDto> items;
 
 	@NotBlank(message = "배송 주소는 필수입니다.")
 	private String address;
 
-	// 내부 DTO 클래스
-	@Getter
-	@NoArgsConstructor
-	@AllArgsConstructor
-	@Builder
-	public static class OrderItemRequestDto {
-
-		private Integer itemId;
-
-		private Integer quantity;
-	}
 }
