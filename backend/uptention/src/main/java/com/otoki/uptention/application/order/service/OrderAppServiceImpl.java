@@ -43,22 +43,11 @@ public class OrderAppServiceImpl implements OrderAppService{
 			.build();
 		Order savedOrder = orderService.createOrderPurchase(order);
 
-		// 2. OrderItem 생성 및 저장
+		// 2. 각 상품에 대한 OrderItem 생성 및 저장
 		for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
-			Item item = itemService.getItemDetails(itemRequest.getItemId());
-
-			OrderItem orderItem = OrderItem.builder()
-				.order(order)
-				.item(item)
-				.quantity(itemRequest.getQuantity())
-				.itemPrice(item.getPrice()) // 현재 가격으로 저장
-				.build();
-
-			orderItemService.createOrderItem(orderItem);
-
-			// 판매량 증가
-			item.increaseSalesCount(itemRequest.getQuantity());
+			processOrderItem(order, itemRequest.getItemId(), itemRequest.getQuantity());
 		}
+
 		return savedOrder;
 	}
 
@@ -75,20 +64,8 @@ public class OrderAppServiceImpl implements OrderAppService{
 			.build();
 		Order savedOrder = orderService.createOrderPurchase(order);
 
-		// 2. OrderItem 생성 및 저장
-		Item item = itemService.getItemDetails(giftRequestDto.getItemId());
-
-		OrderItem orderItem = OrderItem.builder()
-			.order(order)
-			.item(item)
-			.quantity(1) // 선물은 기본적으로 수량 1개
-			.itemPrice(item.getPrice())
-			.build();
-
-		orderItemService.createOrderItem(orderItem);
-
-		// 판매량 증가
-		item.increaseSalesCount(1);
+		// 2. OrderItem 생성 및 저장 (선물은 기본적으로 수량 1개)
+		processOrderItem(order, giftRequestDto.getItemId(), 1);
 
 		// 3. Gift 엔티티 생성
 		Gift gift = Gift.builder()
@@ -99,5 +76,31 @@ public class OrderAppServiceImpl implements OrderAppService{
 		giftService.createOrderGift(gift);
 
 		return savedOrder;
+	}
+
+	/**
+	 * OrderItem을 생성하고 저장하는 공통 로직
+	 *
+	 * @param order 주문 엔티티
+	 * @param itemId 상품 ID
+	 * @param quantity 수량
+	 * @return 생성된 OrderItem
+	 */
+	private OrderItem processOrderItem(Order order, Integer itemId, Integer quantity) {
+		Item item = itemService.getItemDetails(itemId);
+
+		OrderItem orderItem = OrderItem.builder()
+			.order(order)
+			.item(item)
+			.quantity(quantity)
+			.itemPrice(item.getPrice()) // 현재 가격으로 저장
+			.build();
+
+		orderItemService.createOrderItem(orderItem);
+
+		// 판매량 증가
+		item.increaseSalesCount(quantity);
+
+		return orderItem;
 	}
 }
