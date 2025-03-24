@@ -75,7 +75,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		when(itemService.getItemDetails(1)).thenReturn(item1);
 		when(itemService.getItemDetails(2)).thenReturn(item2);
 		when(itemService.getItemDetails(3)).thenReturn(item3);
-		when(orderService.createOrderPurchase(any(Order.class))).thenReturn(savedOrder);
+		when(orderService.save(any(Order.class))).thenReturn(savedOrder);
 
 		Order result = orderAppService.createOrder(orderRequestDto);
 
@@ -85,7 +85,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		assertThat(result.getAddress()).isEqualTo("서울시 강남구 테스트로 123");
 		assertThat(result.getUser()).isEqualTo(user);
 
-		verify(orderService, times(1)).createOrderPurchase(any(Order.class));
+		verify(orderService, times(1)).save(any(Order.class));
 		verify(orderItemService, times(3)).createOrderItem(any(OrderItem.class));
 
 		// 판매량 증가 확인
@@ -118,7 +118,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		when(userService.getUserById(2)).thenReturn(sender);
 		when(userService.getUserById(3)).thenReturn(receiver);
 		when(itemService.getItemDetails(3)).thenReturn(item);
-		when(orderService.createOrderPurchase(any(Order.class))).thenReturn(savedOrder);
+		when(orderService.save(any(Order.class))).thenReturn(savedOrder);
 
 		Order result = orderAppService.createGiftOrder(giftRequestDto);
 
@@ -128,9 +128,9 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		assertThat(result.getUser()).isEqualTo(sender);
 		assertThat(result.getAddress()).isNull(); // 선물은 주소가 없음
 
-		verify(orderService, times(1)).createOrderPurchase(any(Order.class));
+		verify(orderService, times(1)).save(any(Order.class));
 		verify(orderItemService, times(1)).createOrderItem(any(OrderItem.class));
-		verify(giftService, times(1)).createOrderGift(any(Gift.class));
+		verify(giftService, times(1)).save(any(Gift.class));
 
 		// 판매량 증가 확인 (선물은 수량 1개)
 		assertThat(item.getSalesCount()).isEqualTo(1);
