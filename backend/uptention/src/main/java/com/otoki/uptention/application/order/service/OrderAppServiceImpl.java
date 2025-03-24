@@ -16,13 +16,15 @@ import com.otoki.uptention.domain.orderitem.entity.OrderItem;
 import com.otoki.uptention.domain.orderitem.service.OrderItemService;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.service.UserService;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
 @Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
-public class OrderAppServiceImpl implements OrderAppService{
+public class OrderAppServiceImpl implements OrderAppService {
 
 	private final OrderService orderService;
 	private final OrderItemService orderItemService;
@@ -88,6 +90,12 @@ public class OrderAppServiceImpl implements OrderAppService{
 	 */
 	private OrderItem processOrderItem(Order order, Integer itemId, Integer quantity) {
 		Item item = itemService.getItemDetails(itemId);
+
+		// 재고 부족하면 예외 발생
+		if (!item.hasStock(quantity)) {
+			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
+		}
+		item.decreaseQuantity(quantity);
 
 		OrderItem orderItem = OrderItem.builder()
 			.order(order)
