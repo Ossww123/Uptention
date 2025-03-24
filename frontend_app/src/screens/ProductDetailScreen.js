@@ -57,7 +57,10 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={styles.backButtonText}>{'<'}</Text>
         </TouchableOpacity>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.cartButton}>
+          <TouchableOpacity 
+            style={styles.cartButton}
+            onPress={() => navigation.navigate("Cart")}
+          >
             <Image 
               source={require('../../assets/cart-icon.png')}
               style={styles.cartIcon}
