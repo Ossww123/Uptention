@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
@@ -34,4 +35,11 @@ public class OrderController implements OrderApiDoc {
 		orderAppService.createGiftOrder(giftRequestDto);
 		return ResponseEntity.ok("선물 처리 성공");
 	}
+
+	@PostMapping("/{orderId}/delivery-info")
+	public ResponseEntity<?> registerDeliveryInfo(@Valid @RequestBody DeliveryInfoRequestDto deliveryInfoRequestDto){
+		orderAppService.registerDeliveryInfo(deliveryInfoRequestDto);
+		return ResponseEntity.ok("배송지 정보 등록 성공");
+	}
+
 }
