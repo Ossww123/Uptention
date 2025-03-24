@@ -8,6 +8,11 @@ const { ScreenTimeModule } = NativeModules;
 const appNameCache = {};
 
 /**
+ * 앱 아이콘 캐싱을 위한 객체
+ */
+const appIconCache = {};
+
+/**
  * ScreenTime 관련 기능을 제공하는 유틸리티 클래스
  */
 class ScreenTime {
@@ -73,6 +78,63 @@ class ScreenTime {
   }
 
   /**
+   * 패키지명으로 앱 아이콘 가져오기
+   * @param {string} packageName 패키지명
+   * @returns {Promise<string>} Base64로 인코딩된 앱 아이콘
+   */
+  static async getAppIcon(packageName) {
+    // 캐시에 있으면 캐시된 아이콘 반환
+    if (appIconCache[packageName]) {
+      return appIconCache[packageName];
+    }
+    
+    // 네이티브 모듈에서 앱 아이콘 가져오기
+    try {
+      const base64Icon = await ScreenTimeModule.getAppIcon(packageName);
+      // 캐시에 저장
+      appIconCache[packageName] = base64Icon;
+      return base64Icon;
+    } catch (error) {
+      console.error(`앱 아이콘 가져오기 오류 (${packageName}):`, error);
+      return null;
+    }
+  }
+
+  /**
+   * 여러 패키지명의 앱 아이콘을 한 번에 가져오기
+   * @param {string[]} packageNames 패키지명 배열
+   * @returns {Promise<Object>} 패키지명과 Base64 인코딩된 앱 아이콘 매핑 객체
+   */
+  static async getMultipleAppIcons(packageNames) {
+    // 캐시되지 않은 패키지명만 필터링
+    const uncachedPackages = packageNames.filter(pkg => !appIconCache[pkg]);
+    
+    if (uncachedPackages.length > 0) {
+      try {
+        // 캐시되지 않은 패키지명들의 앱 아이콘 가져오기
+        const newAppIcons = await ScreenTimeModule.getMultipleAppIcons(uncachedPackages);
+        
+        // 캐시에 저장
+        Object.keys(newAppIcons).forEach(pkg => {
+          if (newAppIcons[pkg]) {
+            appIconCache[pkg] = newAppIcons[pkg];
+          }
+        });
+      } catch (error) {
+        console.error('앱 아이콘 가져오기 오류:', error);
+      }
+    }
+    
+    // 요청된 모든 패키지명에 대한 앱 아이콘 반환
+    const result = {};
+    packageNames.forEach(pkg => {
+      result[pkg] = appIconCache[pkg] || null;
+    });
+    
+    return result;
+  }
+
+  /**
    * 일일 스크린 타임 데이터 가져오기
    * @returns {Promise<Object>} 스크린 타임 데이터
    */
@@ -84,13 +146,17 @@ class ScreenTime {
       const packageNames = Object.keys(data.appUsage);
       const appNames = await this.getAllAppNames(packageNames);
       
-      // 앱 사용 데이터에 앱 이름 정보 추가
+      // 앱 아이콘 정보 가져오기
+      const appIcons = await this.getMultipleAppIcons(packageNames);
+      
+      // 앱 사용 데이터에 앱 이름과 아이콘 정보 추가
       const appUsageWithNames = {};
       Object.entries(data.appUsage).forEach(([packageName, usageTime]) => {
         const appName = appNames[packageName] || packageName;
         appUsageWithNames[packageName] = {
           usageTime: usageTime,
-          appName: appName
+          appName: appName,
+          iconBase64: appIcons[packageName]
         };
       });
       
