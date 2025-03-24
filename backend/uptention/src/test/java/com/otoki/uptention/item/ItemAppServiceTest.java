@@ -54,6 +54,7 @@ class ItemAppServiceTest extends AppServiceTestSupport {
 		assertThat(response.getBrand()).isEqualTo("테스트 브랜드");
 		assertThat(response.getCategoryId()).isEqualTo(1);
 		assertThat(response.getCategoryName()).isEqualTo("테스트 카테고리");
+		assertThat(response.getQuantity()).isEqualTo(50);
 		assertThat(response.getImages()).hasSize(2);
 		assertThat(response.getImages()).containsExactly(
 			"http://example.com/image1.jpg",
@@ -80,6 +81,8 @@ class ItemAppServiceTest extends AppServiceTestSupport {
 			.brand("테스트 브랜드")
 			.status(true)
 			.category(createCategory())
+			.quantity(50)
+			.salesCount(5)
 			.images(new ArrayList<>())
 			.build();
 
