@@ -120,41 +120,42 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     }
 
     // 여러 앱 아이콘을 한 번에 가져오는 메서드
-    @ReactMethod
-    fun getMultipleAppIcons(packageNames: ReadableArray, promise: Promise) {
-        try {
-            val pm = reactApplicationContext.packageManager
-            val result = Arguments.createMap()
-            
-            for (i in 0 until packageNames.size()) {
-                try {
-                    val packageName = packageNames.getString(i)
-                    val drawable = pm.getApplicationIcon(packageName)
-                    
-                    // Drawable을 Bitmap으로 변환
-                    val bitmap = Bitmap.createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight, Bitmap.Config.ARGB_8888)
-                    val canvas = Canvas(bitmap)
-                    drawable.setBounds(0, 0, canvas.width, canvas.height)
-                    drawable.draw(canvas)
-                    
-                    // Bitmap을 Base64 인코딩
-                    val byteArrayOutputStream = ByteArrayOutputStream()
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-                    val byteArray = byteArrayOutputStream.toByteArray()
-                    val base64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
-                    
-                    result.putString(packageName, base64)
-                } catch (e: Exception) {
-                    // 특정 앱 아이콘을 가져오지 못하면 건너뛰기
-                    result.putNull(packageName)
-                }
+@ReactMethod
+fun getMultipleAppIcons(packageNames: ReadableArray, promise: Promise) {
+    try {
+        val pm = reactApplicationContext.packageManager
+        val result = Arguments.createMap()
+        
+        for (i in 0 until packageNames.size()) {
+            try {
+                val packageName = packageNames.getString(i)  // 이 변수가 선언되었는지 확인
+                val drawable = pm.getApplicationIcon(packageName)
+                
+                // Drawable을 Bitmap으로 변환
+                val bitmap = Bitmap.createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                drawable.setBounds(0, 0, canvas.width, canvas.height)
+                drawable.draw(canvas)
+                
+                // Bitmap을 Base64 인코딩
+                val byteArrayOutputStream = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                val byteArray = byteArrayOutputStream.toByteArray()
+                val base64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
+                
+                result.putString(packageName, base64)
+            } catch (e: Exception) {
+                // 특정 앱 아이콘을 가져오지 못하면 건너뛰기
+                val packageName = packageNames.getString(i)  // 예외 처리 부분에서도 필요할 수 있음
+                result.putNull(packageName)
             }
-            
-            promise.resolve(result)
-        } catch (e: Exception) {
-            promise.reject("ERROR", e.message)
         }
+        
+        promise.resolve(result)
+    } catch (e: Exception) {
+        promise.reject("ERROR", e.message)
     }
+}
 
     @ReactMethod
     fun getDailyScreenTime(promise: Promise) {
