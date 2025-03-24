@@ -116,6 +116,61 @@ public class ItemRepositoryTest extends RepositoryTestSupport {
 		assertThat(foundItem.getQuantity()).isEqualTo(15); // 5 + 10 = 15
 	}
 
+	@DisplayName("재고가 충분하면 hasStock이 true를 반환한다")
+	@Test
+	void hasStock_EnoughQuantity() {
+		// given
+		Category category = createCategory("테스트 카테고리");
+		Item item = createItem("테스트 상품", 10000, 10, true, category);
+
+		// when & then
+		assertThat(item.hasStock(5)).isTrue();
+		assertThat(item.hasStock(10)).isTrue();
+	}
+
+	@DisplayName("재고가 부족하면 hasStock이 false를 반환한다")
+	@Test
+	void hasStock_NotEnoughQuantity() {
+		// given
+		Category category = createCategory("테스트 카테고리");
+		Item item = createItem("테스트 상품", 10000, 3, true, category);
+
+		// when & then
+		assertThat(item.hasStock(4)).isFalse();
+	}
+
+	@DisplayName("판매량이 증가하면 정상적으로 반영된다")
+	@Test
+	void increaseSalesCount_Success() {
+		// given
+		Category category = createCategory("테스트 카테고리");
+		Item item = createItem("테스트 상품", 10000, 10, true, category);
+		int initialSalesCount = item.getSalesCount();
+
+		// when
+		item.increaseSalesCount(5);
+		itemRepository.save(item);
+
+		// then
+		Item foundItem = itemRepository.findById(item.getId()).orElseThrow();
+		assertThat(foundItem.getSalesCount()).isEqualTo(initialSalesCount + 5);
+	}
+
+	@DisplayName("비활성화된 상품은 조회되지 않는다")
+	@Test
+	void findActiveByIdWithImages_InactiveItem() {
+		// given
+		Category category = createCategory("테스트 카테고리");
+		Item inactiveItem = createItem("비활성 상품", 10000, 10, false, category);
+		createImages(inactiveItem, 2);
+
+		// when
+		Optional<Item> foundItem = itemRepository.findActiveByIdWithImages(inactiveItem.getId());
+
+		// then
+		assertThat(foundItem).isEmpty();
+	}
+
 	// 헬퍼 메서드들 - 매개변수를 구체적으로 받도록 개선
 	private Category createCategory(String name) {
 		return categoryRepository.save(
