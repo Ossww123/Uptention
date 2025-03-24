@@ -6,6 +6,8 @@ import java.util.List;
 import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.global.entity.TimeStampEntity;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -50,6 +52,9 @@ public class Item extends TimeStampEntity {
 	@Column(name = "status")
 	private Boolean status;
 
+	@Column(name = "quantity")
+	private Integer quantity;
+
 	@Builder.Default
 	@Column(name = "sales_count")
 	private Integer salesCount = 0;
@@ -65,5 +70,23 @@ public class Item extends TimeStampEntity {
 	// 판매량 증가 메서드
 	public void increaseSalesCount(int quantity) {
 		this.salesCount += quantity;
+	}
+
+	// 재고 감소 메서드
+	public void decreaseQuantity(int quantity) {
+		if (this.quantity < quantity) {
+			throw new CustomException(ErrorCode.ITEM_NO_STOCK_TO_DECREASE);
+		}
+		this.quantity -= quantity;
+	}
+
+	// 재고 증가 메서드
+	public void increaseQuantity(int quantity) {
+		this.quantity += quantity;
+	}
+
+	// 재고 확인 메서드
+	public boolean hasStock(int quantity) {
+		return this.quantity >= quantity;
 	}
 }
