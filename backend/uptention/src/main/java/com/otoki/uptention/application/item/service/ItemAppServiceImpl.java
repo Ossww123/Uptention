@@ -26,12 +26,18 @@ public class ItemAppServiceImpl implements ItemAppService {
 	private final ItemService itemService;
 	private final CategoryRepository categoryRepository;
 
+	/**
+	 * 상품의 상세 정보 조회
+	 */
 	@Override
 	public ItemResponseDto getItemDetails(Integer itemId) {
 		Item item = itemService.getItemDetails(itemId);
 		return ItemResponseDto.from(item, item.getImages());
 	}
 
+	/**
+	 * 조건에 맞는 상품 목록을 커서 기반 페이징으로 조회
+	 */
 	@Override
 	public ItemListResponseDto getItems(Integer categoryId, String keyword, String cursorStr,
 		SortType sortType, int size) {
@@ -61,6 +67,9 @@ public class ItemAppServiceImpl implements ItemAppService {
 		return new ItemListResponseDto(resultItems, hasNextPage, nextCursor);
 	}
 
+	/**
+	 * 다음 페이지 조회를 위한 커서 생성
+	 */
 	private String createNextCursor(ItemDto lastItem, SortType sortType) {
 		Integer value;
 
