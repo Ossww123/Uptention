@@ -38,5 +38,4 @@ public class Gift extends TimeStampEntity {
 	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "order_id", nullable = false)
 	private Order order;
-
 }
