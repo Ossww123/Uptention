@@ -94,8 +94,8 @@ public class OrderAppServiceImpl implements OrderAppService {
 	 */
 	@Transactional
 	@Override
-	public Order registerDeliveryInfo(DeliveryInfoRequestDto deliveryInfoRequestDto) {
-		Order order = orderService.getOrderById(deliveryInfoRequestDto.getOrderId());
+	public Order registerDeliveryInfo(Integer orderId, DeliveryInfoRequestDto deliveryInfoRequestDto) {
+		Order order = orderService.getOrderById(orderId);
 		order.updateAddress(deliveryInfoRequestDto.getAddress());
 		return orderService.save(order);
 	}

@@ -8,5 +8,5 @@ import com.otoki.uptention.domain.order.entity.Order;
 public interface OrderAppService {
 	Order createOrder(OrderRequestDto orderRequestDto);
 	Order createGiftOrder(GiftRequestDto giftRequestDto);
-	Order registerDeliveryInfo(DeliveryInfoRequestDto deliveryInfoRequestDto);
+	Order registerDeliveryInfo(Integer orderId, DeliveryInfoRequestDto deliveryInfoRequestDto);
 }

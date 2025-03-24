@@ -1,6 +1,7 @@
 package com.otoki.uptention.presentation.order.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,8 +38,8 @@ public class OrderController implements OrderApiDoc {
 	}
 
 	@PostMapping("/{orderId}/delivery-info")
-	public ResponseEntity<?> registerDeliveryInfo(@Valid @RequestBody DeliveryInfoRequestDto deliveryInfoRequestDto){
-		orderAppService.registerDeliveryInfo(deliveryInfoRequestDto);
+	public ResponseEntity<?> registerDeliveryInfo(@PathVariable Integer orderId, @Valid @RequestBody DeliveryInfoRequestDto deliveryInfoRequestDto){
+		orderAppService.registerDeliveryInfo(orderId, deliveryInfoRequestDto);
 		return ResponseEntity.ok("배송지 정보 등록 성공");
 	}
 
