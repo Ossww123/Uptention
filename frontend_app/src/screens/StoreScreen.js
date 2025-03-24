@@ -139,7 +139,10 @@ const StoreScreen = ({ navigation }) => {
             placeholderTextColor="#aaa"
           />
         </View>
-        <TouchableOpacity style={styles.cartIcon}>
+        <TouchableOpacity 
+          style={styles.cartIcon}
+          onPress={() => navigation.navigate("Cart")}
+        >
           <Image
             source={require("../../assets/cart-icon.png")}
             style={{ width: 24, height: 24 }}
