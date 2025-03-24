@@ -14,6 +14,7 @@ public class ItemDto {
 	private String name;
 	private int price;
 	private String brand;
+	private int quantity;
 	private String thumbnail;
 	private int salesCount;
 }

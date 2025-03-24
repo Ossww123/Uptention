@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
 
@@ -23,5 +24,11 @@ public class OrderController {
 	public ResponseEntity<String> purchaseOrder(@Valid @RequestBody OrderRequestDto orderRequestDto){
 		orderAppService.createOrder(orderRequestDto);
 		return ResponseEntity.ok("주문 처리 성공");
+	}
+
+	@PostMapping("/gift")
+	public ResponseEntity<String> giftOrder(@Valid @RequestBody GiftRequestDto giftRequestDto){
+		orderAppService.createGiftOrder(giftRequestDto);
+		return ResponseEntity.ok("선물 처리 성공");
 	}
 }

@@ -13,15 +13,16 @@ import lombok.Getter;
 @Getter
 @Builder
 public class ItemResponseDto {
-	private final Integer itemId;
-	private final String name;
-	private final String detail;
-	private final Integer price;
-	private final String brand;
-	private final Integer categoryId;
-	private final String categoryName;
-	private final List<String> images;
-	private final LocalDateTime createdAt;
+	private Integer itemId;
+	private String name;
+	private String detail;
+	private Integer price;
+	private String brand;
+	private int quantity;
+	private Integer categoryId;
+	private String categoryName;
+	private List<String> images;
+	private LocalDateTime createdAt;
 
 	public static ItemResponseDto from(Item item, List<Image> imageList) {
 		return ItemResponseDto.builder()
@@ -30,6 +31,7 @@ public class ItemResponseDto {
 			.detail(item.getDetail())
 			.price(item.getPrice())
 			.brand(item.getBrand())
+			.quantity(item.getQuantity())
 			.categoryId(item.getCategory().getId())
 			.categoryName(item.getCategory().getName())
 			.images(imageList.stream()

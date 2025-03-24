@@ -14,6 +14,8 @@ public enum ErrorCode {
 	ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "ITEM_001", "상품이 존재하지 않습니다."),
 	ITEM_INVALID_SORT_TYPE(HttpStatus.BAD_REQUEST, "ITEM_002", "지원하지 않는 정렬 방식입니다."),
 	ITEM_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "ITEM_003", "카테고리가 존재하지 않습니다."),
+	ITEM_INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "ITEM_004", "재고가 부족한 상품이 있습니다."),
+	ITEM_NO_STOCK_TO_DECREASE(HttpStatus.BAD_REQUEST, "ITEM_005", "차감할 재고 수량이 없습니다."),
 
 	// 커서 관련 에러
 	CURSOR_ENCODING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CURSOR_001", "커서 인코딩에 실패했습니다."),

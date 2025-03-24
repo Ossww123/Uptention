@@ -1,6 +1,5 @@
 package com.otoki.uptention.domain.order.entity;
 
-import com.otoki.uptention.domain.gift.entity.Gift;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.global.entity.TimeStampEntity;
 

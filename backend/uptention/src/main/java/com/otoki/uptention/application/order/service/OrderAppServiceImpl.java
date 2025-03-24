@@ -3,28 +3,34 @@ package com.otoki.uptention.application.order.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
+import com.otoki.uptention.domain.order.entity.Gift;
 import com.otoki.uptention.domain.order.entity.Order;
+import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.domain.orderitem.entity.OrderItem;
 import com.otoki.uptention.domain.orderitem.service.OrderItemService;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.service.UserService;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
 @Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
-public class OrderAppServiceImpl implements OrderAppService{
+public class OrderAppServiceImpl implements OrderAppService {
 
 	private final OrderService orderService;
 	private final OrderItemService orderItemService;
 	private final ItemService itemService;
 	private final UserService userService;
+	private final GiftService giftService;
 
 	@Transactional
 	@Override
@@ -39,22 +45,70 @@ public class OrderAppServiceImpl implements OrderAppService{
 			.build();
 		Order savedOrder = orderService.createOrderPurchase(order);
 
-		// 2. OrderItem 생성 및 저장
+		// 2. 각 상품에 대한 OrderItem 생성 및 저장
 		for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
-			Item item = itemService.getItemDetails(itemRequest.getItemId());
-
-			OrderItem orderItem = OrderItem.builder()
-				.order(order)
-				.item(item)
-				.quantity(itemRequest.getQuantity())
-				.itemPrice(item.getPrice()) // 현재 가격으로 저장
-				.build();
-
-			orderItemService.createOrderItem(orderItem);
-
-			// 판매량 증가
-			item.increaseSalesCount(itemRequest.getQuantity());
+			processOrderItem(order, itemRequest.getItemId(), itemRequest.getQuantity());
 		}
+
 		return savedOrder;
+	}
+
+	@Transactional
+	@Override
+	public Order createGiftOrder(GiftRequestDto giftRequestDto) {
+		// security 구현 후, 코드 수정 필요
+		User sender = userService.getUserById(2);
+		User receiver = userService.getUserById(giftRequestDto.getReceiverId());
+
+		// 1. Order 생성 - 선물의 경우 주소 X
+		Order order = Order.builder()
+			.user(sender) // 선물을 보내는 사람(구매자)
+			.build();
+		Order savedOrder = orderService.createOrderPurchase(order);
+
+		// 2. OrderItem 생성 및 저장 (선물은 기본적으로 수량 1개)
+		processOrderItem(order, giftRequestDto.getItemId(), 1);
+
+		// 3. Gift 엔티티 생성
+		Gift gift = Gift.builder()
+			.order(order)
+			.receiver(receiver)
+			.build();
+
+		giftService.createOrderGift(gift);
+
+		return savedOrder;
+	}
+
+	/**
+	 * OrderItem을 생성하고 저장하는 공통 로직
+	 *
+	 * @param order 주문 엔티티
+	 * @param itemId 상품 ID
+	 * @param quantity 수량
+	 * @return 생성된 OrderItem
+	 */
+	private OrderItem processOrderItem(Order order, Integer itemId, Integer quantity) {
+		Item item = itemService.getItemDetails(itemId);
+
+		// 재고 부족하면 예외 발생
+		if (!item.hasStock(quantity)) {
+			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
+		}
+		item.decreaseQuantity(quantity);
+
+		OrderItem orderItem = OrderItem.builder()
+			.order(order)
+			.item(item)
+			.quantity(quantity)
+			.itemPrice(item.getPrice()) // 현재 가격으로 저장
+			.build();
+
+		orderItemService.createOrderItem(orderItem);
+
+		// 판매량 증가
+		item.increaseSalesCount(quantity);
+
+		return orderItem;
 	}
 }

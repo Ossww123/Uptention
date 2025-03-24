@@ -51,6 +51,7 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 				item.name,
 				item.price,
 				item.brand,
+				item.quantity,
 				item.salesCount,
 				ExpressionUtils.as(thumbnailSubquery, "thumbnail")
 			))
