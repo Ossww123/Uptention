@@ -5,6 +5,8 @@ import './App.css';
 import LoginPage from './pages/Login/LoginPage';
 import UserManagementPage from './pages/Users/UserManagementPage';
 import UserCreatePage from './pages/Users/UserCreatePage';
+import ProductManagementPage from './pages/Products/ProductManagementPage';
+import ProductCreatePage from './pages/Products/ProductCreatePage';
 import AdminLayout from './components/layout/AdminLayout/AdminLayout';
 
 // 임시 인증 상태 체크 함수 (나중에 실제 인증 로직으로 대체)
@@ -53,12 +55,24 @@ function App() {
           } 
         />
         
+        {/* 상품 관리 라우트 */}
         <Route 
           path="/admin/products" 
           element={
             <ProtectedRoute>
               <AdminLayout>
-                <div>상품 관리 페이지 (개발 예정)</div>
+                <ProductManagementPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/admin/products/create" 
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <ProductCreatePage />
               </AdminLayout>
             </ProtectedRoute>
           } 
