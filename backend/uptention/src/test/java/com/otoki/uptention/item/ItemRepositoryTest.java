@@ -29,23 +29,61 @@ public class ItemRepositoryTest extends RepositoryTestSupport {
 	@Autowired
 	private ImageRepository imageRepository;
 
-	// 헬퍼 메서드들
-	private Category createCategory() {
+	@DisplayName("상품 ID로 조회할 때 활성화된 상품은 모든 이미지와 함께 조회된다")
+	@Test
+	void findActiveByIdWithImages_Success() {
+		// given
+		Category category = createCategory("테스트 카테고리");
+		Item activeItem = createItem("테스트 상품", 10000, 10, true, category);
+		List<Image> images = createImages(activeItem, 3);
+
+		// when
+		Optional<Item> foundItem = itemRepository.findActiveByIdWithImages(activeItem.getId());
+
+		// then
+		assertThat(foundItem).isPresent();
+		assertThat(foundItem.get().getId()).isEqualTo(activeItem.getId());
+		assertThat(foundItem.get().getStatus()).isTrue();
+		assertThat(foundItem.get().getImages()).hasSize(3)
+			.extracting("url")
+			.containsExactly(
+				"http://example.com/image1.jpg",
+				"http://example.com/image2.jpg",
+				"http://example.com/image3.jpg"
+			);
+	}
+
+	@DisplayName("상품 ID로 조회할 때 활성화된 상품이 존재하지 않으면 빈 Optional을 반환한다")
+	@Test
+	void findActiveByIdWithImages_NotFound() {
+		// given
+		Integer nonExistentItemId = 999; // 존재하지 않는 상품 ID
+
+		// when
+		Optional<Item> foundItem = itemRepository.findActiveByIdWithImages(nonExistentItemId);
+
+		// then
+		assertThat(foundItem).isEmpty();
+	}
+
+	// 헬퍼 메서드들 - 매개변수를 구체적으로 받도록 개선
+	private Category createCategory(String name) {
 		return categoryRepository.save(
 			Category.builder()
-				.name("테스트 카테고리")
+				.name(name)
 				.build()
 		);
 	}
 
-	private Item createItem(boolean isActive, Category category) {
+	private Item createItem(String name, int price, int quantity, boolean isActive, Category category) {
 		return itemRepository.save(
 			Item.builder()
-				.name("테스트 상품")
+				.name(name)
 				.detail("상품 설명")
-				.price(10000)
+				.price(price)
 				.brand("테스트 브랜드")
 				.status(isActive)
+				.quantity(quantity)
 				.category(category)
 				.build()
 		);
@@ -67,38 +105,6 @@ public class ItemRepositoryTest extends RepositoryTestSupport {
 
 		// 변경사항 저장
 		itemRepository.save(item);
-		return item.getImages();
+		return images;
 	}
-
-	@Test
-	@DisplayName("상품 ID로 조회할 때 활성화된 상품은 모든 이미지와 함께 조회된다")
-	void findActiveByIdWithImages_Success() {
-		// given
-		Category category = createCategory();
-		Item activeItem = createItem(true, category);
-		List<Image> images = createImages(activeItem, 3);
-
-		// when
-		Optional<Item> foundItem = itemRepository.findActiveByIdWithImages(activeItem.getId());
-
-		// then
-		assertThat(foundItem).isPresent();
-		assertThat(foundItem.get().getId()).isEqualTo(activeItem.getId());
-		assertThat(foundItem.get().getStatus()).isTrue();
-		assertThat(foundItem.get().getImages()).hasSize(3);
-	}
-
-	@Test
-	@DisplayName("상품 ID로 조회할 때 활성화된 상품이 존재하지 않으면 빈 Optional을 반환한다")
-	void findActiveByIdWithImages_NotFound() {
-		// given
-		Integer nonExistentItemId = 999; // 존재하지 않는 상품 ID
-
-		// when
-		Optional<Item> foundItem = itemRepository.findActiveByIdWithImages(nonExistentItemId);
-
-		// then
-		assertThat(foundItem).isNotPresent(); // 빈 Optional이어야 함
-	}
-
 }
