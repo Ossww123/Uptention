@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
-  StatusBar,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import ScreenTime from "../utils/ScreenTime"; // 경로는 실제 프로젝트 구조에 맞게 조정해주세요
@@ -19,6 +18,7 @@ const WeeklyView = () => {
   // 로딩 상태
   const [loading, setLoading] = useState(true);
   const [weeklyData, setWeeklyData] = useState({});
+  const [appUsage, setAppUsage] = useState({});
   const [currentWeek, setCurrentWeek] = useState({
     start: "3월 15일",
     end: "3월 21일"
@@ -44,13 +44,6 @@ const WeeklyView = () => {
     averageEndTime: "오후 5:52"
   };
 
-  // 더미 데이터: 앱 사용 시간
-  const appUsage = {
-    "com.android.chrome": { appName: "Chrome", usageTime: 260 }, // 4시간 20분
-    "com.android.chrome2": { appName: "Chrome", usageTime: 130 }, // 2시간 10분
-    "com.android.chrome3": { appName: "Chrome", usageTime: 110 }, // 1시간 50분
-  };
-
   useEffect(() => {
     fetchWeeklyData();
   }, []);
@@ -62,14 +55,20 @@ const WeeklyView = () => {
       // 주간 스크린 타임 데이터 가져오기
       const weeklyScreenTimeData = await ScreenTime.getWeeklyScreenTime();
       
+      // 일일 데이터를 가져와서 앱 사용 정보도 표시
+      const dailyData = await ScreenTime.getDailyScreenTime();
+      
+      if (dailyData.hasPermission) {
+        setAppUsage(dailyData.appUsageWithNames || {});
+      }
+      
       // TODO: 실제 데이터 처리
       console.log("Weekly screen time data:", weeklyScreenTimeData);
       
       // 더미 데이터로 상태 설정 (실제 구현 시 API 데이터로 대체)
       setWeeklyData({
         miningData: weeklyMiningData,
-        totalMiningTime: weeklyTotalMiningTime,
-        appUsage: appUsage
+        totalMiningTime: weeklyTotalMiningTime
       });
       
       setLoading(false);
@@ -135,6 +134,29 @@ const WeeklyView = () => {
         </View>
       );
     });
+  };
+
+  // 앱 아이콘 렌더링 함수
+  const renderAppIcon = (data) => {
+    if (data.iconBase64) {
+      // 앱 아이콘이 있는 경우 Base64로 인코딩된 이미지 렌더링
+      return (
+        <Image 
+          source={{ uri: `data:image/png;base64,${data.iconBase64}` }}
+          style={styles.appIcon}
+          resizeMode="contain"
+        />
+      );
+    } else {
+      // 앱 아이콘이 없는 경우 기본 이미지 사용
+      return (
+        <Image 
+          source={require('../../assets/chrome-icon.png')}
+          style={styles.appIcon}
+          resizeMode="contain"
+        />
+      );
+    }
   };
 
   if (loading) {
@@ -240,11 +262,7 @@ const WeeklyView = () => {
             return (
               <View key={packageName} style={styles.appItem}>
                 <View style={styles.appInfoContainer}>
-                  <Image 
-                    source={require('../../assets/chrome-icon.png')} 
-                    style={styles.appIcon}
-                    resizeMode="contain"
-                  />
+                  {renderAppIcon(data)}
                   <Text style={styles.appName}>{data.appName}</Text>
                   <Ionicons name="chevron-forward" size={16} color="#888" />
                 </View>

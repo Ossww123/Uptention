@@ -48,7 +48,7 @@ const DailyView = () => {
       if (dailyData.hasPermission) {
         setDailyScreenTime(dailyData.totalScreenTimeMinutes);
         
-        // 수정된 부분: 앱 이름이 포함된 appUsageWithNames 사용
+        // 앱 이름과 아이콘이 포함된 appUsageWithNames 사용
         setAppUsage(dailyData.appUsageWithNames || {});
       }
     } catch (error) {
@@ -93,6 +93,29 @@ const DailyView = () => {
         </View>
       );
     });
+  };
+
+  // 앱 아이콘 렌더링 함수
+  const renderAppIcon = (data) => {
+    if (data.iconBase64) {
+      // 앱 아이콘이 있는 경우 Base64로 인코딩된 이미지 렌더링
+      return (
+        <Image 
+          source={{ uri: `data:image/png;base64,${data.iconBase64}` }}
+          style={styles.appIcon}
+          resizeMode="contain"
+        />
+      );
+    } else {
+      // 앱 아이콘이 없는 경우 기본 이미지 사용
+      return (
+        <Image 
+          source={require('../../assets/chrome-icon.png')}
+          style={styles.appIcon}
+          resizeMode="contain"
+        />
+      );
+    }
   };
 
   return (
@@ -170,11 +193,7 @@ const DailyView = () => {
             return (
               <View key={packageName} style={styles.appItem}>
                 <View style={styles.appInfoContainer}>
-                  <Image 
-                    source={require('../../assets/chrome-icon.png')} 
-                    style={styles.appIcon}
-                    resizeMode="contain"
-                  />
+                  {renderAppIcon(data)}
                   <Text style={styles.appName}>{data.appName}</Text>
                   <Ionicons name="chevron-forward" size={16} color="#888" />
                 </View>
