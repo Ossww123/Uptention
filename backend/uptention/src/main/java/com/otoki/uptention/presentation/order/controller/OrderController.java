@@ -9,14 +9,17 @@ import org.springframework.web.bind.annotation.RestController;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
+import com.otoki.uptention.presentation.order.doc.OrderApiDoc;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
-public class OrderController {
+@Tag(name = "상품 주문/조회 API", description = "상품 일반 주문, 선물, 내역 조회를 담당하는 컨트롤러")
+public class OrderController implements OrderApiDoc {
 
 	private final OrderAppService orderAppService;
 
