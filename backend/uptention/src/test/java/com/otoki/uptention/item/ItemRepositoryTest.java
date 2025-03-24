@@ -17,6 +17,8 @@ import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.image.repository.ImageRepository;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.repository.ItemRepository;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 public class ItemRepositoryTest extends RepositoryTestSupport {
 
@@ -64,6 +66,54 @@ public class ItemRepositoryTest extends RepositoryTestSupport {
 
 		// then
 		assertThat(foundItem).isEmpty();
+	}
+
+	@DisplayName("상품의 재고 수량을 감소시키면 정상적으로 반영된다")
+	@Test
+	void decreaseQuantity_Success() {
+		// given
+		Category category = createCategory("테스트 카테고리");
+		Item item = createItem("테스트 상품", 10000, 10, true, category); // 초기 재고 10
+
+		// when
+		item.decreaseQuantity(3); // 3개 감소
+		itemRepository.save(item);
+
+		// then
+		Item foundItem = itemRepository.findById(item.getId()).orElseThrow();
+		assertThat(foundItem.getQuantity()).isEqualTo(7); // 10 - 3 = 7
+	}
+
+	@DisplayName("재고보다 많은 수량을 감소시키려고 하면 예외가 발생한다")
+	@Test
+	void decreaseQuantity_ThrowsException_WhenInsufficientStock() {
+		// given
+		Category category = createCategory("테스트 카테고리");
+		Item item = createItem("테스트 상품", 10000, 5, true, category); // 초기 재고 5
+
+		// when & then
+		assertThatThrownBy(() -> item.decreaseQuantity(10)) // 10개 감소 시도
+			.isInstanceOf(CustomException.class)
+			.satisfies(exception -> {
+				CustomException customException = (CustomException)exception;
+				assertThat(customException.getErrorCode()).isEqualTo(ErrorCode.ITEM_NO_STOCK_TO_DECREASE);
+			});
+	}
+
+	@DisplayName("상품의 재고 수량을 증가시키면 정상적으로 반영된다")
+	@Test
+	void increaseQuantity_Success() {
+		// given
+		Category category = createCategory("테스트 카테고리");
+		Item item = createItem("테스트 상품", 10000, 5, true, category); // 초기 재고 5
+
+		// when
+		item.increaseQuantity(10); // 10개 증가
+		itemRepository.save(item);
+
+		// then
+		Item foundItem = itemRepository.findById(item.getId()).orElseThrow();
+		assertThat(foundItem.getQuantity()).isEqualTo(15); // 5 + 10 = 15
 	}
 
 	// 헬퍼 메서드들 - 매개변수를 구체적으로 받도록 개선
