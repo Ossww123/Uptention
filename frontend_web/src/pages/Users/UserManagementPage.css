@@ -1,0 +1,150 @@
+/* src/pages/Users/UserManagementPage.css */
+.user-management {
+  padding: 20px;
+  background-color: #f1f1f1;
+  min-height: 100vh;
+}
+
+/* 콘텐츠 카드 스타일 */
+.content-card {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.user-management-header {
+  margin-bottom: 25px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.user-stats {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.stat-box {
+  background-color: #f6f6f6;
+  border-radius: 4px;
+  padding: 10px 15px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #666;
+  margin-right: 10px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 검색바를 상단으로 이동 */
+.search-bar {
+  margin-bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.search-bar form {
+  display: flex;
+  width: 400px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px 0 0 4px;
+  font-size: 14px;
+  outline: none;
+}
+
+.search-button {
+  background-color: #FF8C00;
+  color: white;
+  border: none;
+  padding: 0 20px;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.user-table-container {
+  overflow: hidden;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-table th,
+.user-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.user-table th {
+  background-color: #f8f9fa;
+  color: #666;
+  font-weight: 500;
+}
+
+.user-table tbody tr:nth-child(even) {
+  background-color: #EDF2F5;
+}
+
+.user-table tbody tr:hover {
+  background-color: #f0f0f0;
+}
+
+.delete-button {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.delete-button:hover {
+  background-color: #c0392b;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-button {
+  background-color: #FF8C00;
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.add-button:hover {
+  background-color: #e67e00;
+}

@@ -1,0 +1,13 @@
+/* src/components/layout/AdminLayout/AdminLayout.css */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f1f1f1;
+  }
+  
+  .admin-content {
+    flex: 1;
+    margin-left: 260px; /* 사이드바 너비와 동일 */
+    width: calc(100% - 260px);
+    padding-top: 0;
+  }
