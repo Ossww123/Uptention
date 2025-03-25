@@ -88,7 +88,7 @@ const StoreScreen = ({ navigation }) => {
       }
 
       // API 요청 URL 구성
-      let url = `https://j12d211.o.ssafy.io/api/items?size=8`;
+      let url = `https://j12d211.p.ssafy.io/api/items?size=8`;
       
       // 카테고리 필터 추가
       if (selectedCategory) {
