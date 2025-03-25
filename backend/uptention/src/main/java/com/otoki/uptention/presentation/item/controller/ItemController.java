@@ -13,13 +13,11 @@ import com.otoki.uptention.application.item.service.ItemAppService;
 import com.otoki.uptention.domain.item.enums.SortType;
 import com.otoki.uptention.presentation.item.doc.ItemApiDoc;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/items")
 @RequiredArgsConstructor
-@Tag(name = "마켓 상품 API", description = "상품의 기본적인 CRUD와 조회를 담당하는 컨트롤러")
 public class ItemController implements ItemApiDoc {
 	private final ItemAppService itemAppService;
 

@@ -14,12 +14,14 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 /**
  * 주문 API 문서화를 위한 인터페이스
  * 실제 구현체는 없으며, Swagger 문서화 목적으로만 사용됩니다.
  */
+@Tag(name = "상품 주문/조회 API", description = "상품 일반 주문, 선물, 내역 조회를 담당하는 컨트롤러")
 public interface OrderApiDoc {
 
 	@Operation(summary = "상품 주문", description = "주문 정보를 받아 주문을 생성합니다.")

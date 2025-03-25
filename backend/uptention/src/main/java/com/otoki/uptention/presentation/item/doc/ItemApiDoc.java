@@ -16,11 +16,13 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * 상품 API 문서화를 위한 인터페이스
  * 실제 구현체는 없으며, Swagger 문서화 목적으로만 사용됩니다.
  */
+@Tag(name = "마켓 상품 API", description = "상품의 기본적인 CRUD와 조회를 담당하는 컨트롤러")
 public interface ItemApiDoc {
 
 	@Operation(summary = "상품 상세 정보", description = "목록에서 선택한 상품의 상세 정보 조회")
