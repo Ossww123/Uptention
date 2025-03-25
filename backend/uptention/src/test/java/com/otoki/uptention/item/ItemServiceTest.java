@@ -43,7 +43,7 @@ public class ItemServiceTest {
 		when(itemRepository.findActiveByIdWithImages(itemId)).thenReturn(Optional.of(expectedItem));
 
 		// when
-		Item actualItem = itemService.getItemDetails(itemId);
+		Item actualItem = itemService.getItemById(itemId);
 
 		// then
 		assertThat(actualItem).isNotNull();
@@ -58,7 +58,7 @@ public class ItemServiceTest {
 		when(itemRepository.findActiveByIdWithImages(itemId)).thenReturn(Optional.empty());
 
 		// when & then
-		assertThatThrownBy(() -> itemService.getItemDetails(itemId))
+		assertThatThrownBy(() -> itemService.getItemById(itemId))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.ITEM_NOT_FOUND);
 	}

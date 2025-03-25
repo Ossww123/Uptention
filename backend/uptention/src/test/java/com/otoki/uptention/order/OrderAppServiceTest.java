@@ -72,9 +72,9 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 
 		// when
 		when(userService.getUserById(anyInt())).thenReturn(user);
-		when(itemService.getItemDetails(1)).thenReturn(item1);
-		when(itemService.getItemDetails(2)).thenReturn(item2);
-		when(itemService.getItemDetails(3)).thenReturn(item3);
+		when(itemService.getItemById(1)).thenReturn(item1);
+		when(itemService.getItemById(2)).thenReturn(item2);
+		when(itemService.getItemById(3)).thenReturn(item3);
 		when(orderService.save(any(Order.class))).thenReturn(savedOrder);
 
 		Order result = orderAppService.createOrder(orderRequestDto);
@@ -117,7 +117,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		// when
 		when(userService.getUserById(2)).thenReturn(sender);
 		when(userService.getUserById(3)).thenReturn(receiver);
-		when(itemService.getItemDetails(3)).thenReturn(item);
+		when(itemService.getItemById(3)).thenReturn(item);
 		when(orderService.save(any(Order.class))).thenReturn(savedOrder);
 
 		Order result = orderAppService.createGiftOrder(giftRequestDto);
@@ -147,7 +147,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 
 		// 재고가 5개인 상품을 Mock
 		Item item = mock(Item.class);
-		when(itemService.getItemDetails(itemId)).thenReturn(item);
+		when(itemService.getItemById(itemId)).thenReturn(item);
 		when(item.getQuantity()).thenReturn(5);  // 재고 5개 설정
 
 		// 주문 요청 DTO 생성 (상품 1개를 10개 주문하려는 요청)
@@ -174,7 +174,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		Integer itemId = 1;
 		int orderQuantity = 1;  // 선물 수량은 1개
 		Item item = mock(Item.class);
-		when(itemService.getItemDetails(itemId)).thenReturn(item);
+		when(itemService.getItemById(itemId)).thenReturn(item);
 		when(item.getQuantity()).thenReturn(0);  // 재고가 0개
 
 		GiftRequestDto giftRequestDto = createGiftRequestDto(itemId, 3);  // 선물 받는 사람 ID: 3

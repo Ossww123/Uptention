@@ -40,7 +40,7 @@ class ItemAppServiceTest extends AppServiceTestSupport {
 		Item item = createItem(itemId);
 		List<Image> images = createImages(item, 2);
 
-		when(itemService.getItemDetails(itemId)).thenReturn(item);
+		when(itemService.getItemById(itemId)).thenReturn(item);
 
 		// when
 		ItemResponseDto response = itemAppService.getItemDetails(itemId);

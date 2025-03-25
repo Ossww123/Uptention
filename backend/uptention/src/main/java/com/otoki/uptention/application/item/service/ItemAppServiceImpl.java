@@ -31,7 +31,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 	 */
 	@Override
 	public ItemResponseDto getItemDetails(Integer itemId) {
-		Item item = itemService.getItemDetails(itemId);
+		Item item = itemService.getItemById(itemId);
 		return ItemResponseDto.from(item, item.getImages());
 	}
 
@@ -51,7 +51,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 		CursorDto cursor = CursorDto.decode(cursorStr);
 
 		// 아이템 조회 (size + 1개를 조회하여 다음 페이지 여부 확인)
-		List<ItemDto> items = itemService.findItemsByCursor(categoryId, keyword, cursor, sortType, size + 1);
+		List<ItemDto> items = itemService.getItemsByCursor(categoryId, keyword, cursor, sortType, size + 1);
 
 		// 다음 페이지 여부 확인
 		boolean hasNextPage = items.size() > size;

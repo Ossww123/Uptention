@@ -22,13 +22,13 @@ public class ItemServiceImpl implements ItemService {
 	private final ItemRepository itemRepository;
 
 	@Override
-	public Item getItemDetails(Integer id) {
+	public Item getItemById(Integer id) {
 		return itemRepository.findActiveByIdWithImages(id)
 			.orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
 	}
 
 	@Override
-	public List<ItemDto> findItemsByCursor(Integer categoryId, String keyword,
+	public List<ItemDto> getItemsByCursor(Integer categoryId, String keyword,
 		CursorDto cursor, SortType sortType, int size) {
 		return itemRepository.findItemsByCursor(categoryId, keyword, cursor, sortType, size);
 	}

@@ -102,7 +102,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	 * OrderItem을 생성하고 저장하는 공통 로직
 	 */
 	private OrderItem processOrderItem(Order order, Integer itemId, Integer quantity) {
-		Item item = itemService.getItemDetails(itemId);
+		Item item = itemService.getItemById(itemId);
 
 		// 재고 부족하면 예외 발생
 		if (!item.hasStock(quantity)) {
