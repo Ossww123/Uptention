@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
 		version = "1.0"),
 	servers = {
 		@Server(url = "http://localhost:8080", description = "개발 서버"),
+		@Server(url = "https://j12d211.p.ssafy.io", description = "운영 서버")
 	}
 )
 @Configuration

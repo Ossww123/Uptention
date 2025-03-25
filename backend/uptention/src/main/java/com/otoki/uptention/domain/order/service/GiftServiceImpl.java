@@ -13,7 +13,7 @@ public class GiftServiceImpl implements GiftService{
 	private final GiftRespository giftRepository;
 
 	@Override
-	public Gift createOrderGift(Gift gift) {
+	public Gift save(Gift gift) {
 		return giftRepository.save(gift);
 	}
 }

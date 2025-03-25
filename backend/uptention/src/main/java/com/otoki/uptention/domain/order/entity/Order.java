@@ -41,4 +41,10 @@ public class Order extends TimeStampEntity {
 
 	@OneToOne(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
 	private Gift gift;
+
+	// 배송지 정보를 설정하거나 수정
+	public Order updateAddress(String address){
+		this.address = address;
+		return this;
+	}
 }

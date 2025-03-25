@@ -11,19 +11,19 @@ import com.otoki.uptention.application.item.dto.response.ItemListResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
 import com.otoki.uptention.application.item.service.ItemAppService;
 import com.otoki.uptention.domain.item.enums.SortType;
+import com.otoki.uptention.presentation.item.doc.ItemApiDoc;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/items")
 @RequiredArgsConstructor
-public class ItemController {
+public class ItemController implements ItemApiDoc {
 	private final ItemAppService itemAppService;
 
 	@GetMapping("/{itemId}")
 	public ResponseEntity<ItemResponseDto> getItemDetails(@PathVariable Integer itemId) {
 		ItemResponseDto itemResponseDto = itemAppService.getItemDetails(itemId);
-
 		return ResponseEntity.ok(itemResponseDto);
 	}
 

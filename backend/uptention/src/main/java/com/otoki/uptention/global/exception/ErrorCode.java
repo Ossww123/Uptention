@@ -17,6 +17,9 @@ public enum ErrorCode {
 	ITEM_INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "ITEM_004", "재고가 부족한 상품이 있습니다."),
 	ITEM_NO_STOCK_TO_DECREASE(HttpStatus.BAD_REQUEST, "ITEM_005", "차감할 재고 수량이 없습니다."),
 
+	// 주문 관련 에러
+	ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_001", "주문이 존재하지 않습니다."),
+
 	// 커서 관련 에러
 	CURSOR_ENCODING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CURSOR_001", "커서 인코딩에 실패했습니다."),
 	CURSOR_DECODING_FAILED(HttpStatus.BAD_REQUEST, "CURSOR_002", "커서 디코딩에 실패했습니다."),
