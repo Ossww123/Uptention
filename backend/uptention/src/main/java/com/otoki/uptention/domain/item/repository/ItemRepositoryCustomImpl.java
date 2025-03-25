@@ -21,6 +21,46 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 	private final JPAQueryFactory queryFactory;
 
 	@Override
+	public List<ItemDto> findItemsWithThumbnailByIds(List<Integer> itemIds) {
+		if (itemIds == null || itemIds.isEmpty()) {
+			return List.of();
+		}
+
+		QItem item = QItem.item;
+		QImage image = QImage.image;
+		QImage subImage = new QImage("subImage");
+
+		// 첫 번째 이미지 URL을 가져오는 서브쿼리
+		var thumbnailSubquery = JPAExpressions
+			.select(image.url)
+			.from(image)
+			.where(image.item.eq(item)
+				.and(image.id.eq(
+					JPAExpressions
+						.select(subImage.id.min())
+						.from(subImage)
+						.where(subImage.item.eq(item))
+				)));
+
+		// 빌더 패턴을 사용하는 ItemDto 생성
+		return queryFactory
+			.select(Projections.fields(ItemDto.class,
+					item.id.as("itemId"),
+					item.name,
+					item.price,
+					item.brand,
+					item.quantity,
+					item.salesCount,
+					item.status,
+					ExpressionUtils.as(thumbnailSubquery, "thumbnail")
+				)
+			)
+			.from(item)
+			.where(item.id.in(itemIds))
+			.fetch();
+	}
+
+	@Override
 	public List<ItemDto> findItemsByCursor(Integer categoryId, String keyword, CursorDto cursor, SortType sortType,
 		int size) {
 		QItem item = QItem.item;
