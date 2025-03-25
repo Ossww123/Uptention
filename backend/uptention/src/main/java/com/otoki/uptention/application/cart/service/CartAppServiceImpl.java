@@ -42,7 +42,7 @@ public class CartAppServiceImpl implements CartAppService {
 			Cart cart = Cart.builder()
 				.user(user)
 				.item(item)
-				.quantity(1)
+				.quantity(itemQuantityRequestDto.getQuantity())
 				.build();
 
 			return cartService.saveCart(cart);
