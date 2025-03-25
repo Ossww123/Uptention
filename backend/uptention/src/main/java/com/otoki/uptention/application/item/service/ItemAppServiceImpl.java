@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.item.dto.response.ItemListResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
-import com.otoki.uptention.domain.category.repository.CategoryRepository;
+import com.otoki.uptention.domain.category.service.CategoryService;
 import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class ItemAppServiceImpl implements ItemAppService {
 
 	private final ItemService itemService;
-	private final CategoryRepository categoryRepository;
+	private final CategoryService categoryService;
 
 	/**
 	 * 상품의 상세 정보 조회
@@ -43,7 +43,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 		SortType sortType, int size) {
 
 		// 카테고리 존재 여부 검증
-		if (categoryId != null && !categoryRepository.existsById(categoryId)) {
+		if (categoryId != null && !categoryService.isCategoryExists(categoryId)) {
 			throw new CustomException(ErrorCode.ITEM_CATEGORY_NOT_FOUND);
 		}
 
