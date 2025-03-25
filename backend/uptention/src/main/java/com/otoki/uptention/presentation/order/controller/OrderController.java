@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.request.OrderVerificationRequestDto;
+import com.otoki.uptention.application.order.dto.response.OrderVerificationResponseDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
+import com.otoki.uptention.application.order.service.OrderVerifyAppService;
 import com.otoki.uptention.presentation.order.doc.OrderApiDoc;
 
 import jakarta.validation.Valid;
@@ -22,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class OrderController implements OrderApiDoc {
 
 	private final OrderAppService orderAppService;
+	private final OrderVerifyAppService orderVerifyAppService;
 
 	@PostMapping("/purchase")
 	public ResponseEntity<String> purchaseOrder(@Valid @RequestBody OrderRequestDto orderRequestDto) {
@@ -35,8 +39,14 @@ public class OrderController implements OrderApiDoc {
 		return ResponseEntity.ok("선물 처리 성공");
 	}
 
+	@PostMapping("/verify")
+	public ResponseEntity<OrderVerificationResponseDto> verifyOrderItem(
+		@Valid @RequestBody OrderVerificationRequestDto orderVerificationRequestDto) {
+		return ResponseEntity.ok(orderVerifyAppService.verifyOrderItem(orderVerificationRequestDto));
+	}
+
 	@PostMapping("/{orderId}/delivery-info")
-	public ResponseEntity<?> registerDeliveryInfo(@PathVariable Integer orderId,
+	public ResponseEntity<String> registerDeliveryInfo(@PathVariable Integer orderId,
 		@Valid @RequestBody DeliveryInfoRequestDto deliveryInfoRequestDto) {
 		orderAppService.registerDeliveryInfo(orderId, deliveryInfoRequestDto);
 		return ResponseEntity.ok("배송지 정보 등록 성공");
