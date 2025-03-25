@@ -62,7 +62,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	}
 
 	@Test
-	@DisplayName("존재하지 않는 상품이 있을 경우 ITEM_NOT_FOUND 예외가 발생한다")
+	@DisplayName("존재하지 않는 상품이 있을 경우 예외가 발생한다")
 	void verifyOrderItem_ThrowsException_WhenItemNotFound() {
 		// given
 		OrderVerificationRequestDto requestDto = createOrderVerificationRequestDto(
@@ -89,7 +89,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	}
 
 	@Test
-	@DisplayName("상품이 비활성화 상태일 경우 ITEM_UNAVAILABLE 예외가 발생한다")
+	@DisplayName("상품이 비활성화 상태일 경우 예외가 발생한다")
 	void verifyOrderItem_ThrowsException_WhenItemUnavailable() {
 		// given
 		OrderVerificationRequestDto requestDto = createOrderVerificationRequestDto(
@@ -113,7 +113,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	}
 
 	@Test
-	@DisplayName("요청 가격과 현재 상품 가격이 다를 경우 ITEM_PRICE_MISMATCH 예외가 발생한다")
+	@DisplayName("요청 가격과 현재 상품 가격이 다를 경우 예외가 발생한다")
 	void verifyOrderItem_ThrowsException_WhenPriceMismatch() {
 		// given
 		OrderVerificationRequestDto requestDto = createOrderVerificationRequestDto(
@@ -137,7 +137,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	}
 
 	@Test
-	@DisplayName("재고가 부족할 경우 ITEM_INSUFFICIENT_STOCK 예외가 발생한다")
+	@DisplayName("재고가 부족할 경우 예외가 발생한다")
 	void verifyOrderItem_ThrowsException_WhenInsufficientStock() {
 		// given
 		OrderVerificationRequestDto requestDto = createOrderVerificationRequestDto(
