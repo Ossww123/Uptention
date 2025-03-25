@@ -117,7 +117,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 			.itemPrice(item.getPrice()) // 현재 가격으로 저장
 			.build();
 
-		orderItemService.createOrderItem(orderItem);
+		orderItemService.saveOrderItem(orderItem);
 
 		// 판매량 증가
 		item.increaseSalesCount(quantity);

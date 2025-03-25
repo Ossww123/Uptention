@@ -86,7 +86,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		assertThat(result.getUser()).isEqualTo(user);
 
 		verify(orderService, times(1)).save(any(Order.class));
-		verify(orderItemService, times(3)).createOrderItem(any(OrderItem.class));
+		verify(orderItemService, times(3)).saveOrderItem(any(OrderItem.class));
 
 		// 판매량 증가 확인
 		assertThat(item1.getSalesCount()).isEqualTo(2);
@@ -99,7 +99,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		assertThat(item3.getQuantity()).isEqualTo(7); // 상품3 재고 감소
 
 		// OrderItem 생성 시 적절한 값 전달 확인 (세 번의 호출)
-		verify(orderItemService, times(3)).createOrderItem(any(OrderItem.class));
+		verify(orderItemService, times(3)).saveOrderItem(any(OrderItem.class));
 	}
 
 	@Test
@@ -129,7 +129,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		assertThat(result.getAddress()).isNull(); // 선물은 주소가 없음
 
 		verify(orderService, times(1)).save(any(Order.class));
-		verify(orderItemService, times(1)).createOrderItem(any(OrderItem.class));
+		verify(orderItemService, times(1)).saveOrderItem(any(OrderItem.class));
 		verify(giftService, times(1)).save(any(Gift.class));
 
 		// 판매량 증가 확인 (선물은 수량 1개)

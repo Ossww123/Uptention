@@ -14,7 +14,7 @@ public class OrderItemServiceImpl implements OrderItemService{
 	private final OrderItemRepository orderItemRepository;
 
 	@Override
-	public OrderItem createOrderItem(OrderItem orderItem) {
+	public OrderItem saveOrderItem(OrderItem orderItem) {
 		return orderItemRepository.save(orderItem);
 	}
 }
