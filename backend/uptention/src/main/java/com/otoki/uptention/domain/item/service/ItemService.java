@@ -9,5 +9,9 @@ import com.otoki.uptention.domain.item.enums.SortType;
 
 public interface ItemService {
 	Item getItemDetails(Integer id);
+
 	List<ItemDto> findItemsByCursor(Integer categoryId, String keyword, CursorDto cursor, SortType sortType, int size);
+
+	List<ItemDto> getItemsByIds(List<Integer> itemIds);
+
 }

@@ -1,5 +1,6 @@
 package com.otoki.uptention.domain.item.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -32,5 +33,17 @@ public class ItemServiceImpl implements ItemService {
 		return itemRepository.findItemsByCursor(categoryId, keyword, cursor, sortType, size);
 	}
 
+	/**
+	 * 여러 상품 ID로 상품 목록 조회
+	 */
+	@Override
+	public List<ItemDto> getItemsByIds(List<Integer> itemIds) {
+		if (itemIds == null || itemIds.isEmpty()) {
+			return new ArrayList<>();
+		}
+
+		// ID 목록으로 상품 조회
+		return itemRepository.findItemsWithThumbnailByIds(itemIds);
+	}
 
 }
