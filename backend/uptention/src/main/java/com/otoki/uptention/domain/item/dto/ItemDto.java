@@ -32,4 +32,7 @@ public class ItemDto {
 
 	@Schema(description = "판매량", example = "30")
 	private int salesCount;
+
+	@Schema(description = "상품 상태 (활성/비활성)", example = "true")
+	private Boolean status;
 }
