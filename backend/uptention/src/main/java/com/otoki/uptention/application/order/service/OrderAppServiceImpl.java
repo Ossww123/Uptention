@@ -47,7 +47,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 			.user(user)
 			.address(orderRequestDto.getAddress())
 			.build();
-		Order savedOrder = orderService.save(order);
+		Order savedOrder = orderService.saveOrder(order);
 
 		// 2. 각 상품에 대한 OrderItem 생성 및 저장
 		for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
@@ -71,7 +71,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 		Order order = Order.builder()
 			.user(sender) // 선물을 보내는 사람(구매자)
 			.build();
-		Order savedOrder = orderService.save(order);
+		Order savedOrder = orderService.saveOrder(order);
 
 		// 2. OrderItem 생성 및 저장 (선물은 기본적으로 수량 1개)
 		processOrderItem(order, giftRequestDto.getItemId(), 1);
@@ -82,7 +82,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 			.receiver(receiver)
 			.build();
 
-		giftService.save(gift);
+		giftService.saveGift(gift);
 
 		return savedOrder;
 	}
@@ -95,7 +95,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	public Order registerDeliveryInfo(Integer orderId, DeliveryInfoRequestDto deliveryInfoRequestDto) {
 		Order order = orderService.getOrderById(orderId);
 		order.updateAddress(deliveryInfoRequestDto.getAddress());
-		return orderService.save(order);
+		return orderService.saveOrder(order);
 	}
 
 	/**
