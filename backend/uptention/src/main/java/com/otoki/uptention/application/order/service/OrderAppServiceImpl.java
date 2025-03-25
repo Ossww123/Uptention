@@ -11,7 +11,6 @@ import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
 import com.otoki.uptention.domain.order.entity.Order;
-import com.otoki.uptention.domain.order.repository.OrderRepository;
 import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.domain.orderitem.entity.OrderItem;
@@ -33,7 +32,6 @@ public class OrderAppServiceImpl implements OrderAppService {
 	private final ItemService itemService;
 	private final UserService userService;
 	private final GiftService giftService;
-	private final OrderRepository orderRepository;
 
 	/**
 	 * 일반 주문 생성
@@ -126,6 +124,5 @@ public class OrderAppServiceImpl implements OrderAppService {
 
 		return orderItem;
 	}
-
 
 }
