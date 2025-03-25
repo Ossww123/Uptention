@@ -7,4 +7,5 @@ import com.otoki.uptention.domain.cart.entity.Cart;
 
 @Repository
 public interface CartRepository extends JpaRepository<Cart, Integer> {
+	Cart findByUserIdAndItemId(Integer userId, Integer itemId);
 }
