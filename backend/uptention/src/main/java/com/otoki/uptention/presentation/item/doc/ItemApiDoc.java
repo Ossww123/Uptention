@@ -94,7 +94,7 @@ public interface ItemApiDoc {
 			)),
 	})
 	ResponseEntity<ItemListResponseDto> getItems(
-		@Parameter(description = "카테고리 ID >> 1:가전디지털, 2:뷰티, 3:리빙/키친, 4:패션의류/잡화, 5:문화여가, 6:생활용품, 7:식품, 8:키즈)")
+		@Parameter(description = "카테고리 ID >> 1:리빙가전, 2:주방가전, 3:뷰티, 4:패션의류/잡화, 5:문화여가, 6:생활용품, 7:식품, 8:키즈)")
 		@RequestParam(required = false) Integer categoryId,
 
 		@Parameter(description = "검색 키워드")
