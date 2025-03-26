@@ -46,4 +46,9 @@ public class CartServiceImpl implements CartService {
 	public List<CartItemDto> getCartItemsByUserId(Integer userId) {
 		return cartRepository.findCartItemsByUserId(userId);
 	}
+
+	@Override
+	public void removeByCartId(Integer cartId) {
+		cartRepository.deleteById(cartId);
+	}
 }

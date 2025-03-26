@@ -1,6 +1,7 @@
 package com.otoki.uptention.presentation.cart.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,5 +42,11 @@ public class CartController implements CartApiDoc {
 		@Valid @RequestBody CartQuantityRequestDto cartQuantityRequestDto) {
 		cartAppService.updateCartItemQuantity(cartId, cartQuantityRequestDto);
 		return ResponseEntity.ok("장바구니 상품 수량 수정 성공");
+	}
+
+	@DeleteMapping("/{cartId}")
+	public ResponseEntity<String> removeCartItem(@PathVariable Integer cartId) {
+		cartAppService.removeCartItem(cartId);
+		return ResponseEntity.ok("장바구니 상품 삭제 성공");
 	}
 }

@@ -78,6 +78,13 @@ public class CartAppServiceImpl implements CartAppService {
 		return cartService.saveCart(cart);
 	}
 
+	@Transactional
+	@Override
+	public void removeCartItem(Integer cartId) {
+		Cart cart = cartService.getByCartId(cartId);
+		cartService.removeByCartId(cart.getId());
+	}
+
 	/**
 	 * 상품 수량 유효성 검증
 	 */
