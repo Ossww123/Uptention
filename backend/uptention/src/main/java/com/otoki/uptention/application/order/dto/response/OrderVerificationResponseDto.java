@@ -2,8 +2,6 @@ package com.otoki.uptention.application.order.dto.response;
 
 import java.util.List;
 
-import com.otoki.uptention.domain.item.dto.ItemDto;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,5 +16,5 @@ import lombok.Setter;
 @Builder
 @Schema(description = "검증된 상품 응답 DTO")
 public class OrderVerificationResponseDto {
-	private List<ItemDto> items;
+	private List<ItemVerificationResponseDto> items;
 }

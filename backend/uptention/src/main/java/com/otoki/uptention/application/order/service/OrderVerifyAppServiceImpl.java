@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderVerificationRequestDto;
+import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderVerificationResponseDto;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.service.ItemService;
@@ -48,15 +49,31 @@ public class OrderVerifyAppServiceImpl implements OrderVerifyAppService {
 		Map<Integer, ItemDto> itemDtoMap = itemDtos.stream()
 			.collect(Collectors.toMap(ItemDto::getItemId, dto -> dto));
 
-		// 각 상품별 검증 수행
+		// 각 상품별 검증 수행 - 하나라도 실패하면 예외 발생하고 종료됨
 		for (ItemVerificationDto requestItem : requestDto.getItems()) {
 			ItemDto itemDto = itemDtoMap.get(requestItem.getItemId());
 			validateItem(requestItem, itemDto);
 		}
 
-		// 검증 통과 후 응답 생성 (이미 조회한 DTO 사용)
+		// 모든 검증 통과 후 응답 DTO 생성
+		List<ItemVerificationResponseDto> verifiedItems = requestDto.getItems().stream()
+			.map(requestItem -> {
+				ItemDto itemDto = itemDtoMap.get(requestItem.getItemId());
+				return ItemVerificationResponseDto.builder()
+					.itemId(itemDto.getItemId())
+					.name(itemDto.getName())
+					.price(itemDto.getPrice())
+					.brand(itemDto.getBrand())
+					.quantity(requestItem.getQuantity())
+					.totalPrice(itemDto.getPrice() * requestItem.getQuantity())
+					.thumbnail(itemDto.getThumbnail())
+					.build();
+			})
+			.collect(Collectors.toList());
+
+		// 최종 응답 생성
 		return OrderVerificationResponseDto.builder()
-			.items(itemDtos)
+			.items(verifiedItems)
 			.build();
 	}
 
