@@ -2,11 +2,14 @@ package com.otoki.uptention.presentation.cart.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.otoki.uptention.application.cart.dto.request.CartQuantityRequestDto;
 import com.otoki.uptention.application.cart.dto.response.CartResponseDto;
 import com.otoki.uptention.application.cart.service.CartAppService;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
@@ -31,5 +34,12 @@ public class CartController implements CartApiDoc {
 	public ResponseEntity<String> addToCart(@Valid @RequestBody ItemQuantityRequestDto itemQuantityRequestDto) {
 		cartAppService.addToCart(itemQuantityRequestDto);
 		return ResponseEntity.ok().body("장바구니 담기 성공");
+	}
+
+	@PatchMapping("/{cartId}/quantity")
+	public ResponseEntity<String> updateCartItemQuantity(@PathVariable Integer cartId,
+		@Valid @RequestBody CartQuantityRequestDto cartQuantityRequestDto) {
+		cartAppService.updateCartItemQuantity(cartId, cartQuantityRequestDto);
+		return ResponseEntity.ok("장바구니 상품 수량 수정 성공");
 	}
 }

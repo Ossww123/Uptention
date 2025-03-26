@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.otoki.uptention.application.cart.dto.request.CartQuantityRequestDto;
 import com.otoki.uptention.application.cart.dto.response.CartResponseDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.domain.cart.dto.CartItemDto;
@@ -63,6 +64,18 @@ public class CartAppServiceImpl implements CartAppService {
 		return CartResponseDto.builder()
 			.items(cartItems)
 			.build();
+	}
+
+	@Transactional
+	@Override
+	public Cart updateCartItemQuantity(Integer cartId,
+		CartQuantityRequestDto cartQuantityRequestDto) {
+		validateQuantity(cartQuantityRequestDto.getQuantity());
+
+		Cart cart = cartService.getByCartId(cartId);
+
+		cart.updateQuantity(cartQuantityRequestDto.getQuantity());
+		return cartService.saveCart(cart);
 	}
 
 	/**
