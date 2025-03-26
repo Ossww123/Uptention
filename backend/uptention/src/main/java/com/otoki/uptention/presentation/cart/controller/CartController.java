@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.otoki.uptention.application.cart.service.CartAppService;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
+import com.otoki.uptention.presentation.cart.docs.CartApiDoc;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/shopping-cart")
 @RequiredArgsConstructor
-public class CartController {
+public class CartController implements CartApiDoc {
 
 	private final CartAppService cartAppService;
 
