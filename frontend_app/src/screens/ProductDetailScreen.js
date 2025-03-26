@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,43 +8,142 @@ import {
   SafeAreaView,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
+  Alert,
+  FlatList,
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
 const ProductDetailScreen = ({ route, navigation }) => {
-  // 실제로는 route.params에서 productId를 받아와서 해당 상품 정보를 가져옵니다.
-  // const { productId } = route.params;
-  
-  // 현재는 더미 데이터를 사용
-  const product = {
-    id: '1',
-    name: '물건 이름',
-    brand: '브랜드명',
-    category: '카테고리',
-    price: '0.0 WORK',
-    description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
-    images: [
-      require('../../assets/product1.png'),
-      require('../../assets/product2.png'),
-      require('../../assets/product3.png'),
-    ],
-  };
-
-  // 현재 보고 있는 이미지 인덱스
+  const { productId } = route.params;
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  useEffect(() => {
+    fetchProductDetails();
+  }, [productId]);
+
+  const fetchProductDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`https://j12d211.p.ssafy.io/api/items/${productId}`);
+      const data = await response.json();
+      
+      // API에서 에러 응답이 왔는지 확인
+      if (data.code) {
+        throw new Error(data.message || '상품 정보를 불러오지 못했습니다.');
+      }
+      
+      setProduct(data);
+      setError(null);
+    } catch (error) {
+      console.error('상품 상세 정보 로드 에러:', error);
+      setError(error.message || '상품 정보를 불러오는데 문제가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 장바구니에 추가 기능
   const addToCart = () => {
     // 실제로는 장바구니 기능 구현
-    alert('장바구니에 추가되었습니다.');
+    Alert.alert('알림', '장바구니에 추가되었습니다.');
   };
 
   // 바로 구매 기능
   const buyNow = () => {
     // 실제로는 구매 페이지로 이동
-    alert('구매 페이지로 이동합니다.');
+    Alert.alert('알림', '구매 페이지로 이동합니다.');
   };
+
+  // 이미지 슬라이더 렌더링
+  const renderImageSlider = () => {
+    return (
+      <View style={styles.imageContainer}>
+        <FlatList
+          data={product.images}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(event) => {
+            const slideIndex = Math.floor(
+              event.nativeEvent.contentOffset.x / 
+              event.nativeEvent.layoutMeasurement.width
+            );
+            setCurrentImageIndex(slideIndex);
+          }}
+          renderItem={({ item }) => (
+            <Image 
+              source={{ uri: item }} 
+              style={styles.productImage}
+              resizeMode="contain"
+            />
+          )}
+          keyExtractor={(item, index) => `image-${index}`}
+        />
+        
+        {/* 이미지 페이지 인디케이터 */}
+        <View style={styles.pageIndicator}>
+          <Text style={styles.pageIndicatorText}>
+            {currentImageIndex + 1}/{product.images.length}
+          </Text>
+        </View>
+        
+        {/* 이미지 도트 인디케이터 */}
+        <View style={styles.dotIndicatorContainer}>
+          {product.images.map((_, index) => (
+            <View 
+              key={`dot-${index}`} 
+              style={[
+                styles.dot,
+                currentImageIndex === index ? styles.activeDot : styles.inactiveDot
+              ]} 
+            />
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF8C00" />
+        <Text style={styles.loadingText}>상품 정보를 불러오는 중...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={fetchProductDetails}
+        >
+          <Text style={styles.retryButtonText}>다시 시도</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (!product) {
+    return (
+      <SafeAreaView style={styles.errorContainer}>
+        <Text style={styles.errorText}>상품 정보를 찾을 수 없습니다.</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.retryButtonText}>돌아가기</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,7 +156,10 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={styles.backButtonText}>{'<'}</Text>
         </TouchableOpacity>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.cartButton}>
+          <TouchableOpacity 
+            style={styles.cartButton}
+            onPress={() => navigation.navigate('Cart')}
+          >
             <Image 
               source={require('../../assets/cart-icon.png')}
               style={styles.cartIcon}
@@ -71,35 +173,26 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
       <ScrollView style={styles.scrollView}>
         {/* 상품 이미지 슬라이더 */}
-        <View style={styles.imageContainer}>
-          <Image 
-            source={product.images[currentImageIndex]} 
-            style={styles.productImage}
-            resizeMode="contain"
-          />
-          
-          {/* 이미지 페이지 인디케이터 */}
-          <View style={styles.pageIndicator}>
-            <Text style={styles.pageIndicatorText}>
-              {currentImageIndex + 1}/{product.images.length}
-            </Text>
-          </View>
-        </View>
+        {renderImageSlider()}
 
         {/* 상품 정보 */}
         <View style={styles.productInfo}>
           <Text style={styles.brand}>{product.brand}</Text>
           <View style={styles.divider} />
-          <Text style={styles.category}>{product.category}</Text>
+          <Text style={styles.category}>{product.categoryName}</Text>
           <Text style={styles.name}>{product.name}</Text>
-          <Text style={styles.price}>{product.price}</Text>
+          <Text style={styles.price}>{product.price} WORK</Text>
+          
+          {product.quantity <= 5 && (
+            <Text style={styles.lowStockText}>품절 임박! ({product.quantity}개 남음)</Text>
+          )}
           
           <View style={styles.divider} />
           
           {/* 상품 설명 */}
           <View style={styles.descriptionContainer}>
             <Text style={styles.descriptionTitle}>상품 설명</Text>
-            <Text style={styles.description}>{product.description}</Text>
+            <Text style={styles.description}>{product.detail}</Text>
           </View>
         </View>
       </ScrollView>
@@ -128,6 +221,41 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#ff3b30',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#FF8C00',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   header: {
     flexDirection: 'row',
@@ -182,8 +310,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   productImage: {
-    width: '100%',
-    height: '100%',
+    width: width,
+    height: width,
     backgroundColor: '#f8f8f8',
   },
   pageIndicator: {
@@ -198,6 +326,27 @@ const styles = StyleSheet.create({
   pageIndicatorText: {
     color: 'white',
     fontSize: 12,
+  },
+  dotIndicatorContainer: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    backgroundColor: '#FF8C00',
+  },
+  inactiveDot: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   productInfo: {
     padding: 20,
@@ -226,6 +375,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
+  },
+  lowStockText: {
+    fontSize: 14,
+    color: 'red',
+    marginTop: 8,
+    fontWeight: '500',
   },
   descriptionContainer: {
     marginTop: 10,
