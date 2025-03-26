@@ -73,22 +73,24 @@ public class ImageValidationUtil {
 
 	private static boolean isValidMagic(String extension, byte[] header) {
 		boolean validMagic = false;
+
 		if (extension.equals("jpg") || extension.equals("jpeg")) {
 			// JPEG 파일은 일반적으로 FF D8 FF 로 시작합니다.
-			validMagic = (header[0] & 0xFF) == 0xFF &&
-				(header[1] & 0xFF) == 0xD8 &&
-				(header[2] & 0xFF) == 0xFF;
+			validMagic = (header[0] & 0xFF) == 0xFF
+				&& (header[1] & 0xFF) == 0xD8
+				&& (header[2] & 0xFF) == 0xFF;
 		} else if (extension.equals("png")) {
 			// PNG 파일의 매직 넘버: 89 50 4E 47 0D 0A 1A 0A
-			validMagic = (header[0] & 0xFF) == 0x89 &&
-				(header[1] & 0xFF) == 0x50 &&
-				(header[2] & 0xFF) == 0x4E &&
-				(header[3] & 0xFF) == 0x47 &&
-				(header[4] & 0xFF) == 0x0D &&
-				(header[5] & 0xFF) == 0x0A &&
-				(header[6] & 0xFF) == 0x1A &&
-				(header[7] & 0xFF) == 0x0A;
+			validMagic = (header[0] & 0xFF) == 0x89
+				&& (header[1] & 0xFF) == 0x50
+				&& (header[2] & 0xFF) == 0x4E
+				&& (header[3] & 0xFF) == 0x47
+				&& (header[4] & 0xFF) == 0x0D
+				&& (header[5] & 0xFF) == 0x0A
+				&& (header[6] & 0xFF) == 0x1A
+				&& (header[7] & 0xFF) == 0x0A;
 		}
+
 		return validMagic;
 	}
 }
