@@ -45,6 +45,16 @@ public interface CartApiDoc {
 						name = "유효성 검증 실패",
 						summary = "필수 파라미터 누락",
 						value = "{\"code\":\"X002\",\"message\":\"[itemId] 상품 ID는 필수입니다.; [quantity] 수량은 필수입니다.\",\"path\":\"/api/shopping-cart\"}"
+					),
+					@ExampleObject(
+						name = "최소 수량 미달",
+						summary = "상품 수량이 1개 미만",
+						value = "{\"code\":\"ITEM_008\",\"message\":\"상품 수량은 1개 이상이어야 합니다.\",\"path\":\"/api/shopping-cart\"}"
+					),
+					@ExampleObject(
+						name = "최대 수량 초과",
+						summary = "상품 수량이 99개 초과",
+						value = "{\"code\":\"ITEM_009\",\"message\":\"상품 수량은 99개 이하여야 합니다.\",\"path\":\"/api/shopping-cart\"}"
 					)
 				}
 			)
