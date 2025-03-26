@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.otoki.uptention.domain.item.dto.ItemDto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Schema(description = "검증된 상품 응답 DTO")
 public class OrderVerificationResponseDto {
 	private List<ItemDto> items;
 }
