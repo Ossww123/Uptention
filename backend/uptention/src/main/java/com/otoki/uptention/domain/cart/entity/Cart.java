@@ -2,6 +2,7 @@ package com.otoki.uptention.domain.cart.entity;
 
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.user.entity.User;
+import com.otoki.uptention.global.entity.TimeStampEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,7 +25,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @Getter
-public class Cart {
+public class Cart extends TimeStampEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
