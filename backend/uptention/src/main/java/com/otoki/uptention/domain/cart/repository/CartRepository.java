@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository;
 import com.otoki.uptention.domain.cart.entity.Cart;
 
 @Repository
-public interface CartRepository extends JpaRepository<Cart, Integer> {
+public interface CartRepository extends JpaRepository<Cart, Integer>, CartRepositoryCustom {
 	Cart findByUserIdAndItemId(Integer userId, Integer itemId);
 }
