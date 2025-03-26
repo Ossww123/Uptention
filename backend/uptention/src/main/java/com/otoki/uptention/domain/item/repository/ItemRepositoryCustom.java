@@ -8,4 +8,6 @@ import com.otoki.uptention.domain.item.enums.SortType;
 
 public interface ItemRepositoryCustom {
 	List<ItemDto> findItemsByCursor(Integer categoryId, String keyword, CursorDto cursor, SortType sortType, int size);
+
+	public List<ItemDto> findItemsWithThumbnailByIds(List<Integer> itemIds);
 }

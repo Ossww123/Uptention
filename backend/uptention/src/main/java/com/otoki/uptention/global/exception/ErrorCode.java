@@ -16,6 +16,10 @@ public enum ErrorCode {
 	ITEM_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "ITEM_003", "카테고리가 존재하지 않습니다."),
 	ITEM_INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "ITEM_004", "재고가 부족한 상품이 있습니다."),
 	ITEM_NO_STOCK_TO_DECREASE(HttpStatus.BAD_REQUEST, "ITEM_005", "차감할 재고 수량이 없습니다."),
+	ITEM_PRICE_MISMATCH(HttpStatus.CONFLICT, "ITEM_006", "상품 가격이 변경되었습니다."),
+	ITEM_UNAVAILABLE(HttpStatus.NOT_FOUND, "ITEM_007", "삭제된 상품 입니다."),
+	ITEM_QUANTITY_MIN_REQUIRED(HttpStatus.BAD_REQUEST, "ITEM_008", "상품 수량은 1개 이상이어야 합니다."),
+	ITEM_QUANTITY_MAX_EXCEEDED(HttpStatus.BAD_REQUEST, "ITEM_009", "상품 수량은 99개 이하여야 합니다."),
 
 	// 주문 관련 에러
 	ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_001", "주문이 존재하지 않습니다."),

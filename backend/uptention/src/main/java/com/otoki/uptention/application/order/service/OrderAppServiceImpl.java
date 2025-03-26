@@ -11,7 +11,6 @@ import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
 import com.otoki.uptention.domain.order.entity.Order;
-import com.otoki.uptention.domain.order.repository.OrderRepository;
 import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.domain.orderitem.entity.OrderItem;
@@ -33,7 +32,6 @@ public class OrderAppServiceImpl implements OrderAppService {
 	private final ItemService itemService;
 	private final UserService userService;
 	private final GiftService giftService;
-	private final OrderRepository orderRepository;
 
 	/**
 	 * 일반 주문 생성
@@ -49,7 +47,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 			.user(user)
 			.address(orderRequestDto.getAddress())
 			.build();
-		Order savedOrder = orderService.save(order);
+		Order savedOrder = orderService.saveOrder(order);
 
 		// 2. 각 상품에 대한 OrderItem 생성 및 저장
 		for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
@@ -73,7 +71,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 		Order order = Order.builder()
 			.user(sender) // 선물을 보내는 사람(구매자)
 			.build();
-		Order savedOrder = orderService.save(order);
+		Order savedOrder = orderService.saveOrder(order);
 
 		// 2. OrderItem 생성 및 저장 (선물은 기본적으로 수량 1개)
 		processOrderItem(order, giftRequestDto.getItemId(), 1);
@@ -84,7 +82,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 			.receiver(receiver)
 			.build();
 
-		giftService.save(gift);
+		giftService.saveGift(gift);
 
 		return savedOrder;
 	}
@@ -97,14 +95,14 @@ public class OrderAppServiceImpl implements OrderAppService {
 	public Order registerDeliveryInfo(Integer orderId, DeliveryInfoRequestDto deliveryInfoRequestDto) {
 		Order order = orderService.getOrderById(orderId);
 		order.updateAddress(deliveryInfoRequestDto.getAddress());
-		return orderService.save(order);
+		return orderService.saveOrder(order);
 	}
 
 	/**
 	 * OrderItem을 생성하고 저장하는 공통 로직
 	 */
 	private OrderItem processOrderItem(Order order, Integer itemId, Integer quantity) {
-		Item item = itemService.getItemDetails(itemId);
+		Item item = itemService.getItemById(itemId);
 
 		// 재고 부족하면 예외 발생
 		if (!item.hasStock(quantity)) {
@@ -119,13 +117,12 @@ public class OrderAppServiceImpl implements OrderAppService {
 			.itemPrice(item.getPrice()) // 현재 가격으로 저장
 			.build();
 
-		orderItemService.createOrderItem(orderItem);
+		orderItemService.saveOrderItem(orderItem);
 
 		// 판매량 증가
 		item.increaseSalesCount(quantity);
 
 		return orderItem;
 	}
-
 
 }

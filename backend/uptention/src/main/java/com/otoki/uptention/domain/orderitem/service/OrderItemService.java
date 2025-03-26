@@ -4,5 +4,5 @@ import com.otoki.uptention.domain.orderitem.entity.OrderItem;
 
 public interface OrderItemService {
 
-	OrderItem createOrderItem(OrderItem orderItem);
+	OrderItem saveOrderItem(OrderItem orderItem);
 }
