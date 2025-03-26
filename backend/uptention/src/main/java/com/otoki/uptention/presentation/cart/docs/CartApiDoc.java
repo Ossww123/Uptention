@@ -1,14 +1,17 @@
 package com.otoki.uptention.presentation.cart.docs;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 
-import com.otoki.uptention.application.cart.dto.response.CartResponseDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
+import com.otoki.uptention.domain.cart.dto.CartItemDto;
 import com.otoki.uptention.global.exception.ErrorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -30,11 +33,11 @@ public interface CartApiDoc {
 			responseCode = "200",
 			description = "장바구니 조회 성공",
 			content = @Content(
-				schema = @Schema(implementation = CartResponseDto.class)
+				array = @ArraySchema(schema = @Schema(implementation = CartItemDto.class))
 			)
 		)
 	})
-	ResponseEntity<CartResponseDto> getCartItems();
+	ResponseEntity<List<CartItemDto>> getCartItems();
 
 	@Operation(summary = "장바구니 담기", description = "상품을 장바구니에 추가합니다.")
 	@ApiResponses(value = {

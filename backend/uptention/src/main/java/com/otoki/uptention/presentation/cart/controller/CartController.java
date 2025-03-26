@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.otoki.uptention.application.cart.dto.request.CartQuantityRequestDto;
-import com.otoki.uptention.application.cart.dto.response.CartResponseDto;
 import com.otoki.uptention.application.cart.service.CartAppService;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
+import com.otoki.uptention.domain.cart.dto.CartItemDto;
 import com.otoki.uptention.presentation.cart.docs.CartApiDoc;
 
 import jakarta.validation.Valid;
@@ -29,7 +29,7 @@ public class CartController implements CartApiDoc {
 	private final CartAppService cartAppService;
 
 	@GetMapping("")
-	public ResponseEntity<CartResponseDto> getCartItems() {
+	public ResponseEntity<List<CartItemDto>> getCartItems() {
 		return ResponseEntity.ok(cartAppService.getUserCartItems());
 	}
 
