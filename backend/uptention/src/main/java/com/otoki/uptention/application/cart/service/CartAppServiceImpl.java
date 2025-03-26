@@ -64,8 +64,7 @@ public class CartAppServiceImpl implements CartAppService {
 
 	@Transactional
 	@Override
-	public Cart updateCartItemQuantity(Integer cartId,
-		CartQuantityRequestDto cartQuantityRequestDto) {
+	public Cart updateCartItemQuantity(Integer cartId, CartQuantityRequestDto cartQuantityRequestDto) {
 		validateQuantity(cartQuantityRequestDto.getQuantity());
 
 		Cart cart = cartService.getByCartId(cartId);
@@ -77,6 +76,11 @@ public class CartAppServiceImpl implements CartAppService {
 	@Transactional
 	@Override
 	public void removeCartItem(List<Integer> cartIds) {
+		// 빈 배열 검증
+		if (cartIds == null || cartIds.isEmpty()) {
+			throw new CustomException(ErrorCode.CART_EMPTY_IDS);
+		}
+
 		cartService.removeByCartIds(cartIds);
 	}
 
