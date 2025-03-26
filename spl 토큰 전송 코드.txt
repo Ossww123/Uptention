@@ -1,0 +1,156 @@
+import 'react-native-get-random-values';
+import { Buffer } from 'buffer';
+if (typeof globalThis.Buffer === 'undefined') {
+  globalThis.Buffer = Buffer;
+}
+import 'react-native-url-polyfill/auto';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View, Button, Platform, TextInput, Alert } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import nacl from 'tweetnacl';
+import bs58 from 'bs58';
+import * as Linking from 'expo-linking';
+import { Connection, PublicKey, LAMPORTS_PER_SOL, Transaction, SystemProgram } from '@solana/web3.js';
+import { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+
+// === 환경 설정 ===
+const APP_URL_SCHEME = 'phantomtest';
+const DEVNET_CONNECTION = new Connection('https://api.devnet.solana.com', {
+  wsEndpoint: 'wss://api.devnet.solana.com/',
+  commitment: 'confirmed'
+});
+const YOUR_TOKEN_MINT = new PublicKey('5ymZGsCFkfSzZN6AbwMWU2v4A4c5yeqmGj1vSpRWg75n'); // 당신의 SPL 토큰 MINT
+
+const encryptPayload = (payload, sharedSecret) => {
+  const nonce = nacl.randomBytes(24);
+  const encryptedPayload = nacl.box.after(
+    Buffer.from(JSON.stringify(payload)),
+    nonce,
+    sharedSecret
+  );
+  return [nonce, encryptedPayload];
+};
+
+export default function App() {
+  const [deepLink, setDeepLink] = useState("");
+  const [dappKeyPair] = useState(nacl.box.keyPair());
+  const [sharedSecret, setSharedSecret] = useState();
+  const [session, setSession] = useState();
+  const [connecting, setConnecting] = useState(false);
+  const [publicKey, setPublicKey] = useState(null);
+  const [solBalance, setSolBalance] = useState(null);
+  const [tokenBalance, setTokenBalance] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [recipientAddress, setRecipientAddress] = useState('');
+  const [amount, setAmount] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const [tokenRecipientAddress, setTokenRecipientAddress] = useState('');
+  const [tokenAmount, setTokenAmount] = useState('');
+  const [sendingToken, setSendingToken] = useState(false);
+
+  // === 지갑 연결, 딥링크 처리 등 생략 (현재 코드 그대로 사용) ===
+  // ...
+
+  // === SPL 토큰 전송 ===
+  const sendSplToken = async () => {
+    if (!publicKey || !tokenRecipientAddress || !tokenAmount) {
+      Alert.alert('오류', '모든 필드를 입력해주세요.');
+      return;
+    }
+
+    try {
+      setSendingToken(true);
+      const sender = new PublicKey(publicKey);
+      const recipient = new PublicKey(tokenRecipientAddress.trim());
+
+      const senderTokenAccount = await getAssociatedTokenAddress(YOUR_TOKEN_MINT, sender);
+      const recipientTokenAccount = await getAssociatedTokenAddress(YOUR_TOKEN_MINT, recipient);
+
+      const transaction = new Transaction().add(
+        createTransferInstruction(
+          senderTokenAccount,
+          recipientTokenAccount,
+          sender,
+          parseInt(tokenAmount),
+          [],
+          TOKEN_PROGRAM_ID
+        )
+      );
+
+      transaction.feePayer = sender;
+      const { blockhash } = await DEVNET_CONNECTION.getLatestBlockhash('confirmed');
+      transaction.recentBlockhash = blockhash;
+
+      const serialized = transaction.serialize({ requireAllSignatures: false });
+      const payload = {
+        session,
+        transaction: bs58.encode(serialized)
+      };
+
+      const [nonce, encryptedPayload] = encryptPayload(payload, sharedSecret);
+      const params = new URLSearchParams({
+        dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
+        nonce: bs58.encode(nonce),
+        redirect_link: Linking.createURL("onSignAndSendTransaction"),
+        payload: bs58.encode(encryptedPayload)
+      });
+
+      const url = Platform.OS === 'android'
+        ? `https://phantom.app/ul/v1/signAndSendTransaction?${params.toString()}`
+        : `phantom://ul/v1/signAndSendTransaction?${params.toString()}`;
+
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('SPL 토큰 전송 오류:', error);
+      Alert.alert('오류', 'SPL 토큰 전송 중 오류 발생: ' + error.message);
+    } finally {
+      setSendingToken(false);
+      setTokenRecipientAddress('');
+      setTokenAmount('');
+    }
+  };
+
+  // === UI ===
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Phantom 지갑 테스트</Text>
+
+      {publicKey && (
+        <>
+          <Text>지갑 주소: {publicKey.slice(0, 8)}...{publicKey.slice(-4)}</Text>
+          <Text>SOL 잔액: {solBalance ?? '조회 중...'}</Text>
+          <Text>WORK 토큰: {tokenBalance ?? '조회 중...'}</Text>
+
+          {/* SOL 전송 UI */}
+          <TextInput style={styles.input} placeholder="SOL 받는 주소" value={recipientAddress} onChangeText={setRecipientAddress} />
+          <TextInput style={styles.input} placeholder="SOL 수량" value={amount} onChangeText={setAmount} keyboardType="numeric" />
+          <Button title={sending ? '전송 중...' : 'SOL 전송'} onPress={() => {/* 기존 sendToken 함수 호출 */}} disabled={sending} />
+
+          {/* SPL 토큰 전송 UI */}
+          <TextInput style={styles.input} placeholder="WORK 받는 주소" value={tokenRecipientAddress} onChangeText={setTokenRecipientAddress} />
+          <TextInput style={styles.input} placeholder="WORK 수량" value={tokenAmount} onChangeText={setTokenAmount} keyboardType="numeric" />
+          <Button title={sendingToken ? '전송 중...' : 'WORK 전송'} onPress={sendSplToken} disabled={sendingToken} />
+
+          <Button title="연결 해제" onPress={() => {/* disconnect 함수 */}} color="#ff6b6b" />
+        </>
+      )}
+
+      {!publicKey && (
+        <Button title={connecting ? '연결 중...' : 'Phantom 연결'} onPress={() => {/* connect 함수 */}} disabled={connecting} />
+      )}
+
+      <StatusBar style="auto" />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  input: {
+    width: '100%', height: 40, borderWidth: 1, borderColor: '#ccc',
+    borderRadius: 5, marginBottom: 10, paddingHorizontal: 10,
+  },
+});

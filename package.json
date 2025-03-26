@@ -9,10 +9,21 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@craftzdog/react-native-buffer": "^6.0.5",
+    "@solana/spl-token": "^0.4.13",
+    "@solana/web3.js": "^1.98.0",
+    "base-64": "^1.0.0",
+    "bs58": "^6.0.0",
+    "buffer": "^6.0.3",
     "expo": "~52.0.40",
+    "expo-dev-client": "~5.0.14",
+    "expo-linking": "~7.0.5",
     "expo-status-bar": "~2.0.1",
     "react": "18.3.1",
-    "react-native": "0.76.7"
+    "react-native": "0.76.7",
+    "react-native-get-random-values": "^1.11.0",
+    "react-native-url-polyfill": "^2.0.0",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

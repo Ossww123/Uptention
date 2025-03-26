@@ -13,16 +13,44 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.phantomtest.app",
+      "scheme": "phantomtest"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.phantomtest.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "phantomtest"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "scheme": "phantomtest",
+    "development": {
+      "developmentClient": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a112437d-545f-4dde-9439-b35612b4beb8"
+      }
+    },
+    "owner": "koup28"
   }
 }
