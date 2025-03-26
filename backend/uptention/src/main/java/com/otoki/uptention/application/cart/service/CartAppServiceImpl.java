@@ -32,21 +32,20 @@ public class CartAppServiceImpl implements CartAppService {
 		// 이미 장바구니에 같은 상품이 있는지 확인
 		Cart existingCart = cartService.getByUserAndItem(user.getId(), itemQuantityRequestDto.getItemId());
 
-		if(existingCart != null){
-			// 이미 장바구니에 있으면 수량 증가
+		// 이미 장바구니에 있으면 수량 증가
+		if (existingCart != null) {
 			existingCart.updateQuantity(existingCart.getQuantity() + itemQuantityRequestDto.getQuantity());
 			return cartService.saveCart(existingCart);
 		}
-		else{
-			// 장바구니에 없으면 새로 추가
-			Cart cart = Cart.builder()
-				.user(user)
-				.item(item)
-				.quantity(itemQuantityRequestDto.getQuantity())
-				.build();
 
-			return cartService.saveCart(cart);
-		}
+		// 장바구니에 없으면 새로 추가
+		Cart cart = Cart.builder()
+			.user(user)
+			.item(item)
+			.quantity(itemQuantityRequestDto.getQuantity())
+			.build();
+
+		return cartService.saveCart(cart);
 
 	}
 }
