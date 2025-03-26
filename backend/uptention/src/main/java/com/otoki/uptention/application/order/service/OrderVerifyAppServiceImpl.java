@@ -92,14 +92,15 @@ public class OrderVerifyAppServiceImpl implements OrderVerifyAppService {
 			throw new CustomException(ErrorCode.ITEM_UNAVAILABLE);
 		}
 
+		// 재고가 부족한 경우
+		if (itemDto.getQuantity() < requestItem.getQuantity()) {
+			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
+		}
+
 		// 가격이 일치하지 않는 경우
 		if (!itemDto.getPrice().equals(requestItem.getPrice())) {
 			throw new CustomException(ErrorCode.ITEM_PRICE_MISMATCH);
 		}
 
-		// 재고가 부족한 경우
-		if (itemDto.getQuantity() < requestItem.getQuantity()) {
-			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
-		}
 	}
 }
