@@ -80,9 +80,8 @@ public class CartAppServiceImpl implements CartAppService {
 
 	@Transactional
 	@Override
-	public void removeCartItem(Integer cartId) {
-		Cart cart = cartService.getByCartId(cartId);
-		cartService.removeByCartId(cart.getId());
+	public void removeCartItem(List<Integer> cartIds) {
+		cartService.removeByCartIds(cartIds);
 	}
 
 	/**

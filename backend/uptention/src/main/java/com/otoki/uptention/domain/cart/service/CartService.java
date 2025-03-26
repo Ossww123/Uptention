@@ -14,5 +14,5 @@ public interface CartService {
 
 	List<CartItemDto> getCartItemsByUserId(Integer userId);
 
-	void removeByCartId(Integer cartId);
+	void removeByCartIds(List<Integer> cartIds);
 }
