@@ -3,6 +3,7 @@ package com.otoki.uptention.presentation.cart.docs;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import com.otoki.uptention.application.cart.dto.response.CartResponseDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.global.exception.ErrorResponse;
 
@@ -22,6 +23,18 @@ import jakarta.validation.Valid;
  */
 @Tag(name = "장바구니 API", description = "장바구니를 담당하는 컨트롤러")
 public interface CartApiDoc {
+
+	@Operation(summary = "장바구니 조회", description = "사용자의 장바구니 상품 목록을 조회합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "장바구니 조회 성공",
+			content = @Content(
+				schema = @Schema(implementation = CartResponseDto.class)
+			)
+		)
+	})
+	ResponseEntity<CartResponseDto> getCartItems();
 
 	@Operation(summary = "장바구니 담기", description = "상품을 장바구니에 추가합니다.")
 	@ApiResponses(value = {
