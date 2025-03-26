@@ -8,6 +8,8 @@ import com.otoki.uptention.domain.cart.entity.Cart;
 public interface CartService {
 	Cart saveCart(Cart cart);
 
+	Cart getByCartId(Integer cartId);
+
 	Cart getByUserAndItem(Integer userId, Integer itemId);
 
 	List<CartItemDto> getCartItemsByUserId(Integer userId);

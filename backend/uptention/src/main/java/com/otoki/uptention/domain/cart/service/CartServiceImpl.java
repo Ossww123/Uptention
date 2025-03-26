@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.otoki.uptention.domain.cart.dto.CartItemDto;
 import com.otoki.uptention.domain.cart.entity.Cart;
 import com.otoki.uptention.domain.cart.repository.CartRepository;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +23,12 @@ public class CartServiceImpl implements CartService {
 	@Override
 	public Cart saveCart(Cart cart) {
 		return cartRepository.save(cart);
+	}
+
+	@Override
+	public Cart getByCartId(Integer cartId) {
+		return cartRepository.findById(cartId)
+			.orElseThrow(() -> new CustomException(ErrorCode.CART_NOT_FOUND));
 	}
 
 	/**
