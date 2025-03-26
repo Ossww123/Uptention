@@ -1,9 +1,13 @@
 package com.otoki.uptention.application.cart.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.otoki.uptention.application.cart.dto.response.CartResponseDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
+import com.otoki.uptention.domain.cart.dto.CartItemDto;
 import com.otoki.uptention.domain.cart.entity.Cart;
 import com.otoki.uptention.domain.cart.service.CartService;
 import com.otoki.uptention.domain.item.entity.Item;
@@ -48,6 +52,17 @@ public class CartAppServiceImpl implements CartAppService {
 
 		// 새 장바구니 항목 생성
 		return createNewCart(user, item, itemQuantityRequestDto.getQuantity());
+	}
+
+	@Override
+	public CartResponseDto getUserCartItems() {
+		// security 구현 후, 코드 수정 필요
+		User user = userService.getUserById(1);
+
+		List<CartItemDto> cartItems = cartService.getCartItemsByUserId(user.getId());
+		return CartResponseDto.builder()
+			.items(cartItems)
+			.build();
 	}
 
 	/**

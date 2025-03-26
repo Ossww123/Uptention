@@ -1,11 +1,13 @@
 package com.otoki.uptention.presentation.cart.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.otoki.uptention.application.cart.dto.response.CartResponseDto;
 import com.otoki.uptention.application.cart.service.CartAppService;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.presentation.cart.docs.CartApiDoc;
@@ -19,6 +21,11 @@ import lombok.RequiredArgsConstructor;
 public class CartController implements CartApiDoc {
 
 	private final CartAppService cartAppService;
+
+	@GetMapping("")
+	public ResponseEntity<CartResponseDto> getCartItems() {
+		return ResponseEntity.ok(cartAppService.getUserCartItems());
+	}
 
 	@PostMapping("")
 	public ResponseEntity<String> addToCart(@Valid @RequestBody ItemQuantityRequestDto itemQuantityRequestDto) {
