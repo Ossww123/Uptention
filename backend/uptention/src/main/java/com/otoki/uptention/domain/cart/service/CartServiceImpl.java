@@ -23,11 +23,17 @@ public class CartServiceImpl implements CartService {
 		return cartRepository.save(cart);
 	}
 
+	/**
+	 * 해당 상품이 사용자의 장바구니에 담겨있는지 조회
+	 */
 	@Override
 	public Cart getByUserAndItem(Integer userId, Integer itemId) {
 		return cartRepository.findByUserIdAndItemId(userId, itemId);
 	}
 
+	/**
+	 * 특정 사용자의 장바구니에 담긴 모든 상품 조회
+	 */
 	@Override
 	public List<CartItemDto> getCartItemsByUserId(Integer userId) {
 		return cartRepository.findCartItemsByUserId(userId);
