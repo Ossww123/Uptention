@@ -1,9 +1,11 @@
 package com.otoki.uptention.application.order.service;
 
-import com.otoki.uptention.application.order.dto.request.OrderVerificationRequestDto;
-import com.otoki.uptention.application.order.dto.response.OrderVerificationResponseDto;
+import java.util.List;
+
+import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
+import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 
 public interface OrderVerifyAppService {
-	OrderVerificationResponseDto verifyOrderItem(OrderVerificationRequestDto orderVerificationRequestDto);
+	List<ItemVerificationResponseDto> verifyOrderItem(List<ItemVerificationDto> itemVerificationDtos);
 
 }
