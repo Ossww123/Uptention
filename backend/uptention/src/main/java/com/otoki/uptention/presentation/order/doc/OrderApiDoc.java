@@ -268,24 +268,35 @@ public interface OrderApiDoc {
 					@ExampleObject(
 						name = "유효하지 않은 커서",
 						summary = "잘못된 형식의 커서 값",
-						value = "{\"code\":\"X005\",\"message\":\"유효하지 않은 커서 형식입니다.\",\"path\":\"/api/orders\"}"
+						value = "{\"code\":\"CURSOR_003\",\"message\":\"유효하지 않은 커서 형식입니다.\",\"path\":\"/api/orders\"}"
 					),
 					@ExampleObject(
 						name = "유효하지 않은 주문 유형",
 						summary = "지원하지 않는 주문 유형",
-						value = "{\"code\":\"X006\",\"message\":\"지원하지 않는 주문 유형입니다. PURCHASE 또는 GIFT만 사용 가능합니다.\",\"path\":\"/api/orders\"}"
+						value = "{\"code\":\"ORDER_002\",\"message\":\"지원하지 않는 주문 유형입니다.\",\"path\":\"/api/orders\"}"
 					)
 				}
 			)
-		)
+		),
+		@ApiResponse(responseCode = "500", description = "커서 또는 서버 오류",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "커서 인코딩 실패",
+						summary = "커서를 생성/인코딩하는 과정에서 오류",
+						value = "{\"code\":\"CURSOR_001\",\"message\":\"커서 인코딩에 실패했습니다.\",\"path\":\"/api/orders\"}"
+					)
+				}
+			)),
 	})
 	ResponseEntity<OrderHistoryCursorResponseDto> getOrderHistory(
-		@Parameter(description = "페이지네이션 커서 값", example = "eyJ2YWx1ZSI6MCwiaWQiOjEwfQ==")
+		@Parameter(description = "페이지네이션 커서 값")
 		@RequestParam(required = false) String cursor,
 
 		@Parameter(description = "페이지 크기", example = "10")
 		@RequestParam(defaultValue = "10") int size,
 
-		@Parameter(description = "주문 유형 (PURCHASE: 일반구매, GIFT: 보낸 선물)", example = "PURCHASE")
+		@Parameter(description = "주문 유형 (PURCHASE: 일반구매, GIFT: 보낸 선물)")
 		@RequestParam(defaultValue = "PURCHASE") String type);
 }
