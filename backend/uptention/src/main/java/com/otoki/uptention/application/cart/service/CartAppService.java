@@ -15,4 +15,6 @@ public interface CartAppService {
 	Cart updateCartItemQuantity(Integer cartId, CartQuantityRequestDto cartQuantityRequestDto);
 
 	void removeCartItem(List<Integer> cartId);
+
+	int countCartItems();
 }

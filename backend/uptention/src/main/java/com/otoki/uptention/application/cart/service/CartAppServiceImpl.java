@@ -85,6 +85,14 @@ public class CartAppServiceImpl implements CartAppService {
 	}
 
 	/**
+	 * 현재 로그인한 사용자의 장바구니에 담긴 상품 수량 합계를 조회합니다.
+	 */
+	public int countCartItems() {
+		User user = userService.getUserById(1);
+		return cartService.countCartItemsByUserId(user.getId());
+	}
+
+	/**
 	 * 상품 수량 유효성 검증
 	 */
 	private void validateQuantity(int quantity) {
@@ -122,4 +130,6 @@ public class CartAppServiceImpl implements CartAppService {
 
 		return cartService.saveCart(cart);
 	}
+
+
 }
