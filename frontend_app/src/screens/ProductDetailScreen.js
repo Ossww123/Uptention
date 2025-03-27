@@ -11,7 +11,9 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Animated,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -21,10 +23,35 @@ const ProductDetailScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showCartMessage, setShowCartMessage] = useState(false);
+  const fadeAnim = new Animated.Value(0);
 
   useEffect(() => {
     fetchProductDetails();
   }, [productId]);
+
+  // 카트 메시지가 표시되면 자동으로 사라지게 하는 효과
+  useEffect(() => {
+    if (showCartMessage) {
+      // 메시지 표시 애니메이션
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+
+      // 3초 후 메시지 숨기기
+      const timer = setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => setShowCartMessage(false));
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showCartMessage]);
 
   const fetchProductDetails = async () => {
     try {
@@ -48,15 +75,55 @@ const ProductDetailScreen = ({ route, navigation }) => {
   };
 
   // 장바구니에 추가 기능
-  const addToCart = () => {
-    // 실제로는 장바구니 기능 구현
-    Alert.alert('알림', '장바구니에 추가되었습니다.');
+  const addToCart = async () => {
+    try {
+      // 로딩 상태 추가 가능 (필요시)
+      // setLoading(true);
+      
+      const response = await fetch('https://j12d211.p.ssafy.io/api/shopping-cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // 필요한 경우 인증 토큰 추가
+          // 'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          itemId: productId, // route.params에서 받은 productId 사용
+          quantity: 1 // 요구사항대로 1로 고정
+        })
+      });
+      
+      // 응답이 성공적이지 않은 경우
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '장바구니 추가에 실패했습니다.');
+      }
+      
+      // 성공 메시지 표시
+      setShowCartMessage(true);
+    } catch (error) {
+      console.error('장바구니 추가 오류:', error);
+      // 에러 메시지 표시
+      Alert.alert(
+        '오류',
+        error.message || '장바구니 추가 중 오류가 발생했습니다.'
+      );
+    } finally {
+      // 로딩 상태 종료 (필요시)
+      // setLoading(false);
+    }
   };
 
   // 바로 구매 기능
   const buyNow = () => {
     // 실제로는 구매 페이지로 이동
     Alert.alert('알림', '구매 페이지로 이동합니다.');
+  };
+
+  // 선물하기 기능
+  const sendGift = () => {
+    // 실제로는 선물하기 페이지로 이동
+    Alert.alert('알림', '선물하기 페이지로 이동합니다.');
   };
 
   // 이미지 슬라이더 렌더링
@@ -105,6 +172,34 @@ const ProductDetailScreen = ({ route, navigation }) => {
           ))}
         </View>
       </View>
+    );
+  };
+
+  // 장바구니 성공 메시지 렌더링
+  const renderCartMessage = () => {
+    if (!showCartMessage) return null;
+
+    return (
+      <Animated.View style={[styles.cartMessageContainer, { opacity: fadeAnim }]}>
+        <View style={styles.cartMessageContent}>
+          <View style={styles.checkIconContainer}>
+            <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+          </View>
+          <Text style={styles.cartMessageText}>성공적으로 장바구니에 추가되었습니다.</Text>
+          <TouchableOpacity 
+            style={styles.closeButton} 
+            onPress={() => {
+              Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+              }).start(() => setShowCartMessage(false));
+            }}
+          >
+            <Ionicons name="close" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
     );
   };
 
@@ -197,20 +292,30 @@ const ProductDetailScreen = ({ route, navigation }) => {
         </View>
       </ScrollView>
 
-      {/* 하단 버튼 영역 */}
-      <View style={styles.bottomButtons}>
+      {/* 장바구니 성공 메시지 */}
+      {renderCartMessage()}
+
+      {/* 하단 버튼 영역 - 3개 버튼으로 변경 */}
+      <View style={styles.threeButtonContainer}>
         <TouchableOpacity 
-          style={styles.cartAddButton}
+          style={styles.buttonOutline}
           onPress={addToCart}
         >
-          <Text style={styles.cartAddButtonText}>장바구니에 추가</Text>
+          <Text style={styles.buttonOutlineText}>장바구니</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={styles.buyButton}
+          style={styles.buttonOutline}
           onPress={buyNow}
         >
-          <Text style={styles.buyButtonText}>바로 구매</Text>
+          <Text style={styles.buttonOutlineText}>바로 구매</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.buttonFilled}
+          onPress={sendGift}
+        >
+          <Text style={styles.buttonFilledText}>선물하기</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -395,13 +500,15 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#666',
   },
-  bottomButtons: {
+  // 3개 버튼을 위한 새 스타일
+  threeButtonContainer: {
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
     padding: 15,
+    justifyContent: 'space-between',
   },
-  cartAddButton: {
+  buttonOutline: {
     flex: 1,
     height: 50,
     borderWidth: 1,
@@ -409,25 +516,56 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginHorizontal: 5,
+    backgroundColor: 'white',
   },
-  cartAddButtonText: {
+  buttonOutlineText: {
     color: '#FF8C00',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  buyButton: {
+  buttonFilled: {
     flex: 1,
     height: 50,
     backgroundColor: '#FF8C00',
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: 5,
   },
-  buyButtonText: {
+  buttonFilledText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // 장바구니 추가 메시지 스타일
+  cartMessageContainer: {
+    position: 'absolute',
+    bottom: 80,
+    left: 15,
+    right: 15,
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  cartMessageContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#00C851', // 초록색 배경
+    borderRadius: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    width: '100%',
+  },
+  checkIconContainer: {
+    marginRight: 10,
+  },
+  cartMessageText: {
+    flex: 1,
+    color: 'white',
+    fontSize: 14,
+  },
+  closeButton: {
+    padding: 5,
   },
 });
 
