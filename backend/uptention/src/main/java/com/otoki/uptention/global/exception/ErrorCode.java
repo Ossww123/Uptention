@@ -34,7 +34,7 @@ public enum ErrorCode {
 
 	// 파일 관련 에러
 	FILE_EMPTY(HttpStatus.BAD_REQUEST, "FILE_001", "파일이 비어있습니다."),
-	FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "FILE_002", "파일 크기가 너무 큽니다. 최대 허용 크기는 2MB 바이트 입니다."), // 5MB
+	FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "FILE_002", "파일 크기가 너무 큽니다. 최대 허용 크기는 5MB 바이트 입니다."), // 5MB
 	FILE_INVALID_NAME(HttpStatus.BAD_REQUEST, "FILE_003", "유효하지 않은 파일 이름입니다."),
 	FILE_INVALID_EXTENSION(HttpStatus.BAD_REQUEST, "FILE_004", "허용되지 않은 파일 확장자입니다."),
 	FILE_INVALID_MIME_TYPE(HttpStatus.BAD_REQUEST, "FILE_005", "허용되지 않은 MIME 타입입니다."),
