@@ -44,7 +44,7 @@ public class CartServiceImpl implements CartService {
 	 */
 	@Override
 	public List<CartItemDto> getCartItemsByUserId(Integer userId) {
-		return cartRepository.findCartItemsByUserId(userId);
+		return cartRepository.findCartItemsWithThumbnailByUserId(userId);
 	}
 
 	@Override
