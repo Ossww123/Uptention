@@ -10,14 +10,16 @@ const UserCreatePage = () => {
   const [formData, setFormData] = useState({
     name: '',
     employeeNumber: '',
-    userId: '',
+    username: '',
     password: '',
     confirmPassword: ''
   });
   
   const [errors, setErrors] = useState({});
-  const [isChecking, setIsChecking] = useState(false); // 중복 확인 중 상태
+  const [isCheckingId, setIsCheckingId] = useState(false); // ID 중복 확인 중 상태
+  const [isCheckingEmpNum, setIsCheckingEmpNum] = useState(false); // 사원번호 중복 확인 중 상태
   const [isIdAvailable, setIsIdAvailable] = useState(false); // ID 사용 가능 여부
+  const [isEmpNumAvailable, setIsEmpNumAvailable] = useState(false); // 사원번호 사용 가능 여부
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,62 +28,119 @@ const UserCreatePage = () => {
       [name]: value
     });
     
-    // userId가 변경되면 중복 확인 상태 초기화
-    if (name === 'userId') {
+    // 값이 변경되면 중복 확인 상태 초기화
+    if (name === 'username') {
       setIsIdAvailable(false);
+    } else if (name === 'employeeNumber') {
+      setIsEmpNumAvailable(false);
     }
   };
   
   // 중복 ID 체크
   const checkIdDuplicate = async () => {
     // 유효성 검사
-    if (!formData.userId) {
+    if (!formData.username) {
       setErrors(prev => ({
         ...prev,
-        userId: '아이디를 입력해 주세요'
+        username: '아이디를 입력해 주세요'
       }));
       return;
     }
     
     // 정규식 검사 - 영어 소문자와, 숫자만 사용 가능, 8~15자
     const idRegex = /^[a-z0-9]{8,15}$/;
-    if (!idRegex.test(formData.userId)) {
+    if (!idRegex.test(formData.username)) {
       setErrors(prev => ({
         ...prev,
-        userId: '아이디는 영어 소문자와 숫자만 사용 가능하며 8~15자여야 합니다'
+        username: '아이디는 영어 소문자와 숫자만 사용 가능하며 8~15자여야 합니다'
       }));
       return;
     }
     
-    setIsChecking(true);
+    setIsCheckingId(true);
     
     try {
-      // 실제 API 호출할 때 사용
-      const response = await axios.get(`/api/users/check-id?userId=${formData.userId}`);
+      // API 호출
+      const response = await axios.get(`/api/users/exists?username=${formData.username}`);
       
-      // 서버 응답 처리
-      if (response.data.isAvailable) {
-        setIsIdAvailable(true);
-        setErrors(prev => ({
-          ...prev,
-          userId: ''
-        }));
-        alert('사용 가능한 아이디입니다.');
-      } else {
-        setIsIdAvailable(false);
-        setErrors(prev => ({
-          ...prev,
-          userId: '이미 사용 중인 아이디입니다'
-        }));
-      }
-    } catch (error) {
-      console.error('ID 중복 확인 중 오류 발생:', error);
+      // 서버 응답 처리 - 200 OK는 사용 가능한 경우
+      setIsIdAvailable(true);
       setErrors(prev => ({
         ...prev,
-        userId: '중복 확인 중 오류가 발생했습니다'
+        username: ''
       }));
+      alert(response.data); // "사용 가능한 아이디입니다."
+    } catch (error) {
+      setIsIdAvailable(false);
+      
+      // 409 Conflict는 이미 사용 중인 경우
+      if (error.response && error.response.status === 409) {
+        setErrors(prev => ({
+          ...prev,
+          username: error.response.data.message || '이미 사용 중인 아이디입니다'
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          username: '중복 확인 중 오류가 발생했습니다'
+        }));
+      }
     } finally {
-      setIsChecking(false);
+      setIsCheckingId(false);
+    }
+  };
+  
+  // 사원번호 중복 체크
+  const checkEmpNumDuplicate = async () => {
+    // 유효성 검사
+    if (!formData.employeeNumber) {
+      setErrors(prev => ({
+        ...prev,
+        employeeNumber: '사원번호를 입력해 주세요'
+      }));
+      return;
+    }
+    
+    // 정규식 검사 - 영어와 숫자만, 1~20자
+    const empNumRegex = /^[a-zA-Z0-9]{1,20}$/;
+    if (!empNumRegex.test(formData.employeeNumber)) {
+      setErrors(prev => ({
+        ...prev,
+        employeeNumber: '사원번호는 영어와 숫자만 사용 가능하며 1~20자여야 합니다'
+      }));
+      return;
+    }
+    
+    setIsCheckingEmpNum(true);
+    
+    try {
+      // API 호출
+      const response = await axios.get(`/api/users/exists?employeeNumber=${formData.employeeNumber}`);
+      
+      // 서버 응답 처리 - 200 OK는 사용 가능한 경우
+      setIsEmpNumAvailable(true);
+      setErrors(prev => ({
+        ...prev,
+        employeeNumber: ''
+      }));
+      alert(response.data); // "사용 가능한 사번입니다."
+    } catch (error) {
+      setIsEmpNumAvailable(false);
+      
+      // 409 Conflict는 이미 사용 중인 경우
+      if (error.response && error.response.status === 409) {
+        setErrors(prev => ({
+          ...prev,
+          employeeNumber: error.response.data.message || '이미 사용 중인 사번입니다'
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          employeeNumber: '중복 확인 중 오류가 발생했습니다'
+        }));
+      }
+    } finally {
+      setIsCheckingEmpNum(false);
     }
   };
   
@@ -107,18 +166,21 @@ const UserCreatePage = () => {
     } else if (!employeeNumberRegex.test(formData.employeeNumber)) {
       newErrors.employeeNumber = '사원번호는 영어와 숫자만 사용 가능하며 1~20자여야 합니다';
       isValid = false;
+    } else if (!isEmpNumAvailable) {
+      newErrors.employeeNumber = '사원번호 중복 확인이 필요합니다';
+      isValid = false;
     }
     
     // 아이디 검증 (영어 소문자와 숫자만, 8~15자)
     const idRegex = /^[a-z0-9]{8,15}$/;
-    if (!formData.userId) {
-      newErrors.userId = '아이디를 입력해 주세요';
+    if (!formData.username) {
+      newErrors.username = '아이디를 입력해 주세요';
       isValid = false;
-    } else if (!idRegex.test(formData.userId)) {
-      newErrors.userId = '아이디는 영어 소문자와 숫자만 사용 가능하며 8~15자여야 합니다';
+    } else if (!idRegex.test(formData.username)) {
+      newErrors.username = '아이디는 영어 소문자와 숫자만 사용 가능하며 8~15자여야 합니다';
       isValid = false;
     } else if (!isIdAvailable) {
-      newErrors.userId = '아이디 중복 확인이 필요합니다';
+      newErrors.username = '아이디 중복 확인이 필요합니다';
       isValid = false;
     }
     
@@ -156,14 +218,36 @@ const UserCreatePage = () => {
       // 필요없는 confirmPassword 제거
       const { confirmPassword, ...dataToSubmit } = formData;
       
-      // 실제 API 호출
-      await axios.post('/api/users', dataToSubmit);
+      // API 호출
+      const response = await axios.post('/api/users', dataToSubmit);
       
+      // 성공 응답 처리
       alert('회원이 등록되었습니다.');
       navigate('/admin/users');
     } catch (error) {
       console.error('회원 등록 중 오류 발생:', error);
-      alert('회원 등록에 실패했습니다. 다시 시도해 주세요.');
+      
+      // 409 Conflict 에러 처리
+      if (error.response && error.response.status === 409) {
+        // 에러 메시지에 따라 다른 처리
+        if (error.response.data.errorCode === 'AUTH_005') {
+          setErrors(prev => ({
+            ...prev,
+            employeeNumber: error.response.data.message || '사번이 이미 사용 중입니다.'
+          }));
+          setIsEmpNumAvailable(false);
+        } else if (error.response.data.errorCode === 'AUTH_006') {
+          setErrors(prev => ({
+            ...prev,
+            username: error.response.data.message || '아이디가 이미 사용 중입니다.'
+          }));
+          setIsIdAvailable(false);
+        } else {
+          alert(error.response.data.message || '회원 등록에 실패했습니다.');
+        }
+      } else {
+        alert('회원 등록에 실패했습니다. 다시 시도해 주세요.');
+      }
     }
   };
   
@@ -206,16 +290,27 @@ const UserCreatePage = () => {
                   <label>사원번호<span className="required">*</span></label>
                 </td>
                 <td className="input-cell">
-                  <input 
-                    type="text" 
-                    name="employeeNumber"
-                    value={formData.employeeNumber}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="사원번호 입력 (1~20자, 영어/숫자만 가능)"
-                    maxLength="20"
-                  />
+                  <div className="id-check-container">
+                    <input 
+                      type="text" 
+                      name="employeeNumber"
+                      value={formData.employeeNumber}
+                      onChange={handleChange}
+                      className="form-input"
+                      placeholder="사원번호 입력 (1~20자, 영어/숫자만 가능)"
+                      maxLength="20"
+                    />
+                    <button 
+                      type="button" 
+                      className="id-check-button"
+                      onClick={checkEmpNumDuplicate}
+                      disabled={isCheckingEmpNum}
+                    >
+                      {isCheckingEmpNum ? '확인 중...' : '중복 확인'}
+                    </button>
+                  </div>
                   {errors.employeeNumber && <div className="error-message">{errors.employeeNumber}</div>}
+                  {isEmpNumAvailable && <div className="success-message">사용 가능한 사번입니다</div>}
                 </td>
               </tr>
               
@@ -227,8 +322,8 @@ const UserCreatePage = () => {
                   <div className="id-check-container">
                     <input 
                       type="text" 
-                      name="userId"
-                      value={formData.userId}
+                      name="username"
+                      value={formData.username}
                       onChange={handleChange}
                       className="form-input"
                       placeholder="회원 ID 입력 (8~15자, 영소문자/숫자만 가능)"
@@ -238,12 +333,12 @@ const UserCreatePage = () => {
                       type="button" 
                       className="id-check-button"
                       onClick={checkIdDuplicate}
-                      disabled={isChecking}
+                      disabled={isCheckingId}
                     >
-                      {isChecking ? '확인 중...' : '중복 확인'}
+                      {isCheckingId ? '확인 중...' : '중복 확인'}
                     </button>
                   </div>
-                  {errors.userId && <div className="error-message">{errors.userId}</div>}
+                  {errors.username && <div className="error-message">{errors.username}</div>}
                   {isIdAvailable && <div className="success-message">사용 가능한 아이디입니다</div>}
                 </td>
               </tr>
