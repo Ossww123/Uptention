@@ -12,6 +12,7 @@ import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.order.dto.GiftItemDto;
 import com.otoki.uptention.domain.order.enums.GiftStatus;
 import com.otoki.uptention.domain.order.service.GiftService;
+import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -26,25 +27,35 @@ public class GiftAppServiceImpl implements GiftAppService {
 
 	@Override
 	public GiftHistoryCursorResponseDto getGiftHistory(String cursorStr, int size, GiftStatus type) {
-
 		// 현재 로그인한 사용자 (임시로 ID 2 사용)
-		Integer userId = 2; // 실제로는 SecurityContext에서 가져옴
-
-		// 커서 디코딩
-		CursorDto cursor = CursorDto.decode(cursorStr);
+		User user = userService.getUserById(2);
 
 		// 선물 목록 조회
-		List<GiftItemDto> giftItems;
+		List<GiftItemDto> giftItems = fetchGiftsByStatus(user.getId(), cursorStr, size + 1, type);
+
+		// 페이지네이션 처리 및 응답 생성
+		return createGiftHistoryResponse(giftItems, size);
+	}
+
+	/**
+	 * 상태에 따른 선물 목록 조회
+	 */
+	private List<GiftItemDto> fetchGiftsByStatus(Integer userId, String cursorStr, int limit, GiftStatus status) {
+		CursorDto cursor = CursorDto.decode(cursorStr);
+
 		if (cursor == null) {
 			// 첫 페이지 조회
-			giftItems = giftService.getReceivedGiftsByStatusWithLimit(
-				userId, type, size + 1);
+			return giftService.getReceivedGiftsByStatusWithLimit(userId, status, limit);
 		} else {
 			// 다음 페이지 조회
-			giftItems = giftService.getReceivedGiftsByStatusAfterCursor(
-				userId, type, cursor.getId(), size + 1);
+			return giftService.getReceivedGiftsByStatusAfterCursor(userId, status, cursor.getId(), limit);
 		}
+	}
 
+	/**
+	 * 선물 내역 응답 생성
+	 */
+	private GiftHistoryCursorResponseDto createGiftHistoryResponse(List<GiftItemDto> giftItems, int size) {
 		// 다음 페이지 여부 확인
 		boolean hasNextPage = giftItems.size() > size;
 
@@ -60,7 +71,23 @@ public class GiftAppServiceImpl implements GiftAppService {
 		}
 
 		// DTO 변환
-		List<GiftItemResponseDto> giftItemDtos = resultItems.stream()
+		List<GiftItemResponseDto> giftItemDtos = convertToGiftItemResponseDtos(resultItems);
+
+		// 다음 커서 생성
+		String nextCursor = createNextCursor(hasNextPage, resultItems);
+
+		return GiftHistoryCursorResponseDto.builder()
+			.giftItems(giftItemDtos)
+			.hasNextPage(hasNextPage)
+			.nextCursor(nextCursor)
+			.build();
+	}
+
+	/**
+	 * 선물 항목 DTO 변환
+	 */
+	private List<GiftItemResponseDto> convertToGiftItemResponseDtos(List<GiftItemDto> resultItems) {
+		return resultItems.stream()
 			.map(item -> GiftItemResponseDto.builder()
 				.giftId(item.getGiftId())
 				.orderId(item.getOrderId())
@@ -73,19 +100,17 @@ public class GiftAppServiceImpl implements GiftAppService {
 				.senderName(item.getSenderName())
 				.build())
 			.collect(Collectors.toList());
+	}
 
-		// 다음 커서 생성
-		String nextCursor = null;
+	/**
+	 * 다음 커서 생성
+	 */
+	private String createNextCursor(boolean hasNextPage, List<GiftItemDto> resultItems) {
 		if (hasNextPage && !resultItems.isEmpty()) {
 			GiftItemDto lastItem = resultItems.get(resultItems.size() - 1);
 			CursorDto nextCursorDto = new CursorDto(0, lastItem.getGiftId());
-			nextCursor = nextCursorDto.encode();
+			return nextCursorDto.encode();
 		}
-
-		return GiftHistoryCursorResponseDto.builder()
-			.giftItems(giftItemDtos)
-			.hasNextPage(hasNextPage)
-			.nextCursor(nextCursor)
-			.build();
+		return null;
 	}
 }

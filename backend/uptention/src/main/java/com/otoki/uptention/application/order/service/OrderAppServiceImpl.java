@@ -137,41 +137,56 @@ public class OrderAppServiceImpl implements OrderAppService {
 	@Override
 	@Transactional(readOnly = true)
 	public OrderHistoryCursorResponseDto getOrderHistory(String cursorStr, int size, String type) {
+		// 주문 유형 검증
+		validateOrderType(type);
 
-		// 주문 유형 검증 추가
+		// 현재 사용자 조회 (임시로 ID 2 사용)
+		User user = userService.getUserById(2);
+
+		// 커서 처리 및 주문 목록 조회
+		List<Order> orders = fetchOrdersByType(user.getId(), cursorStr, size + 1, type);
+
+		// 페이지네이션 처리 및 응답 생성
+		return createOrderHistoryResponse(orders, size);
+	}
+
+	/**
+	 * 주문 유형 검증
+	 */
+	private void validateOrderType(String type) {
 		if (!"PURCHASE".equals(type) && !"GIFT".equals(type)) {
 			throw new CustomException(ErrorCode.ORDER_INVALID_TYPE);
 		}
+	}
 
-		User user = userService.getUserById(2);
+	/**
+	 * 유형에 따른 주문 목록 조회
+	 */
+	private List<Order> fetchOrdersByType(Integer userId, String cursorStr, int limit, String type) {
 		CursorDto cursor = CursorDto.decode(cursorStr);
-
-		// 1. 주문 목록 조회
-		List<Order> orders;
 		boolean isPurchase = "PURCHASE".equals(type);
 
 		if (cursor == null) {
 			// 첫 페이지 조회
-			if (isPurchase) {
-				orders = orderService.findPurchaseOrdersByUserIdWithLimit(user.getId(), size + 1);
-			} else {
-				orders = orderService.findGiftOrdersByUserIdWithLimit(user.getId(), size + 1);
-			}
+			return isPurchase
+				? orderService.findPurchaseOrdersByUserIdWithLimit(userId, limit)
+				: orderService.findGiftOrdersByUserIdWithLimit(userId, limit);
 		} else {
 			// 다음 페이지 조회
-			if (isPurchase) {
-				orders = orderService.findPurchaseOrdersByUserIdAndCursor(
-					user.getId(), cursor.getId(), size + 1);
-			} else {
-				orders = orderService.findGiftOrdersByUserIdAndCursor(
-					user.getId(), cursor.getId(), size + 1);
-			}
+			return isPurchase
+				? orderService.findPurchaseOrdersByUserIdAndCursor(userId, cursor.getId(), limit)
+				: orderService.findGiftOrdersByUserIdAndCursor(userId, cursor.getId(), limit);
 		}
+	}
 
-		// 2. 다음 페이지 여부 확인
+	/**
+	 * 주문 내역 응답 생성
+	 */
+	private OrderHistoryCursorResponseDto createOrderHistoryResponse(List<Order> orders, int size) {
+		// 다음 페이지 여부 확인
 		boolean hasNextPage = orders.size() > size;
 
-		// 3. 요청한 size만큼만 사용
+		// 요청한 size만큼만 사용
 		List<Order> resultOrders = hasNextPage ? orders.subList(0, size) : orders;
 
 		if (resultOrders.isEmpty()) {
@@ -182,19 +197,35 @@ public class OrderAppServiceImpl implements OrderAppService {
 				.build();
 		}
 
-		// 4. 주문 ID 목록 추출
+		// 주문 항목 조회 및 변환
+		List<OrderItemResponseDto> orderItemDtos = getOrderItemResponseDtos(resultOrders);
+
+		// 다음 커서 생성
+		String nextCursor = createNextCursor(hasNextPage, resultOrders);
+
+		return OrderHistoryCursorResponseDto.builder()
+			.orderItems(orderItemDtos)
+			.hasNextPage(hasNextPage)
+			.nextCursor(nextCursor)
+			.build();
+	}
+
+	/**
+	 * 주문 항목 DTO 변환
+	 */
+	private List<OrderItemResponseDto> getOrderItemResponseDtos(List<Order> resultOrders) {
+		// 주문 ID 목록 추출
 		List<Integer> orderIds = resultOrders.stream()
 			.map(Order::getId)
 			.collect(Collectors.toList());
 
-		// 5. 각 주문의 모든 항목 조회 (N+1 문제 방지를 위해 IN 쿼리 사용)
+		// 각 주문의 모든 항목 조회 (N+1 문제 방지를 위해 IN 쿼리 사용)
 		List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderIds(orderIds);
 
-		// 6. OrderItemResponseDto로 변환
-		List<OrderItemResponseDto> orderItemDtos = orderItems.stream()
+		// OrderItemResponseDto로 변환
+		return orderItems.stream()
 			.map(item -> {
 				Order order = item.getOrder();
-
 				return OrderItemResponseDto.builder()
 					.orderItemId(item.getId())
 					.orderId(order.getId())
@@ -207,24 +238,18 @@ public class OrderAppServiceImpl implements OrderAppService {
 					.build();
 			})
 			.collect(Collectors.toList());
-
-		// 7. 다음 커서 생성
-		// 다음 커서 생성
-		// 다음 커서 생성
-		String nextCursor = null;
-		if (hasNextPage && !resultOrders.isEmpty()) {
-			Order lastOrder = resultOrders.get(resultOrders.size() - 1);
-			// 단순히 ID만 사용하고 쿼리에서 정렬 처리
-			CursorDto nextCursorDto = new CursorDto(0, lastOrder.getId());
-			nextCursor = nextCursorDto.encode();
-		}
-
-		return OrderHistoryCursorResponseDto.builder()
-			.orderItems(orderItemDtos)
-			.hasNextPage(hasNextPage)
-			.nextCursor(nextCursor)
-			.build();
 	}
 
+	/**
+	 * 다음 커서 생성
+	 */
+	private String createNextCursor(boolean hasNextPage, List<Order> resultOrders) {
+		if (hasNextPage && !resultOrders.isEmpty()) {
+			Order lastOrder = resultOrders.get(resultOrders.size() - 1);
+			CursorDto nextCursorDto = new CursorDto(0, lastOrder.getId());
+			return nextCursorDto.encode();
+		}
+		return null;
+	}
 
 }
