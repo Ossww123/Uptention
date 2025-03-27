@@ -52,11 +52,24 @@ const StoreScreen = ({ navigation }) => {
   // 검색 텍스트를 저장하기 위한 ref
   const searchInputRef = useRef(null);
   const searchTimeoutRef = useRef(null);
+  const onEndReachedTimeoutRef = useRef(null); // 무한 스크롤 디바운싱용 ref 추가
 
   // 컴포넌트 마운트 시 상품 로드
   useEffect(() => {
     loadProducts(true);
   }, [selectedCategory, currentSort.id]);
+
+  // 컴포넌트 언마운트 시 timeout 정리
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      if (onEndReachedTimeoutRef.current) {
+        clearTimeout(onEndReachedTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 검색어 변경 시 디바운스 적용
   useEffect(() => {
@@ -78,8 +91,11 @@ const StoreScreen = ({ navigation }) => {
   // API에서 상품 데이터 로드
   const loadProducts = async (isRefresh = false) => {
     try {
-      // 이미 로딩 중이거나, 다음 페이지가 없는데 리프레시가 아닌 경우 리턴
-      if ((loading && !isRefresh) || (!hasNextPage && !isRefresh)) return;
+      // 이미 로딩 중이면 중복 요청 방지
+      if (loading) return;
+      
+      // 다음 페이지가 없고 리프레시가 아닐 경우 무시
+      if (!hasNextPage && !isRefresh) return;
 
       setLoading(true);
       if (isRefresh) {
@@ -120,13 +136,12 @@ const StoreScreen = ({ navigation }) => {
       }
 
       // 유효한 itemId를 가진 항목만 필터링
-    const validItems = data.items.filter(item => item.itemId);
-    
-
+      const validItems = data.items.filter(item => item.itemId);
+      
       if (isRefresh) {
-        setProducts(data.items);
+        setProducts(validItems);
       } else {
-        setProducts(prev => [...prev, ...data.items]);
+        setProducts(prev => [...prev, ...validItems]);
       }
       
       setHasNextPage(data.hasNextPage);
@@ -161,6 +176,17 @@ const StoreScreen = ({ navigation }) => {
       searchInputRef.current.blur();
     }
     loadProducts(true);
+  };
+
+  // 무한 스크롤 처리 (디바운싱 적용)
+  const handleEndReached = () => {
+    if (onEndReachedTimeoutRef.current) {
+      clearTimeout(onEndReachedTimeoutRef.current);
+    }
+    
+    onEndReachedTimeoutRef.current = setTimeout(() => {
+      loadProducts(false);
+    }, 200);
   };
 
   // 카테고리 아이콘 렌더링
@@ -367,8 +393,8 @@ const StoreScreen = ({ navigation }) => {
             products.length === 0 && styles.emptyListContainer,
           ]}
           style={styles.productsGrid}
-          onEndReached={() => loadProducts(false)}
-          onEndReachedThreshold={0.5}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.2}
           ListFooterComponent={renderFooter}
           ListEmptyComponent={renderEmpty}
           refreshing={refreshing}
