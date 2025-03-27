@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -14,72 +16,185 @@ const CartScreen = ({ navigation }) => {
   // 장바구니 상품 상태 관리
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // 수량 변경 디바운싱을 위한 타이머 ref
+  const quantityTimersRef = useRef({});
 
-  // 컴포넌트 마운트 시 더미 데이터 로드
+  // 컴포넌트 마운트 시 장바구니 데이터 로드
   useEffect(() => {
-    // 더미 데이터 로드를 시뮬레이션하는 타이머
-    const timer = setTimeout(() => {
-      // 더미 데이터 - 실제 구현 시 API 호출로 대체
-      const dummyCartItems = [
-        {
-          id: "1",
-          brand: "브랜드명",
-          name: "물건이름",
-          price: 1.0,
-          unit: "WORK",
-          quantity: 2,
-          image: require("../../assets/product1.png"),
-          selected: true,
-        },
-        {
-          id: "2",
-          brand: "브랜드명",
-          name: "물건이름",
-          price: 2.5,
-          unit: "WORK",
-          quantity: 1,
-          image: require("../../assets/product2.png"),
-          selected: true,
-        },
-      ];
-
-      setCartItems(dummyCartItems);
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    fetchCartItems();
+    
+    // 컴포넌트 언마운트 시 모든 타이머 정리
+    return () => {
+      Object.values(quantityTimersRef.current).forEach(timer => {
+        clearTimeout(timer);
+      });
+    };
   }, []);
 
-  // 수량 변경 함수
-  const updateQuantity = (id, increment) => {
+  // 장바구니 데이터 불러오기
+  const fetchCartItems = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch('https://j12d211.p.ssafy.io/api/shopping-cart', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // 필요한 경우 인증 토큰 추가
+          // 'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '장바구니 조회에 실패했습니다.');
+      }
+      
+      const data = await response.json();
+      
+      // API에서 받아온 데이터를 UI에 맞게 변환
+      const formattedData = data.map(item => ({
+        ...item,
+        selected: true, // 기본적으로 모든 아이템 선택 상태로 설정
+        image: { uri: item.thumbnail } // 이미지 URI 설정
+      }));
+      
+      setCartItems(formattedData);
+    } catch (error) {
+      console.error('장바구니 조회 오류:', error);
+      Alert.alert('오류', error.message || '장바구니 불러오기에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 수량 변경 함수 (디바운싱 적용)
+  const updateQuantity = (cartId, increment) => {
     setCartItems((prevItems) =>
       prevItems.map((item) => {
-        if (item.id === id) {
-          const newQuantity = Math.max(1, item.quantity + increment);
-          return { ...item, quantity: newQuantity };
+        if (item.cartId === cartId) {
+          // 새 수량 계산 (1~99 범위 제한)
+          const newQuantity = Math.max(1, Math.min(99, item.quantity + increment));
+          
+          // 이전 타이머가 있다면 취소
+          if (quantityTimersRef.current[cartId]) {
+            clearTimeout(quantityTimersRef.current[cartId]);
+          }
+          
+          // 새 타이머 설정 (500ms 후 API 호출)
+          quantityTimersRef.current[cartId] = setTimeout(() => {
+            updateCartItemQuantity(cartId, newQuantity);
+            // 타이머 참조 삭제
+            delete quantityTimersRef.current[cartId];
+          }, 500);
+          
+          return { ...item, quantity: newQuantity, totalPrice: newQuantity * item.price };
         }
         return item;
       })
     );
   };
 
+  // 수량 변경 API 호출
+  const updateCartItemQuantity = async (cartId, quantity) => {
+    try {
+      const response = await fetch(`https://j12d211.p.ssafy.io/api/shopping-cart/${cartId}/quantity`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ quantity })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '수량 변경에 실패했습니다.');
+      }
+      
+      console.log(`카트 아이템 ${cartId} 수량이 ${quantity}로 변경되었습니다.`);
+    } catch (error) {
+      console.error('장바구니 수량 변경 오류:', error);
+      Alert.alert('오류', error.message || '장바구니 수량 변경에 실패했습니다.');
+      // 오류 발생 시 장바구니 새로고침
+      fetchCartItems();
+    }
+  };
+
   // 상품 선택 토글 함수
-  const toggleSelection = (id) => {
+  const toggleSelection = (cartId) => {
     setCartItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === id ? { ...item, selected: !item.selected } : item
+        item.cartId === cartId ? { ...item, selected: !item.selected } : item
       )
     );
   };
 
   // 선택 삭제 함수
-  const deleteSelected = () => {
-    setCartItems((prevItems) => prevItems.filter((item) => !item.selected));
+  const deleteSelected = async () => {
+    const selectedCartIds = cartItems
+      .filter(item => item.selected)
+      .map(item => item.cartId);
+    
+    if (selectedCartIds.length === 0) {
+      Alert.alert('알림', '선택된 상품이 없습니다.');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`https://j12d211.p.ssafy.io/api/shopping-cart`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(selectedCartIds)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '삭제에 실패했습니다.');
+      }
+      
+      // 성공적으로 삭제된 경우, UI에서도 해당 아이템 제거
+      setCartItems((prevItems) => prevItems.filter((item) => !item.selected));
+      
+      // 알림 표시
+      Alert.alert('알림', '선택한 상품이 장바구니에서 삭제되었습니다.');
+    } catch (error) {
+      console.error('장바구니 삭제 오류:', error);
+      Alert.alert('오류', error.message || '장바구니 삭제에 실패했습니다.');
+    }
   };
 
   // 상품 개별 삭제 함수
-  const deleteItem = (id) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
+  const deleteItem = async (cartId) => {
+    try {
+      const response = await fetch(`https://j12d211.p.ssafy.io/api/shopping-cart`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          // 'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify([cartId]) // 배열 형태로 전송
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || '삭제에 실패했습니다.');
+      }
+      
+      // 성공적으로 삭제된 경우, UI에서도 해당 아이템 제거
+      setCartItems((prevItems) => prevItems.filter((item) => item.cartId !== cartId));
+      
+      // 알림 표시
+      Alert.alert('알림', '상품이 장바구니에서 삭제되었습니다.');
+    } catch (error) {
+      console.error('장바구니 삭제 오류:', error);
+      Alert.alert('오류', error.message || '장바구니 삭제에 실패했습니다.');
+    }
   };
 
   // 전체 선택/해제 함수
@@ -90,13 +205,19 @@ const CartScreen = ({ navigation }) => {
     );
   };
 
+  // 장바구니 새로고침
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchCartItems().finally(() => setRefreshing(false));
+  };
+
   // 장바구니 상품 목록 렌더링
   const renderCartItems = () => {
     return cartItems.map((item) => (
-      <View key={item.id} style={styles.cartItem}>
+      <View key={item.cartId} style={styles.cartItem}>
         <TouchableOpacity
           style={styles.selectButton}
-          onPress={() => toggleSelection(item.id)}
+          onPress={() => toggleSelection(item.cartId)}
         >
           <View
             style={[
@@ -113,7 +234,7 @@ const CartScreen = ({ navigation }) => {
         </TouchableOpacity>
 
         <View style={styles.deleteButtonContainer}>
-          <TouchableOpacity onPress={() => deleteItem(item.id)}>
+          <TouchableOpacity onPress={() => deleteItem(item.cartId)}>
             <Text style={styles.deleteText}>삭제</Text>
           </TouchableOpacity>
         </View>
@@ -124,33 +245,45 @@ const CartScreen = ({ navigation }) => {
           <Text style={styles.brandText}>{item.brand}</Text>
           <Text style={styles.productName}>{item.name}</Text>
           <Text style={styles.priceText}>
-            {item.price.toFixed(1)} {item.unit}
+            {item.price.toLocaleString()} WORK
           </Text>
 
-          <View style={styles.quantityContainer}>
-            <TouchableOpacity
-              style={styles.quantityButton}
-              onPress={() => updateQuantity(item.id, -1)}
-            >
-              <Text style={styles.quantityButtonText}>-</Text>
-            </TouchableOpacity>
+          {item.stockQuantity === 0 ? (
+            <Text style={styles.soldOutText}>품절</Text>
+          ) : (
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => updateQuantity(item.cartId, -1)}
+                disabled={item.quantity <= 1} // 1 이하로는 감소 불가
+              >
+                <Text style={[
+                  styles.quantityButtonText,
+                  item.quantity <= 1 && styles.disabledButtonText
+                ]}>-</Text>
+              </TouchableOpacity>
 
-            <View style={styles.quantityTextContainer}>
-              <Text style={styles.quantityText}>{item.quantity}</Text>
+              <View style={styles.quantityTextContainer}>
+                <Text style={styles.quantityText}>{item.quantity}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.quantityButton}
+                onPress={() => updateQuantity(item.cartId, 1)}
+                disabled={item.quantity >= 99} // 99 이상으로는 증가 불가
+              >
+                <Text style={[
+                  styles.quantityButtonText,
+                  item.quantity >= 99 && styles.disabledButtonText
+                ]}>+</Text>
+              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={styles.quantityButton}
-              onPress={() => updateQuantity(item.id, 1)}
-            >
-              <Text style={styles.quantityButtonText}>+</Text>
-            </TouchableOpacity>
-          </View>
+          )}
         </View>
 
         <View style={styles.totalPriceContainer}>
           <Text style={styles.totalPriceText}>
-            총 {(item.price * item.quantity).toFixed(1)} {item.unit}
+            총 {item.totalPrice.toLocaleString()} WORK
           </Text>
         </View>
       </View>
@@ -185,7 +318,7 @@ const CartScreen = ({ navigation }) => {
     const selectedItems = cartItems.filter((item) => item.selected);
     const itemCount = selectedItems.length;
     const totalPrice = selectedItems.reduce(
-      (total, item) => total + item.price * item.quantity,
+      (total, item) => total + item.totalPrice,
       0
     );
 
@@ -198,16 +331,19 @@ const CartScreen = ({ navigation }) => {
 
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>총 결제금액</Text>
-          <Text style={styles.summaryPrice}>{totalPrice.toFixed(1)} WORK</Text>
+          <Text style={styles.summaryPrice}>{totalPrice.toLocaleString()} WORK</Text>
         </View>
 
         <TouchableOpacity
-          style={styles.checkoutButton}
+          style={[
+            styles.checkoutButton,
+            selectedItems.length === 0 && styles.disabledButton
+          ]}
           onPress={() => navigation.navigate("Checkout")}
           disabled={selectedItems.length === 0}
         >
           <Text style={styles.checkoutButtonText}>
-            결제 {totalPrice.toFixed(1)} WORK
+            결제 {totalPrice.toLocaleString()} WORK
           </Text>
         </TouchableOpacity>
       </View>
@@ -248,6 +384,14 @@ const CartScreen = ({ navigation }) => {
     );
   };
 
+  // 로딩 화면 렌더링
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#FF8C00" />
+      <Text style={styles.loadingText}>장바구니를 불러오는 중...</Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 헤더 */}
@@ -259,13 +403,13 @@ const CartScreen = ({ navigation }) => {
           <Ionicons name="chevron-back" size={28} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>장바구니</Text>
-        <View style={styles.placeholderView} />
+        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+          <Ionicons name="refresh" size={24} color="#000000" />
+        </TouchableOpacity>
       </View>
 
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>로딩 중...</Text>
-        </View>
+        renderLoading()
       ) : cartItems.length === 0 ? (
         renderEmptyCart()
       ) : (
@@ -303,8 +447,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  placeholderView: {
-    width: 40,
+  refreshButton: {
+    padding: 5,
   },
   loadingContainer: {
     flex: 1,
@@ -314,6 +458,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: "#888888",
+    marginTop: 10,
   },
   contentContainer: {
     flex: 1,
@@ -388,6 +533,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     marginRight: 15,
+    backgroundColor: "#f5f5f5",
   },
   productInfo: {
     flex: 1,
@@ -408,6 +554,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
+  soldOutText: {
+    fontSize: 14,
+    color: "#ff3b30",
+    fontWeight: "bold",
+    marginTop: 5,
+  },
   quantityContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -425,6 +577,9 @@ const styles = StyleSheet.create({
   quantityButtonText: {
     fontSize: 18,
     fontWeight: "bold",
+  },
+  disabledButtonText: {
+    color: "#CCCCCC",
   },
   quantityTextContainer: {
     minWidth: 40,
@@ -477,6 +632,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 15,
+  },
+  disabledButton: {
+    backgroundColor: "#CCCCCC",
   },
   checkoutButtonText: {
     color: "#FFFFFF",
