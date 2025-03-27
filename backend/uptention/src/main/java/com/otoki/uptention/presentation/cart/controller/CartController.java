@@ -51,4 +51,10 @@ public class CartController implements CartApiDoc {
 		cartAppService.removeCartItem(cartIds);
 		return ResponseEntity.ok("장바구니 상품 삭제 성공");
 	}
+
+	@GetMapping("/count")
+	public ResponseEntity<Integer> getCartItemCount() {
+		return ResponseEntity.ok(cartAppService.countCartItems());
+	}
+
 }
