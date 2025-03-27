@@ -42,6 +42,7 @@ public class Gift extends TimeStampEntity {
 	@JoinColumn(name = "order_id", nullable = false)
 	private Order order;
 
+	@Builder.Default
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", length = 20, nullable = false)
 	private GiftStatus status = GiftStatus.PENDING;
