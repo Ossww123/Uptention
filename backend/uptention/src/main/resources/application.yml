@@ -16,7 +16,12 @@ spring:
       credentials:
         access-key: ${S3_ACCESS_TOKEN}
         secret-key: ${S3_SECRET_TOKEN}
-  
+
+  servlet:
+    multipart:
+      max-file-size: 5MB # 파일 하나 당 최대 용량
+      max-request-size: 25MB # 모든 파일의 최대 용량
+
   profiles:
     group:
       local:
