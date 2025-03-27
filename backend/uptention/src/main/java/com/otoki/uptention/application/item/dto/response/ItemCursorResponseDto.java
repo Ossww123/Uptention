@@ -12,8 +12,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 @Builder
-@Schema(description = "상품 목록 조회 응답")
-public class ItemListResponseDto {
+@Schema(description = "상품 목록 조회 응답 DTO")
+public class ItemCursorResponseDto {
 	@Schema(description = "상품 목록")
 	private List<ItemDto> items;
 
