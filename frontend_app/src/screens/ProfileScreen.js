@@ -34,7 +34,7 @@ const encryptPayload = (payload, sharedSecret) => {
   return [nonce, encryptedPayload];
 };
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
   const [deepLink, setDeepLink] = useState("");
   const [dappKeyPair] = useState(nacl.box.keyPair());
   const [sharedSecret, setSharedSecret] = useState();
@@ -279,7 +279,10 @@ const ProfileScreen = () => {
 
           {/* 메뉴 섹션 */}
           <View style={styles.menuSection}>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('OrderHistory')}
+            >
               <Text style={styles.menuText}>주문 내역</Text>
               <Ionicons name="chevron-forward" size={24} color="black" />
             </TouchableOpacity>
