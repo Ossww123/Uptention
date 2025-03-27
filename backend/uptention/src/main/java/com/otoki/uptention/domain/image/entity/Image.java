@@ -29,7 +29,7 @@ public class Image extends TimeStampEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 
-	@Column(name = "url", length = 127)
+	@Column(name = "url", length = 255)
 	private String url;
 
 	@ManyToOne(fetch = FetchType.LAZY)
