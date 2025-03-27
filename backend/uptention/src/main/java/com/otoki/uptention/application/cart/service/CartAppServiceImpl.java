@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.cart.dto.request.CartQuantityRequestDto;
-import com.otoki.uptention.application.cart.dto.response.CartResponseDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.domain.cart.dto.CartItemDto;
 import com.otoki.uptention.domain.cart.entity.Cart;
@@ -56,20 +55,16 @@ public class CartAppServiceImpl implements CartAppService {
 	}
 
 	@Override
-	public CartResponseDto getUserCartItems() {
+	public List<CartItemDto> getUserCartItems() {
 		// security 구현 후, 코드 수정 필요
 		User user = userService.getUserById(1);
 
-		List<CartItemDto> cartItems = cartService.getCartItemsByUserId(user.getId());
-		return CartResponseDto.builder()
-			.items(cartItems)
-			.build();
+		return cartService.getCartItemsByUserId(user.getId());
 	}
 
 	@Transactional
 	@Override
-	public Cart updateCartItemQuantity(Integer cartId,
-		CartQuantityRequestDto cartQuantityRequestDto) {
+	public Cart updateCartItemQuantity(Integer cartId, CartQuantityRequestDto cartQuantityRequestDto) {
 		validateQuantity(cartQuantityRequestDto.getQuantity());
 
 		Cart cart = cartService.getByCartId(cartId);
@@ -81,6 +76,11 @@ public class CartAppServiceImpl implements CartAppService {
 	@Transactional
 	@Override
 	public void removeCartItem(List<Integer> cartIds) {
+		// 빈 배열 검증
+		if (cartIds == null || cartIds.isEmpty()) {
+			throw new CustomException(ErrorCode.CART_EMPTY_IDS);
+		}
+
 		cartService.removeByCartIds(cartIds);
 	}
 

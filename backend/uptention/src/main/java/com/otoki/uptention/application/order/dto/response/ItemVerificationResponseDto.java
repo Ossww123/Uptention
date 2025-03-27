@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "구매 상품 정보")
+@Schema(description = "검증된 구매 상품 응답 DTO")
 public class ItemVerificationResponseDto {
 	@Schema(description = "상품 ID", example = "1")
 	private Integer itemId;

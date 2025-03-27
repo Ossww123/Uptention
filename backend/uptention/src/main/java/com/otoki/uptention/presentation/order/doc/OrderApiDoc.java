@@ -1,18 +1,21 @@
 package com.otoki.uptention.presentation.order.doc;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
+import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
-import com.otoki.uptention.application.order.dto.request.OrderVerificationRequestDto;
-import com.otoki.uptention.application.order.dto.response.OrderVerificationResponseDto;
+import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.global.exception.ErrorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -140,7 +143,7 @@ public interface OrderApiDoc {
 			responseCode = "200",
 			description = "상품 검증 성공",
 			content = @Content(
-				schema = @Schema(implementation = OrderVerificationResponseDto.class)
+				array = @ArraySchema(schema = @Schema(implementation = ItemVerificationResponseDto.class))
 			)
 		),
 		@ApiResponse(
@@ -196,9 +199,9 @@ public interface OrderApiDoc {
 			)
 		)
 	})
-	ResponseEntity<OrderVerificationResponseDto> verifyOrderItem(
+	ResponseEntity<List<ItemVerificationResponseDto>> verifyOrderItem(
 		@Parameter(description = "상품 검증 정보", required = true)
-		@Valid @RequestBody OrderVerificationRequestDto orderVerificationRequestDto);
+		@Valid @RequestBody List<ItemVerificationDto> itemVerificationDtos);
 
 	@Operation(summary = "배송 정보 등록", description = "주문에 배송 정보를 등록합니다.")
 	@ApiResponses(value = {

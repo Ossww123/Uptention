@@ -1,5 +1,7 @@
 package com.otoki.uptention.presentation.order.controller;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,9 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
+import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
-import com.otoki.uptention.application.order.dto.request.OrderVerificationRequestDto;
-import com.otoki.uptention.application.order.dto.response.OrderVerificationResponseDto;
+import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
 import com.otoki.uptention.application.order.service.OrderVerifyAppService;
 import com.otoki.uptention.presentation.order.doc.OrderApiDoc;
@@ -40,9 +42,9 @@ public class OrderController implements OrderApiDoc {
 	}
 
 	@PostMapping("/verify")
-	public ResponseEntity<OrderVerificationResponseDto> verifyOrderItem(
-		@Valid @RequestBody OrderVerificationRequestDto orderVerificationRequestDto) {
-		return ResponseEntity.ok(orderVerifyAppService.verifyOrderItem(orderVerificationRequestDto));
+	public ResponseEntity<List<ItemVerificationResponseDto>> verifyOrderItem(
+		@Valid @RequestBody List<ItemVerificationDto> itemVerificationDtos) {
+		return ResponseEntity.ok(orderVerifyAppService.verifyOrderItem(itemVerificationDtos));
 	}
 
 	@PostMapping("/{orderId}/delivery-info")

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Schema(description = "장바구니 상품 정보")
+@Schema(description = "장바구니 상품 정보 응답 DTO")
 public class CartItemDto {
 
 	@Schema(description = "장바구니 ID", example = "1")

@@ -14,8 +14,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 import com.otoki.uptention.AppServiceTestSupport;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
-import com.otoki.uptention.application.order.dto.request.OrderVerificationRequestDto;
-import com.otoki.uptention.application.order.dto.response.OrderVerificationResponseDto;
+import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.service.OrderVerifyAppService;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.service.ItemService;
@@ -35,7 +34,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	void verifyOrderItem_Success() {
 		// given
 		// 요청 DTO 생성
-		OrderVerificationRequestDto requestDto = createOrderVerificationRequestDto(
+		List<ItemVerificationDto> itemVerificationDtos = Arrays.asList(
 			createItemVerificationDto(1, 10000, 2),
 			createItemVerificationDto(2, 20000, 1)
 		);
@@ -49,13 +48,13 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 		when(itemService.getItemsByIds(Arrays.asList(1, 2))).thenReturn(itemDtos);
 
 		// when
-		OrderVerificationResponseDto response = orderVerifyAppService.verifyOrderItem(requestDto);
+		List<ItemVerificationResponseDto> response = orderVerifyAppService.verifyOrderItem(itemVerificationDtos);
 
 		// then
 		assertThat(response).isNotNull();
-		assertThat(response.getItems()).hasSize(2);
-		assertThat(response.getItems().get(0).getItemId()).isEqualTo(1);
-		assertThat(response.getItems().get(1).getItemId()).isEqualTo(2);
+		assertThat(response).hasSize(2);
+		assertThat(response.get(0).getItemId()).isEqualTo(1);
+		assertThat(response.get(1).getItemId()).isEqualTo(2);
 
 		// 서비스 호출 검증
 		verify(itemService, times(1)).getItemsByIds(Arrays.asList(1, 2));
@@ -65,7 +64,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	@DisplayName("존재하지 않는 상품이 있을 경우 예외가 발생한다")
 	void verifyOrderItem_ThrowsException_WhenItemNotFound() {
 		// given
-		OrderVerificationRequestDto requestDto = createOrderVerificationRequestDto(
+		List<ItemVerificationDto> itemVerificationDtos = Arrays.asList(
 			createItemVerificationDto(1, 10000, 2),
 			createItemVerificationDto(2, 20000, 1)
 		);
@@ -78,7 +77,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 		when(itemService.getItemsByIds(Arrays.asList(1, 2))).thenReturn(itemDtos);
 
 		// when & then
-		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(requestDto))
+		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(itemVerificationDtos))
 			.isInstanceOf(CustomException.class)
 			.satisfies(exception -> {
 				CustomException customException = (CustomException)exception;
@@ -92,7 +91,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	@DisplayName("상품이 비활성화 상태일 경우 예외가 발생한다")
 	void verifyOrderItem_ThrowsException_WhenItemUnavailable() {
 		// given
-		OrderVerificationRequestDto requestDto = createOrderVerificationRequestDto(
+		List<ItemVerificationDto> itemVerificationDtos = Collections.singletonList(
 			createItemVerificationDto(1, 10000, 2)
 		);
 
@@ -104,7 +103,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 		when(itemService.getItemsByIds(Collections.singletonList(1))).thenReturn(itemDtos);
 
 		// when & then
-		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(requestDto))
+		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(itemVerificationDtos))
 			.isInstanceOf(CustomException.class)
 			.satisfies(exception -> {
 				CustomException customException = (CustomException)exception;
@@ -116,7 +115,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	@DisplayName("요청 가격과 현재 상품 가격이 다를 경우 예외가 발생한다")
 	void verifyOrderItem_ThrowsException_WhenPriceMismatch() {
 		// given
-		OrderVerificationRequestDto requestDto = createOrderVerificationRequestDto(
+		List<ItemVerificationDto> itemVerificationDtos = Collections.singletonList(
 			createItemVerificationDto(1, 8000, 2) // 실제 가격(10000)과 다른 가격
 		);
 
@@ -128,7 +127,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 		when(itemService.getItemsByIds(Collections.singletonList(1))).thenReturn(itemDtos);
 
 		// when & then
-		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(requestDto))
+		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(itemVerificationDtos))
 			.isInstanceOf(CustomException.class)
 			.satisfies(exception -> {
 				CustomException customException = (CustomException)exception;
@@ -140,7 +139,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	@DisplayName("재고가 부족할 경우 예외가 발생한다")
 	void verifyOrderItem_ThrowsException_WhenInsufficientStock() {
 		// given
-		OrderVerificationRequestDto requestDto = createOrderVerificationRequestDto(
+		List<ItemVerificationDto> itemVerificationDtos = Collections.singletonList(
 			createItemVerificationDto(1, 10000, 15) // 현재 재고(10)보다 많은 수량
 		);
 
@@ -152,7 +151,7 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 		when(itemService.getItemsByIds(Collections.singletonList(1))).thenReturn(itemDtos);
 
 		// when & then
-		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(requestDto))
+		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(itemVerificationDtos))
 			.isInstanceOf(CustomException.class)
 			.satisfies(exception -> {
 				CustomException customException = (CustomException)exception;
@@ -184,15 +183,6 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 			.itemId(itemId)
 			.price(price)
 			.quantity(quantity)
-			.build();
-	}
-
-	/**
-	 * OrderVerificationRequestDto 객체 생성 헬퍼 메서드
-	 */
-	private OrderVerificationRequestDto createOrderVerificationRequestDto(ItemVerificationDto... items) {
-		return OrderVerificationRequestDto.builder()
-			.items(Arrays.asList(items))
 			.build();
 	}
 }
