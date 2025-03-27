@@ -1,20 +1,39 @@
 // src/pages/Users/UserManagementPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './UserManagementPage.css';
+import axios from 'axios'; // axios 사용, 필요시 설치: npm install axios
 
 const UserManagementPage = () => {
-  // 더미 데이터
-  const [users, setUsers] = useState([
-    { id: '21100001', userId: 'admin123', name: '대성생', joinDate: '2000. 01. 01' },
-    { id: '21100002', userId: 'admin123', name: '생막장', joinDate: '2000. 01. 01' },
-    { id: '21100003', userId: 'admin123', name: '대성장', joinDate: '2000. 01. 01' },
-    { id: '21100004', userId: 'admin123', name: '대막장', joinDate: '2000. 01. 01' },
-    { id: '21100005', userId: 'admin123', name: '성막장', joinDate: '2000. 01. 01' },
-  ]);
-
-  // 검색 상태
+  // 상태 관리
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+  const [nextCursor, setNextCursor] = useState(null);
+  
+  // Refs
+  const observer = useRef();
+  const lastUserElementRef = useCallback(node => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        fetchMoreUsers();
+      }
+    });
+    
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore]);
+
+  const navigate = useNavigate();
+
+  // 초기 사용자 데이터 로드
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   // 검색어 변경 핸들러
   const handleSearchChange = (e) => {
@@ -24,26 +43,82 @@ const UserManagementPage = () => {
   // 검색 기능
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log('검색어:', searchTerm);
-    // 실제로는 여기서 API 호출을 통해 검색 결과를 가져옵니다.
+    setUsers([]);
+    setNextCursor(null);
+    setHasMore(true);
+    fetchUsers(true);
   };
 
-  // 사용자 삭제 핸들러
-  const handleDeleteUser = (userId) => {
-    if (window.confirm('정말로 이 회원을 삭제하시겠습니까?')) {
-      // 실제로는 API 호출을 통해 사용자를 삭제합니다.
-      console.log('삭제할 사용자 ID:', userId);
+  // API에서 사용자 데이터 가져오기
+  const fetchUsers = async (isSearch = false) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await axios.get('/api/users', {
+        params: {
+          keyword: searchTerm,
+          cursor: isSearch ? null : nextCursor,
+          size: 10
+        }
+      });
       
-      // 임시로 UI에서만 제거
-      setUsers(users.filter(user => user.id !== userId));
+      const data = response.data;
+      
+      // 응답 형식에 따라 조정 (API 응답에는 hasMore 정보와 nextCursor가 포함되어 있어야 함)
+      if (isSearch) {
+        setUsers(data.users || []);
+      } else {
+        setUsers(prev => [...prev, ...(data.users || [])]);
+      }
+      
+      setNextCursor(data.nextCursor);
+      setHasMore(data.hasMore);
+    } catch (err) {
+      setError('사용자 정보를 불러오는 데 실패했습니다.');
+      console.error('API 에러:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const navigate = useNavigate();
+  // 무한 스크롤을 위한 추가 데이터 로드
+  const fetchMoreUsers = () => {
+    if (!loading && hasMore) {
+      fetchUsers();
+    }
+  };
+
+  // 사용자 삭제 핸들러
+  const handleDeleteUser = async (userId) => {
+    if (window.confirm('정말로 이 회원을 삭제하시겠습니까?')) {
+      try {
+        await axios.delete(`/api/users/${userId}`);
+        
+        // UI에서 사용자 제거
+        setUsers(users.filter(user => user.employeeNumber !== userId));
+        
+        // 성공 메시지 표시
+        alert('회원이 성공적으로 삭제되었습니다.');
+      } catch (err) {
+        alert('회원 삭제에 실패했습니다.');
+        console.error('회원 삭제 오류:', err);
+      }
+    }
+  };
 
   // 사용자 추가 버튼 핸들러
   const handleAddUser = () => {
     navigate('/admin/users/create');
+  };
+
+  // 날짜 포맷 함수
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}. ${month}. ${day}`;
   };
 
   return (
@@ -76,6 +151,8 @@ const UserManagementPage = () => {
         </div>
         
         <div className="user-table-container">
+          {error && <div className="error-message">{error}</div>}
+          
           <table className="user-table">
             <thead>
               <tr>
@@ -87,16 +164,19 @@ const UserManagementPage = () => {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.id}</td>
+              {users.map((user, index) => (
+                <tr 
+                  key={user.employeeNumber} 
+                  ref={index === users.length - 1 ? lastUserElementRef : null}
+                >
+                  <td>{user.employeeNumber}</td>
                   <td>{user.userId}</td>
-                  <td>{user.name}</td>
-                  <td>{user.joinDate}</td>
+                  <td>{user.username}</td>
+                  <td>{formatDate(user.createdAt)}</td>
                   <td>
                     <button 
                       className="delete-button"
-                      onClick={() => handleDeleteUser(user.id)}
+                      onClick={() => handleDeleteUser(user.employeeNumber)}
                     >
                       삭제하기
                     </button>
@@ -105,6 +185,19 @@ const UserManagementPage = () => {
               ))}
             </tbody>
           </table>
+          
+          {loading && (
+            <div className="loading">
+              <div className="loading-spinner"></div>
+              <p>데이터를 불러오는 중...</p>
+            </div>
+          )}
+          
+          {!loading && users.length === 0 && (
+            <div className="no-users-message">
+              <p>등록된 회원이 없습니다.</p>
+            </div>
+          )}
         </div>
       </div>
       

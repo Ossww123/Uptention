@@ -87,6 +87,8 @@
 
 .user-table-container {
   overflow: hidden;
+  position: relative;
+  min-height: 200px;
 }
 
 .user-table {
@@ -147,4 +149,47 @@
 
 .add-button:hover {
   background-color: #e67e00;
+}
+
+/* 로딩 상태 표시 */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #666;
+}
+
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #FF8C00;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 에러 메시지 */
+.error-message {
+  color: #e74c3c;
+  padding: 15px;
+  background-color: #fdeaea;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* 회원 없음 메시지 */
+.no-users-message {
+  padding: 30px;
+  text-align: center;
+  color: #888;
+  font-size: 16px;
 }
