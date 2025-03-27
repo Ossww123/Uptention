@@ -37,7 +37,7 @@ public class Item extends TimeStampEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 
-	@Column(name = "name", length = 31)
+	@Column(name = "name", length = 255)
 	private String name;
 
 	@Column(name = "detail", length = 255)

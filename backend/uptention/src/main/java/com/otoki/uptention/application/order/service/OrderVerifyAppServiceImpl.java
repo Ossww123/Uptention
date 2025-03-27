@@ -8,8 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
-import com.otoki.uptention.application.order.dto.request.OrderVerificationRequestDto;
-import com.otoki.uptention.application.order.dto.response.OrderVerificationResponseDto;
+import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
@@ -30,9 +29,9 @@ public class OrderVerifyAppServiceImpl implements OrderVerifyAppService {
 	 * 문제가 있을 경우 바로 예외를 발생시킴
 	 */
 	@Override
-	public OrderVerificationResponseDto verifyOrderItem(OrderVerificationRequestDto requestDto) {
+	public List<ItemVerificationResponseDto> verifyOrderItem(List<ItemVerificationDto> itemVerificationDtos) {
 		// 요청된 상품 ID 목록 추출
-		List<Integer> itemIds = requestDto.getItems().stream()
+		List<Integer> itemIds = itemVerificationDtos.stream()
 			.map(ItemVerificationDto::getItemId)
 			.collect(Collectors.toList());
 
@@ -40,7 +39,7 @@ public class OrderVerifyAppServiceImpl implements OrderVerifyAppService {
 		List<ItemDto> itemDtos = itemService.getItemsByIds(itemIds);
 
 		// 모든 요청 상품이 DB에 존재하는지 확인
-		if (requestDto.getItems().size() != itemDtos.size()) {
+		if (itemVerificationDtos.size() != itemDtos.size()) {
 			throw new CustomException(ErrorCode.ITEM_NOT_FOUND);
 		}
 
@@ -48,16 +47,29 @@ public class OrderVerifyAppServiceImpl implements OrderVerifyAppService {
 		Map<Integer, ItemDto> itemDtoMap = itemDtos.stream()
 			.collect(Collectors.toMap(ItemDto::getItemId, dto -> dto));
 
-		// 각 상품별 검증 수행
-		for (ItemVerificationDto requestItem : requestDto.getItems()) {
+		// 각 상품별 검증 수행 - 하나라도 실패하면 예외 발생하고 종료됨
+		for (ItemVerificationDto requestItem : itemVerificationDtos) {
 			ItemDto itemDto = itemDtoMap.get(requestItem.getItemId());
 			validateItem(requestItem, itemDto);
 		}
 
-		// 검증 통과 후 응답 생성 (이미 조회한 DTO 사용)
-		return OrderVerificationResponseDto.builder()
-			.items(itemDtos)
-			.build();
+		// 모든 검증 통과 후 응답 DTO 생성
+		List<ItemVerificationResponseDto> verifiedItems = itemVerificationDtos.stream()
+			.map(requestItem -> {
+				ItemDto itemDto = itemDtoMap.get(requestItem.getItemId());
+				return ItemVerificationResponseDto.builder()
+					.itemId(itemDto.getItemId())
+					.name(itemDto.getName())
+					.price(itemDto.getPrice())
+					.brand(itemDto.getBrand())
+					.quantity(requestItem.getQuantity())
+					.totalPrice(itemDto.getPrice() * requestItem.getQuantity())
+					.thumbnail(itemDto.getThumbnail())
+					.build();
+			})
+			.collect(Collectors.toList());
+
+		return verifiedItems;
 	}
 
 	/**
@@ -75,14 +87,15 @@ public class OrderVerifyAppServiceImpl implements OrderVerifyAppService {
 			throw new CustomException(ErrorCode.ITEM_UNAVAILABLE);
 		}
 
+		// 재고가 부족한 경우
+		if (itemDto.getQuantity() < requestItem.getQuantity()) {
+			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
+		}
+
 		// 가격이 일치하지 않는 경우
 		if (!itemDto.getPrice().equals(requestItem.getPrice())) {
 			throw new CustomException(ErrorCode.ITEM_PRICE_MISMATCH);
 		}
 
-		// 재고가 부족한 경우
-		if (itemDto.getQuantity() < requestItem.getQuantity()) {
-			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
-		}
 	}
 }

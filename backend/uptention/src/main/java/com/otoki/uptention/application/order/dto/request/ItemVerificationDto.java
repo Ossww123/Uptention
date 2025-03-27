@@ -18,6 +18,6 @@ public class ItemVerificationDto {
 	@Schema(description = "상품 가격", example = "100")
 	private Integer price;
 
-	@Schema(description = "재고 수량", example = "10")
+	@Schema(description = "구매 수량", example = "10")
 	private Integer quantity;
 }

@@ -1,18 +1,21 @@
 package com.otoki.uptention.presentation.order.doc;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
+import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
-import com.otoki.uptention.application.order.dto.request.OrderVerificationRequestDto;
-import com.otoki.uptention.application.order.dto.response.OrderVerificationResponseDto;
+import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.global.exception.ErrorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,7 +28,7 @@ import jakarta.validation.Valid;
  * 상품 검증 및 주문 관리 API 문서화를 위한 인터페이스
  * 실제 구현체는 없으며, Swagger 문서화 목적으로만 사용됩니다.
  */
-@Tag(name = "상품 주문/조회 API", description = "상품 일반 주문, 선물을 담당하는 컨트롤러")
+@Tag(name = "상품 주문/조회 API", description = "상품 구매, 선물을 담당하는 컨트롤러")
 public interface OrderApiDoc {
 
 	@Operation(summary = "상품 주문", description = "주문 정보를 받아 주문을 생성합니다.")
@@ -140,7 +143,7 @@ public interface OrderApiDoc {
 			responseCode = "200",
 			description = "상품 검증 성공",
 			content = @Content(
-				schema = @Schema(implementation = OrderVerificationResponseDto.class)
+				array = @ArraySchema(schema = @Schema(implementation = ItemVerificationResponseDto.class))
 			)
 		),
 		@ApiResponse(
@@ -196,9 +199,9 @@ public interface OrderApiDoc {
 			)
 		)
 	})
-	ResponseEntity<OrderVerificationResponseDto> verifyOrderItem(
+	ResponseEntity<List<ItemVerificationResponseDto>> verifyOrderItem(
 		@Parameter(description = "상품 검증 정보", required = true)
-		@Valid @RequestBody OrderVerificationRequestDto orderVerificationRequestDto);
+		@Valid @RequestBody List<ItemVerificationDto> itemVerificationDtos);
 
 	@Operation(summary = "배송 정보 등록", description = "주문에 배송 정보를 등록합니다.")
 	@ApiResponses(value = {
