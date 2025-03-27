@@ -33,3 +33,4 @@ springdoc:
 aws:
   s3:
     bucket: uptention
+    cloudfront-domain: ddnwvg9t77g5o.cloudfront.net
