@@ -35,7 +35,18 @@ public enum ErrorCode {
 	CURSOR_INVALID_FORMAT(HttpStatus.BAD_REQUEST, "CURSOR_003", "유효하지 않은 커서 형식입니다."),
 
 	// 사용자 관련 에러
-	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다.");
+	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다."),
+
+	// 파일 관련 에러
+	FILE_EMPTY(HttpStatus.BAD_REQUEST, "FILE_001", "파일이 비어있습니다."),
+	FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "FILE_002", "파일 크기가 너무 큽니다. 최대 허용 크기는 5MB 바이트 입니다."), // 5MB
+	FILE_INVALID_NAME(HttpStatus.BAD_REQUEST, "FILE_003", "유효하지 않은 파일 이름입니다."),
+	FILE_INVALID_EXTENSION(HttpStatus.BAD_REQUEST, "FILE_004", "허용되지 않은 파일 확장자입니다."),
+	FILE_INVALID_MIME_TYPE(HttpStatus.BAD_REQUEST, "FILE_005", "허용되지 않은 MIME 타입입니다."),
+	FILE_HEADER_ERROR(HttpStatus.BAD_REQUEST, "FILE_006", "파일 헤더 정보를 읽어오지 못했습니다."),
+	FILE_INVALID_MAGIC(HttpStatus.BAD_REQUEST, "FILE_007", "파일의 매직 넘버가 확장자와 일치하지 않습니다."),
+	FILE_VALIDATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_008", "파일 검증 중 오류가 발생했습니다."),
+	FILE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_009", "파일 업로드 중 오류가 발생했습니다.");
 
 	// http 상태 코드
 	private final HttpStatus status;

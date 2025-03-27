@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -49,6 +50,20 @@ public class GlobalExceptionHandler {
 		// ErrorCode를 고정으로 사용
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
 			.body(ErrorResponse.of(ErrorCode.INVALID_PARAMETER, errorMessage, request.getRequestURI()));
+	}
+
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(
+		MaxUploadSizeExceededException ex,
+		HttpServletRequest request
+	) {
+		String errorMessage = "업로드 파일 크기가 제한을 초과했습니다.";
+		logger.error("파일 크기 초과: {}, 요청 URI: {}", errorMessage, request.getRequestURI(), ex);
+
+		// 여기서 에러 코드와 상태를 필요에 따라 선택합니다.
+		// 예를 들어, 400 Bad Request 또는 413 Payload Too Large
+		return ResponseEntity.status(ErrorCode.FILE_TOO_LARGE.getStatus())
+			.body(ErrorResponse.of(ErrorCode.FILE_TOO_LARGE, request.getRequestURI()));
 	}
 
 	@ExceptionHandler(Exception.class)
