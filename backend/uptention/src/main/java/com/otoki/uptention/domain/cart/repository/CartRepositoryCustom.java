@@ -6,6 +6,4 @@ import com.otoki.uptention.domain.cart.dto.CartItemDto;
 
 public interface CartRepositoryCustom {
 	List<CartItemDto> findCartItemsByUserId(Integer userId);
-
-	List<CartItemDto> findCartItemsByIds(Integer userId, List<Integer> cartIds);
 }
