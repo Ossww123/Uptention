@@ -5,12 +5,14 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
+import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.global.exception.ErrorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -250,4 +252,40 @@ public interface OrderApiDoc {
 		@Parameter(description = "배송 정보", required = true)
 		@Valid @RequestBody DeliveryInfoRequestDto deliveryInfoRequestDto);
 
+	@Operation(summary = "주문 내역 조회", description = "사용자의 주문 내역을 커서 기반 페이지네이션으로 조회합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "조회 성공",
+			content = @Content(schema = @Schema(implementation = OrderHistoryCursorResponseDto.class))
+		),
+		@ApiResponse(
+			responseCode = "400",
+			description = "잘못된 요청",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "유효하지 않은 커서",
+						summary = "잘못된 형식의 커서 값",
+						value = "{\"code\":\"X005\",\"message\":\"유효하지 않은 커서 형식입니다.\",\"path\":\"/api/orders\"}"
+					),
+					@ExampleObject(
+						name = "유효하지 않은 주문 유형",
+						summary = "지원하지 않는 주문 유형",
+						value = "{\"code\":\"X006\",\"message\":\"지원하지 않는 주문 유형입니다. PURCHASE 또는 GIFT만 사용 가능합니다.\",\"path\":\"/api/orders\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<OrderHistoryCursorResponseDto> getOrderHistory(
+		@Parameter(description = "페이지네이션 커서 값", example = "eyJ2YWx1ZSI6MCwiaWQiOjEwfQ==")
+		@RequestParam(required = false) String cursor,
+
+		@Parameter(description = "페이지 크기", example = "10")
+		@RequestParam(defaultValue = "10") int size,
+
+		@Parameter(description = "주문 유형 (PURCHASE: 일반구매, GIFT: 보낸 선물)", example = "PURCHASE")
+		@RequestParam(defaultValue = "PURCHASE") String type);
 }
