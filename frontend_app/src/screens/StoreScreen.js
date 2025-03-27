@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,75 +8,186 @@ import {
   TouchableOpacity,
   TextInput,
   SafeAreaView,
-  ScrollView,
+  ActivityIndicator,
   Dimensions,
+  Alert,
 } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 
 // 화면 너비 가져오기
 const { width } = Dimensions.get("window");
 
-// 더미 데이터: 카테고리
+// 카테고리 데이터
 const categories = [
-  { id: "1", name: "카테고리 1", icon: require("../../assets/category1.png") },
-  { id: "2", name: "카테고리 2", icon: require("../../assets/category2.png") },
-  { id: "3", name: "카테고리 3", icon: require("../../assets/category3.png") },
-  { id: "4", name: "카테고리 4", icon: require("../../assets/category4.png") },
-  { id: "5", name: "카테고리 5", icon: require("../../assets/category5.png") },
-  { id: "6", name: "카테고리 6", icon: require("../../assets/category6.png") },
-  { id: "7", name: "카테고리 7", icon: require("../../assets/category7.png") },
-  { id: "8", name: "카테고리 8", icon: require("../../assets/category8.png") },
+  { id: "1", name: "가전디지털", icon: require("../../assets/category1.png") },
+  { id: "2", name: "뷰티", icon: require("../../assets/category2.png") },
+  { id: "3", name: "리빙/키친", icon: require("../../assets/category3.png") },
+  { id: "4", name: "패션의류/잡화", icon: require("../../assets/category4.png") },
+  { id: "5", name: "문화여가", icon: require("../../assets/category5.png") },
+  { id: "6", name: "생활용품", icon: require("../../assets/category6.png") },
+  { id: "7", name: "식품", icon: require("../../assets/category7.png") },
+  { id: "8", name: "키즈", icon: require("../../assets/category8.png") },
 ];
 
-// 더미 데이터: 상품
-const products = [
-  {
-    id: "1",
-    image: require("../../assets/product1.png"),
-    brand: "브랜드명",
-    name: "물건 이름",
-    price: "0.0 WORK",
-  },
-  {
-    id: "2",
-    image: require("../../assets/product2.png"),
-    brand: "브랜드명",
-    name: "물건 이름",
-    price: "0.0 WORK",
-  },
-  {
-    id: "3",
-    image: require("../../assets/product3.png"),
-    brand: "브랜드명",
-    name: "물건 이름",
-    price: "0.0 WORK",
-  },
-  {
-    id: "4",
-    image: require("../../assets/product4.png"),
-    brand: "브랜드명",
-    name: "물건 이름",
-    price: "0.0 WORK",
-  },
-  {
-    id: "5",
-    image: require("../../assets/product5.png"),
-    brand: "브랜드명",
-    name: "물건 이름",
-    price: "0.0 WORK",
-  },
-  {
-    id: "6",
-    image: require("../../assets/product6.png"),
-    brand: "브랜드명",
-    name: "물건 이름",
-    price: "0.0 WORK",
-  },
+// 정렬 옵션
+const sortOptions = [
+  { id: "SALES", name: "인기 순" },
+  { id: "LOW_PRICE", name: "가격 낮은순" },
+  { id: "HIGH_PRICE", name: "가격 높은순" },
 ];
 
-// navigation prop 추가
 const StoreScreen = ({ navigation }) => {
+  // 상태 관리
   const [showCategories, setShowCategories] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [currentSort, setCurrentSort] = useState(sortOptions[0]);
+  const [showSortOptions, setShowSortOptions] = useState(false);
+  
+  // 검색 텍스트를 저장하기 위한 ref
+  const searchInputRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+  const onEndReachedTimeoutRef = useRef(null); // 무한 스크롤 디바운싱용 ref 추가
+
+  // 컴포넌트 마운트 시 상품 로드
+  useEffect(() => {
+    loadProducts(true);
+  }, [selectedCategory, currentSort.id]);
+
+  // 컴포넌트 언마운트 시 timeout 정리
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      if (onEndReachedTimeoutRef.current) {
+        clearTimeout(onEndReachedTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // 검색어 변경 시 디바운스 적용
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      loadProducts(true);
+    }, 500);
+    
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchText]);
+
+  // API에서 상품 데이터 로드
+  const loadProducts = async (isRefresh = false) => {
+    try {
+      // 이미 로딩 중이면 중복 요청 방지
+      if (loading) return;
+      
+      // 다음 페이지가 없고 리프레시가 아닐 경우 무시
+      if (!hasNextPage && !isRefresh) return;
+
+      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+        setNextCursor(null);
+      }
+
+      // API 요청 URL 구성
+      let url = `https://j12d211.p.ssafy.io/api/items?size=8`;
+      
+      // 카테고리 필터 추가
+      if (selectedCategory) {
+        url += `&categoryId=${selectedCategory}`;
+      }
+      
+      // 검색어 필터 추가
+      if (searchText.trim()) {
+        url += `&keyword=${encodeURIComponent(searchText.trim())}`;
+      }
+      
+      // 정렬 옵션 추가
+      url += `&sort=${currentSort.id}`;
+      
+      // 커서 추가 (다음 페이지 로드 시)
+      if (nextCursor && !isRefresh) {
+        url += `&cursor=${nextCursor}`;
+      }
+
+      console.log('API 요청 URL:', url);
+      
+      // 실제 API 요청 (fetch 사용)
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      // 에러 처리
+      if (data.code) {
+        throw new Error(data.message || '상품을 불러오지 못했습니다.');
+      }
+
+      // 유효한 itemId를 가진 항목만 필터링
+      const validItems = data.items.filter(item => item.itemId);
+      
+      if (isRefresh) {
+        setProducts(validItems);
+      } else {
+        setProducts(prev => [...prev, ...validItems]);
+      }
+      
+      setHasNextPage(data.hasNextPage);
+      setNextCursor(data.nextCursor);
+    } catch (error) {
+      console.error('상품 로드 에러:', error);
+      Alert.alert('오류', error.message || '상품을 불러오는데 문제가 발생했습니다.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // 카테고리 선택 처리
+  const handleCategorySelect = (categoryId) => {
+    if (selectedCategory === categoryId) {
+      setSelectedCategory(null);
+    } else {
+      setSelectedCategory(categoryId);
+    }
+  };
+
+  // 정렬 옵션 선택 처리
+  const handleSortSelect = (sortOption) => {
+    setCurrentSort(sortOption);
+    setShowSortOptions(false);
+  };
+
+  // 검색 제출 처리
+  const handleSearch = () => {
+    if (searchInputRef.current) {
+      searchInputRef.current.blur();
+    }
+    loadProducts(true);
+  };
+
+  // 무한 스크롤 처리 (디바운싱 적용)
+  const handleEndReached = () => {
+    if (onEndReachedTimeoutRef.current) {
+      clearTimeout(onEndReachedTimeoutRef.current);
+    }
+    
+    onEndReachedTimeoutRef.current = setTimeout(() => {
+      loadProducts(false);
+    }, 200);
+  };
 
   // 카테고리 아이콘 렌더링
   const renderCategoryIcon = () => {
@@ -104,59 +215,158 @@ const StoreScreen = ({ navigation }) => {
         styles.sidebarCategoryItem,
         selectedCategory === item.id && styles.selectedCategory,
       ]}
-      onPress={() => {
-        setSelectedCategory(selectedCategory === item.id ? null : item.id);
-      }}
+      onPress={() => handleCategorySelect(item.id)}
     >
       <Image source={item.icon} style={styles.categoryIcon} />
       <Text style={styles.categoryName}>{item.name}</Text>
     </TouchableOpacity>
   );
 
-  // 상품 아이템 렌더링 (TouchableOpacity로 변경하고 onPress 추가)
+  // 상품 아이템 렌더링
   const renderProductItem = ({ item }) => (
     <TouchableOpacity
       style={styles.productItem}
-      onPress={() =>
-        navigation.navigate("ProductDetail", { productId: item.id })
-      }
+      onPress={() => navigation.navigate("ProductDetail", { productId: item.itemId })}
     >
-      <Image source={item.image} style={styles.productImage} />
+      <Image 
+        source={{ uri: item.thumbnail || 'https://via.placeholder.com/150' }} 
+        style={styles.productImage}
+        defaultSource={require("../../assets/product-placeholder.png")}
+      />
       <Text style={styles.productBrand}>{item.brand}</Text>
-      <Text style={styles.productName}>{item.name}</Text>
-      <Text style={styles.productPrice}>{item.price}</Text>
+      <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+      <Text style={styles.productPrice}>{item.price} WORK</Text>
+      {item.quantity <= 5 && (
+        <Text style={styles.lowStockText}>품절 임박! ({item.quantity}개 남음)</Text>
+      )}
     </TouchableOpacity>
   );
+
+  // 리스트 푸터 (로딩 인디케이터)
+  const renderFooter = () => {
+    if (!loading || refreshing) return null;
+    
+    return (
+      <View style={styles.footerContainer}>
+        <ActivityIndicator size="small" color="#FF8C00" />
+        <Text style={styles.loadingText}>상품을 불러오는 중...</Text>
+      </View>
+    );
+  };
+
+  // 빈 리스트일 때 표시할 컴포넌트
+  const renderEmpty = () => {
+    if (loading && !refreshing) return null;
+    
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="search-outline" size={50} color="#ccc" />
+        <Text style={styles.emptyText}>
+          {searchText ? '검색 결과가 없습니다.' : '상품이 없습니다.'}
+        </Text>
+        <Text style={styles.emptySubText}>
+          {searchText ? '다른 검색어로 시도해보세요.' : '다른 카테고리를 선택해보세요.'}
+        </Text>
+      </View>
+    );
+  };
+
+  // 정렬 옵션 드롭다운 렌더링
+  const renderSortDropdown = () => {
+    if (!showSortOptions) return null;
+    
+    return (
+      <View style={styles.sortDropdown}>
+        {sortOptions.map((option) => (
+          <TouchableOpacity
+            key={option.id}
+            style={[
+              styles.sortOption,
+              currentSort.id === option.id && styles.selectedSortOption,
+            ]}
+            onPress={() => handleSortSelect(option)}
+          >
+            <Text
+              style={[
+                styles.sortOptionText,
+                currentSort.id === option.id && styles.selectedSortOptionText,
+              ]}
+            >
+              {option.name}
+            </Text>
+            {currentSort.id === option.id && (
+              <Ionicons name="checkmark" size={16} color="#FF8C00" />
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       {/* 검색바 및 장바구니 아이콘 */}
       <View style={styles.header}>
         <View style={styles.searchContainer}>
+          <Ionicons name="search-outline" size={18} color="#888" style={styles.searchIcon} />
           <TextInput
+            ref={searchInputRef}
             style={styles.searchInput}
             placeholder="검색어를 입력하세요"
             placeholderTextColor="#aaa"
+            value={searchText}
+            onChangeText={setSearchText}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
           />
+          {searchText.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => setSearchText('')}
+            >
+              <Ionicons name="close-circle" size={18} color="#888" />
+            </TouchableOpacity>
+          )}
         </View>
         <TouchableOpacity 
           style={styles.cartIcon}
-          onPress={() => navigation.navigate("Cart")}
+          onPress={() => navigation.navigate('Cart')}
         >
           <Image
             source={require("../../assets/cart-icon.png")}
             style={{ width: 24, height: 24 }}
           />
+          {/* 장바구니 아이템 개수 표시 (선택사항) */}
+          <View style={styles.cartBadge}>
+            <Text style={styles.cartBadgeText}>2</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
       {/* 필터/정렬 옵션 */}
       <View style={styles.filterContainer}>
         {renderCategoryIcon()}
-        <TouchableOpacity style={styles.sortButton}>
-          <Text style={styles.sortButtonText}>↑↓ 인기 순</Text>
+        <TouchableOpacity 
+          style={styles.sortButton}
+          onPress={() => setShowSortOptions(!showSortOptions)}
+        >
+          <Text style={styles.sortButtonText}>
+            {currentSort.id === 'LOW_PRICE' || currentSort.id === 'HIGH_PRICE' 
+              ? '↑↓ ' 
+              : ''}
+            {currentSort.name}
+          </Text>
+          <Ionicons 
+            name={showSortOptions ? "chevron-up" : "chevron-down"} 
+            size={16} 
+            color="#FF8C00" 
+            style={{ marginLeft: 5 }}
+          />
         </TouchableOpacity>
       </View>
+
+      {/* 정렬 드롭다운 */}
+      {renderSortDropdown()}
 
       {/* 메인 컨텐츠 영역: 카테고리 사이드바 + 상품 목록 */}
       <View style={styles.contentContainer}>
@@ -176,17 +386,25 @@ const StoreScreen = ({ navigation }) => {
         <FlatList
           data={products}
           renderItem={renderProductItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => `product-${item.itemId || index}`}
           numColumns={2}
-          contentContainerStyle={styles.productList}
+          contentContainerStyle={[
+            styles.productList,
+            products.length === 0 && styles.emptyListContainer,
+          ]}
           style={styles.productsGrid}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.2}
+          ListFooterComponent={renderFooter}
+          ListEmptyComponent={renderEmpty}
+          refreshing={refreshing}
+          onRefresh={() => loadProducts(true)}
         />
       </View>
     </SafeAreaView>
   );
 };
 
-// 기존 스타일 유지
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -204,15 +422,40 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#f5f5f5",
     marginRight: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+  },
+  searchIcon: {
+    marginRight: 5,
   },
   searchInput: {
     flex: 1,
     height: "100%",
-    paddingHorizontal: 15,
     fontSize: 14,
+  },
+  clearButton: {
+    padding: 5,
   },
   cartIcon: {
     padding: 5,
+    position: 'relative',
+  },
+  cartBadge: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cartBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   filterContainer: {
     flexDirection: "row",
@@ -239,6 +482,36 @@ const styles = StyleSheet.create({
     color: "#FF8C00",
     fontSize: 14,
   },
+  sortDropdown: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    marginHorizontal: 15,
+    marginBottom: 5,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    zIndex: 1000,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+  },
+  selectedSortOption: {
+    backgroundColor: '#FFF5E6',
+  },
+  sortOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  selectedSortOptionText: {
+    color: '#FF8C00',
+    fontWeight: '500',
+  },
   contentContainer: {
     flex: 1,
     flexDirection: "row",
@@ -255,7 +528,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   selectedCategory: {
-    backgroundColor: "#f8f8f8",
+    backgroundColor: "#FFF5E6",
   },
   categoryIcon: {
     width: 40,
@@ -276,6 +549,12 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 20,
   },
+  emptyListContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 100,
+  },
   productItem: {
     flex: 1,
     margin: 5,
@@ -286,6 +565,7 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 10,
     marginBottom: 8,
+    backgroundColor: '#f5f5f5',
   },
   productBrand: {
     fontSize: 12,
@@ -295,10 +575,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     marginVertical: 2,
+    height: 36, // 2줄 높이 제한
   },
   productPrice: {
     fontSize: 16,
     fontWeight: "bold",
+    marginTop: 3,
+  },
+  lowStockText: {
+    fontSize: 12,
+    color: 'red',
+    marginTop: 5,
+  },
+  footerContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#888',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#666',
+    marginTop: 10,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#888',
+    marginTop: 5,
+    textAlign: 'center',
   },
 });
 
