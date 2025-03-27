@@ -119,6 +119,10 @@ const StoreScreen = ({ navigation }) => {
         throw new Error(data.message || '상품을 불러오지 못했습니다.');
       }
 
+      // 유효한 itemId를 가진 항목만 필터링
+    const validItems = data.items.filter(item => item.itemId);
+    
+
       if (isRefresh) {
         setProducts(data.items);
       } else {
@@ -356,7 +360,7 @@ const StoreScreen = ({ navigation }) => {
         <FlatList
           data={products}
           renderItem={renderProductItem}
-          keyExtractor={(item) => item.itemId.toString()}
+          keyExtractor={(item, index) => `product-${item.itemId || index}`}
           numColumns={2}
           contentContainerStyle={[
             styles.productList,
