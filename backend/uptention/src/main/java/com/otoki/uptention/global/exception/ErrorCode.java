@@ -46,7 +46,10 @@ public enum ErrorCode {
 	FILE_HEADER_ERROR(HttpStatus.BAD_REQUEST, "FILE_006", "파일 헤더 정보를 읽어오지 못했습니다."),
 	FILE_INVALID_MAGIC(HttpStatus.BAD_REQUEST, "FILE_007", "파일의 매직 넘버가 확장자와 일치하지 않습니다."),
 	FILE_VALIDATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_008", "파일 검증 중 오류가 발생했습니다."),
-	FILE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_009", "파일 업로드 중 오류가 발생했습니다.");
+	FILE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "FILE_009", "파일 업로드 중 오류가 발생했습니다."),
+
+	// 집중모드 관련 에러
+	FOCUS_MODE_ON_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_001", "집중모드 실행 중 오류가 발생했습니다.");
 
 	// http 상태 코드
 	private final HttpStatus status;
