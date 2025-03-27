@@ -6,13 +6,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.otoki.uptention.application.mining.service.MiningTimeAppService;
+import com.otoki.uptention.presentation.mining.doc.MiningApiDoc;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/focus")
 @RequiredArgsConstructor
-public class MiningTimeController {
+public class MiningTimeController implements MiningApiDoc {
 
 	private final MiningTimeAppService miningTimeAppService;
 
