@@ -40,7 +40,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	@Override
 	public Order createOrder(OrderRequestDto orderRequestDto) {
 		// security 구현 후, 코드 수정 필요
-		User user = userService.getUserById(2);
+		User user = userService.getUserById(1);
 
 		// 1. Order 생성
 		Order order = Order.builder()
@@ -64,7 +64,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	@Override
 	public Order createGiftOrder(GiftRequestDto giftRequestDto) {
 		// security 구현 후, 코드 수정 필요
-		User sender = userService.getUserById(2);
+		User sender = userService.getUserById(1);
 		User receiver = userService.getUserById(giftRequestDto.getReceiverId());
 
 		// 1. Order 생성 - 선물의 경우 주소 X
