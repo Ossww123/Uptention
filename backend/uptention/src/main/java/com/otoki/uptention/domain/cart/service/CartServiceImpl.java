@@ -51,4 +51,11 @@ public class CartServiceImpl implements CartService {
 	public void removeByCartIds(List<Integer> cartIds) {
 		cartRepository.deleteAllById(cartIds);
 	}
+
+	@Override
+	public Integer countCartItemsByUserId(Integer userId) {
+		Integer count = cartRepository.countCartItemsByUserId(userId);
+		return count != null ? count : 0; // null인 경우 0 반환
+	}
+
 }
