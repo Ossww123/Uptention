@@ -1,5 +1,7 @@
 package com.otoki.uptention.domain.mining.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.otoki.uptention.domain.mining.entity.MiningTime;
@@ -27,5 +29,10 @@ public class MiningTimeServiceImpl implements MiningTimeService {
 		return miningTimeRepository.findTopByUserOrderByStartTimeDesc(user)
 			.filter(mt -> mt.getEndTime() == null) // 종료시간이 null 아닌 경우 에러 발생
 			.orElseThrow(() -> new CustomException(ErrorCode.FOCUS_MODE_OFF_FAILED));
+	}
+
+	@Override
+	public List<MiningTime> findAllByEndTimeIsNull() {
+		return miningTimeRepository.findAllByEndTimeIsNull();
 	}
 }
