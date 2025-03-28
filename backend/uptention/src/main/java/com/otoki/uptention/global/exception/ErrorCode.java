@@ -23,12 +23,10 @@ public enum ErrorCode {
 
 	// 주문 관련 에러
 	ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_001", "주문이 존재하지 않습니다."),
-	ORDER_INVALID_TYPE(HttpStatus.BAD_REQUEST, "ORDER_002", "지원하지 않는 주문 유형입니다."),
 
 	// 장바구니 관련 에러
 	CART_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_001", "장바구니가 존재하지 않습니다."),
 	CART_EMPTY_IDS(HttpStatus.BAD_REQUEST, "CART_004", "장바구니 ID 목록은 필수입니다."),
-
 
 	// 커서 관련 에러
 	CURSOR_ENCODING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CURSOR_001", "커서 인코딩에 실패했습니다."),

@@ -150,15 +150,6 @@ public class OrderAppServiceImpl implements OrderAppService {
 	}
 
 	/**
-	 * 주문 유형 검증
-	 */
-	private void validateOrderType(String type) {
-		if (!"PURCHASE".equals(type) && !"GIFT".equals(type)) {
-			throw new CustomException(ErrorCode.ORDER_INVALID_TYPE);
-		}
-	}
-
-	/**
 	 * 유형에 따른 주문 목록 조회
 	 */
 	private List<Order> fetchOrdersByType(Integer userId, String cursorStr, int limit, OrderHistoryType type) {
