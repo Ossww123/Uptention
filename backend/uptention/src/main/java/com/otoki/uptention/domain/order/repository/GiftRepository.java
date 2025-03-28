@@ -1,6 +1,7 @@
 package com.otoki.uptention.domain.order.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +14,8 @@ import com.otoki.uptention.domain.order.enums.GiftStatus;
 
 @Repository
 public interface GiftRepository extends JpaRepository<Gift, Integer> {
+	// 주문 ID로 선물 정보를 조회
+	Optional<Gift> findByOrderId(Integer orderId);
 
 	// 특정 사용자가 받은 선물 목록 조회 (첫 페이지)
 	@Query("SELECT new com.otoki.uptention.domain.order.dto.GiftItemDto(" +

@@ -22,6 +22,11 @@ public class GiftServiceImpl implements GiftService {
 	}
 
 	@Override
+	public Gift findGiftByOrderId(Integer orderId) {
+		return giftRepository.findByOrderId(orderId).orElse(null);
+	}
+
+	@Override
 	public List<GiftItemDto> getReceivedGiftsByStatusWithLimit(Integer userId, GiftStatus status, int limit) {
 		return giftRepository.findReceivedGiftsByUserIdAndStatusWithLimit(userId, status, limit);
 	}

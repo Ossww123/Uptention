@@ -8,6 +8,11 @@ import com.otoki.uptention.domain.order.enums.GiftStatus;
 
 public interface GiftService {
 	Gift saveGift(Gift gift);
+
+	Gift findGiftByOrderId(Integer orderId);
+
 	List<GiftItemDto> getReceivedGiftsByStatusWithLimit(Integer userId, GiftStatus status, int limit);
-	List<GiftItemDto> getReceivedGiftsByStatusAfterCursor(Integer userId, GiftStatus status, Integer cursorId, int limit);
+
+	List<GiftItemDto> getReceivedGiftsByStatusAfterCursor(Integer userId, GiftStatus status, Integer cursorId,
+		int limit);
 }
