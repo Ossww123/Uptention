@@ -53,10 +53,6 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime standardTime = LocalDateTime.now().toLocalDate().atTime(23, 30);
 
-		if (findMiningTime.getEndTime() != null) {
-			throw new CustomException(ErrorCode.FOCUS_MODE_OFF_FAILED);
-		}
-
 		if (now.isAfter(standardTime)) {
 			throw new CustomException(ErrorCode.FOCUS_MODE_INSPECTION);
 		}
