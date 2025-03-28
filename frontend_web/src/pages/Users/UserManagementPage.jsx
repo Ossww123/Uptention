@@ -15,42 +15,10 @@ const UserManagementPage = () => {
   
   // Refs
   const observer = useRef();
-  const lastUserElementRef = useCallback(node => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        fetchMoreUsers();
-      }
-    });
-    
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
-
   const navigate = useNavigate();
 
-  // 초기 사용자 데이터 로드
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // 검색어 변경 핸들러
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  // 검색 기능
-  const handleSearch = (e) => {
-    e.preventDefault();
-    setUsers([]);
-    setNextCursor(null);
-    setHasMore(true);
-    fetchUsers(true);
-  };
-
-  // API에서 사용자 데이터 가져오기
-  const fetchUsers = async (isSearch = false) => {
+  // API에서 사용자 데이터 가져오기 (useCallback으로 감싸기)
+  const fetchUsers = useCallback(async (isSearch = false) => {
     setLoading(true);
     setError(null);
     
@@ -80,13 +48,46 @@ const UserManagementPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, nextCursor]); // 종속성에 searchTerm과 nextCursor 추가
 
-  // 무한 스크롤을 위한 추가 데이터 로드
-  const fetchMoreUsers = () => {
+  // 무한 스크롤을 위한 추가 데이터 로드 (useCallback으로 감싸기)
+  const fetchMoreUsers = useCallback(() => {
     if (!loading && hasMore) {
       fetchUsers();
     }
+  }, [loading, hasMore, fetchUsers]); // fetchUsers도 종속성에 추가
+
+  // 마지막 요소 ref callback (종속성 배열 업데이트)
+  const lastUserElementRef = useCallback(node => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        fetchMoreUsers();
+      }
+    });
+    
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore, fetchMoreUsers]); // fetchMoreUsers 추가
+
+  // 초기 사용자 데이터 로드 (종속성 배열 업데이트)
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]); // fetchUsers 추가
+
+  // 검색어 변경 핸들러
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  // 검색 기능
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setUsers([]);
+    setNextCursor(null);
+    setHasMore(true);
+    fetchUsers(true);
   };
 
   // 사용자 삭제 핸들러

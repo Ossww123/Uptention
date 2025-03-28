@@ -223,7 +223,7 @@ const UserCreatePage = () => {
       const response = await axios.post(`${BASE_URL}/api/join`, dataToSubmit);
       
       // 성공 응답 처리
-      alert('회원가입 성공');
+      alert(response); 
       navigate('/admin/users');
     } catch (error) {
       console.error('회원 등록 중 오류 발생:', error);
