@@ -286,7 +286,11 @@ const ProfileScreen = ({ navigation }) => {
               <Text style={styles.menuText}>주문 내역</Text>
               <Ionicons name="chevron-forward" size={24} color="black" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem}>
+            
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('GiftBox')}
+            >
               <Text style={styles.menuText}>선물함</Text>
               <Ionicons name="chevron-forward" size={24} color="black" />
             </TouchableOpacity>

@@ -1,39 +1,57 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import OrderDetailBottomSheet from '../components/OrderDetailBottomSheet';
 
 const OrderHistoryScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('purchase'); // 'purchase' or 'gift'
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
 
-  const mockOrders = [
-    {
-      id: 1,
-      status: '구매 완료',
-      title: '두레주로 10000원 교환권',
-      amount: '-1000 WORK',
-      date: '2025.02.13'
-    },
-    {
-      id: 2,
-      status: '구매 완료',
-      title: '두레주로 10000원 교환권',
-      amount: '-1000 WORK',
-      date: '2025.02.13'
-    },
-    {
-      id: 3,
-      status: '구매 완료',
-      title: '두레주로 10000원 교환권',
-      amount: '-1000 WORK',
-      date: '2025.02.13'
-    },
-    {
-      id: 4,
-      status: '구매 완료',
-      title: '두레주로 10000원 교환권',
-      amount: '-1000 WORK',
-      date: '2025.02.13'
-    }
-  ];
+  const mockOrders = {
+    purchase: [
+      {
+        id: 1,
+        type: 'purchase',
+        status: '구매 완료',
+        title: '두레주로 10000원 교환권',
+        amount: '-1000 WORK',
+        date: '2025.02.13'
+      },
+      {
+        id: 2,
+        type: 'purchase',
+        status: '구매 완료',
+        title: '두레주로 10000원 교환권',
+        amount: '-1000 WORK',
+        date: '2025.02.13'
+      }
+    ],
+    gift: [
+      {
+        id: 3,
+        type: 'gift',
+        status: '선물 완료',
+        title: '두레주로 10000원 교환권',
+        amount: '-1000 WORK',
+        date: '2025.02.13'
+      },
+      {
+        id: 4,
+        type: 'gift',
+        status: '선물 완료',
+        title: '두레주로 10000원 교환권',
+        amount: '-1000 WORK',
+        date: '2025.02.13'
+      }
+    ]
+  };
+
+  const handleOrderPress = (order) => {
+    setSelectedOrder(order);
+    setIsBottomSheetVisible(true);
+  };
+
+  const currentOrders = mockOrders[activeTab] || [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -61,8 +79,12 @@ const OrderHistoryScreen = ({ navigation }) => {
 
       {/* 주문 목록 */}
       <ScrollView style={styles.orderList}>
-        {mockOrders.map((order) => (
-          <View key={order.id} style={styles.orderItem}>
+        {currentOrders.map((order) => (
+          <TouchableOpacity
+            key={order.id}
+            style={styles.orderItem}
+            onPress={() => handleOrderPress(order)}
+          >
             <View>
               <Text style={styles.orderStatus}>{order.status}</Text>
               <Text style={styles.orderTitle}>{order.title}</Text>
@@ -71,9 +93,16 @@ const OrderHistoryScreen = ({ navigation }) => {
               <Text style={styles.orderAmount}>{order.amount}</Text>
               <Text style={styles.orderDate}>{order.date}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* 주문 상세 바텀 시트 */}
+      <OrderDetailBottomSheet
+        visible={isBottomSheetVisible}
+        onClose={() => setIsBottomSheetVisible(false)}
+        order={selectedOrder}
+      />
     </SafeAreaView>
   );
 };
