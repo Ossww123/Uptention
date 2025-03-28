@@ -50,7 +50,8 @@ public enum ErrorCode {
 
 	// 집중모드 관련 에러
 	FOCUS_MODE_ON_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_001", "집중모드 실행 중 오류가 발생했습니다."),
-	FOCUS_MODE_OFF_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_002", "집중모드 종료 중 오류가 발생했습니다.");
+	FOCUS_MODE_OFF_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_002", "집중모드 종료 중 오류가 발생했습니다."),
+	FOCUS_MODE_INSPECTION(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_003", "포인트 정산 중입니다.");
 
 	// http 상태 코드
 	private final HttpStatus status;
