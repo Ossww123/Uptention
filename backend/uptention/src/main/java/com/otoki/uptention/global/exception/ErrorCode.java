@@ -24,6 +24,9 @@ public enum ErrorCode {
 	// 주문 관련 에러
 	ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_001", "주문이 존재하지 않습니다."),
 
+	// 주문 상품 관련 에러
+	ORDER_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_ITEM_001", "주문 상품이 존재하지 않습니다."),
+
 	// 장바구니 관련 에러
 	CART_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_001", "장바구니가 존재하지 않습니다."),
 	CART_EMPTY_IDS(HttpStatus.BAD_REQUEST, "CART_004", "장바구니 ID 목록은 필수입니다."),
