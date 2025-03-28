@@ -10,6 +10,10 @@ public enum ErrorCode {
 	INVALID_PARAMETER(HttpStatus.BAD_REQUEST, "X002", "잘못된 파라미터가 전달되었습니다."),
 	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "X003", "서버 에러가 발생했습니다."),
 
+	// 인증/인가 관련 에러
+	AUTH_DUPLICATE_EMPLOYEE_NUMBER(HttpStatus.CONFLICT, "AUTH_005", "사번이 이미 사용 중입니다."),
+	AUTH_DUPLICATE_USERNAME(HttpStatus.CONFLICT, "AUTH_006", "아이디가 이미 사용중입니다."),
+
 	// 아이템 관련 에러
 	ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "ITEM_001", "상품이 존재하지 않습니다."),
 	ITEM_INVALID_SORT_TYPE(HttpStatus.BAD_REQUEST, "ITEM_002", "지원하지 않는 정렬 방식입니다."),
@@ -27,7 +31,6 @@ public enum ErrorCode {
 	// 장바구니 관련 에러
 	CART_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_001", "장바구니가 존재하지 않습니다."),
 	CART_EMPTY_IDS(HttpStatus.BAD_REQUEST, "CART_004", "장바구니 ID 목록은 필수입니다."),
-
 
 	// 커서 관련 에러
 	CURSOR_ENCODING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CURSOR_001", "커서 인코딩에 실패했습니다."),

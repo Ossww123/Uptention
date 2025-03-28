@@ -20,4 +20,20 @@ public class UserServiceImpl implements UserService {
 		return userRepository.findById(id)
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 	}
+
+	// username 중복 검증 메서드
+	@Override
+	public void validateDuplicateUsername(String username) {
+		if (userRepository.existsByUsername(username)) {
+			throw new CustomException(ErrorCode.AUTH_DUPLICATE_USERNAME);
+		}
+	}
+
+	// 사번 중복 검증 메서드
+	@Override
+	public void validateDuplicateEmployeeNumber(String employeeNumber) {
+		if (userRepository.existsByEmployeeNumber(employeeNumber)) {
+			throw new CustomException(ErrorCode.AUTH_DUPLICATE_EMPLOYEE_NUMBER);
+		}
+	}
 }
