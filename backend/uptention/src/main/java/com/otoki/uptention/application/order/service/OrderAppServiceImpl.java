@@ -10,6 +10,7 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderItemResponseDto;
 import com.otoki.uptention.domain.common.CursorDto;
@@ -136,7 +137,6 @@ public class OrderAppServiceImpl implements OrderAppService {
 	 * 주문 내역 조회
 	 */
 	@Override
-	@Transactional(readOnly = true)
 	public OrderHistoryCursorResponseDto getOrderHistory(String cursorStr, int size, OrderHistoryType type) {
 
 		// 현재 사용자 조회 (임시로 ID 2 사용)
@@ -147,6 +147,50 @@ public class OrderAppServiceImpl implements OrderAppService {
 
 		// 페이지네이션 처리 및 응답 생성
 		return createOrderHistoryResponse(orders, size);
+	}
+
+	@Override
+	public OrderDetailResponseDto getOrderDetail(Integer orderId, Integer orderItemId) {
+		// 주문 조회 (없으면 예외 발생)
+		Order order = orderService.getOrderById(orderId);
+
+		// 주문 상품 조회 (없으면 예외 발생)
+		OrderItem orderItem = orderItemService.getOrderItemById(orderItemId);
+
+		// 주문 상품이 해당 주문에 속하는지 검증
+		if (!orderItem.getOrder().getId().equals(orderId)) {
+			throw new CustomException(ErrorCode.ORDER_ITEM_NOT_FOUND);
+		}
+
+		// 상품 정보 조회
+		Item item = orderItem.getItem();
+
+		// 선물 여부 확인
+		Gift gift = giftService.findGiftByOrderId(orderId);
+
+		// 공통 응답 필드를 가진 빌더 생성
+		OrderDetailResponseDto.OrderDetailResponseDtoBuilder builder = OrderDetailResponseDto.builder()
+			.orderItemId(orderItem.getId())
+			.orderId(order.getId())
+			.itemName(item.getName())
+			.brand(item.getBrand())
+			.totalPrice(orderItem.getItemPrice() * orderItem.getQuantity())
+			.status(order.getStatus().getDescription())
+			.orderDate(order.getCreatedAt());
+
+		if (gift != null) {
+			// 선물인 경우
+			User receiver = gift.getReceiver();
+			return builder
+				.receiverName(receiver.getName())
+				.build();
+		} else {
+			// 일반 구매인 경우
+			return builder
+				.quantity(orderItem.getQuantity())
+				.address(order.getAddress())
+				.build();
+		}
 	}
 
 	/**
