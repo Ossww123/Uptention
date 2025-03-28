@@ -1,9 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DeliveryAddressBottomSheet from '../components/DeliveryAddressBottomSheet';
 
 const GiftDetailScreen = ({ route }) => {
   const { item } = route.params;
+  const [isBottomSheetVisible, setIsBottomSheetVisible] = React.useState(false);
+
+  const handleReceiveGift = () => {
+    setIsBottomSheetVisible(true);
+  };
+
+  const handleSubmitAddress = (addressData) => {
+    // 여기에서 배송지 정보를 처리하는 로직을 구현합니다
+    console.log('배송지 정보:', addressData);
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -22,12 +33,17 @@ const GiftDetailScreen = ({ route }) => {
             <Text style={styles.senderName}>{item.sender}</Text>
             <Text style={styles.date}>{item.date}</Text>
           </View>
-          <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>수령하기</Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleReceiveGift}>
+            <Text style={styles.buttonText}>수령하기</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    
+
+      <DeliveryAddressBottomSheet
+        visible={isBottomSheetVisible}
+        onClose={() => setIsBottomSheetVisible(false)}
+        onSubmit={handleSubmitAddress}
+      />
     </SafeAreaView>
   );
 };
@@ -97,7 +113,7 @@ const styles = StyleSheet.create({
     color: '#999999',
   },
   button: {
-    marginTop: -100,
+    marginTop: 0,
     backgroundColor: '#FF8C00',
     marginTop: 80,
     paddingVertical: 15,
