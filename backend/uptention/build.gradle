@@ -41,11 +41,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // spring security
-    //implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 
     // Spring Cloud AWS 의존성 (S3 통합)
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0'
-    
+
     // Spring MVC, Tomcat, Jackson 을 포함한 웹 개발 스타터 패키지
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
