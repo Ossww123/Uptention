@@ -187,4 +187,22 @@ public interface CartApiDoc {
 	ResponseEntity<String> removeCartItem(
 		@Parameter(description = "삭제할 장바구니 항목 ID 목록", required = true)
 		@RequestBody List<Integer> cartIds);
+
+	@Operation(summary = "장바구니 상품 개수 조회", description = "사용자의 장바구니에 담긴 상품 종류의 개수를 조회합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "장바구니 상품 개수 조회 성공",
+			content = @Content(
+				schema = @Schema(implementation = Integer.class),
+				examples = {
+					@ExampleObject(
+						name = "장바구니 개수 예시",
+						value = "5"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<Integer> getCartItemCount();
 }

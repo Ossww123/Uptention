@@ -15,4 +15,7 @@ public interface CartService {
 	List<CartItemDto> getCartItemsByUserId(Integer userId);
 
 	void removeByCartIds(List<Integer> cartIds);
+
+	Integer countCartItemsByUserId(Integer userId);
+
 }

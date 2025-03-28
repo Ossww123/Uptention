@@ -15,7 +15,7 @@ public interface CartRepository extends JpaRepository<Cart, Integer> {
 	Cart findByUserIdAndItemId(Integer userId, Integer itemId);
 
 	/**
-	 * 특정 사용자의 모든 장바구니 항목 중 활성화된(status=true) 상품과 해당 상품의 첫 번째 이미지(썸네일)를 함께 조회한다.
+	 * 특정 사용자의 모든 장바구니 항목 중 활성화된(status=true) 상품과 해당 상품의 첫 번째 이미지(썸네일)를 함께 조회
 	 */
 	@Query("SELECT new com.otoki.uptention.domain.cart.dto.CartItemDto(" +
 		"c.id, " +
@@ -32,4 +32,11 @@ public interface CartRepository extends JpaRepository<Cart, Integer> {
 		"WHERE c.user.id = :userId AND i.status = true " +
 		"ORDER BY c.createdAt DESC")
 	List<CartItemDto> findCartItemsWithThumbnailByUserId(@Param("userId") Integer userId);
+
+	/**
+	 * 특정 사용자의 장바구니에 담긴 상품 종류의 개수를 조회
+	 */
+	@Query("SELECT COUNT(c) FROM Cart c WHERE c.user.id = :userId")
+	Integer countCartItemsByUserId(@Param("userId") Integer userId);
+
 }
