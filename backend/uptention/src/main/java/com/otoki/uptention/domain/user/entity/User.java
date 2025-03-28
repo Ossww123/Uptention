@@ -49,12 +49,12 @@ public class User extends TimeStampEntity {
 	@Column(name = "role", length = 31)
 	private UserRole role;
 
-	@Column(length = 127)
+	@Column(length = 255)
 	private String wallet;
 
 	private Integer point;
 
-	@Column(name = "profile_image", length = 127)
+	@Column(name = "profile_image", length = 255)
 	private String profileImage;
 
 	private Boolean status;
