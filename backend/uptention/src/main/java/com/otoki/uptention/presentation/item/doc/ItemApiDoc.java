@@ -4,7 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.otoki.uptention.application.item.dto.response.ItemListResponseDto;
+import com.otoki.uptention.application.item.dto.response.ItemCursorResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
 import com.otoki.uptention.domain.item.enums.SortType;
 import com.otoki.uptention.global.exception.ErrorResponse;
@@ -48,7 +48,7 @@ public interface ItemApiDoc {
 	@Operation(summary = "상품 목록 정보", description = "마켓 플레이스에 등록된 모든 상품 목록 조회")
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "상품 목록 조회 성공",
-			content = @Content(schema = @Schema(implementation = ItemListResponseDto.class))),
+			content = @Content(schema = @Schema(implementation = ItemCursorResponseDto.class))),
 		@ApiResponse(responseCode = "404", description = "존재하지 않는 카테고리",
 			content = @Content(
 				schema = @Schema(implementation = ErrorResponse.class),
@@ -93,7 +93,7 @@ public interface ItemApiDoc {
 				}
 			)),
 	})
-	ResponseEntity<ItemListResponseDto> getItems(
+	ResponseEntity<ItemCursorResponseDto> getItems(
 		@Parameter(description = "카테고리 ID >> 1:리빙가전, 2:주방가전, 3:뷰티, 4:패션의류/잡화, 5:문화여가, 6:생활용품, 7:식품, 8:키즈)")
 		@RequestParam(required = false) Integer categoryId,
 

@@ -1,9 +1,13 @@
 package com.otoki.uptention.domain.order.entity;
 
+import com.otoki.uptention.domain.order.enums.GiftStatus;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.global.entity.TimeStampEntity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -37,5 +41,14 @@ public class Gift extends TimeStampEntity {
 	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "order_id", nullable = false)
 	private Order order;
+
+	@Builder.Default
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status", length = 20, nullable = false)
+	private GiftStatus status = GiftStatus.PENDING;
+
+	public void updateStatus(GiftStatus status) {
+		this.status = status;
+	}
 
 }

@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.otoki.uptention.application.item.dto.response.ItemListResponseDto;
+import com.otoki.uptention.application.item.dto.response.ItemCursorResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
 import com.otoki.uptention.domain.category.service.CategoryService;
 import com.otoki.uptention.domain.common.CursorDto;
@@ -39,7 +39,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 	 * 조건에 맞는 상품 목록을 커서 기반 페이징으로 조회
 	 */
 	@Override
-	public ItemListResponseDto getItems(Integer categoryId, String keyword, String cursorStr,
+	public ItemCursorResponseDto getItems(Integer categoryId, String keyword, String cursorStr,
 		SortType sortType, int size) {
 
 		// 카테고리 존재 여부 검증
@@ -64,7 +64,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 			? createNextCursor(resultItems.get(resultItems.size() - 1), sortType)
 			: null;
 
-		return new ItemListResponseDto(resultItems, hasNextPage, nextCursor);
+		return new ItemCursorResponseDto(resultItems, hasNextPage, nextCursor);
 	}
 
 	/**
