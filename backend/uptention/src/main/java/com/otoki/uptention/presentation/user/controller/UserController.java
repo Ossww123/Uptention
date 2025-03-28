@@ -21,7 +21,7 @@ public class UserController implements UserApiDoc {
 	// 회원가입 메서드
 	@PostMapping("/api/join")
 	public ResponseEntity<String> joinUser(@RequestBody JoinRequestDto requestDto) {
-		userAppService.joinUser(requestDto);
+		userAppService.joinMember(requestDto);
 
 		return ResponseEntity.ok("회원가입 성공");
 	}
