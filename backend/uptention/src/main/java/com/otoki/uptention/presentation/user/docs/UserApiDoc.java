@@ -39,7 +39,7 @@ public interface UserApiDoc {
 				examples = {
 					@ExampleObject(
 						summary = "요청 파라미터 오류",
-						value = "{\"code\":\"X002\",\"message\":\"[username] 필수 값 누락\",\"path\":\"/api/users\"}"
+						value = "{\"code\":\"X002\",\"message\":\"[username] 필수 값 누락\",\"path\":\"/api/join\"}"
 					)
 				}
 			)
@@ -54,12 +54,12 @@ public interface UserApiDoc {
 					@ExampleObject(
 						name = "중복된 아이디",
 						summary = "아이디가 이미 사용중입니다.",
-						value = "{\"code\":\"AUTH_006\",\"message\":\"아이디가 이미 사용중입니다.\",\"path\":\"/api/users\"}"
+						value = "{\"code\":\"AUTH_006\",\"message\":\"아이디가 이미 사용중입니다.\",\"path\":\"/api/join\"}"
 					),
 					@ExampleObject(
 						name = "중복된 사번",
 						summary = "사번이 이미 사용 중입니다.",
-						value = "{\"code\":\"AUTH_005\",\"message\":\"사번이 이미 사용 중입니다.\",\"path\":\"/api/users\"}"
+						value = "{\"code\":\"AUTH_005\",\"message\":\"사번이 이미 사용 중입니다.\",\"path\":\"/api/join\"}"
 					)
 				}
 			)
@@ -88,7 +88,7 @@ public interface UserApiDoc {
 				examples = {
 					@ExampleObject(
 						summary = "아이디가 이미 사용중입니다.",
-						value = "{\"code\":\"AUTH_006\",\"message\":\"아이디가 이미 사용중입니다.\",\"path\":\"/api/users/exists/username\"}"
+						value = "{\"code\":\"AUTH_006\",\"message\":\"아이디가 이미 사용중입니다.\",\"path\":\"/api/join/check-username\"}"
 					)
 				}
 			)
@@ -119,7 +119,7 @@ public interface UserApiDoc {
 				examples = {
 					@ExampleObject(
 						summary = "사번이 이미 사용 중입니다.",
-						value = "{\"code\":\"AUTH_005\",\"message\":\"사번이 이미 사용 중입니다.\",\"path\":\"/api/users/exists/employeeNumber\"}"
+						value = "{\"code\":\"AUTH_005\",\"message\":\"사번이 이미 사용 중입니다.\",\"path\":\"/api/join/check-employee-number\"}"
 					)
 				}
 			)
