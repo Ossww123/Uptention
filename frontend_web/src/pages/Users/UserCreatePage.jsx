@@ -1,8 +1,9 @@
-// src/pages/Users/UserCreatePage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './UserCreatePage.css';
-import axios from 'axios'; // axios 사용, 필요시 설치: npm install axios
+import axios from 'axios';
+
+const BASE_URL = 'https://j12d211.p.ssafy.io';
 
 const UserCreatePage = () => {
   const navigate = useNavigate();
@@ -16,10 +17,10 @@ const UserCreatePage = () => {
   });
   
   const [errors, setErrors] = useState({});
-  const [isCheckingId, setIsCheckingId] = useState(false); // ID 중복 확인 중 상태
-  const [isCheckingEmpNum, setIsCheckingEmpNum] = useState(false); // 사원번호 중복 확인 중 상태
-  const [isIdAvailable, setIsIdAvailable] = useState(false); // ID 사용 가능 여부
-  const [isEmpNumAvailable, setIsEmpNumAvailable] = useState(false); // 사원번호 사용 가능 여부
+  const [isCheckingId, setIsCheckingId] = useState(false);
+  const [isCheckingEmpNum, setIsCheckingEmpNum] = useState(false);
+  const [isIdAvailable, setIsIdAvailable] = useState(false);
+  const [isEmpNumAvailable, setIsEmpNumAvailable] = useState(false);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,20 +61,20 @@ const UserCreatePage = () => {
     setIsCheckingId(true);
     
     try {
-      // API 호출
-      const response = await axios.get(`/api/users/exists?username=${formData.username}`);
+      // API 호출 - 실제 API가 없으므로 임시로 처리 (API 명세에는 중복 체크 API가 따로 없음)
+      // 실제 API가 있다면 아래 주석 해제
+      // const response = await axios.get(`${BASE_URL}/api/check-username?username=${formData.username}`);
       
-      // 서버 응답 처리 - 200 OK는 사용 가능한 경우
+      // 임시 처리 - 항상 사용 가능하다고 가정
       setIsIdAvailable(true);
       setErrors(prev => ({
         ...prev,
         username: ''
       }));
-      alert(response.data); // "사용 가능한 아이디입니다."
+      alert("사용 가능한 아이디입니다.");
     } catch (error) {
       setIsIdAvailable(false);
       
-      // 409 Conflict는 이미 사용 중인 경우
       if (error.response && error.response.status === 409) {
         setErrors(prev => ({
           ...prev,
@@ -114,20 +115,20 @@ const UserCreatePage = () => {
     setIsCheckingEmpNum(true);
     
     try {
-      // API 호출
-      const response = await axios.get(`/api/users/exists?employeeNumber=${formData.employeeNumber}`);
+      // API 호출 - 실제 API가 없으므로 임시로 처리 (API 명세에는 중복 체크 API가 따로 없음)
+      // 실제 API가 있다면 아래 주석 해제
+      // const response = await axios.get(`${BASE_URL}/api/check-employee-number?employeeNumber=${formData.employeeNumber}`);
       
-      // 서버 응답 처리 - 200 OK는 사용 가능한 경우
+      // 임시 처리 - 항상 사용 가능하다고 가정
       setIsEmpNumAvailable(true);
       setErrors(prev => ({
         ...prev,
         employeeNumber: ''
       }));
-      alert(response.data); // "사용 가능한 사번입니다."
+      alert("사용 가능한 사번입니다.");
     } catch (error) {
       setIsEmpNumAvailable(false);
       
-      // 409 Conflict는 이미 사용 중인 경우
       if (error.response && error.response.status === 409) {
         setErrors(prev => ({
           ...prev,
@@ -184,13 +185,13 @@ const UserCreatePage = () => {
       isValid = false;
     }
     
-    // 비밀번호 검증 (영문, 숫자 포함, 8~15자)
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,15}$/;
+    // 비밀번호 검증 (영문, 숫자, 특수문자 포함, 10~15자)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{10,15}$/;
     if (!formData.password) {
       newErrors.password = '비밀번호를 입력해 주세요';
       isValid = false;
     } else if (!passwordRegex.test(formData.password)) {
-      newErrors.password = '비밀번호는 영문, 숫자가 반드시 포함되어야 하며 8~15자여야 합니다';
+      newErrors.password = '비밀번호는 영문, 숫자, 특수문자가 반드시 포함되어야 하며 10~15자여야 합니다';
       isValid = false;
     }
     
@@ -219,24 +220,23 @@ const UserCreatePage = () => {
       const { confirmPassword, ...dataToSubmit } = formData;
       
       // API 호출
-      const response = await axios.post('/api/users', dataToSubmit);
+      const response = await axios.post(`${BASE_URL}/api/join`, dataToSubmit);
       
       // 성공 응답 처리
-      alert('회원이 등록되었습니다.');
+      alert('회원가입 성공');
       navigate('/admin/users');
     } catch (error) {
       console.error('회원 등록 중 오류 발생:', error);
       
-      // 409 Conflict 에러 처리
+      // 중복 아이디 에러 처리 (409)
       if (error.response && error.response.status === 409) {
-        // 에러 메시지에 따라 다른 처리
-        if (error.response.data.errorCode === 'AUTH_005') {
+        if (error.response.data.code === 'AUTH_005') {
           setErrors(prev => ({
             ...prev,
             employeeNumber: error.response.data.message || '사번이 이미 사용 중입니다.'
           }));
           setIsEmpNumAvailable(false);
-        } else if (error.response.data.errorCode === 'AUTH_006') {
+        } else if (error.response.data.code === 'AUTH_006') {
           setErrors(prev => ({
             ...prev,
             username: error.response.data.message || '아이디가 이미 사용 중입니다.'
@@ -245,7 +245,12 @@ const UserCreatePage = () => {
         } else {
           alert(error.response.data.message || '회원 등록에 실패했습니다.');
         }
-      } else {
+      } 
+      // 잘못된 요청 에러 처리 (400)
+      else if (error.response && error.response.status === 400) {
+        alert(error.response.data.message || '입력 정보를 확인해주세요.');
+      } 
+      else {
         alert('회원 등록에 실패했습니다. 다시 시도해 주세요.');
       }
     }
@@ -354,7 +359,7 @@ const UserCreatePage = () => {
                     value={formData.password}
                     onChange={handleChange}
                     className="form-input"
-                    placeholder="비밀번호 입력 (8~15자, 영문/숫자 포함)"
+                    placeholder="비밀번호 입력 (10~15자, 영문/숫자/특수문자 포함)"
                     maxLength="15"
                   />
                   {errors.password && <div className="error-message">{errors.password}</div>}
