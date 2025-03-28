@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
@@ -24,11 +25,20 @@ const ProductDetailScreen = ({ route, navigation }) => {
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCartMessage, setShowCartMessage] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
   const fadeAnim = new Animated.Value(0);
 
   useEffect(() => {
     fetchProductDetails();
+    fetchCartItemCount();
   }, [productId]);
+
+  // 화면에 포커스가 될 때마다 장바구니 개수 업데이트
+  useFocusEffect(
+    useCallback(() => {
+      fetchCartItemCount();
+    }, [])
+  );
 
   // 카트 메시지가 표시되면 자동으로 사라지게 하는 효과
   useEffect(() => {
@@ -52,6 +62,31 @@ const ProductDetailScreen = ({ route, navigation }) => {
       return () => clearTimeout(timer);
     }
   }, [showCartMessage]);
+
+  // 장바구니 개수 가져오기
+  const fetchCartItemCount = async () => {
+    try {
+      const response = await fetch('https://j12d211.p.ssafy.io/api/shopping-cart/count', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // 필요한 경우 인증 토큰 추가
+          // 'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('장바구니 개수 조회에 실패했습니다.');
+      }
+      
+      const count = await response.json();
+      setCartItemCount(count);
+    } catch (error) {
+      console.error('장바구니 개수 조회 오류:', error);
+      // 오류 발생 시 기본값으로 0 설정 (UI에 아무것도 표시하지 않음)
+      setCartItemCount(0);
+    }
+  };
 
   const fetchProductDetails = async () => {
     try {
@@ -101,6 +136,9 @@ const ProductDetailScreen = ({ route, navigation }) => {
       
       // 성공 메시지 표시
       setShowCartMessage(true);
+      
+      // 장바구니 개수 업데이트
+      fetchCartItemCount();
     } catch (error) {
       console.error('장바구니 추가 오류:', error);
       // 에러 메시지 표시
@@ -259,9 +297,11 @@ const ProductDetailScreen = ({ route, navigation }) => {
               source={require('../../assets/cart-icon.png')}
               style={styles.cartIcon}
             />
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>2</Text>
-            </View>
+            {cartItemCount > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
