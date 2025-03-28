@@ -21,6 +21,16 @@ public class UserServiceImpl implements UserService {
 			.orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 	}
 
+	// 회원가입
+	@Override
+	public void join(User user) {
+		// 중복 체크
+		validateDuplicateUsername(user.getUsername());
+		validateDuplicateEmployeeNumber(user.getEmployeeNumber());
+
+		userRepository.save(user);
+	}
+
 	// username 중복 검증 메서드
 	@Override
 	public void validateDuplicateUsername(String username) {

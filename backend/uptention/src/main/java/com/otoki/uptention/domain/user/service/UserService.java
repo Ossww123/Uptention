@@ -6,6 +6,9 @@ public interface UserService {
 
 	User getUserById(Integer id);
 
+	// 회원가입
+	void join(User user);
+
 	// username 중복 검증 메서드
 	void validateDuplicateUsername(String username);
 
