@@ -1,6 +1,8 @@
 package com.otoki.uptention.application.mining.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,4 +65,15 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		miningTimeService.saveMiningTime(findMiningTime);
 	}
 
+	@Transactional
+	@Override
+	public void bulkUpdateMiningTime() {
+		List<MiningTime> miningTimes = miningTimeService.findAllByEndTimeIsNull();
+		LocalDateTime endTime = LocalDate.now().atTime(23, 30);
+
+		for (MiningTime miningTime : miningTimes) {
+			miningTime.updateEndTime(endTime);
+			miningTimeService.saveMiningTime(miningTime);
+		}
+	}
 }
