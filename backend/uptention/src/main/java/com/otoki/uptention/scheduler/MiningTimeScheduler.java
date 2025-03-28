@@ -13,7 +13,7 @@ public class MiningTimeScheduler {
 
 	private final MiningTimeAppService miningTimeAppService;
 
-	@Scheduled(cron = "0 30 23 * * *", zone = "UTC")
+	@Scheduled(cron = "0 30 14 * * *", zone = "UTC")
 	public void updateNullEndTime() {
 		miningTimeAppService.bulkUpdateMiningTime();
 	}
