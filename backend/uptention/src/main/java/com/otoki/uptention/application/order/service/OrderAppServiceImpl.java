@@ -184,13 +184,13 @@ public class OrderAppServiceImpl implements OrderAppService {
 			return builder
 				.receiverName(receiver.getName())
 				.build();
-		} else {
-			// 일반 구매인 경우
-			return builder
-				.quantity(orderItem.getQuantity())
-				.address(order.getAddress())
-				.build();
 		}
+		
+		// 일반 구매인 경우
+		return builder
+			.quantity(orderItem.getQuantity())
+			.address(order.getAddress())
+			.build();
 	}
 
 	/**
