@@ -61,20 +61,20 @@ const UserCreatePage = () => {
     setIsCheckingId(true);
     
     try {
-      // API 호출 - 실제 API가 없으므로 임시로 처리 (API 명세에는 중복 체크 API가 따로 없음)
-      // 실제 API가 있다면 아래 주석 해제
-      // const response = await axios.get(`${BASE_URL}/api/check-username?username=${formData.username}`);
+      // API 호출
+      const response = await axios.get(`${BASE_URL}/api/join/check-username?username=${formData.username}`);
       
-      // 임시 처리 - 항상 사용 가능하다고 가정
+      // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsIdAvailable(true);
       setErrors(prev => ({
         ...prev,
         username: ''
       }));
-      alert("사용 가능한 아이디입니다.");
+      alert(response.data); // "사용 가능한 아이디입니다."
     } catch (error) {
       setIsIdAvailable(false);
       
+      // 409 Conflict는 이미 사용 중인 경우
       if (error.response && error.response.status === 409) {
         setErrors(prev => ({
           ...prev,
@@ -115,20 +115,20 @@ const UserCreatePage = () => {
     setIsCheckingEmpNum(true);
     
     try {
-      // API 호출 - 실제 API가 없으므로 임시로 처리 (API 명세에는 중복 체크 API가 따로 없음)
-      // 실제 API가 있다면 아래 주석 해제
-      // const response = await axios.get(`${BASE_URL}/api/check-employee-number?employeeNumber=${formData.employeeNumber}`);
+      // API 호출
+      const response = await axios.get(`${BASE_URL}/api/join/check-employee-number?employeeNumber=${formData.employeeNumber}`);
       
-      // 임시 처리 - 항상 사용 가능하다고 가정
+      // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsEmpNumAvailable(true);
       setErrors(prev => ({
         ...prev,
         employeeNumber: ''
       }));
-      alert("사용 가능한 사번입니다.");
+      alert(response.data); // "사용 가능한 사번입니다."
     } catch (error) {
       setIsEmpNumAvailable(false);
       
+      // 409 Conflict는 이미 사용 중인 경우
       if (error.response && error.response.status === 409) {
         setErrors(prev => ({
           ...prev,
@@ -185,13 +185,13 @@ const UserCreatePage = () => {
       isValid = false;
     }
     
-    // 비밀번호 검증 (영문, 숫자, 특수문자 포함, 10~15자)
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{10,15}$/;
+    // 비밀번호 검증 (영문, 숫자 포함, 특수문자 선택적, 8~15자)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*]{8,15}$/;
     if (!formData.password) {
       newErrors.password = '비밀번호를 입력해 주세요';
       isValid = false;
     } else if (!passwordRegex.test(formData.password)) {
-      newErrors.password = '비밀번호는 영문, 숫자, 특수문자가 반드시 포함되어야 하며 10~15자여야 합니다';
+      newErrors.password = '비밀번호는 영문, 숫자가 반드시 포함되어야 하며 8~15자여야 합니다';
       isValid = false;
     }
     
@@ -359,7 +359,7 @@ const UserCreatePage = () => {
                     value={formData.password}
                     onChange={handleChange}
                     className="form-input"
-                    placeholder="비밀번호 입력 (10~15자, 영문/숫자/특수문자 포함)"
+                    placeholder="비밀번호 입력 (8~15자, 영문/숫자 필수)"
                     maxLength="15"
                   />
                   {errors.password && <div className="error-message">{errors.password}</div>}
