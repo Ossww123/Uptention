@@ -64,5 +64,4 @@ public class User extends TimeStampEntity {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "company_id", nullable = false)
 	private Company company;
-
 }
