@@ -21,15 +21,15 @@ public class OrderItemServiceImpl implements OrderItemService {
 	public OrderItem saveOrderItem(OrderItem orderItem) {
 		return orderItemRepository.save(orderItem);
 	}
-
-	@Override
-	public OrderItem getOrderItemById(Integer id) {
-		return orderItemRepository.findById(id)
-			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_ITEM_NOT_FOUND));
-	}
-
+	
 	@Override
 	public List<OrderItem> findOrderItemsByOrderIds(List<Integer> orderIds) {
 		return orderItemRepository.findAllByOrderIdInWithItemJoin(orderIds);
+	}
+
+	@Override
+	public OrderItem findByIdAndOrderId(Integer orderItemId, Integer orderId) {
+		return orderItemRepository.findByIdAndOrderId(orderItemId, orderId)
+			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_ITEM_NOT_FOUND));
 	}
 }

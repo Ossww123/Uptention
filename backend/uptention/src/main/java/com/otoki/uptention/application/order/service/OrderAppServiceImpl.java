@@ -149,34 +149,18 @@ public class OrderAppServiceImpl implements OrderAppService {
 		return createOrderHistoryResponse(orders, size);
 	}
 
+	/**
+	 * 주문 상세 내역 조회
+	 */
 	@Override
 	public OrderDetailResponseDto getOrderDetail(Integer orderId, Integer orderItemId) {
-		// 주문 조회 (없으면 예외 발생)
-		Order order = orderService.getOrderById(orderId);
-
-		// 주문 상품 조회 (없으면 예외 발생)
-		OrderItem orderItem = orderItemService.getOrderItemById(orderItemId);
-
-		// 주문 상품이 해당 주문에 속하는지 검증
-		if (!orderItem.getOrder().getId().equals(orderId)) {
-			throw new CustomException(ErrorCode.ORDER_ITEM_NOT_FOUND);
-		}
-
-		// 상품 정보 조회
-		Item item = orderItem.getItem();
+		OrderItem orderItem = orderItemService.findByIdAndOrderId(orderItemId, orderId);
 
 		// 선물 여부 확인
 		Gift gift = giftService.findGiftByOrderId(orderId);
 
-		// 공통 응답 필드를 가진 빌더 생성
-		OrderDetailResponseDto.OrderDetailResponseDtoBuilder builder = OrderDetailResponseDto.builder()
-			.orderItemId(orderItem.getId())
-			.orderId(order.getId())
-			.itemName(item.getName())
-			.brand(item.getBrand())
-			.totalPrice(orderItem.getItemPrice() * orderItem.getQuantity())
-			.status(order.getStatus().getDescription())
-			.orderDate(order.getCreatedAt());
+		// 공통 빌더 생성
+		OrderDetailResponseDto.OrderDetailResponseDtoBuilder builder = createOrderDetailBuilder(orderItem);
 
 		if (gift != null) {
 			// 선물인 경우
@@ -185,12 +169,26 @@ public class OrderAppServiceImpl implements OrderAppService {
 				.receiverName(receiver.getName())
 				.build();
 		}
-		
+
 		// 일반 구매인 경우
 		return builder
 			.quantity(orderItem.getQuantity())
-			.address(order.getAddress())
+			.address(orderItem.getOrder().getAddress())
 			.build();
+	}
+
+	private OrderDetailResponseDto.OrderDetailResponseDtoBuilder createOrderDetailBuilder(OrderItem orderItem) {
+		Order order = orderItem.getOrder();
+		Item item = orderItem.getItem();
+
+		return OrderDetailResponseDto.builder()
+			.orderItemId(orderItem.getId())
+			.orderId(order.getId())
+			.itemName(item.getName())
+			.brand(item.getBrand())
+			.totalPrice(orderItem.getTotalPrice())
+			.status(order.getStatus().getDescription())
+			.orderDate(order.getCreatedAt());
 	}
 
 	/**
