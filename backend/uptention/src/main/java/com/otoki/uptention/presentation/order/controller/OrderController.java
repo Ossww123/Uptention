@@ -19,6 +19,7 @@ import com.otoki.uptention.application.order.dto.response.ItemVerificationRespon
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
 import com.otoki.uptention.application.order.service.OrderVerifyAppService;
+import com.otoki.uptention.domain.order.enums.OrderHistoryType;
 import com.otoki.uptention.presentation.order.doc.OrderApiDoc;
 
 import jakarta.validation.Valid;
@@ -61,7 +62,7 @@ public class OrderController implements OrderApiDoc {
 	public ResponseEntity<OrderHistoryCursorResponseDto> getOrderHistory(
 		@RequestParam(required = false) String cursor,
 		@RequestParam(defaultValue = "10") int size,
-		@RequestParam(defaultValue = "PURCHASE") String type) {
+		@RequestParam(defaultValue = "PURCHASE") OrderHistoryType type) {
 		return ResponseEntity.ok(orderAppService.getOrderHistory(cursor, size, type));
 	}
 

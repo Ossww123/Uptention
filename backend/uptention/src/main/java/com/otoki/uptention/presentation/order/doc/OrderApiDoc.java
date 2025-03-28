@@ -13,6 +13,7 @@ import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
+import com.otoki.uptention.domain.order.enums.OrderHistoryType;
 import com.otoki.uptention.global.exception.ErrorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -297,6 +298,6 @@ public interface OrderApiDoc {
 		@Parameter(description = "페이지 크기", example = "10")
 		@RequestParam(defaultValue = "10") int size,
 
-		@Parameter(description = "주문 유형 (PURCHASE: 일반구매, GIFT: 보낸 선물)")
-		@RequestParam(defaultValue = "PURCHASE") String type);
+		@Parameter(description = "주문 유형 (PURCHASE: 일반구매, GIFT: 선물구매)")
+		@RequestParam(defaultValue = "PURCHASE") OrderHistoryType type);
 }

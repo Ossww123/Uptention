@@ -17,6 +17,7 @@ import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
 import com.otoki.uptention.domain.order.entity.Order;
+import com.otoki.uptention.domain.order.enums.OrderHistoryType;
 import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.domain.orderitem.entity.OrderItem;
@@ -136,9 +137,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	 */
 	@Override
 	@Transactional(readOnly = true)
-	public OrderHistoryCursorResponseDto getOrderHistory(String cursorStr, int size, String type) {
-		// 주문 유형 검증
-		validateOrderType(type);
+	public OrderHistoryCursorResponseDto getOrderHistory(String cursorStr, int size, OrderHistoryType type) {
 
 		// 현재 사용자 조회 (임시로 ID 2 사용)
 		User user = userService.getUserById(2);
@@ -162,9 +161,9 @@ public class OrderAppServiceImpl implements OrderAppService {
 	/**
 	 * 유형에 따른 주문 목록 조회
 	 */
-	private List<Order> fetchOrdersByType(Integer userId, String cursorStr, int limit, String type) {
+	private List<Order> fetchOrdersByType(Integer userId, String cursorStr, int limit, OrderHistoryType type) {
 		CursorDto cursor = CursorDto.decode(cursorStr);
-		boolean isPurchase = "PURCHASE".equals(type);
+		boolean isPurchase = OrderHistoryType.PURCHASE.equals(type);
 
 		if (cursor == null) {
 			// 첫 페이지 조회
