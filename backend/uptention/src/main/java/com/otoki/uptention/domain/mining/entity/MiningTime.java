@@ -39,4 +39,8 @@ public class MiningTime extends TimeStampEntity {
 
 	private LocalDateTime endTime;
 
+	public void updateEndTime(LocalDateTime endTime) {
+		this.endTime = endTime;
+	}
+
 }
