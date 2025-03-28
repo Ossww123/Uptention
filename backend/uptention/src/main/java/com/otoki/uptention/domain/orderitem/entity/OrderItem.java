@@ -50,8 +50,4 @@ public class OrderItem extends TimeStampEntity {
 		return this.itemPrice * this.quantity;
 	}
 
-	// Order 설정 메소드 (양방향 관계 설정용)
-	public void createOrder(Order order) {
-		this.order = order;
-	}
 }

@@ -1,6 +1,7 @@
 package com.otoki.uptention.domain.orderitem.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,6 +12,11 @@ import com.otoki.uptention.domain.orderitem.entity.OrderItem;
 
 @Repository
 public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
+
+	@Query("SELECT oi FROM OrderItem oi JOIN FETCH oi.order o WHERE o.id = :orderId AND oi.id = :orderItemId")
+	Optional<OrderItem> findByIdAndOrderId(@Param("orderItemId") Integer orderItemId,
+		@Param("orderId") Integer orderId);
+
 	@Query("SELECT oi FROM OrderItem oi " +
 		"JOIN FETCH oi.item " +
 		"JOIN FETCH oi.order " +

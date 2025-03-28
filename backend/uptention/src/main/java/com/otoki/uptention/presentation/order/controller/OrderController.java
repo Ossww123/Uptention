@@ -16,6 +16,7 @@ import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
+import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
 import com.otoki.uptention.application.order.service.OrderVerifyAppService;
@@ -64,6 +65,13 @@ public class OrderController implements OrderApiDoc {
 		@RequestParam(defaultValue = "10") int size,
 		@RequestParam(defaultValue = "PURCHASE") OrderHistoryType type) {
 		return ResponseEntity.ok(orderAppService.getOrderHistory(cursor, size, type));
+	}
+
+	@GetMapping("/{orderId}/order-items/{orderItemId}")
+	public ResponseEntity<OrderDetailResponseDto> getOrderDetail(
+		@PathVariable Integer orderId,
+		@PathVariable Integer orderItemId) {
+		return ResponseEntity.ok(orderAppService.getOrderDetail(orderId, orderItemId));
 	}
 
 }

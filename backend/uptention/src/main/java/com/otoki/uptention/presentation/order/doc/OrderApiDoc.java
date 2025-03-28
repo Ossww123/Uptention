@@ -12,6 +12,7 @@ import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
+import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.domain.order.enums.OrderHistoryType;
 import com.otoki.uptention.global.exception.ErrorResponse;
@@ -300,4 +301,49 @@ public interface OrderApiDoc {
 
 		@Parameter(description = "주문 유형 (PURCHASE: 일반구매, GIFT: 선물구매)")
 		@RequestParam(defaultValue = "PURCHASE") OrderHistoryType type);
+
+	@Operation(summary = "주문 상세 조회", description = "주문 ID와 주문 상품 ID를 기반으로 주문 상세 정보를 조회합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "조회 성공",
+			content = @Content(
+				schema = @Schema(implementation = OrderDetailResponseDto.class),
+				examples = {
+					@ExampleObject(
+						name = "구매 주문 예시",
+						summary = "일반 구매 주문 응답",
+						value = "{\"orderItemId\":1,\"orderId\":1,\"itemName\":\"[가전디지털] 테스트 상품 1\",\"brand\":\"테스트 브랜드 2\",\"totalPrice\":149000,\"status\":\"결제 완료\",\"orderDate\":\"2024-03-18T09:30:00\",\"quantity\":1,\"address\":\"서울특별시 강남구 테헤란로 123\"}"
+					),
+					@ExampleObject(
+						name = "선물 주문 예시",
+						summary = "선물 주문 응답",
+						value = "{\"orderItemId\":3,\"orderId\":3,\"itemName\":\"[패션의류/잡화] 테스트 상품 4\",\"brand\":\"테스트 브랜드 5\",\"totalPrice\":42000,\"status\":\"결제 완료\",\"orderDate\":\"2024-03-21T15:30:00\",\"receiverName\":\"김민수\"}"
+					)
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "404",
+			description = "주문 또는 주문 상품을 찾을 수 없음",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "ORDER_ITEM_NOT_FOUND",
+						summary = "요청한 주문 상품이 존재하지 않음",
+						value = "{\"code\":\"ORDER_ITEM_001\",\"message\":\"주문 상품이 존재하지 않습니다.\",\"path\":\"/api/orders/{orderId}/{orderItemId}\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<OrderDetailResponseDto> getOrderDetail(
+		@Parameter(description = "주문 ID", required = true, example = "1")
+		@PathVariable Integer orderId,
+
+		@Parameter(description = "주문 상품 ID", required = true, example = "1")
+		@PathVariable Integer orderItemId
+	);
+
 }

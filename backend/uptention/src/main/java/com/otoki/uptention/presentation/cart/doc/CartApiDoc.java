@@ -1,4 +1,4 @@
-package com.otoki.uptention.presentation.cart.docs;
+package com.otoki.uptention.presentation.cart.doc;
 
 import java.util.List;
 
