@@ -5,13 +5,23 @@ import java.util.Collections;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
+
+import com.otoki.uptention.auth.filter.JWTFilter;
+import com.otoki.uptention.auth.filter.LoginFilter;
+import com.otoki.uptention.auth.service.TokenAppService;
+import com.otoki.uptention.global.exception.FilterExceptionHandler;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,13 +29,29 @@ import lombok.RequiredArgsConstructor;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+	private final JWTFilter jwtFilter;
+	private final TokenAppService tokenAppService;
+
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
 	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws
+		Exception {
+		return authenticationConfiguration.getAuthenticationManager();
+	}
+
+	@Bean
+	public LoginFilter loginFilter(AuthenticationManager authenticationManager) {
+		LoginFilter loginFilter = new LoginFilter(authenticationManager, tokenAppService);
+		loginFilter.setFilterProcessesUrl("/api/login");
+		return loginFilter;
+	}
+
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http, LoginFilter loginFilter) throws Exception {
 		// Cors 설정
 		http
 			.cors((corsCustomizer -> corsCustomizer.configurationSource(request -> {
@@ -49,9 +75,37 @@ public class SecurityConfig {
 			.authorizeHttpRequests(auth -> auth
 				.anyRequest().permitAll());
 
+		//JWTFilter 등록
+		http
+			.addFilterBefore(jwtFilter, LoginFilter.class);
+
+		// loginFilter 등록
+		http
+			.addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class);
+
+		http
+			.addFilterBefore(new FilterExceptionHandler(), LogoutFilter.class);
+
+		// 기본 logout 비활성화
+		http
+			.logout(AbstractHttpConfigurer::disable);
+
 		// csrf 토큰 사용 x
 		http
 			.csrf(AbstractHttpConfigurer::disable);
+
+		// formLogin 비활성화: 기본 form 기반 로그인 기능을 사용하지 않도록 설정
+		http
+			.formLogin(AbstractHttpConfigurer::disable);
+
+		// httpBasic 비활성화: HTTP 기본 인증 방식을 사용하지 않도록 설정
+		http
+			.httpBasic(AbstractHttpConfigurer::disable);
+
+		// 세션 관리 설정: 상태를 저장하지 않는(STATELESS) 방식으로 세션 생성 정책을 지정하여 서버에서 세션을 생성 또는 유지하지 않도록 설정
+		http
+			.sessionManagement((session) -> session
+				.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
 		return http.build();
 	}
