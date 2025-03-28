@@ -7,4 +7,9 @@ import com.otoki.uptention.domain.user.entity.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Integer> {
+	// username 중복 여부 확인
+	boolean existsByUsername(String username);
+
+	// 사번 중복 여부 확인
+	boolean existsByEmployeeNumber(String employeeNumber);
 }

@@ -5,4 +5,13 @@ import com.otoki.uptention.domain.user.entity.User;
 public interface UserService {
 
 	User getUserById(Integer id);
+
+	// 회원가입
+	void join(User user);
+
+	// username 중복 검증 메서드
+	void validateDuplicateUsername(String username);
+
+	// 사번 중복 검증 메서드
+	void validateDuplicateEmployeeNumber(String employeeNumber);
 }
