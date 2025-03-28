@@ -11,6 +11,12 @@ public enum ErrorCode {
 	INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "X003", "서버 에러가 발생했습니다."),
 
 	// 인증/인가 관련 에러
+	// // 401 Unauthorized
+	// {
+	// 	"errorCode": "AUTH_004",
+	// 	"message": "아이디/비밀번호가 일치하지 않습니다."
+	// }
+	AUTH_FAILED_LOGIN(HttpStatus.UNAUTHORIZED, "AUTH_004", "아이디/비밀번호가 일치하지 않습니다."),
 	AUTH_DUPLICATE_EMPLOYEE_NUMBER(HttpStatus.CONFLICT, "AUTH_005", "사번이 이미 사용 중입니다."),
 	AUTH_DUPLICATE_USERNAME(HttpStatus.CONFLICT, "AUTH_006", "아이디가 이미 사용중입니다."),
 
