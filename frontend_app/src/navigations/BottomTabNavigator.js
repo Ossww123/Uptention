@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
 import RecordScreen from '../screens/RecordScreen';
 import StoreStackNavigator from './StoreStackNavigator';
-import ProfileScreen from '../screens/ProfileScreen';
+import ProfileStackNavigator from './ProfileStackNavigator';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform } from 'react-native';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
@@ -34,7 +34,7 @@ const BottomTabNavigator = () => {
         tabBarStyle: (() => {
           const routeName = getFocusedRouteNameFromRoute(route) ?? '';
           
-          // Store 스택에서 ProductDetail 화면일 때 탭바 숨기기
+          // ProductDetail 화면에서만 탭바 숨기기
           if (route.name === 'Store' && routeName === 'ProductDetail') {
             return { display: 'none' };
           }
@@ -72,27 +72,13 @@ const BottomTabNavigator = () => {
       <Tab.Screen 
         name="Store" 
         component={StoreStackNavigator}
-        options={({ route }) => ({
+        options={{
           title: '상점',
-          tabBarStyle: (() => {
-            const routeName = getFocusedRouteNameFromRoute(route) ?? '';
-            if (routeName === 'ProductDetail') {
-              return { display: 'none' };
-            }
-            return {
-              height: Platform.OS === 'ios' ? 85 : 60,
-              paddingBottom: Platform.OS === 'ios' ? 30 : 10,
-              backgroundColor: '#FFFFFF',
-              borderTopWidth: 1,
-              borderTopColor: '#E5E5EA',
-              elevation: 0,
-            };
-          })(),
-        })}
+        }}
       />
       <Tab.Screen 
         name="Profile" 
-        component={ProfileScreen}
+        component={ProfileStackNavigator}
         options={{
           title: '프로필',
         }}
