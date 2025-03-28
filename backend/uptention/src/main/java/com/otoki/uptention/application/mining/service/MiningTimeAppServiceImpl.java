@@ -2,7 +2,6 @@ package com.otoki.uptention.application.mining.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,9 +50,10 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 		// 2. 현재 시간 및 기준 시간 지정
 		LocalDateTime now = LocalDateTime.now();
-		LocalDateTime standardTime = LocalDateTime.now().toLocalDate().atTime(23, 30);
+		LocalDateTime startInspectionTime = LocalDateTime.now().toLocalDate().atTime(14, 30);
+		LocalDateTime endInspectionTime = LocalDateTime.now().toLocalDate().atTime(15, 00);
 
-		if (now.isAfter(standardTime)) {
+		if (now.isAfter(startInspectionTime) && now.isBefore(endInspectionTime)) {
 			throw new CustomException(ErrorCode.FOCUS_MODE_INSPECTION);
 		}
 
@@ -63,13 +63,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 	@Transactional
 	@Override
-	public void bulkUpdateMiningTime() {
-		List<MiningTime> miningTimes = miningTimeService.findAllByEndTimeIsNull();
-		LocalDateTime endTime = LocalDate.now().atTime(23, 30);
-
-		for (MiningTime miningTime : miningTimes) {
-			miningTime.updateEndTime(endTime);
-			miningTimeService.saveMiningTime(miningTime);
-		}
+	public int bulkUpdateMiningTime() {
+		LocalDateTime endTime = LocalDate.now().atTime(14, 30);
+		return miningTimeService.updateEndTimeForUnfinishedMining(endTime);
 	}
 }
