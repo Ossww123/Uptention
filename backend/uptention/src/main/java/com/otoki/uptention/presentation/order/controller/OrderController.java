@@ -67,7 +67,7 @@ public class OrderController implements OrderApiDoc {
 		return ResponseEntity.ok(orderAppService.getOrderHistory(cursor, size, type));
 	}
 
-	@GetMapping("/{orderId}/{orderItemId}")
+	@GetMapping("/{orderId}/order-items/{orderItemId}")
 	public ResponseEntity<OrderDetailResponseDto> getOrderDetail(
 		@PathVariable Integer orderId,
 		@PathVariable Integer orderItemId) {
