@@ -1,6 +1,6 @@
 package com.otoki.uptention.domain.mining.service;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
@@ -32,7 +32,7 @@ public class MiningTimeServiceImpl implements MiningTimeService {
 	}
 
 	@Override
-	public List<MiningTime> findAllByEndTimeIsNull() {
-		return miningTimeRepository.findAllByEndTimeIsNull();
+	public int updateEndTimeForUnfinishedMining(LocalDateTime endTime) {
+		return miningTimeRepository.updateEndTimeForUnfinishedMining(endTime);
 	}
 }
