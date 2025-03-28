@@ -30,4 +30,16 @@ public class UserAppServiceImpl implements UserAppService {
 
 		userService.join(user);
 	}
+
+	// 회원가입 신청 전 username 중복검사
+	@Override
+	public void checkDuplicateUsername(String username) {
+		userService.validateDuplicateUsername(username);
+	}
+
+	// 회원가입 신청 전 사번 중복검사
+	@Override
+	public void checkDuplicateEmployeeNumber(String employeeNumber) {
+		userService.validateDuplicateEmployeeNumber(employeeNumber);
+	}
 }
