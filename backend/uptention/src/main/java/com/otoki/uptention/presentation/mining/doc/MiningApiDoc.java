@@ -37,4 +37,23 @@ public interface MiningApiDoc {
 		)
 	})
 	ResponseEntity<String> focusModeOn();
+
+	@Operation(summary = "집중 모드 종료", description = "사용자의 집중 모드를 종료한다.")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "집중모드 종료 성공",
+			content = @Content(schema = @Schema(implementation = String.class))),
+		@ApiResponse(responseCode = "500", description = "서버 내부 오류",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "서버 오류",
+						summary = "서버 내부에 문제가 발생",
+						value = "{\"code\":\"INTERNAL_SERVER_ERROR\",\"message\":\"서버 내부 오류가 발생했습니다.\",\"path\":\"/api/focus\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<String> focusModeOff();
 }
