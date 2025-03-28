@@ -16,7 +16,7 @@ import com.otoki.uptention.application.cart.dto.request.CartQuantityRequestDto;
 import com.otoki.uptention.application.cart.service.CartAppService;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.domain.cart.dto.CartItemDto;
-import com.otoki.uptention.presentation.cart.docs.CartApiDoc;
+import com.otoki.uptention.presentation.cart.doc.CartApiDoc;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
