@@ -330,11 +330,6 @@ public interface OrderApiDoc {
 				schema = @Schema(implementation = ErrorResponse.class),
 				examples = {
 					@ExampleObject(
-						name = "ORDER_NOT_FOUND",
-						summary = "요청한 주문이 존재하지 않음",
-						value = "{\"code\":\"ORDER_001\",\"message\":\"주문이 존재하지 않습니다.\",\"path\":\"/api/orders/{orderId}/{orderItemId}\"}"
-					),
-					@ExampleObject(
 						name = "ORDER_ITEM_NOT_FOUND",
 						summary = "요청한 주문 상품이 존재하지 않음",
 						value = "{\"code\":\"ORDER_ITEM_001\",\"message\":\"주문 상품이 존재하지 않습니다.\",\"path\":\"/api/orders/{orderId}/{orderItemId}\"}"
