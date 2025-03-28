@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 // 화면 너비 가져오기
 const { width } = Dimensions.get("window");
@@ -48,19 +49,18 @@ const StoreScreen = ({ navigation }) => {
   const [searchText, setSearchText] = useState('');
   const [currentSort, setCurrentSort] = useState(sortOptions[0]);
   const [showSortOptions, setShowSortOptions] = useState(false);
+  const [cartItemCount, setCartItemCount] = useState(0);
   
   // 검색 텍스트를 저장하기 위한 ref
   const searchInputRef = useRef(null);
   const searchTimeoutRef = useRef(null);
   const onEndReachedTimeoutRef = useRef(null); // 무한 스크롤 디바운싱용 ref 추가
 
-  // 컴포넌트 마운트 시 상품 로드
+  // 컴포넌트 마운트 시 상품 로드 및 장바구니 개수 로드
   useEffect(() => {
     loadProducts(true);
-  }, [selectedCategory, currentSort.id]);
+    fetchCartItemCount();
 
-  // 컴포넌트 언마운트 시 timeout 정리
-  useEffect(() => {
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
@@ -69,7 +69,14 @@ const StoreScreen = ({ navigation }) => {
         clearTimeout(onEndReachedTimeoutRef.current);
       }
     };
-  }, []);
+  }, [selectedCategory, currentSort.id]);
+
+  // 화면에 포커스가 될 때마다 장바구니 개수 업데이트
+  useFocusEffect(
+    useCallback(() => {
+      fetchCartItemCount();
+    }, [])
+  );
 
   // 검색어 변경 시 디바운스 적용
   useEffect(() => {
@@ -87,6 +94,31 @@ const StoreScreen = ({ navigation }) => {
       }
     };
   }, [searchText]);
+
+  // 장바구니 개수 가져오기
+  const fetchCartItemCount = async () => {
+    try {
+      const response = await fetch('https://j12d211.p.ssafy.io/api/shopping-cart/count', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          // 필요한 경우 인증 토큰 추가
+          // 'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('장바구니 개수 조회에 실패했습니다.');
+      }
+      
+      const count = await response.json();
+      setCartItemCount(count);
+    } catch (error) {
+      console.error('장바구니 개수 조회 오류:', error);
+      // 오류 발생 시 기본값으로 0 설정 (UI에 아무것도 표시하지 않음)
+      setCartItemCount(0);
+    }
+  };
 
   // API에서 상품 데이터 로드
   const loadProducts = async (isRefresh = false) => {
@@ -336,10 +368,12 @@ const StoreScreen = ({ navigation }) => {
             source={require("../../assets/cart-icon.png")}
             style={{ width: 24, height: 24 }}
           />
-          {/* 장바구니 아이템 개수 표시 (선택사항) */}
-          <View style={styles.cartBadge}>
-            <Text style={styles.cartBadgeText}>2</Text>
-          </View>
+          {/* 장바구니 아이템 개수 표시 */}
+          {cartItemCount > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
