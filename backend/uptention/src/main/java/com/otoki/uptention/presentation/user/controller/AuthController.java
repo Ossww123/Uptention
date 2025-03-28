@@ -45,7 +45,7 @@ public class AuthController implements AuthApiDoc {
 
 	// Swagger-ui 문서용 메서드, 동작하지 않습니다.
 	@PostMapping("/api/login")
-	public ResponseEntity<String> signIn(@RequestBody LoginRequestDto loginRequestDTO) {
+	public ResponseEntity<String> signIn(@RequestBody LoginRequestDto loginRequestDto) {
 		return ResponseEntity.ok("로그인 성공");
 	}
 }
