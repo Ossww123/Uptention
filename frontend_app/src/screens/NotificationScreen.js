@@ -59,6 +59,46 @@ const NotificationScreen = ({ navigation }) => {
         createdAt: '2025-03-26T11:20:00',
         read: false,
         type: 'NFT'
+      },
+      {
+        id: '6',
+        title: 'NFT 발급',
+        message: '우수사원 NFT가 발급되었습니다. 프로필에서 확인해보세요.',
+        createdAt: '2025-03-26T11:20:00',
+        read: false,
+        type: 'NFT'
+      },
+      {
+        id: '7',
+        title: 'NFT 발급',
+        message: '우수사원 NFT가 발급되었습니다. 프로필에서 확인해보세요.',
+        createdAt: '2025-03-26T11:20:00',
+        read: false,
+        type: 'NFT'
+      },
+      {
+        id: '8',
+        title: 'NFT 발급',
+        message: '우수사원 NFT가 발급되었습니다. 프로필에서 확인해보세요.',
+        createdAt: '2025-03-26T11:20:00',
+        read: false,
+        type: 'NFT'
+      },
+      {
+        id: '9',
+        title: 'NFT 발급',
+        message: '우수사원 NFT가 발급되었습니다. 프로필에서 확인해보세요.',
+        createdAt: '2025-03-26T11:20:00',
+        read: false,
+        type: 'NFT'
+      },
+      {
+        id: '10',
+        title: 'NFT 발급',
+        message: '우수사원 NFT가 발급되었습니다. 프로필에서 확인해보세요.',
+        createdAt: '2025-03-26T11:20:00',
+        read: false,
+        type: 'NFT'
       }
     ];
   };
@@ -290,6 +330,7 @@ const NotificationScreen = ({ navigation }) => {
           ListEmptyComponent={renderEmptyNotifications}
           refreshing={refreshing}
           onRefresh={handleRefresh}
+          removeClippedSubviews={false}
         />
       )}
     </SafeAreaView>
