@@ -13,6 +13,8 @@ import com.otoki.uptention.auth.dto.CustomUserDetails;
 import com.otoki.uptention.auth.dto.UserDetailsDto;
 import com.otoki.uptention.auth.util.JWTUtil;
 import com.otoki.uptention.domain.user.enums.UserRole;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -29,7 +31,7 @@ public class JWTFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
 		FilterChain filterChain) throws ServletException, IOException {
-		
+
 		String authorization = request.getHeader(JWTConstants.ACCESS_TOKEN);
 
 		if (authorization == null || !authorization.startsWith(JWTConstants.PREFIX_JWT)) {
@@ -37,8 +39,14 @@ public class JWTFilter extends OncePerRequestFilter {
 			return;
 		}
 
-		String accessToken = authorization.split(" ")[1];
-		;
+		String[] parts = authorization.split(" ");
+		if (parts.length != 2) {
+			// 잘못된 포맷의 토큰인 경우, BAD_REQUEST (400) 에러를 반환
+			throw new CustomException(ErrorCode.INVALID_PARAMETER);
+		}
+
+		String accessToken = parts[1];
+
 		jwtUtil.validateAccessToken(accessToken);
 
 		Integer userId = jwtUtil.getUserId(accessToken);
