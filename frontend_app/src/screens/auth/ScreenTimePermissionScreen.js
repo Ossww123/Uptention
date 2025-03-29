@@ -95,9 +95,9 @@ const ScreenTimePermissionScreen = ({ onPermissionGranted }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Image
-          source={require("../../assets/permission-icon.png")}
+          source={require("../../../assets/permission-icon.png")}
           style={styles.permissionIcon}
-          defaultSource={require("../../assets/permission-icon.png")}
+          defaultSource={require("../../../assets/permission-icon.png")}
         />
 
         <Text style={styles.title}>사용량 접근 권한이 필요합니다</Text>

@@ -265,9 +265,9 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Image 
-          source={require('../../assets/phantom-logo.png')} 
+          source={require('../../../assets/phantom-logo.png')} 
           style={styles.walletLogo}
-          defaultSource={require('../../assets/phantom-logo.png')}
+          defaultSource={require('../../../assets/phantom-logo.png')}
         />
         
         <Text style={styles.title}>지갑 연동하기</Text>
@@ -332,9 +332,9 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
                 ) : (
                   <>
                     <Image 
-                      source={require('../../assets/phantom-icon.png')} 
+                      source={require('../../../assets/phantom-icon.png')} 
                       style={styles.buttonIcon}
-                      defaultSource={require('../../assets/phantom-icon.png')}
+                      defaultSource={require('../../../assets/phantom-icon.png')}
                     />
                     <Text style={styles.buttonText}>Phantom 지갑 연결하기</Text>
                   </>
