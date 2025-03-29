@@ -12,6 +12,7 @@ import {
   Alert,
   FlatList,
   Animated,
+  BackHandler,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -26,22 +27,40 @@ const ProductDetailScreen = ({ route, navigation }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCartMessage, setShowCartMessage] = useState(false);
   const [cartItemCount, setCartItemCount] = useState(0);
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = useState(new Animated.Value(0))[0]; // useState로 래핑하여 재생성 방지
 
   useEffect(() => {
     fetchProductDetails();
     fetchCartItemCount();
+
+    // 하드웨어 백 버튼 처리
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+    
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      backHandler.remove();
+      fadeAnim.stopAnimation(); // 애니메이션 중단
+    };
   }, [productId]);
 
   // 화면에 포커스가 될 때마다 장바구니 개수 업데이트
   useFocusEffect(
     useCallback(() => {
       fetchCartItemCount();
+      
+      return () => {
+        // 포커스 해제 시 정리 작업
+        if (showCartMessage) {
+          setShowCartMessage(false);
+        }
+      };
     }, [])
   );
 
   // 카트 메시지가 표시되면 자동으로 사라지게 하는 효과
   useEffect(() => {
+    let timer;
+    
     if (showCartMessage) {
       // 메시지 표시 애니메이션
       Animated.timing(fadeAnim, {
@@ -51,17 +70,40 @@ const ProductDetailScreen = ({ route, navigation }) => {
       }).start();
 
       // 3초 후 메시지 숨기기
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 300,
           useNativeDriver: true,
         }).start(() => setShowCartMessage(false));
       }, 3000);
-
-      return () => clearTimeout(timer);
     }
+
+    // 정리 함수에서 타이머와 애니메이션 정리
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+      if (showCartMessage) {
+        fadeAnim.stopAnimation();
+      }
+    };
   }, [showCartMessage]);
+
+  // 뒤로가기 핸들러
+  const handleBackPress = useCallback(() => {
+    // 상태 정리
+    if (showCartMessage) {
+      setShowCartMessage(false);
+    }
+    
+    // 약간의 지연 후 네비게이션 수행
+    setTimeout(() => {
+      navigation.goBack();
+    }, 150);
+    
+    return true; // 이벤트 처리됨을 표시
+  }, [showCartMessage, navigation]);
 
   // 장바구니 개수 가져오기
   const fetchCartItemCount = async () => {
@@ -89,9 +131,13 @@ const ProductDetailScreen = ({ route, navigation }) => {
   };
 
   const fetchProductDetails = async () => {
+    const abortController = new AbortController();
+    
     try {
       setLoading(true);
-      const response = await fetch(`https://j12d211.p.ssafy.io/api/items/${productId}`);
+      const response = await fetch(`https://j12d211.p.ssafy.io/api/items/${productId}`, {
+        signal: abortController.signal
+      });
       const data = await response.json();
       
       // API에서 에러 응답이 왔는지 확인
@@ -102,65 +148,56 @@ const ProductDetailScreen = ({ route, navigation }) => {
       setProduct(data);
       setError(null);
     } catch (error) {
-      console.error('상품 상세 정보 로드 에러:', error);
-      setError(error.message || '상품 정보를 불러오는데 문제가 발생했습니다.');
+      if (error.name !== 'AbortError') {
+        console.error('상품 상세 정보 로드 에러:', error);
+        setError(error.message || '상품 정보를 불러오는데 문제가 발생했습니다.');
+      }
     } finally {
       setLoading(false);
     }
+    
+    return () => {
+      abortController.abort(); // API 요청 취소
+    };
   };
 
   // 장바구니에 추가 기능
   const addToCart = async () => {
     try {
-      // 로딩 상태 추가 가능 (필요시)
-      // setLoading(true);
-      
       const response = await fetch('https://j12d211.p.ssafy.io/api/shopping-cart', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // 필요한 경우 인증 토큰 추가
-          // 'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          itemId: productId, // route.params에서 받은 productId 사용
-          quantity: 1 // 요구사항대로 1로 고정
+          itemId: productId,
+          quantity: 1
         })
       });
       
-      // 응답이 성공적이지 않은 경우
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || '장바구니 추가에 실패했습니다.');
       }
       
-      // 성공 메시지 표시
       setShowCartMessage(true);
-      
-      // 장바구니 개수 업데이트
       fetchCartItemCount();
     } catch (error) {
       console.error('장바구니 추가 오류:', error);
-      // 에러 메시지 표시
       Alert.alert(
         '오류',
         error.message || '장바구니 추가 중 오류가 발생했습니다.'
       );
-    } finally {
-      // 로딩 상태 종료 (필요시)
-      // setLoading(false);
     }
   };
 
   // 바로 구매 기능
   const buyNow = () => {
-    // 실제로는 구매 페이지로 이동
     Alert.alert('알림', '구매 페이지로 이동합니다.');
   };
 
   // 선물하기 기능
   const sendGift = () => {
-    // 실제로는 선물하기 페이지로 이동
     Alert.alert('알림', '선물하기 페이지로 이동합니다.');
   };
 
@@ -173,6 +210,10 @@ const ProductDetailScreen = ({ route, navigation }) => {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
+          removeClippedSubviews={false} // 추가: 화면 밖 항목 제거 방지
+          maxToRenderPerBatch={3}
+          initialNumToRender={1}
+          onScrollToIndexFailed={() => {}}
           onMomentumScrollEnd={(event) => {
             const slideIndex = Math.floor(
               event.nativeEvent.contentOffset.x / 
@@ -185,6 +226,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
               source={{ uri: item }} 
               style={styles.productImage}
               resizeMode="contain"
+              fadeDuration={0} // 이미지 페이드 효과 제거
             />
           )}
           keyExtractor={(item, index) => `image-${index}`}
@@ -284,7 +326,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => navigation.goBack()}
+          onPress={handleBackPress}
         >
           <Text style={styles.backButtonText}>{'<'}</Text>
         </TouchableOpacity>
@@ -306,7 +348,10 @@ const ProductDetailScreen = ({ route, navigation }) => {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView 
+        style={styles.scrollView}
+        removeClippedSubviews={false}
+      >
         {/* 상품 이미지 슬라이더 */}
         {renderImageSlider()}
 
@@ -540,7 +585,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#666',
   },
-  // 3개 버튼을 위한 새 스타일
   threeButtonContainer: {
     flexDirection: 'row',
     borderTopWidth: 1,
@@ -578,7 +622,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // 장바구니 추가 메시지 스타일
   cartMessageContainer: {
     position: 'absolute',
     bottom: 80,
@@ -590,7 +633,7 @@ const styles = StyleSheet.create({
   cartMessageContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#00C851', // 초록색 배경
+    backgroundColor: '#00C851',
     borderRadius: 6,
     paddingVertical: 12,
     paddingHorizontal: 15,

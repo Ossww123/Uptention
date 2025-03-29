@@ -14,6 +14,7 @@ const BottomTabNavigator = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        unmountOnBlur: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
