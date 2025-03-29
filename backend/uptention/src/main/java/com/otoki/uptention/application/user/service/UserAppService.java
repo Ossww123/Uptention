@@ -13,4 +13,6 @@ public interface UserAppService {
 	void checkDuplicateEmployeeNumber(String employeeNumber);
 
 	ProfileImageResponseDto updateProfileImage(Integer userId, MultipartFile profileImage);
+
+	ProfileImageResponseDto removeProfileImage(Integer userId);
 }
