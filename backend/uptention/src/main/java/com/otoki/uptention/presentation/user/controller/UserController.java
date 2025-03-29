@@ -9,12 +9,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.service.UserAppService;
+import com.otoki.uptention.presentation.user.docs.UserApiDoc;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-public class UserController {
+public class UserController implements UserApiDoc {
 	private final UserAppService userAppService;
 
 	@PutMapping(value = "/api/users/{userId}/profiles", consumes = "multipart/form-data")
