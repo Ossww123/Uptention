@@ -52,15 +52,16 @@ public class User extends TimeStampEntity {
 	@Column(length = 255)
 	private String wallet;
 
-	private Integer point;
+	@Builder.Default
+	private Integer point = 0; // 회원가입시 기본값 0
 
 	@Column(name = "profile_image", length = 255)
 	private String profileImage;
 
-	private Boolean status;
+	@Builder.Default
+	private Boolean status = true; // 회원가입시 기본적으로 활성화 상태
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "company_id", nullable = false)
 	private Company company;
-
 }

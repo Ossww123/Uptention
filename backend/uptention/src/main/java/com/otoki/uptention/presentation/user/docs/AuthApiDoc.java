@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
+import com.otoki.uptention.auth.dto.LoginRequestDto;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,8 +17,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "유저 관련 API", description = "유저 관련 API")
-public interface UserApiDoc {
+@Tag(name = "인증, 인가 관련 API", description = "인증, 인가 관련 API")
+public interface AuthApiDoc {
 
 	@Operation(summary = "회원가입", description = "신규 사용자를 회원가입 처리합니다.")
 	@ApiResponses(value = {
@@ -39,7 +40,7 @@ public interface UserApiDoc {
 				examples = {
 					@ExampleObject(
 						summary = "요청 파라미터 오류",
-						value = "{\"code\":\"X002\",\"message\":\"[username] 필수 값 누락\",\"path\":\"/api/users\"}"
+						value = "{\"code\":\"X002\",\"message\":\"[username] 필수 값 누락\",\"path\":\"/api/join\"}"
 					)
 				}
 			)
@@ -54,12 +55,12 @@ public interface UserApiDoc {
 					@ExampleObject(
 						name = "중복된 아이디",
 						summary = "아이디가 이미 사용중입니다.",
-						value = "{\"code\":\"AUTH_006\",\"message\":\"아이디가 이미 사용중입니다.\",\"path\":\"/api/users\"}"
+						value = "{\"code\":\"AUTH_006\",\"message\":\"아이디가 이미 사용중입니다.\",\"path\":\"/api/join\"}"
 					),
 					@ExampleObject(
 						name = "중복된 사번",
 						summary = "사번이 이미 사용 중입니다.",
-						value = "{\"code\":\"AUTH_005\",\"message\":\"사번이 이미 사용 중입니다.\",\"path\":\"/api/users\"}"
+						value = "{\"code\":\"AUTH_005\",\"message\":\"사번이 이미 사용 중입니다.\",\"path\":\"/api/join\"}"
 					)
 				}
 			)
@@ -88,7 +89,7 @@ public interface UserApiDoc {
 				examples = {
 					@ExampleObject(
 						summary = "아이디가 이미 사용중입니다.",
-						value = "{\"code\":\"AUTH_006\",\"message\":\"아이디가 이미 사용중입니다.\",\"path\":\"/api/users/exists/username\"}"
+						value = "{\"code\":\"AUTH_006\",\"message\":\"아이디가 이미 사용중입니다.\",\"path\":\"/api/join/check-username\"}"
 					)
 				}
 			)
@@ -119,7 +120,7 @@ public interface UserApiDoc {
 				examples = {
 					@ExampleObject(
 						summary = "사번이 이미 사용 중입니다.",
-						value = "{\"code\":\"AUTH_005\",\"message\":\"사번이 이미 사용 중입니다.\",\"path\":\"/api/users/exists/employeeNumber\"}"
+						value = "{\"code\":\"AUTH_005\",\"message\":\"사번이 이미 사용 중입니다.\",\"path\":\"/api/join/check-employee-number\"}"
 					)
 				}
 			)
@@ -128,4 +129,45 @@ public interface UserApiDoc {
 	ResponseEntity<String> checkDuplicateEmployeeNumber(
 		@Parameter(description = "중복 검사를 위한 사번", required = true)
 		@RequestParam String employeeNumber);
+
+	@Operation(summary = "로그인", description = "사용자 인증을 수행합니다. 로그인 타입(member, admin)에 따라 적절한 권한 검증이 이루어집니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "로그인 성공",
+			content = @Content(
+				schema = @Schema(implementation = String.class),
+				examples = {
+					@ExampleObject(value = "로그인 성공")
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "400",
+			description = "잘못된 파라미터가 전달되었습니다.",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						summary = "잘못된 파라미터",
+						value = "{\"code\":\"X002\",\"message\":\"잘못된 파라미터가 전달되었습니다.\",\"path\":\"/api/login\"}"
+					)
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "401",
+			description = "아이디, 비밀번호가 일치하지 않거나, 로그인 타입과 권한이 일치하지 않습니다.",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						summary = "로그인 실패",
+						value = "{\"code\":\"AUTH_004\",\"message\":\"아이디, 비밀번호가 일치하지 않습니다.\",\"path\":\"/api/login\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<String> signIn(@RequestBody LoginRequestDto loginRequestDTO);
 }

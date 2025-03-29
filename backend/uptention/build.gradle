@@ -43,6 +43,11 @@ dependencies {
     // spring security
     implementation 'org.springframework.boot:spring-boot-starter-security'
 
+    // jwt
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
     // Spring Cloud AWS 의존성 (S3 통합)
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.3.0'
 

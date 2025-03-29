@@ -16,6 +16,7 @@ pipeline {
         SPRING_DATASOURCE_USERNAME = credentials('SPRING_DATASOURCE_USERNAME')
         SPRING_DATASOURCE_PASSWORD = credentials('SPRING_DATASOURCE_PASSWORD')
 
+        JWT_SECRET_KEY = credentials('JWT_SECRET_KEY')
 //         // Mattermost Notification 관련 환경 변수
 //         MATTERMOST_ENDPOINT = credentials('mattermost-webhook')
 //         MATTERMOST_CHANNEL = credentials('mattermost-channel-id')
@@ -93,6 +94,7 @@ pipeline {
                                       -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
                                     -e S3_ACCESS_TOKEN="${S3_ACCESS_TOKEN}" \\
                                     -e S3_SECRET_TOKEN="${S3_SECRET_TOKEN}" \\
+                                    -e JWT_SECRET_KEY="${JWT_SECRET_KEY}" \\
                                       ${DOCKER_IMAGE}:latest
                                     docker image prune -f
                                 """.stripIndent()
