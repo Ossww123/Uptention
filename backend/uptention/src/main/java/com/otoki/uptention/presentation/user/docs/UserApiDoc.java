@@ -103,4 +103,30 @@ public interface UserApiDoc {
 		@PathVariable Integer userId,
 		@RequestParam("profileImage") MultipartFile profileImage);
 
+	@Operation(summary = "프로필 이미지 삭제", description = "사용자의 프로필 이미지를 기본 이미지로 변경합니다. 기존 이미지가 기본 이미지가 아닌 경우 파일을 삭제한 후 기본 이미지로 변경됩니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "프로필 이미지 삭제(기본 이미지로 변경) 성공",
+			content = @Content(
+				schema = @Schema(implementation = ProfileImageResponseDto.class),
+				examples = {
+					@ExampleObject(value = "{\"profileImage\":\"https://example.com/path/to/profile-default.jpg\"}")
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "403",
+			description = "권한 없음",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"code\":\"AUTH_003\",\"message\":\"해당 요청의 권한이 없습니다.\",\"path\":\"/api/users/{userId}/profiles\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<ProfileImageResponseDto> deleteProfileImage(@PathVariable Integer userId);
 }
