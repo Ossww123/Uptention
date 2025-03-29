@@ -371,3 +371,5 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
     </SafeAreaView>
   );
 };
+
+export default WalletConnectScreen;
