@@ -372,4 +372,153 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
   );
 };
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  walletLogo: {
+    width: 100,
+    height: 100,
+    marginBottom: 30,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#555',
+    lineHeight: 24,
+  },
+  notInstalledContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  notInstalledText: {
+    fontSize: 16,
+    color: '#FF3B30',
+    marginBottom: 15,
+  },
+  downloadButton: {
+    backgroundColor: '#5A5AFA',
+    borderRadius: 30,
+    flexDirection: 'row',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  walletActions: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  connectButton: {
+    backgroundColor: '#674EA7',
+    borderRadius: 30,
+    flexDirection: 'row',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  buttonIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 10,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  connectedContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  walletInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 30,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  walletAddress: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 10,
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  disconnectButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+    borderRadius: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flex: 1,
+    marginRight: 10,
+    alignItems: 'center',
+  },
+  disconnectButtonText: {
+    color: '#FF3B30',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  continueButton: {
+    backgroundColor: '#FF8C00',
+    borderRadius: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flex: 1,
+    marginLeft: 10,
+    alignItems: 'center',
+  },
+  benefitsContainer: {
+    alignSelf: 'stretch',
+    marginBottom: 30,
+  },
+  benefitsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  benefitText: {
+    fontSize: 16,
+    marginLeft: 10,
+    color: '#333',
+  },
+  securityNote: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 10,
+    fontStyle: 'italic',
+  },
+});
+
 export default WalletConnectScreen;
