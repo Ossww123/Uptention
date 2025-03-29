@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,22 +9,22 @@ import {
   Linking,
   Alert,
   Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Buffer } from 'buffer';
-import 'react-native-get-random-values';
-import 'react-native-url-polyfill/auto';
-import nacl from 'tweetnacl';
-import bs58 from 'bs58';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Buffer } from "buffer";
+import "react-native-get-random-values";
+import "react-native-url-polyfill/auto";
+import nacl from "tweetnacl";
+import bs58 from "bs58";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
 
 // 글로벌 Buffer 객체가 없는 경우 추가
-if (typeof globalThis.Buffer === 'undefined') {
+if (typeof globalThis.Buffer === "undefined") {
   globalThis.Buffer = Buffer;
 }
 
-const APP_URL_SCHEME = 'uptention'; // 앱 URL 스키마 설정
+const APP_URL_SCHEME = "uptention"; // 앱 URL 스키마 설정
 
 const WalletConnectScreen = ({ onWalletConnected }) => {
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
   const [session, setSession] = useState(null);
   const [publicKey, setPublicKey] = useState(null);
   const [connecting, setConnecting] = useState(false);
-  
+
   // 복호화 함수
   const decryptPayload = useCallback((data, nonce, sharedSecret) => {
     try {
@@ -51,11 +51,11 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
 
       return JSON.parse(Buffer.from(decryptedData).toString("utf8"));
     } catch (error) {
-      console.error('Decryption error:', error);
+      console.error("Decryption error:", error);
       throw error;
     }
   }, []);
-  
+
   // 암호화 함수
   const encryptPayload = (payload, sharedSecret) => {
     const nonce = nacl.randomBytes(24);
@@ -66,18 +66,18 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
     );
     return [nonce, encryptedPayload];
   };
-  
+
   // 지갑 연결 정보 저장
   const saveWalletConnection = async (walletPublicKey) => {
     try {
-      await AsyncStorage.setItem('wallet_public_key', walletPublicKey);
+      await AsyncStorage.setItem("wallet_public_key", walletPublicKey);
       // 연결 성공 시 다음 화면으로 이동
       setTimeout(() => {
         onWalletConnected();
       }, 1000);
     } catch (error) {
-      console.error('Failed to save wallet connection:', error);
-      Alert.alert('오류', '지갑 연결 정보 저장 중 오류가 발생했습니다.');
+      console.error("Failed to save wallet connection:", error);
+      Alert.alert("오류", "지갑 연결 정보 저장 중 오류가 발생했습니다.");
     }
   };
 
@@ -94,7 +94,7 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
     getInitialURL();
 
     // DeepLink 리스너 등록
-    const linkingSubscription = Linking.addEventListener('url', handleDeepLink);
+    const linkingSubscription = Linking.addEventListener("url", handleDeepLink);
 
     return () => {
       linkingSubscription.remove();
@@ -112,26 +112,31 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
 
     try {
       // URL에서 데이터 추출
-      const [urlWithoutParams, queryString] = deepLink.split('?');
-      const isConnectPath = urlWithoutParams.includes('onConnect');
-      const isDisconnectPath = urlWithoutParams.includes('onDisconnect');
+      const [urlWithoutParams, queryString] = deepLink.split("?");
+      const isConnectPath = urlWithoutParams.includes("onConnect");
+      const isDisconnectPath = urlWithoutParams.includes("onDisconnect");
       const params = new URLSearchParams(queryString);
 
       // 에러 처리
       if (params.get("errorCode")) {
-        console.error('Connection error:', params.get("errorMessage"));
-        Alert.alert('연결 오류', params.get("errorMessage") || '지갑 연결 중 오류가 발생했습니다.');
+        console.error("Connection error:", params.get("errorMessage"));
+        Alert.alert(
+          "연결 오류",
+          params.get("errorMessage") || "지갑 연결 중 오류가 발생했습니다."
+        );
         return;
       }
 
       // 연결 처리
       if (isConnectPath) {
-        const phantom_encryption_public_key = params.get("phantom_encryption_public_key");
+        const phantom_encryption_public_key = params.get(
+          "phantom_encryption_public_key"
+        );
         const data = params.get("data");
         const nonce = params.get("nonce");
 
         if (!phantom_encryption_public_key || !data || !nonce) {
-          console.error('Missing connection parameters');
+          console.error("Missing connection parameters");
           return;
         }
 
@@ -142,16 +147,12 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
         );
 
         // 데이터 복호화
-        const connectData = decryptPayload(
-          data,
-          nonce,
-          sharedSecretDapp
-        );
+        const connectData = decryptPayload(data, nonce, sharedSecretDapp);
 
         setSharedSecret(sharedSecretDapp);
         setSession(connectData.session);
         setPublicKey(connectData.public_key);
-        
+
         // 지갑 연결 성공 처리
         saveWalletConnection(connectData.public_key);
       }
@@ -161,56 +162,57 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
         setPublicKey(null);
         setSharedSecret(null);
         setSession(null);
-        
+
         // 지갑 연결 정보 삭제
-        AsyncStorage.removeItem('wallet_public_key');
+        AsyncStorage.removeItem("wallet_public_key");
       }
     } catch (error) {
-      console.error('Error processing deeplink:', error);
-      Alert.alert('오류', '지갑 연결 처리 중 오류가 발생했습니다.');
+      console.error("Error processing deeplink:", error);
+      Alert.alert("오류", "지갑 연결 처리 중 오류가 발생했습니다.");
     }
   }, [deepLink, dappKeyPair.secretKey, decryptPayload, saveWalletConnection]);
-  
+
   // 지갑 연결 함수
   const connect = async () => {
     try {
       setConnecting(true);
-      
+
       // 리다이렉트 URL 생성
-      const redirectUrl = Linking.createURL('onConnect');
-      
+      const redirectUrl = Linking.createURL("onConnect");
+
       // 연결 URL 파라미터 설정
       const params = new URLSearchParams({
         dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
         cluster: "devnet", // Solana 네트워크 설정
         app_url: "https://j12d211.p.ssafy.io", // 앱 URL
-        redirect_link: redirectUrl
+        redirect_link: redirectUrl,
       });
 
       // Phantom 앱 딥링크 URL 생성
-      const url = Platform.OS === 'android'
-        ? `https://phantom.app/ul/v1/connect?${params.toString()}`
-        : `phantom://ul/v1/connect?${params.toString()}`;
+      const url =
+        Platform.OS === "android"
+          ? `https://phantom.app/ul/v1/connect?${params.toString()}`
+          : `phantom://ul/v1/connect?${params.toString()}`;
 
       // Phantom 앱 열기
       await Linking.openURL(url);
     } catch (err) {
-      console.error('Connection error:', err);
-      Alert.alert('연결 오류', 'Phantom 지갑 연결 중 오류가 발생했습니다.');
+      console.error("Connection error:", err);
+      Alert.alert("연결 오류", "Phantom 지갑 연결 중 오류가 발생했습니다.");
     } finally {
       setConnecting(false);
     }
   };
-  
+
   // 지갑 연결 해제 함수
   const disconnect = async () => {
     try {
       if (!session || !sharedSecret) {
-        console.error('No active session to disconnect');
+        console.error("No active session to disconnect");
         return;
       }
-      
-      const redirectUrl = Linking.createURL('onDisconnect');
+
+      const redirectUrl = Linking.createURL("onDisconnect");
       const payload = { session };
       const [nonce, encryptedPayload] = encryptPayload(payload, sharedSecret);
 
@@ -218,73 +220,84 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
         dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
         nonce: bs58.encode(nonce),
         redirect_link: redirectUrl,
-        payload: bs58.encode(encryptedPayload)
+        payload: bs58.encode(encryptedPayload),
       });
 
-      const url = Platform.OS === 'android'
-        ? `https://phantom.app/ul/v1/disconnect?${params.toString()}`
-        : `phantom://ul/v1/disconnect?${params.toString()}`;
+      const url =
+        Platform.OS === "android"
+          ? `https://phantom.app/ul/v1/disconnect?${params.toString()}`
+          : `phantom://ul/v1/disconnect?${params.toString()}`;
 
       await Linking.openURL(url);
     } catch (err) {
-      console.error('Disconnect error:', err);
-      Alert.alert('연결 해제 오류', 'Phantom 지갑 연결 해제 중 오류가 발생했습니다.');
+      console.error("Disconnect error:", err);
+      Alert.alert(
+        "연결 해제 오류",
+        "Phantom 지갑 연결 해제 중 오류가 발생했습니다."
+      );
     }
   };
-  
+
   // Phantom 앱 설치 확인 및 처리
   const checkPhantomInstallation = async () => {
     try {
       // Android에서는 앱이 설치되어 있는지 직접 확인할 수 없음
       // iOS에서는 canOpenURL로 확인 가능
-      if (Platform.OS === 'ios') {
-        const canOpenPhantom = await Linking.canOpenURL('phantom://');
+      if (Platform.OS === "ios") {
+        const canOpenPhantom = await Linking.canOpenURL("phantom://");
         setIsPhantomInstalled(canOpenPhantom);
       } else {
         // Android는 일단 설치되어 있다고 가정하고 진행
         setIsPhantomInstalled(true);
       }
     } catch (error) {
-      console.error('Failed to check Phantom installation:', error);
+      console.error("Failed to check Phantom installation:", error);
       setIsPhantomInstalled(false);
     }
   };
-  
+
   // 컴포넌트 마운트 시 Phantom 설치 확인
   useEffect(() => {
     checkPhantomInstallation();
   }, []);
-  
+
   // Phantom 앱 다운로드
   const openPhantomDownload = () => {
-    const url = 'https://phantom.app/download';
+    const url = "https://phantom.app/download";
     Linking.openURL(url);
   };
-  
+
+  // 개발용 임시 다음 화면 이동 함수
+  // 개발용 임시 다음 화면 이동 함수
+  // 개발용 임시 다음 화면 이동 함수
+  const handleDevSkip = () => {
+    onWalletConnected();
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Image 
-          source={require('../../../assets/phantom-logo.png')} 
+        <Image
+          source={require("../../../assets/phantom-logo.png")}
           style={styles.walletLogo}
-          defaultSource={require('../../../assets/phantom-logo.png')}
+          defaultSource={require("../../../assets/phantom-logo.png")}
         />
-        
+
         <Text style={styles.title}>지갑 연동하기</Text>
-        
+
         <Text style={styles.description}>
-          UPTENTION에서 코인을 채굴하고 보상을 받기 위해 
-          Phantom 지갑을 연동해주세요.
+          UPTENTION에서 코인을 채굴하고 보상을 받기 위해 Phantom 지갑을
+          연동해주세요.
         </Text>
-        
+
         {isPhantomInstalled === false ? (
           // Phantom이 설치되어 있지 않은 경우
           <View style={styles.notInstalledContainer}>
             <Text style={styles.notInstalledText}>
               Phantom 앱이 설치되어 있지 않습니다.
             </Text>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.downloadButton}
               onPress={openPhantomDownload}
             >
@@ -300,19 +313,21 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
                 <View style={styles.walletInfo}>
                   <Ionicons name="wallet" size={24} color="#4CAF50" />
                   <Text style={styles.walletAddress}>
-                    {`${publicKey.substring(0, 6)}...${publicKey.substring(publicKey.length - 4)}`}
+                    {`${publicKey.substring(0, 6)}...${publicKey.substring(
+                      publicKey.length - 4
+                    )}`}
                   </Text>
                 </View>
-                
+
                 <View style={styles.buttonsContainer}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.disconnectButton}
                     onPress={disconnect}
                   >
                     <Text style={styles.disconnectButtonText}>연결 해제</Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.continueButton}
                     onPress={onWalletConnected}
                   >
@@ -322,7 +337,7 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
               </View>
             ) : (
               // 지갑이 연결되지 않은 경우
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.connectButton}
                 onPress={connect}
                 disabled={connecting}
@@ -331,10 +346,10 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
                   <>
-                    <Image 
-                      source={require('../../../assets/phantom-icon.png')} 
+                    <Image
+                      source={require("../../../assets/phantom-icon.png")}
                       style={styles.buttonIcon}
-                      defaultSource={require('../../../assets/phantom-icon.png')}
+                      defaultSource={require("../../../assets/phantom-icon.png")}
                     />
                     <Text style={styles.buttonText}>Phantom 지갑 연결하기</Text>
                   </>
@@ -343,29 +358,36 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
             )}
           </View>
         )}
-        
+
+        {/* 개발용 임시 버튼 */}
+        {/* 개발용 임시 버튼 */}
+        {/* 개발용 임시 버튼 */}
+        <TouchableOpacity style={styles.devSkipButton} onPress={handleDevSkip}>
+          <Text style={styles.devSkipButtonText}>개발용: 다음 화면으로</Text>
+        </TouchableOpacity>
+
         <View style={styles.benefitsContainer}>
           <Text style={styles.benefitsTitle}>지갑 연동 시 혜택</Text>
-          
+
           <View style={styles.benefitItem}>
             <Ionicons name="checkmark-circle" size={24} color="#FF8C00" />
             <Text style={styles.benefitText}>포인트를 코인으로 변환</Text>
           </View>
-          
+
           <View style={styles.benefitItem}>
             <Ionicons name="checkmark-circle" size={24} color="#FF8C00" />
             <Text style={styles.benefitText}>상품 구매 및 선물하기</Text>
           </View>
-          
+
           <View style={styles.benefitItem}>
             <Ionicons name="checkmark-circle" size={24} color="#FF8C00" />
             <Text style={styles.benefitText}>우수사원 NFT 획득</Text>
           </View>
         </View>
-        
+
         <Text style={styles.securityNote}>
-          UPTENTION은 사용자의 지갑 보안을 최우선으로 생각합니다.
-          개인 키는 절대 저장하지 않으며, 블록체인 상의 거래만 진행합니다.
+          UPTENTION은 사용자의 지갑 보안을 최우선으로 생각합니다. 개인 키는 절대
+          저장하지 않으며, 블록체인 상의 거래만 진행합니다.
         </Text>
       </View>
     </SafeAreaView>
@@ -375,13 +397,13 @@ const WalletConnectScreen = ({ onWalletConnected }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   content: {
     flex: 1,
     padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   walletLogo: {
     width: 100,
@@ -390,49 +412,49 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 15,
-    textAlign: 'center',
+    textAlign: "center",
   },
   description: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 30,
-    color: '#555',
+    color: "#555",
     lineHeight: 24,
   },
   notInstalledContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 30,
   },
   notInstalledText: {
     fontSize: 16,
-    color: '#FF3B30',
+    color: "#FF3B30",
     marginBottom: 15,
   },
   downloadButton: {
-    backgroundColor: '#5A5AFA',
+    backgroundColor: "#5A5AFA",
     borderRadius: 30,
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: 15,
     paddingHorizontal: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   walletActions: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     marginBottom: 30,
   },
   connectButton: {
-    backgroundColor: '#674EA7',
+    backgroundColor: "#674EA7",
     borderRadius: 30,
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: 15,
     paddingHorizontal: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
   },
   buttonIcon: {
     width: 24,
@@ -440,19 +462,19 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   connectedContainer: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     marginBottom: 20,
   },
   walletInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F0F0',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0F0F0",
     borderRadius: 30,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -460,64 +482,64 @@ const styles = StyleSheet.create({
   },
   walletAddress: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginLeft: 10,
   },
   buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
   },
   disconnectButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: '#FF3B30',
+    borderColor: "#FF3B30",
     borderRadius: 30,
     paddingVertical: 12,
     paddingHorizontal: 20,
     flex: 1,
     marginRight: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   disconnectButtonText: {
-    color: '#FF3B30',
+    color: "#FF3B30",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   continueButton: {
-    backgroundColor: '#FF8C00',
+    backgroundColor: "#FF8C00",
     borderRadius: 30,
     paddingVertical: 12,
     paddingHorizontal: 20,
     flex: 1,
     marginLeft: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   benefitsContainer: {
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
     marginBottom: 30,
   },
   benefitsTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 15,
   },
   benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   benefitText: {
     fontSize: 16,
     marginLeft: 10,
-    color: '#333',
+    color: "#333",
   },
   securityNote: {
     fontSize: 14,
-    textAlign: 'center',
-    color: '#888',
+    textAlign: "center",
+    color: "#888",
     marginTop: 10,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });
 
