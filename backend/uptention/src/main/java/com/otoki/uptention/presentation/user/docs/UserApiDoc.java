@@ -13,6 +13,7 @@ import com.otoki.uptention.application.mining.service.dto.response.MiningTimeRes
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
+import com.otoki.uptention.application.user.dto.response.UserResponseDto;
 import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.domain.user.enums.UserRole;
 import com.otoki.uptention.domain.user.enums.UserSortType;
@@ -28,6 +29,35 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @Tag(name = "유저 API", description = "유저 API")
 public interface UserApiDoc {
+	@Operation(summary = "유저 정보 조회", description = "특정 사용자의 상세 정보를 조회합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "사용자 정보 조회 성공",
+			content = @Content(
+				schema = @Schema(implementation = UserResponseDto.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"userId\":1,\"username\":\"user001\",\"name\":\"User001\",\"employeeNumber\":\"EMP001\",\"wallet\":\"wallet001\",\"profileImage\":\"http://example.com/path/to/profile.jpg\",\"role\":\"ROLE_MEMBER\",\"createdAt\":\"2025-03-30T12:00:00\"}"
+					)
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "404",
+			description = "사용자를 찾을 수 없음",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"code\":\"USER_001\",\"message\":\"사용자를 찾을 수 없습니다.\",\"path\":\"/api/users/{userId}\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<UserResponseDto> getUser(@PathVariable Integer userId);
+
 	@Operation(
 		summary = "유저 정보 페이징 조회",
 		description = "커서 기반으로 유저 정보를 페이징 조회합니다. "
