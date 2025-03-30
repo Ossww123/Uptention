@@ -5,10 +5,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
+import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.enums.UserRole;
 import com.otoki.uptention.domain.user.service.UserService;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -48,5 +51,19 @@ public class UserAppServiceImpl implements UserAppService {
 	@Override
 	public void checkDuplicateEmployeeNumber(String employeeNumber) {
 		userService.validateDuplicateEmployeeNumber(employeeNumber);
+	}
+
+	@Override
+	public PointResponseDto getUserPoints(Integer userId) {
+
+		User loggedInUser = securityService.getLoggedInUser();
+
+		if (loggedInUser.getId().equals(userId)) {
+			throw new CustomException(ErrorCode.FORBIDDEN_USER);
+		}
+
+		return PointResponseDto.builder()
+			.point(userService.getUserById(userId).getPoint())
+			.build();
 	}
 }

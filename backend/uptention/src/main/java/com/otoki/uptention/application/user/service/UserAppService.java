@@ -1,5 +1,6 @@
 package com.otoki.uptention.application.user.service;
 
+import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
 
 public interface UserAppService {
@@ -8,4 +9,6 @@ public interface UserAppService {
 	void checkDuplicateUsername(String username);
 
 	void checkDuplicateEmployeeNumber(String employeeNumber);
+
+	PointResponseDto getUserPoints(Integer userId);
 }
