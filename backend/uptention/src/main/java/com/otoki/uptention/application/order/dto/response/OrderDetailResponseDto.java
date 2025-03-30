@@ -5,17 +5,18 @@ import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Schema(description = "주문 상세 조회 응답 DTO")
 @Getter
 @Builder
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL) // null 값을 가진 필드는 응답에서 제외
+@Schema(description = "주문 상세 조회 응답 DTO")
 public class OrderDetailResponseDto {
 	// 공통 응답 필드
 	@Schema(description = "주문 상품 ID", example = "1")

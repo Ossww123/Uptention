@@ -8,11 +8,16 @@ import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.item.entity.Item;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Schema(description = "상품 상세 정보 응답")
 public class ItemResponseDto {
 	@Schema(description = "상품 ID", example = "1")
