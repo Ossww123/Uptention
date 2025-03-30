@@ -7,8 +7,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.otoki.uptention.domain.order.entity.Order;
+import com.otoki.uptention.domain.order.enums.OrderStatus;
 
 public interface OrderRepository extends JpaRepository<Order, Integer> {
+
+
+	// 특정 상태의 주문 목록 조회
+	List<Order> findByStatus(OrderStatus status);
+
+	// 특정 사용자의 특정 상태 주문 목록 조회
+	List<Order> findByUserIdAndStatus(Integer userId, OrderStatus status);
 
 	// 구매 주문 조회 (첫 페이지)
 	@Query("SELECT o FROM Order o " +

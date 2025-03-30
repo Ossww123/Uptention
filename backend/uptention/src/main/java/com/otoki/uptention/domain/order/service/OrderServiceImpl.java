@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.otoki.uptention.domain.order.entity.Order;
+import com.otoki.uptention.domain.order.enums.OrderStatus;
 import com.otoki.uptention.domain.order.repository.OrderRepository;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
@@ -26,6 +27,11 @@ public class OrderServiceImpl implements OrderService {
 	public Order getOrderById(Integer id) {
 		return orderRepository.findById(id)
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+	}
+
+	@Override
+	public List<Order> getOrdersByStatus(OrderStatus status) {
+		return orderRepository.findByStatus(OrderStatus.PAYMENT_PENDING);
 	}
 
 	// 구매 주문 조회 (첫 페이지)
