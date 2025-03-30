@@ -5,10 +5,21 @@
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-
-  <!-- 스크린타임 접근을 위한 권한 추가 -->
+  
+  <!-- 접근성 서비스 권한 -->
+  <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"
+      tools:ignore="ProtectedPermissions"/>
+  
+  <!-- 오버레이 권한 -->
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+  
+  <!-- 스크린타임 접근을 위한 권한 -->
   <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
-      tools:ignore="ProtectedPermissions" />
+      tools:ignore="ProtectedPermissions"/>
+      
+  <!-- Android 13 이상에서 필요한 알림 권한 -->
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW"/>

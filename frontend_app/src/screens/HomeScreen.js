@@ -18,7 +18,7 @@ import { useWallet } from '../contexts/WalletContext';
 const { AppBlockerModule } = NativeModules;
 
 const HomeScreen = ({ navigation }) => {
-  const { tokenBalance, isWalletConnected } = useWallet();
+  const { tokenBalance, publicKey } = useWallet();
 
   // 앱제한 관련 권한 상태 관리
   const [hasAccessibilityPermission, setHasAccessibilityPermission] = useState(false);
@@ -107,19 +107,60 @@ const HomeScreen = ({ navigation }) => {
   const requestAppBlockerPermissions = async () => {
     try {
       if (!hasAccessibilityPermission) {
-        // 디버깅을 위한 콘솔 로그 추가
-        console.log('접근성 서비스 설정 화면으로 이동 시도');
-        
-        // 접근성 서비스 권한 설정 화면으로 이동
-        await AppBlockerModule.openAccessibilitySettings();
-        console.log('접근성 서비스 설정 화면으로 이동 완료');
+        Alert.alert(
+          '접근성 권한 필요',
+          '앱 제한 기능을 사용하기 위해서는 접근성 권한이 필요합니다.\n\n설정 > 접근성 > 설치된 앱 > Uptention > 허용',
+          [
+            { 
+              text: '취소', 
+              style: 'cancel' 
+            },
+            {
+              text: '설정으로 이동',
+              onPress: async () => {
+                try {
+                  await AppBlockerModule.openAccessibilitySettings();
+                  // 설정 화면에서 돌아온 후 권한 상태 다시 확인
+                  setTimeout(async () => {
+                    const newStatus = await AppBlockerModule.isAccessibilityServiceEnabled();
+                    setHasAccessibilityPermission(newStatus);
+                    if (newStatus && !hasOverlayPermission) {
+                      requestAppBlockerPermissions(); // 다음 권한 요청
+                    }
+                  }, 1000);
+                } catch (error) {
+                  console.error('접근성 설정 화면 열기 실패:', error);
+                }
+              }
+            }
+          ]
+        );
       } else if (!hasOverlayPermission) {
-        // 디버깅을 위한 콘솔 로그 추가
-        console.log('화면 오버레이 권한 설정 화면으로 이동 시도');
-        
-        // 화면 오버레이 권한 설정 화면으로 이동
-        await AppBlockerModule.openOverlaySettings();
-        console.log('화면 오버레이 권한 설정 화면으로 이동 완료');
+        Alert.alert(
+          '화면 오버레이 권한 필요',
+          '앱 제한 기능을 사용하기 위해서는 화면 오버레이 권한이 필요합니다.\n\n설정 > 앱 > Uptention > 다른 앱 위에 표시 > 허용',
+          [
+            { 
+              text: '취소', 
+              style: 'cancel' 
+            },
+            {
+              text: '설정으로 이동',
+              onPress: async () => {
+                try {
+                  await AppBlockerModule.openOverlaySettings();
+                  // 설정 화면에서 돌아온 후 권한 상태 다시 확인
+                  setTimeout(async () => {
+                    const newStatus = await AppBlockerModule.hasOverlayPermission();
+                    setHasOverlayPermission(newStatus);
+                  }, 1000);
+                } catch (error) {
+                  console.error('오버레이 설정 화면 열기 실패:', error);
+                }
+              }
+            }
+          ]
+        );
       }
     } catch (error) {
       console.error('권한 설정 화면 열기 실패:', error);
@@ -146,7 +187,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.nameText}>홍길동</Text>
             <View style={styles.walletContainer}>
               <Text style={styles.walletWorkToken}>
-                {isWalletConnected ? `${tokenBalance} ` : '연결 필요 '}
+                {publicKey ? `${tokenBalance} ` : '연결 필요 '}
               </Text>
               <Text style={styles.workText}>WORK</Text>
             </View>
