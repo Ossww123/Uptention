@@ -179,10 +179,6 @@ public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
 	 * ItemVerificationDto 객체 생성 헬퍼 메서드
 	 */
 	private ItemVerificationDto createItemVerificationDto(Integer itemId, Integer price, Integer quantity) {
-		return ItemVerificationDto.builder()
-			.itemId(itemId)
-			.price(price)
-			.quantity(quantity)
-			.build();
+		return new ItemVerificationDto(itemId, price, quantity);
 	}
 }
