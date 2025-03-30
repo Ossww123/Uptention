@@ -46,6 +46,7 @@ public enum ErrorCode {
 
 	// 사용자 관련 에러
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_001", "사용자를 찾을 수 없습니다."),
+	USER_INVALID_SORT_TYPE(HttpStatus.BAD_REQUEST, "USER_002", "지원하지 않는 정렬 방식입니다."),
 
 	// 파일 관련 에러
 	FILE_EMPTY(HttpStatus.BAD_REQUEST, "FILE_001", "파일이 비어있습니다."),

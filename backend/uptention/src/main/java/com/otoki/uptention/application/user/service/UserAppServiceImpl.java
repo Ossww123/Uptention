@@ -1,5 +1,8 @@
 package com.otoki.uptention.application.user.service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,9 +11,14 @@ import org.springframework.web.multipart.MultipartFile;
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
+import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
+import com.otoki.uptention.application.user.dto.response.UserResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
+import com.otoki.uptention.domain.company.entity.Company;
+import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.enums.UserRole;
+import com.otoki.uptention.domain.user.enums.UserSortType;
 import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
@@ -115,4 +123,71 @@ public class UserAppServiceImpl implements UserAppService {
 			.point(userService.getUserById(userId).getPoint())
 			.build();
 	}
+
+	@Override
+	public UserResponseDto getUser(Integer userId) {
+		User user = userService.getUserByIdAndCompany(userId,
+			securityService.getLoggedInUser().getCompany()); // 로그인 한 유저와 같은 회사의 회원만 조회 가능함.
+
+		return mapToDto(user);
+	}
+
+	@Override
+	public UserCursorResponseDto getUsers(UserRole userRole, String keyword, String cursorStr, UserSortType sortType,
+		int size) {
+
+		User loggedInUser = securityService.getLoggedInUser(); // 로그인한 사용자와 소속 Company 추출
+		Company company = loggedInUser.getCompany();
+
+		// 커서 디코딩
+		UserCursorDto<String> cursor = UserCursorDto.decode(cursorStr, String.class);
+
+		// size + 1개 조회하여 다음 페이지 존재 여부 확인
+		List<User> users = userService.getUsersByCursor(company, userRole, keyword, cursor, sortType, size + 1);
+		boolean hasNextPage = users.size() > size;
+		List<User> resultUsers = hasNextPage ? users.subList(0, size) : users;
+
+		// Entity를 DTO로 매핑
+		List<UserResponseDto> userResponseDtos = resultUsers.stream()
+			.map(this::mapToDto)
+			.collect(Collectors.toList());
+
+		// 다음 커서 생성 (마지막 User 기준)
+		String nextCursor = (hasNextPage && !resultUsers.isEmpty())
+			? createNextCursor(resultUsers.get(resultUsers.size() - 1), sortType)
+			: null;
+
+		return UserCursorResponseDto.builder()
+			.users(userResponseDtos)
+			.hasNextPage(hasNextPage)
+			.nextCursor(nextCursor)
+			.build();
+	}
+
+	private UserResponseDto mapToDto(User user) {
+		return UserResponseDto.builder()
+			.userId(user.getId())
+			.username(user.getUsername())
+			.name(user.getName())
+			.employeeNumber(user.getEmployeeNumber())
+			.wallet(user.getWallet())
+			.profileImage(imageUploadService.getImageUrl(user.getProfileImage()))
+			.role(user.getRole().toString())
+			.createdAt(user.getCreatedAt())
+			.build();
+	}
+
+	private String createNextCursor(User lastUser, UserSortType sortType) {
+		String value;
+		if (sortType == UserSortType.NAMES_DESC) {
+			value = lastUser.getName();
+		} else if (sortType == UserSortType.REGISTER_DATE_ASC || sortType == UserSortType.REGISTER_DATE_DESC) {
+			// LocalDateTime을 문자열로 변환 (포맷에 따라 변경 가능)
+			value = lastUser.getCreatedAt().toString();
+		} else {
+			throw new CustomException(ErrorCode.USER_INVALID_SORT_TYPE);
+		}
+		return new UserCursorDto<>(value, lastUser.getId()).encode();
+	}
+
 }
