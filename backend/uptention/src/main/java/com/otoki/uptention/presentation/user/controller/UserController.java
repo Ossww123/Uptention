@@ -1,6 +1,5 @@
 package com.otoki.uptention.presentation.user.controller;
 
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,14 +15,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.application.mining.service.MiningTimeAppService;
 import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
-import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
-import com.otoki.uptention.presentation.user.docs.UserApiDoc;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
+import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserResponseDto;
 import com.otoki.uptention.application.user.service.UserAppService;
 import com.otoki.uptention.domain.user.enums.UserRole;
 import com.otoki.uptention.domain.user.enums.UserSortType;
+import com.otoki.uptention.presentation.user.docs.UserApiDoc;
 
 import lombok.RequiredArgsConstructor;
 
@@ -51,6 +50,13 @@ public class UserController implements UserApiDoc {
 
 		UserCursorResponseDto response = userAppService.getUsers(userRole, keyword, cursor, sort, size);
 		return ResponseEntity.ok(response);
+	}
+
+	// 유저 삭제
+	@DeleteMapping("/{userId}")
+	public ResponseEntity<String> deleteUser(@PathVariable Integer userId) {
+		userAppService.removeUser(userId);
+		return ResponseEntity.ok("회원 삭제 성공");
 	}
 
 	// 프로필 이미지 등록 및 수정
