@@ -24,5 +24,5 @@ public interface UserService {
 	void validateDuplicateEmployeeNumber(String employeeNumber);
 
 	List<User> getUsersByCursor(Company company, UserRole userRole, String keyword,
-		UserCursorDto cursor, UserSortType sortType, int size);
+		UserCursorDto<String> cursor, UserSortType sortType, int size);
 }

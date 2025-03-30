@@ -140,7 +140,7 @@ public class UserAppServiceImpl implements UserAppService {
 		Company company = loggedInUser.getCompany();
 
 		// 커서 디코딩
-		UserCursorDto cursor = UserCursorDto.decode(cursorStr);
+		UserCursorDto<String> cursor = UserCursorDto.decode(cursorStr, String.class);
 
 		// size + 1개 조회하여 다음 페이지 존재 여부 확인
 		List<User> users = userService.getUsersByCursor(company, userRole, keyword, cursor, sortType, size + 1);
@@ -187,7 +187,7 @@ public class UserAppServiceImpl implements UserAppService {
 		} else {
 			throw new CustomException(ErrorCode.USER_INVALID_SORT_TYPE);
 		}
-		return new UserCursorDto(value, lastUser.getId()).encode();
+		return new UserCursorDto<>(value, lastUser.getId()).encode();
 	}
 
 }

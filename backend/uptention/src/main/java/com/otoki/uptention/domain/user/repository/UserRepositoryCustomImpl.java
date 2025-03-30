@@ -24,7 +24,7 @@ public class UserRepositoryCustomImpl implements UserRepositoryCustom {
 
 	@Override
 	public List<User> findUsersByCursor(Company company, UserRole userRole, String keyword,
-		UserCursorDto cursor, UserSortType sortType, int size) {
+		UserCursorDto<String> cursor, UserSortType sortType, int size) {
 		QUser user = QUser.user;
 
 		// 기본 조건: 소속 Company 및 활성화 상태
@@ -59,7 +59,7 @@ public class UserRepositoryCustomImpl implements UserRepositoryCustom {
 	/**
 	 * 커서 조건 생성 (정렬 타입에 따라)
 	 */
-	private BooleanExpression getCursorCondition(QUser user, UserCursorDto cursor, UserSortType sortType) {
+	private BooleanExpression getCursorCondition(QUser user, UserCursorDto<String> cursor, UserSortType sortType) {
 		if (sortType == UserSortType.NAMES_DESC) {
 			return user.name.lt(cursor.getValue())
 				.or(user.name.eq(cursor.getValue()).and(user.id.lt(cursor.getId())));

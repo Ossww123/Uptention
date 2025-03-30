@@ -10,5 +10,5 @@ import com.otoki.uptention.domain.user.enums.UserSortType;
 
 public interface UserRepositoryCustom {
 	List<User> findUsersByCursor(Company company, UserRole userRole, String keyword,
-		UserCursorDto cursor, UserSortType sortType, int size);
+		UserCursorDto<String> cursor, UserSortType sortType, int size);
 }
