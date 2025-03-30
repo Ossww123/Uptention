@@ -13,8 +13,12 @@ import com.otoki.uptention.application.mining.service.dto.response.MiningTimeRes
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.domain.mining.entity.MiningTime;
+import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
+import com.otoki.uptention.domain.user.enums.UserRole;
+import com.otoki.uptention.domain.user.enums.UserSortType;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -135,6 +139,89 @@ public interface UserApiDoc {
 		)
 	})
 	ResponseEntity<ProfileImageResponseDto> deleteProfileImage(@PathVariable Integer userId);
+
+	@Operation(
+		summary = "유저 정보 페이징 조회",
+		description = "커서 기반으로 유저 정보를 페이징 조회합니다. "
+			+ "검색 조건으로 유저 ROLE, 키워드, 커서, 페이지 크기(size), 정렬 타입(sort)을 전달받으며, "
+			+ "로그인한 사용자의 소속 Company 내에서 조회됩니다."
+	)
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "유저 정보 페이징 조회 성공",
+			content = @Content(
+				schema = @Schema(implementation = UserCursorResponseDto.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"users\":[{\"userId\":1,\"username\":\"user001\",\"name\":\"User001\",\"employeeNumber\":\"EMP001\",\"wallet\":\"wallet001\",\"profileImage\":\"http://example.com/path/to/profile.jpg\",\"role\":\"ROLE_MEMBER\",\"createdAt\":\"2025-03-30T12:00:00\"}],\"hasNextPage\":true,\"nextCursor\":\"eyJ2YWx1ZSI6IjIwIiwiaWQiOjF9\"}"
+					)
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "400",
+			description = "잘못된 요청",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "USER_INVALID_SORT_TYPE",
+						value = "{\"code\":\"USER_002\",\"message\":\"지원하지 않는 정렬 방식입니다.\",\"path\":\"/api/users\"}"
+					),
+					@ExampleObject(
+						name = "CURSOR_DECODING_FAILED",
+						value = "{\"code\":\"CURSOR_002\",\"message\":\"커서 디코딩에 실패했습니다.\",\"path\":\"/api/users\"}"
+					)
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "500",
+			description = "서버 오류",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "CURSOR_ENCODING_FAILED",
+						value = "{\"code\":\"CURSOR_001\",\"message\":\"커서 인코딩에 실패했습니다.\",\"path\":\"/api/users\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<UserCursorResponseDto> getUsers(
+		@Parameter(
+			description = "조회할 유저의 ROLE. 미입력 시 ROLE_MEMBER와 ROLE_TEMP_MEMBER를 모두 조회합니다.",
+			schema = @Schema(implementation = UserRole.class)
+		)
+		@RequestParam(required = false) UserRole userRole,
+
+		@Parameter(
+			description = "유저 검색 키워드 (이름)",
+			example = "John"
+		)
+		@RequestParam(required = false) String keyword,
+
+		@Parameter(
+			description = "커서 문자열 (Base64 인코딩된 JSON)",
+			example = "eyJ2YWx1ZSI6IjIwIiwiaWQiOjF9"
+		)
+		@RequestParam(required = false) String cursor,
+
+		@Parameter(
+			description = "한 페이지 당 조회할 유저 수",
+			example = "20"
+		)
+		@RequestParam(defaultValue = "20") int size,
+
+		@Parameter(
+			description = "유저 정렬 타입 (NAMES_DESC, REGISTER_DATE_ASC, REGISTER_DATE_DESC)",
+			schema = @Schema(implementation = UserSortType.class),
+			example = "NAMES_DESC"
+		)
+		@RequestParam(defaultValue = "NAMES_DESC") UserSortType sort
+	);
 
 	@Operation(summary = "포인트 조회", description = "사용자의 프로필 조회합니다.")
 	@ApiResponses(value = {
