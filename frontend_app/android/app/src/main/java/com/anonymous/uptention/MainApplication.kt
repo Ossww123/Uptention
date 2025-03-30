@@ -1,6 +1,7 @@
 package com.anonymous.uptention
 
 import com.anonymous.uptention.ScreenTimePackage
+import com.anonymous.uptention.AppBlockerPackage
 
 import android.app.Application
 import android.content.res.Configuration
@@ -27,7 +28,8 @@ class MainApplication : Application(), ReactApplication {
         val packages = PackageList(this).packages.toMutableList()
         // Packages that cannot be autolinked yet can be added manually here, for example:
         // packages.add(new MyReactNativePackage());
-        packages.add(ScreenTimePackage()) // 여기에 ScreenTimePackage 추가
+        packages.add(ScreenTimePackage())
+        packages.add(AppBlockerPackage())
         return packages
       }
 

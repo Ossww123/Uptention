@@ -5,6 +5,7 @@
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
   <!-- 스크린타임 접근을 위한 권한 추가 -->
   <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
       tools:ignore="ProtectedPermissions" />
@@ -31,5 +32,23 @@
         <data android:scheme="com.anonymous.uptention"/>
       </intent-filter>
     </activity>
+    <service
+    android:name=".AppBlockerService"
+    android:enabled="true"
+    android:exported="true"
+    android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+    <intent-filter>
+        <action android:name="android.accessibilityservice.AccessibilityService" />
+    </intent-filter>
+    <meta-data
+        android:name="android.accessibilityservice"
+        android:resource="@xml/app_blocker_service_config" />
+</service>
+
+<activity
+    android:name=".SystemAppsActivity"
+    android:exported="false"
+    android:label="@string/system_apps_management" />
+    
   </application>
 </manifest>

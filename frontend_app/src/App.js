@@ -3,15 +3,19 @@ import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import StackNavigator from './navigations/StackNavigator';
+import { WalletProvider } from './contexts/WalletContext';
 
-
-export default function App() {
+const App = () => {
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style="dark" />
-        <StackNavigator />
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <WalletProvider>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <StatusBar style="dark" />
+          <StackNavigator />
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </WalletProvider>
   );
-}
+};
+
+export default App;

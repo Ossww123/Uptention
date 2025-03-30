@@ -1,19 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTimer } from '../hooks/useTimer';
+
+const { AppBlockerModule } = NativeModules;
 
 const FocusModeScreen = ({ navigation }) => {
-  const [time, setTime] = useState('00:00:00');
-  const [points, setPoints] = useState({ current: 8, max: 8 });
-  const [energy, setEnergy] = useState({ current: 8, max: 8 });
-  const [coins, setCoins] = useState(0);
+  const { time, isActive, startTimer, stopTimer, resetTimer } = useTimer();
+  const [points, setPoints] = useState(0);
+  const [lastMinute, setLastMinute] = useState(0);
+
+  // 타이머 시간을 분으로 변환하는 함수
+  const getMinutes = (timeString) => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // 포인트 업데이트 로직
+  useEffect(() => {
+    const currentMinute = getMinutes(time);
+    if (currentMinute > lastMinute && currentMinute > 0) {
+      setPoints(prev => prev + 1);
+      setLastMinute(currentMinute);
+    }
+  }, [time]);
+
+  // 컴포넌트 마운트 시 자동으로 타이머 시작 및 앱 제한 기능 활성화
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        await AppBlockerModule.setAppBlockingEnabled(true);
+        startTimer();
+        console.log('포커스 모드 시작됨');
+      } catch (error) {
+        console.error('포커스 모드 시작 실패:', error);
+        Alert.alert(
+          '알림',
+          '앱 제한 기능을 활성화하는데 실패했습니다.',
+          [{ text: '확인' }]
+        );
+      }
+    };
+    initialize();
+
+    return () => {
+      const cleanup = async () => {
+        try {
+          await AppBlockerModule.setAppBlockingEnabled(false);
+          stopTimer();
+          resetTimer();
+          console.log('포커스 모드 종료됨');
+        } catch (error) {
+          console.error('포커스 모드 종료 실패:', error);
+        }
+      };
+      cleanup();
+    };
+  }, []);
+
+  const handleExit = async () => {
+    try {
+      await AppBlockerModule.setAppBlockingEnabled(false);
+      stopTimer();
+      resetTimer();
+      navigation.goBack();
+    } catch (error) {
+      console.error('포커스 모드 종료 실패:', error);
+      Alert.alert(
+        '알림',
+        '앱 제한 기능 비활성화에 실패했습니다. 설정에서 직접 비활성화해주세요.',
+        [{ text: '확인', onPress: () => navigation.goBack() }]
+      );
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* 코인 표시 */}
+        {/* 포인트 표시 */}
         <View style={styles.coinContainer}>
-          <Text style={styles.coinText}>+ {coins}p</Text>
+          <Text style={styles.coinText}>+ {points}p</Text>
         </View>
 
         {/* 캐릭터 영역 */}
@@ -22,65 +88,18 @@ const FocusModeScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.bottomContainer}>
-          {/* 프로그레스 바 영역 */}
-          <View style={styles.progressWrapper}>
-            <View style={styles.progressContainer}>
-              {/* 포인트 섹션 */}
-              <View style={styles.progressSection}>
-                <View style={styles.headerRow}>
-                  <Text style={styles.labelText}>포인트</Text>
-                  <View style={styles.progressInfo}>
-                    <Text style={styles.valueText}>{points.current.toFixed(2)}/</Text>
-                    <Text style={styles.maxText}>{points.max}</Text>
-                  </View>
-                </View>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { 
-                        backgroundColor: '#2F2F2F', 
-                        width: `${(points.current / points.max) * 100}%` 
-                      }
-                    ]} 
-                  />
-                </View>
-              </View>
-
-              {/* 에너지 섹션 */}
-              <View style={styles.progressSection}>
-                <View style={styles.headerRow}>
-                  <Text style={styles.labelText}>에너지</Text>
-                  <View style={styles.progressInfo}>
-                    <Text style={styles.valueText}>{energy.current.toFixed(2)}/</Text>
-                    <Text style={styles.maxText}>{energy.max}</Text>
-                  </View>
-                </View>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { 
-                        backgroundColor: '#404040', 
-                        width: `${(energy.current / energy.max) * 100}%` 
-                      }
-                    ]} 
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
-
           {/* 타이머 */}
           <Text style={styles.timerText}>{time}</Text>
 
           {/* 종료하기 버튼 */}
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.buttonText}>종료하기</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[styles.button, styles.exitButton]} 
+              onPress={handleExit}
+            >
+              <Text style={styles.buttonText}>종료하기</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -117,58 +136,15 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  progressWrapper: {
-    width: '100%',
-    backgroundColor: '#272626',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 30,
-  },
-  progressContainer: {
-    width: '100%',
-    flexDirection: 'row',
-  },
-  progressSection: {
-    width: '50%',
-    paddingHorizontal: 10,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  labelText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-  },
-  progressInfo: {
-    flexDirection: 'row',
-  },
-  valueText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  maxText: {
-    fontSize: 12,
-    color: '#D4D1D1',
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#333333',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
   timerText: {
     color: '#FFFFFF',
     fontSize: 64,
     fontWeight: 'bold',
     marginBottom: 40,
+  },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
   button: {
     width: '100%',
@@ -182,6 +158,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  exitButton: {
+    backgroundColor: '#FF8C00',
   },
 });
 

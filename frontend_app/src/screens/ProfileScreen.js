@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Platform, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import 'react-native-get-random-values';
@@ -9,6 +9,7 @@ import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import * as Linking from 'expo-linking';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useWallet } from '../contexts/WalletContext';
 
 if (typeof globalThis.Buffer === 'undefined') {
   globalThis.Buffer = Buffer;
@@ -43,6 +44,8 @@ const ProfileScreen = ({ navigation }) => {
   const [publicKey, setPublicKey] = useState(null);
   const [solBalance, setSolBalance] = useState(null);
   const [tokenBalance, setTokenBalance] = useState(null);
+  const [walletAddress, setWalletAddress] = useState('');
+  const { isWalletConnected, connectWallet, disconnectWallet } = useWallet();
 
   // 복호화 함수
   const decryptPayload = useCallback((data, nonce, sharedSecret) => {
@@ -162,55 +165,24 @@ const ProfileScreen = ({ navigation }) => {
     }
   }, [deepLink, decryptPayload, dappKeyPair.secretKey]);
 
-  const connect = async () => {
-    try {
-      setConnecting(true);
-      const redirectUrl = Linking.createURL('onConnect');
-      console.log('Redirect URL:', redirectUrl); // 디버깅용
+  const handleConnectWallet = async () => {
+    if (!walletAddress.trim()) {
+      Alert.alert('알림', '지갑 주소를 입력해주세요.');
+      return;
+    }
 
-      const params = new URLSearchParams({
-        dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
-        cluster: "devnet",
-        app_url: "https://phantom.app",
-        redirect_link: redirectUrl
-      });
-
-      const url = Platform.OS === 'android'
-        ? `https://phantom.app/ul/v1/connect?${params.toString()}`
-        : `phantom://ul/v1/connect?${params.toString()}`;
-
-      console.log('Connection URL:', url); // 디버깅용
-      await Linking.openURL(url);
-    } catch (err) {
-      console.error('Connection error:', err);
-      Alert.alert('연결 오류', '팬텀 지갑 연결 중 오류가 발생했습니다.');
-    } finally {
-      setConnecting(false);
+    const success = await connectWallet(walletAddress);
+    if (success) {
+      Alert.alert('성공', '지갑이 연결되었습니다.');
+      setWalletAddress('');
+    } else {
+      Alert.alert('실패', '지갑 연결에 실패했습니다.');
     }
   };
 
-  const disconnect = async () => {
-    try {
-      const redirectUrl = Linking.createURL('onDisconnect');
-      const payload = { session };
-      const [nonce, encryptedPayload] = encryptPayload(payload, sharedSecret);
-
-      const params = new URLSearchParams({
-        dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
-        nonce: bs58.encode(nonce),
-        redirect_link: redirectUrl,
-        payload: bs58.encode(encryptedPayload)
-      });
-
-      const url = Platform.OS === 'android'
-        ? `https://phantom.app/ul/v1/disconnect?${params.toString()}`
-        : `phantom://ul/v1/disconnect?${params.toString()}`;
-
-      await Linking.openURL(url);
-    } catch (err) {
-      console.error('Disconnect error:', err);
-      Alert.alert('연결 해제 오류', '팬텀 지갑 연결 해제 중 오류가 발생했습니다.');
-    }
+  const handleDisconnectWallet = () => {
+    disconnectWallet();
+    Alert.alert('알림', '지갑 연결이 해제되었습니다.');
   };
 
   return (
@@ -221,14 +193,14 @@ const ProfileScreen = ({ navigation }) => {
           <View style={styles.headerSection}>
             <TouchableOpacity 
               style={styles.walletIconContainer}
-              onPress={publicKey ? disconnect : connect}
+              onPress={isWalletConnected ? handleDisconnectWallet : handleConnectWallet}
             >
               <Ionicons 
-                name={publicKey ? "wallet" : "wallet-outline"} 
+                name={isWalletConnected ? "wallet" : "wallet-outline"} 
                 size={25} 
-                color={publicKey ? "#4CAF50" : "black"} 
+                color={isWalletConnected ? "#4CAF50" : "black"} 
               />
-              {publicKey && <View style={styles.connectedDot} />}
+              {isWalletConnected && <View style={styles.connectedDot} />}
             </TouchableOpacity>
           </View>
 
