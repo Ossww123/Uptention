@@ -168,7 +168,7 @@ const UserManagementPage = () => {
 
         await axios.delete(`${API_BASE_URL}/api/users/${userId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `${token}`
           }
         });
         
