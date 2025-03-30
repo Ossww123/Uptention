@@ -1,4 +1,4 @@
-package com.otoki.uptention.application.mining.service.dto.response;
+package com.otoki.uptention.application.user.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
