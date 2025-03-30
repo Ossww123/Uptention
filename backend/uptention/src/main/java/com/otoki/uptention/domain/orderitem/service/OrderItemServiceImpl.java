@@ -21,7 +21,12 @@ public class OrderItemServiceImpl implements OrderItemService {
 	public OrderItem saveOrderItem(OrderItem orderItem) {
 		return orderItemRepository.save(orderItem);
 	}
-	
+
+	@Override
+	public List<OrderItem> findOrderItemsByOrderId(Integer orderId) {
+		return orderItemRepository.findByOrderId(orderId);
+	}
+
 	@Override
 	public List<OrderItem> findOrderItemsByOrderIds(List<Integer> orderIds) {
 		return orderItemRepository.findAllByOrderIdInWithItemJoin(orderIds);
