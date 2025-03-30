@@ -17,7 +17,7 @@ public enum ErrorCode {
 	AUTH_FAILED_LOGIN(HttpStatus.UNAUTHORIZED, "AUTH_004", "아이디, 비밀번호가 일치하지 않습니다."),
 	AUTH_DUPLICATE_EMPLOYEE_NUMBER(HttpStatus.CONFLICT, "AUTH_005", "사번이 이미 사용 중입니다."),
 	AUTH_DUPLICATE_USERNAME(HttpStatus.CONFLICT, "AUTH_006", "아이디가 이미 사용중입니다."),
-	
+
 	// 아이템 관련 에러
 	ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "ITEM_001", "상품이 존재하지 않습니다."),
 	ITEM_INVALID_SORT_TYPE(HttpStatus.BAD_REQUEST, "ITEM_002", "지원하지 않는 정렬 방식입니다."),

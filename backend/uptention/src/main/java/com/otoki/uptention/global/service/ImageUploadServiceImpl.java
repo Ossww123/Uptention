@@ -56,6 +56,11 @@ public class ImageUploadServiceImpl implements ImageUploadService {
 		return "https://" + awsS3Properties.getCloudfrontDomain() + "/" + key;
 	}
 
+	@Override
+	public void removeImage(String key) {
+		s3Template.deleteObject(awsS3Properties.getBucket(), key);
+	}
+
 	private String createUniqueFileName(MultipartFile file) {
 		String originalFilename = file.getOriginalFilename();
 		String extension = "";
