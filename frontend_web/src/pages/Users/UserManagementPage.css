@@ -1,195 +1,88 @@
-/* src/pages/Users/UserManagementPage.css */
-.user-management {
-  padding: 20px;
-  background-color: #f1f1f1;
-  min-height: 100vh;
-}
+/* src/pages/Users/UserManagementPage.css에 추가 */
 
-/* 콘텐츠 카드 스타일 */
-.content-card {
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.user-management-header {
-  margin-bottom: 25px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.user-stats {
+/* 필터 컨테이너 스타일 */
+.filters-container {
   display: flex;
-  margin-bottom: 20px;
-}
-
-.stat-box {
-  background-color: #f6f6f6;
-  border-radius: 4px;
-  padding: 10px 15px;
-  display: flex;
-  flex-direction: row;
+  justify-content: space-between;
   align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #666;
-  margin-right: 10px;
-}
-
-.stat-value {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-}
-
-/* 검색바를 상단으로 이동 */
-.search-bar {
   margin-bottom: 20px;
-  width: 100%;
+  flex-wrap: wrap;
+}
+
+.filter-group {
   display: flex;
-  justify-content: flex-end;
-}
-
-.search-bar form {
-  display: flex;
-  width: 400px;
-}
-
-.search-input {
-  flex: 1;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 4px 0 0 4px;
-  font-size: 14px;
-  outline: none;
-}
-
-.search-button {
-  background-color: #FF8C00;
-  color: white;
-  border: none;
-  padding: 0 20px;
-  border-radius: 0 4px 4px 0;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.user-table-container {
-  overflow: hidden;
-  position: relative;
-  min-height: 200px;
-}
-
-.user-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.user-table th,
-.user-table td {
-  padding: 15px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-.user-table th {
-  background-color: #f8f9fa;
-  color: #666;
-  font-weight: 500;
-}
-
-.user-table tbody tr:nth-child(even) {
-  background-color: #EDF2F5;
-}
-
-.user-table tbody tr:hover {
-  background-color: #f0f0f0;
-}
-
-.delete-button {
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.delete-button:hover {
-  background-color: #c0392b;
-}
-
-.action-buttons {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.add-button {
-  background-color: #FF8C00;
-  color: white;
-  border: none;
-  padding: 10px 25px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.add-button:hover {
-  background-color: #e67e00;
-}
-
-/* 로딩 상태 표시 */
-.loading {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
-  color: #666;
-}
-
-.loading-spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #FF8C00;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  animation: spin 1s linear infinite;
+  margin-right: 20px;
   margin-bottom: 10px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+.filter-group label {
+  margin-right: 8px;
+  font-weight: 500;
+  color: #555;
 }
 
-/* 에러 메시지 */
-.error-message {
-  color: #e74c3c;
-  padding: 15px;
-  background-color: #fdeaea;
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  margin-bottom: 20px;
-  text-align: center;
+  background-color: white;
+  cursor: pointer;
+  outline: none;
+  min-width: 150px;
 }
 
-/* 회원 없음 메시지 */
-.no-users-message {
-  padding: 30px;
-  text-align: center;
-  color: #888;
-  font-size: 16px;
+.filter-select:focus {
+  border-color: #FF8C00;
+}
+
+/* 역할 뱃지 스타일 */
+.role-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.role-role_admin {
+  background-color: #4caf50;
+  color: white;
+}
+
+.role-role_member {
+  background-color: #2196f3;
+  color: white;
+}
+
+.role-role_temp_member {
+  background-color: #ff9800;
+  color: white;
+}
+
+/* 비활성화된 버튼 스타일 */
+.delete-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* 검색바 위치 조정 */
+.search-bar {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .filter-group, .search-bar {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .search-bar form {
+    width: 100%;
+  }
 }
