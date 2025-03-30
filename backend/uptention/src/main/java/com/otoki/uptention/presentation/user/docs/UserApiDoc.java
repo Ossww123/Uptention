@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -129,4 +130,31 @@ public interface UserApiDoc {
 		)
 	})
 	ResponseEntity<ProfileImageResponseDto> deleteProfileImage(@PathVariable Integer userId);
+
+	@Operation(summary = "포인트 조회", description = "사용자의 프로필 조회합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "포인트 조회 성공",
+			content = @Content(
+				schema = @Schema(implementation = PointResponseDto.class),
+				examples = {
+					@ExampleObject(value = "{\"point\":\"100\"}")
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "403",
+			description = "권한 없음",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"code\":\"AUTH_003\",\"message\":\"해당 요청의 권한이 없습니다.\",\"path\":\"/api/users/{userId}/point\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<PointResponseDto> getUserPoint(@PathVariable Integer userId);
 }
