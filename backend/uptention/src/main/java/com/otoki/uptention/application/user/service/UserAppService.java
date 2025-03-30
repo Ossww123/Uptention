@@ -1,5 +1,6 @@
 package com.otoki.uptention.application.user.service;
 
+import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
@@ -19,6 +20,8 @@ public interface UserAppService {
 	ProfileImageResponseDto updateProfileImage(Integer userId, MultipartFile profileImage);
 
 	ProfileImageResponseDto removeProfileImage(Integer userId);
+
+	PointResponseDto getUserPoints(Integer userId);
 
 	UserResponseDto getUser(Integer userId);
 

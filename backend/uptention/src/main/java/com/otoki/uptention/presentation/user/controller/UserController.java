@@ -1,13 +1,16 @@
 package com.otoki.uptention.presentation.user.controller;
 
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
@@ -16,9 +19,13 @@ import com.otoki.uptention.application.user.service.UserAppService;
 import com.otoki.uptention.domain.user.enums.UserRole;
 import com.otoki.uptention.domain.user.enums.UserSortType;
 import com.otoki.uptention.presentation.user.docs.UserApiDoc;
+import com.otoki.uptention.application.user.dto.response.PointResponseDto;
+
 
 import lombok.RequiredArgsConstructor;
 
+
+@RequestMapping("/api/users")
 @RestController
 @RequiredArgsConstructor
 public class UserController implements UserApiDoc {
@@ -44,7 +51,7 @@ public class UserController implements UserApiDoc {
 	}
 
 	// 프로필 이미지 등록 및 수정
-	@PutMapping(value = "/api/users/{userId}/profiles", consumes = "multipart/form-data")
+	@PutMapping(value = "/{userId}/profiles", consumes = "multipart/form-data")
 	public ResponseEntity<ProfileImageResponseDto> updateProfileImage(
 		@PathVariable Integer userId,
 		@RequestParam("profileImage") MultipartFile profileImage) {
@@ -52,8 +59,14 @@ public class UserController implements UserApiDoc {
 	}
 
 	// 기본 프로필 이미지로 변경
-	@DeleteMapping("/api/users/{userId}/profiles")
+	@DeleteMapping("/{userId}/profiles")
 	public ResponseEntity<ProfileImageResponseDto> deleteProfileImage(@PathVariable Integer userId) {
 		return ResponseEntity.ok(userAppService.removeProfileImage(userId));
+	}
+
+	// 유저 포인트 조회
+	@GetMapping("/{userId}/point")
+	public ResponseEntity<PointResponseDto> getUserPoint(@PathVariable Integer userId) {
+		return ResponseEntity.ok(userAppService.getUserPoints(userId));
 	}
 }

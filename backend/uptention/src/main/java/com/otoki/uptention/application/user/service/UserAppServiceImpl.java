@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
+import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserResponseDto;
@@ -105,6 +106,21 @@ public class UserAppServiceImpl implements UserAppService {
 
 		return ProfileImageResponseDto.builder()
 			.profileImage(imageUploadService.getImageUrl(PROFILE_DEFAULT_IMAGE))
+			.build();
+	}
+
+	// 포인트 조회
+	@Override
+	public PointResponseDto getUserPoints(Integer userId) {
+
+		User loggedInUser = securityService.getLoggedInUser();
+
+		if (loggedInUser.getId().equals(userId)) {
+			throw new CustomException(ErrorCode.FORBIDDEN_USER);
+		}
+
+		return PointResponseDto.builder()
+			.point(userService.getUserById(userId).getPoint())
 			.build();
 	}
 

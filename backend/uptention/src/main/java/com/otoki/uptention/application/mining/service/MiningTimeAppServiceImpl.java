@@ -67,4 +67,11 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		LocalDateTime endTime = LocalDate.now().atTime(14, 30);
 		return miningTimeService.updateEndTimeForUnfinishedMining(endTime);
 	}
+
+	@Transactional
+	@Override
+	public int bulkUpdateUserPoints() {
+		LocalDateTime inspectionDate = LocalDate.now().atTime(14, 30);
+		return miningTimeService.calculatePoint(inspectionDate);
+	}
 }
