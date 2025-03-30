@@ -194,7 +194,7 @@ public class UserAppServiceImpl implements UserAppService {
 
 	private String createNextCursor(User lastUser, UserSortType sortType) {
 		String value;
-		if (sortType == UserSortType.NAMES_DESC) {
+		if (sortType == UserSortType.NAMES_ASC) {
 			value = lastUser.getName();
 		} else if (sortType == UserSortType.REGISTER_DATE_ASC || sortType == UserSortType.REGISTER_DATE_DESC) {
 			// LocalDateTime을 문자열로 변환 (포맷에 따라 변경 가능)

@@ -46,7 +46,7 @@ public class UserController implements UserApiDoc {
 		@RequestParam(required = false) String keyword,
 		@RequestParam(required = false) String cursor,
 		@RequestParam(defaultValue = "20") int size,
-		@RequestParam(defaultValue = "NAMES_DESC") UserSortType sort) {
+		@RequestParam(defaultValue = "NAMES_ASC") UserSortType sort) {
 
 		UserCursorResponseDto response = userAppService.getUsers(userRole, keyword, cursor, sort, size);
 		return ResponseEntity.ok(response);
