@@ -190,7 +190,7 @@ public class UserAppServiceTest {
 		when(passwordEncoder.encode("newPass")).thenReturn("encodedNewPass");
 
 		// when
-		userAppService.updatePassword(dto);
+		userAppService.updatePassword(1, dto);
 
 		// then: 비밀번호가 새 값으로 업데이트 되었는지 검증
 		assertThat(loggedInUser.getPassword()).isEqualTo("encodedNewPass");
@@ -211,7 +211,7 @@ public class UserAppServiceTest {
 
 		// when & then: 현재 비밀번호 불일치 시 CustomException 발생
 		CustomException exception = assertThrows(CustomException.class, () -> {
-			userAppService.updatePassword(dto);
+			userAppService.updatePassword(1, dto);
 		});
 		assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.AUTH_BAD_REQUEST_PASSWORD);
 	}

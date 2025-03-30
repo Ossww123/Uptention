@@ -11,8 +11,6 @@ import com.otoki.uptention.application.user.dto.response.UserResponseDto;
 import com.otoki.uptention.domain.user.enums.UserRole;
 import com.otoki.uptention.domain.user.enums.UserSortType;
 
-import jakarta.validation.Valid;
-
 public interface UserAppService {
 	void joinMember(JoinRequestDto requestDto);
 
@@ -33,5 +31,5 @@ public interface UserAppService {
 
 	void removeUser(Integer userId);
 
-	void updatePassword(@Valid UpdatePasswordRequestDto updatePasswordRequestDto);
+	void updatePassword(Integer userId, UpdatePasswordRequestDto updatePasswordRequestDto);
 }

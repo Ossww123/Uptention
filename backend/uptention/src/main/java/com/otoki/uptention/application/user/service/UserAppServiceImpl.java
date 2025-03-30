@@ -183,8 +183,12 @@ public class UserAppServiceImpl implements UserAppService {
 	// 비밀번호 변경 메서드
 	@Override
 	@Transactional
-	public void updatePassword(UpdatePasswordRequestDto updatePasswordRequestDto) {
+	public void updatePassword(Integer userId, UpdatePasswordRequestDto updatePasswordRequestDto) {
 		User loggedInUser = securityService.getLoggedInUser();
+
+		if (!loggedInUser.getId().equals(userId)) {
+			throw new CustomException(ErrorCode.FORBIDDEN_USER);
+		}
 
 		if (!passwordEncoder.matches(updatePasswordRequestDto.getCurrentPassword(), loggedInUser.getPassword())) {
 			throw new CustomException(ErrorCode.AUTH_BAD_REQUEST_PASSWORD);

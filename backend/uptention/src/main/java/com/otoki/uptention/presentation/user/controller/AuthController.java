@@ -51,7 +51,7 @@ public class AuthController implements AuthApiDoc {
 	@PatchMapping("/api/users/{userId}/password")
 	public ResponseEntity<String> updateUserPassword(@PathVariable Integer userId,
 		@RequestBody @Valid UpdatePasswordRequestDto updatePasswordRequestDto) {
-		userAppService.updatePassword(updatePasswordRequestDto);
+		userAppService.updatePassword(userId, updatePasswordRequestDto);
 
 		return ResponseEntity.ok("비밀번호 변경 성공");
 	}
