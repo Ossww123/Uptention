@@ -10,8 +10,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
+import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserResponseDto;
 import com.otoki.uptention.application.user.service.UserAppService;
+import com.otoki.uptention.domain.user.enums.UserRole;
+import com.otoki.uptention.domain.user.enums.UserSortType;
 import com.otoki.uptention.presentation.user.docs.UserApiDoc;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +28,19 @@ public class UserController implements UserApiDoc {
 	@GetMapping("/api/users/{userId}")
 	public ResponseEntity<UserResponseDto> getUser(@PathVariable Integer userId) {
 		return ResponseEntity.ok(userAppService.getUser(userId));
+	}
+
+	// 유저 정보 페이징 조회
+	@GetMapping("/api/users")
+	public ResponseEntity<UserCursorResponseDto> getUsers(
+		@RequestParam(required = false) UserRole userRole,
+		@RequestParam(required = false) String keyword,
+		@RequestParam(required = false) String cursor,
+		@RequestParam(defaultValue = "20") int size,
+		@RequestParam(defaultValue = "NAMES_DESC") UserSortType sort) {
+
+		UserCursorResponseDto response = userAppService.getUsers(userRole, keyword, cursor, sort, size);
+		return ResponseEntity.ok(response);
 	}
 
 	// 프로필 이미지 등록 및 수정
