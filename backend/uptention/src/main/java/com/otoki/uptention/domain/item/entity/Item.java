@@ -72,6 +72,11 @@ public class Item extends TimeStampEntity {
 		this.salesCount += quantity;
 	}
 
+	// 판매량 감소 메서드
+	public void decreaseSalesCount(int quantity) {
+		this.salesCount -= quantity;
+	}
+
 	// 재고 감소 메서드
 	public void decreaseQuantity(int quantity) {
 		if (this.quantity < quantity) {
