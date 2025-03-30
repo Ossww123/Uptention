@@ -42,3 +42,12 @@ aws:
   s3:
     bucket: uptention
     cloudfront-domain: ddnwvg9t77g5o.cloudfront.net
+
+solana:
+  network: ${SOLANA_NETWORK}
+  rpc:
+    url: ${SOLANA_RPC_URL}
+  websocket:
+    url: ${SOLANA_WEBSOCKET_URL}
+  company:
+    wallet: ${SOLANA_COMPANY_WALLET}

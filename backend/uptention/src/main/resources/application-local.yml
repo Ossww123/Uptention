@@ -12,3 +12,12 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+solana:
+  network: ${SOLANA_NETWORK}
+  rpc:
+    url: ${SOLANA_RPC_URL}
+  websocket:
+    url: ${SOLANA_WEBSOCKET_URL}
+  company:
+    wallet: ${SOLANA_COMPANY_WALLET}
