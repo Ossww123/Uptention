@@ -1,6 +1,7 @@
 package com.otoki.uptention.domain.mining.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
@@ -39,5 +40,11 @@ public class MiningTimeServiceImpl implements MiningTimeService {
 	@Override
 	public int calculatePoint(LocalDateTime inspectionTime) {
 		return miningTimeRepository.updateUserPoints(inspectionTime);
+	}
+
+	@Override
+	public List<MiningTime> findMiningTimesByUserIdAndTimeRange(Integer userId, LocalDateTime startTime,
+		LocalDateTime endTime) {
+		return miningTimeRepository.findMiningTimesByUserIdAndTimeRange(userId, startTime, endTime);
 	}
 }
