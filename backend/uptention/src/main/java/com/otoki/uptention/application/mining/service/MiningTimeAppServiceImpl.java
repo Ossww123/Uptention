@@ -1,12 +1,15 @@
 package com.otoki.uptention.application.mining.service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.domain.mining.service.MiningTimeService;
@@ -81,13 +84,24 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 	// 채굴 시간 조회
 	@Override
-	public List<MiningTime> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime) {
+	public List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime) {
 		User loggedInUser = securityService.getLoggedInUser();
 
 		if (loggedInUser.getId().equals(userId)) {
 			throw new CustomException(ErrorCode.FORBIDDEN_USER);
 		}
 
-		return miningTimeService.findMiningTimesByUserIdAndTimeRange(userId, startTime, endTime);
+		if (endTime.isBefore(startTime)) {
+			throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
+		}
+
+		return miningTimeService.findMiningTimesByUserIdAndTimeRange(userId, startTime, endTime)
+			.stream()
+			.map(miningTime -> MiningTimeResponseDto.builder()
+				.startTime(miningTime.getStartTime())
+				.endTime(miningTime.getEndTime())
+				.totalTime(Duration.between(miningTime.getStartTime(), miningTime.getEndTime()).toMinutes())
+				.build())
+			.collect(Collectors.toList());
 	}
 }
