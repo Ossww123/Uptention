@@ -12,4 +12,5 @@ public interface MiningTimeService {
 	MiningTime findMiningTime(User user);
 	int updateEndTimeForUnfinishedMining(LocalDateTime endTime);
 	int calculatePoint(LocalDateTime inspectionTime);
+	List<MiningTime> findMiningTimesByUserIdAndTimeRange(Integer userId, LocalDateTime startTime, LocalDateTime endTime);
 }

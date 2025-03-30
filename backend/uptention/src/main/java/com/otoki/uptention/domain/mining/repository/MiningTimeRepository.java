@@ -1,6 +1,7 @@
 package com.otoki.uptention.domain.mining.repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,5 +31,12 @@ public interface MiningTimeRepository extends JpaRepository<MiningTime, Integer>
 		") m ON u.id = m.user_id " +
 		"SET u.point = u.point + m.additional_points", nativeQuery = true)
 	int updateUserPoints(@Param("inspectionTime") LocalDateTime specifiedTime);
+
+	@Query("SELECT m FROM MiningTime m WHERE m.user.id = :userId AND m.startTime >= :startTime AND m.endTime <= :endTime")
+	List<MiningTime> findMiningTimesByUserIdAndTimeRange(
+		@Param("userId") Integer userId,
+		@Param("startTime") LocalDateTime startTime,
+		@Param("endTime") LocalDateTime endTime
+	);
 
 }
