@@ -20,4 +20,15 @@ public interface MiningTimeRepository extends JpaRepository<MiningTime, Integer>
 	@Query("UPDATE MiningTime m SET m.endTime = :endTime WHERE m.endTime IS NULL")
 	int updateEndTimeForUnfinishedMining(@Param("endTime") LocalDateTime endTime);
 
+	@Modifying(clearAutomatically = true)
+	@Query(value = "UPDATE `user` u " +
+		"JOIN ( " +
+		"    SELECT user_id, ROUND(SUM(TIMESTAMPDIFF(MINUTE, start_time, end_time)) / 10) AS additional_points " +
+		"    FROM mining_time " +
+		"    WHERE start_time > DATE_SUB(:inspectionTime, INTERVAL 1 DAY) " +
+		"    GROUP BY user_id " +
+		") m ON u.id = m.user_id " +
+		"SET u.point = u.point + m.additional_points", nativeQuery = true)
+	int updateUserPoints(@Param("inspectionTime") LocalDateTime specifiedTime);
+
 }
