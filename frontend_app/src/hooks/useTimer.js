@@ -35,6 +35,17 @@ export const useTimer = () => {
         setIsActive(false);
     };
 
+    // 시간을 특정 분만큼 업데이트
+    const updateTime = (minutes) => {
+        setTime(prevTime => {
+            const [hours, mins, seconds] = prevTime.split(':').map(Number);
+            let totalMinutes = hours * 60 + mins + minutes;
+            const newHours = Math.floor(totalMinutes / 60);
+            const newMinutes = totalMinutes % 60;
+            return `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        });
+    };
+
     // 현재 시간을 초 단위로 변환
     const getTimeInSeconds = () => {
         const [hours, minutes, seconds] = time.split(':').map(Number);
@@ -47,6 +58,7 @@ export const useTimer = () => {
         startTimer,
         stopTimer,
         resetTimer,
-        getTimeInSeconds
+        getTimeInSeconds,
+        updateTime
     };
 }; 

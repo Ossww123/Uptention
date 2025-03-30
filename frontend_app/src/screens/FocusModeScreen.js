@@ -1,14 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTimer } from '../hooks/useTimer';
+import BackgroundTimer from 'react-native-background-timer';
 
 const { AppBlockerModule } = NativeModules;
 
 const FocusModeScreen = ({ navigation }) => {
-  const { time, isActive, startTimer, stopTimer, resetTimer } = useTimer();
+  const { time, isActive, startTimer, stopTimer, resetTimer, updateTime } = useTimer();
   const [points, setPoints] = useState(0);
   const [lastMinute, setLastMinute] = useState(0);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [startTime, setStartTime] = useState(null);
+
+  // AppState 변경 감지
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        // 앱이 백그라운드에서 포그라운드로 돌아올 때
+        if (startTime) {
+          const now = new Date();
+          const diffInMinutes = Math.floor((now - startTime) / 60000);
+          setPoints(prev => prev + diffInMinutes);
+          updateTime(diffInMinutes);
+        }
+      } else if (appState === 'active' && nextAppState.match(/inactive|background/)) {
+        // 앱이 백그라운드로 갈 때
+        setStartTime(new Date());
+      }
+      setAppState(nextAppState);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appState, startTime]);
 
   // 타이머 시간을 분으로 변환하는 함수
   const getMinutes = (timeString) => {
@@ -31,7 +57,14 @@ const FocusModeScreen = ({ navigation }) => {
       try {
         await AppBlockerModule.setAppBlockingEnabled(true);
         startTimer();
+        setStartTime(new Date());
         console.log('포커스 모드 시작됨');
+
+        // 백그라운드 타이머 시작
+        BackgroundTimer.runBackgroundTimer(() => {
+          updateTime(1);
+        }, 60000); // 1분마다 업데이트
+
       } catch (error) {
         console.error('포커스 모드 시작 실패:', error);
         Alert.alert(
@@ -49,6 +82,7 @@ const FocusModeScreen = ({ navigation }) => {
           await AppBlockerModule.setAppBlockingEnabled(false);
           stopTimer();
           resetTimer();
+          BackgroundTimer.stopBackgroundTimer();
           console.log('포커스 모드 종료됨');
         } catch (error) {
           console.error('포커스 모드 종료 실패:', error);
@@ -63,6 +97,7 @@ const FocusModeScreen = ({ navigation }) => {
       await AppBlockerModule.setAppBlockingEnabled(false);
       stopTimer();
       resetTimer();
+      BackgroundTimer.stopBackgroundTimer();
       navigation.goBack();
     } catch (error) {
       console.error('포커스 모드 종료 실패:', error);
