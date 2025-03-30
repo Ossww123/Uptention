@@ -230,7 +230,7 @@ const UserManagementPage = () => {
             onChange={handleSortChange}
             className="filter-select"
           >
-            <option value="NAMES_DESC">이름 내림차순</option>
+            <option value="NAMES_ASC">이름 내림차순</option>
             <option value="REGISTER_DATE_ASC">가입날짜 오름차순</option>
             <option value="REGISTER_DATE_DESC">가입날짜 내림차순</option>
           </select>
