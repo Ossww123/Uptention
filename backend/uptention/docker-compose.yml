@@ -20,6 +20,7 @@ services:
       TZ: UTC
     depends_on:
       - mysql
+      - rabbitmq
   mysql:
     image: mysql:8.0.36
     restart: always
@@ -38,5 +39,19 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --default-time-zone=+00:00
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - "5672:5672"  # AMQP 포트
+      - "15672:15672"  # 관리 UI 포트
+    environment:
+      RABBITMQ_DEFAULT_USER: local
+      RABBITMQ_DEFAULT_PASS: local
+      TZ: UTC
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
 volumes:
   uptention-mysql:  # MySQL 데이터 저장소
+  rabbitmq-data:    # RabbitMQ 데이터 저장소
