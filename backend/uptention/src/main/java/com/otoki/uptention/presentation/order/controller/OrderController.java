@@ -15,6 +15,7 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
@@ -35,15 +36,13 @@ public class OrderController implements OrderApiDoc {
 	private final OrderVerifyAppService orderVerifyAppService;
 
 	@PostMapping("/purchase")
-	public ResponseEntity<String> purchaseOrder(@Valid @RequestBody OrderRequestDto orderRequestDto) {
-		orderAppService.createOrder(orderRequestDto);
-		return ResponseEntity.ok("주문 처리 성공");
+	public ResponseEntity<InitiateOrderResponseDto> purchaseOrder(@Valid @RequestBody OrderRequestDto orderRequestDto) {
+		return ResponseEntity.ok(orderAppService.createOrder(orderRequestDto));
 	}
 
 	@PostMapping("/gift")
-	public ResponseEntity<String> giftOrder(@Valid @RequestBody GiftRequestDto giftRequestDto) {
-		orderAppService.createGiftOrder(giftRequestDto);
-		return ResponseEntity.ok("선물 처리 성공");
+	public ResponseEntity<InitiateOrderResponseDto> giftOrder(@Valid @RequestBody GiftRequestDto giftRequestDto) {
+		return ResponseEntity.ok(orderAppService.createGiftOrder(giftRequestDto));
 	}
 
 	@PostMapping("/verify")
