@@ -250,11 +250,11 @@ public interface UserApiDoc {
 	})
 	ResponseEntity<PointResponseDto> getUserPoint(@PathVariable Integer userId);
 
-	@Operation(summary = "채굴 시간 조회", description = "사용자의 특정 기간 내 채굴 시간을 조회합니다.")
+	@Operation(summary = "스크린타임 조회", description = "사용자의 특정 기간 내 포커스 모드 시간을 조회합니다.")
 	@ApiResponses(value = {
 		@ApiResponse(
 			responseCode = "200",
-			description = "채굴 시간 조회 성공",
+			description = "스크린타임 조회 성공",
 			content = @Content(
 				schema = @Schema(implementation = MiningTime.class),
 				examples = {

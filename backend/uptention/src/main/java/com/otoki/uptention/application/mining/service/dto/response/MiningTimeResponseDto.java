@@ -10,15 +10,15 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 @Builder
-@Schema(description = "채굴 시간 조회 응답 DTO")
+@Schema(description = "스크린타임 조회 응답 DTO")
 public class MiningTimeResponseDto {
 
 	@Schema(description = "시작 시간", example = "2024-01-01T08:00:00")
 	private LocalDateTime startTime;
 
-	@Schema(description = "시작 시간", example = "2024-01-01T08:00:00")
+	@Schema(description = "종료 시간", example = "2024-01-01T08:00:00")
 	private LocalDateTime endTime;
 
-	@Schema(description = "시작 시간", example = "10")
+	@Schema(description = "총 시간(분)", example = "10")
 	private Long totalTime;
 }
