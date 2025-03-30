@@ -12,8 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
-import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
+import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.domain.user.enums.UserRole;
 import com.otoki.uptention.domain.user.enums.UserSortType;
 
@@ -222,6 +222,45 @@ public interface UserApiDoc {
 		)
 		@RequestParam(defaultValue = "NAMES_DESC") UserSortType sort
 	);
+
+	@Operation(summary = "유저 삭제", description = "사용자를 삭제합니다. 로그인한 사용자가 삭제 대상이거나, 관리자 권한을 가진 경우에만 삭제가 가능합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "회원 삭제 성공",
+			content = @Content(
+				schema = @Schema(implementation = String.class),
+				examples = {
+					@ExampleObject(value = "\"회원 삭제 성공\"")
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "403",
+			description = "권한 없음",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"code\":\"AUTH_003\",\"message\":\"해당 요청의 권한이 없습니다.\",\"path\":\"/api/users/{userId}\"}"
+					)
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "404",
+			description = "사용자를 찾을 수 없음",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"code\":\"USER_001\",\"message\":\"사용자를 찾을 수 없습니다.\",\"path\":\"/api/users/{userId}\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<String> deleteUser(@PathVariable Integer userId);
 
 	@Operation(summary = "포인트 조회", description = "사용자의 프로필 조회합니다.")
 	@ApiResponses(value = {
