@@ -12,9 +12,9 @@ import AdminLayout from './components/layout/AdminLayout/AdminLayout';
 
 // 임시 인증 상태 체크 함수 (나중에 실제 인증 로직으로 대체)
 const isAuthenticated = () => {
-  // 로컬 스토리지 등에서 토큰 확인 로직을 추가할 예정
-  // 개발 중에는 항상 인증된 것으로 처리
-  return true;
+  // 로컬 스토리지에서 토큰 확인
+  const token = localStorage.getItem('auth-token');
+  return !!token; // 토큰이 있으면 true, 없으면 false 반환
 };
 
 // 인증 필요한 라우트를 위한 컴포넌트
