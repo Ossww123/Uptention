@@ -48,7 +48,7 @@ public class AuthController implements AuthApiDoc {
 	}
 
 	// 비밀번호 변경 엔드포인트
-	@PatchMapping("/users/{userId}/password")
+	@PatchMapping("/api/users/{userId}/password")
 	public ResponseEntity<String> updateUserPassword(@PathVariable Integer userId,
 		@RequestBody @Valid UpdatePasswordRequestDto updatePasswordRequestDto) {
 		userAppService.updatePassword(updatePasswordRequestDto);
