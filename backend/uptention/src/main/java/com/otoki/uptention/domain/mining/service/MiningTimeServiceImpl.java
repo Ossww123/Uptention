@@ -35,4 +35,9 @@ public class MiningTimeServiceImpl implements MiningTimeService {
 	public int updateEndTimeForUnfinishedMining(LocalDateTime endTime) {
 		return miningTimeRepository.updateEndTimeForUnfinishedMining(endTime);
 	}
+
+	@Override
+	public int calculatePoint(LocalDateTime inspectionTime) {
+		return miningTimeRepository.updateUserPoints(inspectionTime);
+	}
 }

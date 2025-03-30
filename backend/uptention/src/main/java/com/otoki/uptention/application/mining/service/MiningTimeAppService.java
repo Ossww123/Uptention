@@ -6,4 +6,5 @@ public interface MiningTimeAppService {
 	void focusModeOn(Integer userId);
 	void focusModeOff(Integer userId);
 	int bulkUpdateMiningTime();
+	int bulkUpdateUserPoints();
 }
