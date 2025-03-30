@@ -1,75 +1,84 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTimer } from '../hooks/useTimer';
-import BackgroundTimer from 'react-native-background-timer';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
 
 const { AppBlockerModule } = NativeModules;
 
 const FocusModeScreen = ({ navigation }) => {
-  const { time, isActive, startTimer, stopTimer, resetTimer, updateTime } = useTimer();
+  const { time, isActive, startTimer, stopTimer, resetTimer, getTimeInSeconds } = useTimer();
   const [points, setPoints] = useState(0);
-  const [lastMinute, setLastMinute] = useState(0);
   const [appState, setAppState] = useState(AppState.currentState);
-  const [startTime, setStartTime] = useState(null);
+  const totalSecondsRef = useRef(0);
+
+  // 포인트 계산 함수
+  const calculatePoints = useCallback((seconds) => {
+    return Math.floor(seconds / 60);
+  }, []);
+
+  // 포인트 업데이트 함수
+  const updatePoints = useCallback(() => {
+    const totalSeconds = getTimeInSeconds();
+    totalSecondsRef.current = totalSeconds;
+    const newPoints = calculatePoints(totalSeconds);
+    
+    if (newPoints !== points) {
+      setPoints(newPoints);
+      console.log('Points Updated:', {
+        previousPoints: points,
+        newPoints,
+        totalSeconds,
+        timeString: time
+      });
+    }
+  }, [getTimeInSeconds, points, time, calculatePoints]);
 
   // AppState 변경 감지
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
-      if (appState.match(/inactive|background/) && nextAppState === 'active') {
-        // 앱이 백그라운드에서 포그라운드로 돌아올 때
-        if (startTime) {
-          const now = new Date();
-          const diffInMinutes = Math.floor((now - startTime) / 60000);
-          setPoints(prev => prev + diffInMinutes);
-          updateTime(diffInMinutes);
-        }
-      } else if (appState === 'active' && nextAppState.match(/inactive|background/)) {
-        // 앱이 백그라운드로 갈 때
-        setStartTime(new Date());
-      }
+      console.log('App State Changed:', { previous: appState, next: nextAppState });
       setAppState(nextAppState);
+      
+      if (nextAppState === 'active') {
+        // 포그라운드로 돌아올 때 즉시 포인트 업데이트
+        updatePoints();
+      }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [appState, startTime]);
+  }, [appState, updatePoints]);
 
-  // 타이머 시간을 분으로 변환하는 함수
-  const getMinutes = (timeString) => {
-    const [hours, minutes] = timeString.split(':').map(Number);
-    return hours * 60 + minutes;
-  };
-
-  // 포인트 업데이트 로직
+  // 포인트 주기적 업데이트
   useEffect(() => {
-    const currentMinute = getMinutes(time);
-    if (currentMinute > lastMinute && currentMinute > 0) {
-      setPoints(prev => prev + 1);
-      setLastMinute(currentMinute);
-    }
-  }, [time]);
+    // 초기 포인트 설정
+    updatePoints();
+
+    // 3초마다 포인트 업데이트 (더 부드러운 UX를 위해)
+    const pointsInterval = setInterval(updatePoints, 3000);
+
+    return () => clearInterval(pointsInterval);
+  }, [updatePoints]);
 
   // 컴포넌트 마운트 시 자동으로 타이머 시작 및 앱 제한 기능 활성화
   useEffect(() => {
     const initialize = async () => {
       try {
+        // 포커스 모드 시작 API 호출
+        await axios.post(`${API_BASE_URL}/api/focus`);
+        
+        // 앱 차단 활성화 및 타이머 시작
         await AppBlockerModule.setAppBlockingEnabled(true);
         startTimer();
-        setStartTime(new Date());
         console.log('포커스 모드 시작됨');
-
-        // 백그라운드 타이머 시작
-        BackgroundTimer.runBackgroundTimer(() => {
-          updateTime(1);
-        }, 60000); // 1분마다 업데이트
-
       } catch (error) {
         console.error('포커스 모드 시작 실패:', error);
         Alert.alert(
           '알림',
-          '앱 제한 기능을 활성화하는데 실패했습니다.',
+          '포커스 모드를 시작하는데 실패했습니다.',
           [{ text: '확인' }]
         );
       }
@@ -82,7 +91,6 @@ const FocusModeScreen = ({ navigation }) => {
           await AppBlockerModule.setAppBlockingEnabled(false);
           stopTimer();
           resetTimer();
-          BackgroundTimer.stopBackgroundTimer();
           console.log('포커스 모드 종료됨');
         } catch (error) {
           console.error('포커스 모드 종료 실패:', error);
@@ -95,15 +103,26 @@ const FocusModeScreen = ({ navigation }) => {
   const handleExit = async () => {
     try {
       await AppBlockerModule.setAppBlockingEnabled(false);
+      const finalSeconds = getTimeInSeconds();
+      const finalPoints = Math.floor(finalSeconds / 60);
+      
+      // 포커스 모드 종료 API 호출
+      await axios.patch(`${API_BASE_URL}/api/focus`);
+      console.log('포커스 모드 종료 API 호출 성공');
+      
       stopTimer();
       resetTimer();
-      BackgroundTimer.stopBackgroundTimer();
       navigation.goBack();
+      
+      console.log('포커스 모드 종료:', {
+        totalSeconds: finalSeconds,
+        earnedPoints: finalPoints
+      });
     } catch (error) {
       console.error('포커스 모드 종료 실패:', error);
       Alert.alert(
         '알림',
-        '앱 제한 기능 비활성화에 실패했습니다. 설정에서 직접 비활성화해주세요.',
+        '포커스 모드 종료에 실패했습니다.',
         [{ text: '확인', onPress: () => navigation.goBack() }]
       );
     }

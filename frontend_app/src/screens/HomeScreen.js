@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { NativeModules } from 'react-native';
 import { useWallet } from '../contexts/WalletContext';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
 
 const { AppBlockerModule } = NativeModules;
 
@@ -71,15 +73,13 @@ const HomeScreen = ({ navigation }) => {
     if (Platform.OS === 'android') {
       // 필요한 권한이 모두 있는지 확인
       if (!hasAccessibilityPermission || !hasOverlayPermission) {
-        // 권한이 없는 경우 안내창 표시
         Alert.alert(
           '권한 필요',
           '집중 모드에서 앱 제한 기능을 사용하려면 접근성 서비스와 화면 오버레이 권한이 필요합니다.',
           [
             { 
               text: '취소', 
-              style: 'cancel',
-              onPress: () => navigation.navigate('FocusMode') // 권한 부여 없이 그냥 포커스 모드로 이동
+              style: 'cancel'
             },
             { 
               text: '권한 설정', 
@@ -89,18 +89,36 @@ const HomeScreen = ({ navigation }) => {
         );
         return;
       }
-      
-      try {
-        // 모든 권한이 있으면 앱 차단 활성화
-        await AppBlockerModule.setAppBlockingEnabled(true);
-        console.log('앱 차단 기능 활성화 성공');
-      } catch (error) {
-        console.error('앱 차단 기능 활성화 실패:', error);
-      }
     }
-    
-    // 포커스 모드 화면으로 이동
-    navigation.navigate('FocusMode');
+
+    try {
+      // 집중 모드 시작 API 호출
+      const response = await axios.post(`${API_BASE_URL}/api/focus`);
+      
+      if (response.status === 200) {
+        console.log('집중 모드 시작 API 호출 성공');
+        
+        if (Platform.OS === 'android') {
+          // 앱 차단 기능 활성화
+          try {
+            await AppBlockerModule.setAppBlockingEnabled(true);
+            console.log('앱 차단 기능 활성화 성공');
+          } catch (error) {
+            console.error('앱 차단 기능 활성화 실패:', error);
+          }
+        }
+        
+        // 포커스 모드 화면으로 이동
+        navigation.navigate('FocusMode');
+      }
+    } catch (error) {
+      console.error('집중 모드 시작 API 호출 실패:', error);
+      Alert.alert(
+        '오류 발생',
+        '집중 모드를 시작할 수 없습니다. 다시 시도해주세요.',
+        [{ text: '확인' }]
+      );
+    }
   };
   
   // 앱 차단에 필요한 권한 요청
