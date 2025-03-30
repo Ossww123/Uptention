@@ -34,17 +34,35 @@ const UserManagementPage = () => {
         throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
       }
 
+      const params = {
+        size: 20,
+        sort: sortOption
+      };
+      
+      // searchTerm이 있을 때만 keyword 파라미터 추가
+      if (searchTerm && searchTerm.trim() !== '') {
+        params.keyword = searchTerm;
+      }
+      
+      // userRole이 있을 때만 userRole 파라미터 추가
+      if (userRole && userRole.trim() !== '') {
+        params.userRole = userRole;
+      }
+      
+      // nextCursor가 있고 isSearch가 false일 때만 cursor 파라미터 추가
+      if (nextCursor && !isSearch) {
+        params.cursor = nextCursor;
+      }
+
+      console.log('요청 파라미터:', params);
+      console.log('요청 토큰:', token);
+      
       const response = await axios.get(`${API_BASE_URL}/api/users`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json'
         },
-        params: {
-          keyword: searchTerm,
-          userRole: userRole || undefined, // 값이 없으면 파라미터 제외
-          cursor: isSearch ? null : nextCursor,
-          size: 10,
-          sort: sortOption
-        }
+        params: params
       });
       
       const data = response.data;
@@ -61,6 +79,7 @@ const UserManagementPage = () => {
       console.error('API 에러:', err);
       
       if (err.response) {
+        console.error('오류 응답 데이터:', err.response.data);
         const { status, data } = err.response;
         
         if (status === 401) {
