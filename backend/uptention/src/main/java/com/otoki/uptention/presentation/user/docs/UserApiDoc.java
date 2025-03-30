@@ -134,11 +134,11 @@ public interface UserApiDoc {
 		@RequestParam(defaultValue = "20") int size,
 
 		@Parameter(
-			description = "유저 정렬 타입 (NAMES_DESC, REGISTER_DATE_ASC, REGISTER_DATE_DESC)",
+			description = "유저 정렬 타입 (NAMES_ASC, REGISTER_DATE_ASC, REGISTER_DATE_DESC)",
 			schema = @Schema(implementation = UserSortType.class),
-			example = "NAMES_DESC"
+			example = "NAMES_ASC"
 		)
-		@RequestParam(defaultValue = "NAMES_DESC") UserSortType sort
+		@RequestParam(defaultValue = "NAMES_ASC") UserSortType sort
 	);
 
 	@Operation(summary = "유저 삭제", description = "사용자를 삭제합니다. 로그인한 사용자가 삭제 대상이거나, 관리자 권한을 가진 경우에만 삭제가 가능합니다.")

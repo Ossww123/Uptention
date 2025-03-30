@@ -60,9 +60,9 @@ public class UserRepositoryCustomImpl implements UserRepositoryCustom {
 	 * 커서 조건 생성 (정렬 타입에 따라)
 	 */
 	private BooleanExpression getCursorCondition(QUser user, UserCursorDto<String> cursor, UserSortType sortType) {
-		if (sortType == UserSortType.NAMES_DESC) {
-			return user.name.lt(cursor.getValue())
-				.or(user.name.eq(cursor.getValue()).and(user.id.lt(cursor.getId())));
+		if (sortType == UserSortType.NAMES_ASC) {
+			return user.name.gt(cursor.getValue())
+				.or(user.name.eq(cursor.getValue()).and(user.id.gt(cursor.getId())));
 		} else if (sortType == UserSortType.REGISTER_DATE_ASC) {
 			// 문자열로 저장된 날짜를 LocalDateTime으로 파싱하여 비교 (포맷 주의)
 			LocalDateTime cursorDate = LocalDateTime.parse(cursor.getValue());
@@ -81,12 +81,12 @@ public class UserRepositoryCustomImpl implements UserRepositoryCustom {
 	 * 정렬 표현식 생성 (주 정렬 필드와 보조로 id 사용)
 	 */
 	private OrderSpecifier<?>[] getOrderByExpressions(QUser user, UserSortType sortType) {
-		if (sortType == UserSortType.NAMES_DESC) {
-			return new OrderSpecifier<?>[] {user.name.desc(), user.id.desc()};
+		if (sortType == UserSortType.NAMES_ASC) {
+			return new OrderSpecifier<?>[] {user.name.asc(), user.id.asc()};
 		} else if (sortType == UserSortType.REGISTER_DATE_ASC) {
-			return new OrderSpecifier<?>[] {user.createdAt.asc(), user.id.desc()};
+			return new OrderSpecifier<?>[] {user.createdAt.asc(), user.id.asc()};
 		} else if (sortType == UserSortType.REGISTER_DATE_DESC) {
-			return new OrderSpecifier<?>[] {user.createdAt.desc(), user.id.desc()};
+			return new OrderSpecifier<?>[] {user.createdAt.desc(), user.id.asc()};
 		} else {
 			throw new CustomException(ErrorCode.USER_INVALID_SORT_TYPE);
 		}
