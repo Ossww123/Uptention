@@ -74,6 +74,11 @@
   margin-bottom: 10px;
 }
 
+.login-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 480px) {
   .login-form-wrapper {
