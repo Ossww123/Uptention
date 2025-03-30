@@ -54,6 +54,9 @@ dependencies {
     // Spring MVC, Tomcat, Jackson 을 포함한 웹 개발 스타터 패키지
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
+    // Spring WebSocket
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
     // Swagger 추가
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
 
@@ -63,6 +66,13 @@ dependencies {
 
     // h2
     runtimeOnly 'com.h2database:h2:2.2.224'
+
+    // RabbitMQ
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+    // Solana 라이브러리 추가
+    implementation 'com.mmorrell:solanaj:1.19.2'
+    implementation 'com.squareup.okhttp3:okhttp:4.9.3'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
