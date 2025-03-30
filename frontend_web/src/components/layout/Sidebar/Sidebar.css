@@ -88,15 +88,22 @@
     margin-top: auto;
   }
   
-  .sidebar-logout {
-    display: flex;
-    align-items: center;
-    color: #666;
-    text-decoration: none;
-    padding: 10px 0;
-    transition: color 0.3s;
-  }
-  
-  .sidebar-logout:hover {
-    color: #FF8C00;
-  }
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: inherit;
+  text-align: left;
+  width: 100%;
+  padding: 12px 20px;
+  text-decoration: none;
+  color: #333;
+  transition: background-color 0.3s;
+}
+
+.sidebar-logout:hover {
+  background-color: #f0f0f0;
+}
