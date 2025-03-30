@@ -1,6 +1,9 @@
 package com.otoki.uptention.presentation.user.controller;
 
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,8 +14,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.otoki.uptention.application.mining.service.MiningTimeAppService;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.service.UserAppService;
+import com.otoki.uptention.domain.mining.entity.MiningTime;
+import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.presentation.user.docs.UserApiDoc;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 
@@ -25,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class UserController implements UserApiDoc {
 	private final UserAppService userAppService;
+	private final MiningTimeAppService miningTimeAppService;
 
 	// 프로필 이미지 등록 및 수정
 	@PutMapping(value = "/{userId}/profiles", consumes = "multipart/form-data")
@@ -44,5 +51,14 @@ public class UserController implements UserApiDoc {
 	@GetMapping("/{userId}/point")
 	public ResponseEntity<PointResponseDto> getUserPoint(@PathVariable Integer userId) {
 		return ResponseEntity.ok(userAppService.getUserPoints(userId));
+	}
+
+	// 유저 채굴시간 조회
+	@GetMapping("/{userId}")
+	public ResponseEntity<List<MiningTime>> getMiningTimes(
+		@PathVariable Integer userId,
+		@RequestParam LocalDateTime startTime,
+		@RequestParam LocalDateTime endTime) {
+		return ResponseEntity.ok(miningTimeAppService.findAllMiningTimes(userId, startTime, endTime));
 	}
 }
