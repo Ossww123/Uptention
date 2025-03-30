@@ -1,5 +1,7 @@
 package com.otoki.uptention.application.user.dto.response;
 
+import java.time.LocalDateTime;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -29,4 +31,10 @@ public class UserResponseDto {
 
 	@Schema(description = "프로필 이미지 URL")
 	private String profileImage;
+
+	@Schema(description = "유저 ROLE")
+	private String role;
+
+	@Schema(description = "가입일")
+	private LocalDateTime createdAt;
 }
