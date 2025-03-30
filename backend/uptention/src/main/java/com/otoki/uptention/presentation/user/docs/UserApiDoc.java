@@ -1,13 +1,18 @@
 package com.otoki.uptention.presentation.user.docs;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
+import com.otoki.uptention.domain.mining.entity.MiningTime;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -157,4 +162,49 @@ public interface UserApiDoc {
 		)
 	})
 	ResponseEntity<PointResponseDto> getUserPoint(@PathVariable Integer userId);
+
+	@Operation(summary = "채굴 시간 조회", description = "사용자의 특정 기간 내 채굴 시간을 조회합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "채굴 시간 조회 성공",
+			content = @Content(
+				schema = @Schema(implementation = MiningTime.class),
+				examples = {
+					@ExampleObject(
+						value = "[{\"startTime\":\"2024-01-01T08:00:00\",\"endTime\":\"2024-01-01T12:00:00\", \"totalTime\":\"10\"}]"
+					)
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "400",
+			description = "잘못된 요청",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "유효하지 않은 날짜 범위",
+						value = "{\"code\":\"DASHBOARD_001\",\"message\":\"종료 시간이 시작 시간보다 이전입니다.\",\"path\":\"/api/users/{userId}/mining-times?startTime=&endTime=\"}"
+					)
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "403",
+			description = "권한 없음",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"code\":\"AUTH_003\",\"message\":\"해당 요청의 권한이 없습니다.\",\"path\":\"/api/users/{userId}/mining-times?startTime=&endTime=\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<List<MiningTimeResponseDto>> getMiningTimes(
+		@PathVariable Integer userId,
+		@RequestParam LocalDateTime startTime,
+		@RequestParam LocalDateTime endTime);
 }
