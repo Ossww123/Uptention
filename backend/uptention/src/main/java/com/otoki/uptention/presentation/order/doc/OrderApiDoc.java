@@ -11,6 +11,7 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
@@ -82,7 +83,7 @@ public interface OrderApiDoc {
 			)
 		)
 	})
-	ResponseEntity<String> purchaseOrder(
+	ResponseEntity<InitiateOrderResponseDto> purchaseOrder(
 		@Parameter(description = "주문 정보", required = true)
 		@Valid @RequestBody OrderRequestDto orderRequestDto);
 
@@ -137,7 +138,7 @@ public interface OrderApiDoc {
 			)
 		)
 	})
-	ResponseEntity<String> giftOrder(
+	ResponseEntity<InitiateOrderResponseDto> giftOrder(
 		@Parameter(description = "선물 정보", required = true)
 		@Valid @RequestBody GiftRequestDto giftRequestDto);
 
