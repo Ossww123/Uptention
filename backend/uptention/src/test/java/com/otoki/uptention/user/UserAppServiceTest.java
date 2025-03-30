@@ -103,4 +103,74 @@ public class UserAppServiceTest {
 		assertThatThrownBy(() -> userAppService.checkDuplicateEmployeeNumber("EMP001"))
 			.isInstanceOf(CustomException.class);
 	}
+
+	@Test
+	@DisplayName("removeUser: 정상 케이스 - 로그인 사용자가 자신의 계정을 삭제하는 경우")
+	void removeUser_whenSelfDeletion_thenSuccess() {
+		// given
+		int userId = 1;
+		User loggedInUser = User.builder()
+			.id(userId)
+			.role(UserRole.ROLE_MEMBER)
+			.build();
+		when(securityService.getLoggedInUser()).thenReturn(loggedInUser);
+
+		User userToRemove = User.builder()
+			.id(userId)
+			.status(true) // 초기 상태가 true라고 가정
+			.build();
+		when(userService.getUserById(userId)).thenReturn(userToRemove);
+
+		// when
+		userAppService.removeUser(userId);
+
+		// then: 해당 사용자의 상태가 false로 변경되었음을 검증
+		assertThat(userToRemove.getStatus()).isFalse();
+		verify(userService).getUserById(userId);
+	}
+
+	@Test
+	@DisplayName("removeUser: 정상 케이스 - 관리자가 다른 사용자를 삭제하는 경우")
+	void removeUser_whenAdminDeletesAnotherUser_thenSuccess() {
+		// given
+		int targetUserId = 2;
+		// 관리자는 자신의 id가 targetUserId와 다르더라도 관리자 권한으로 삭제 가능
+		User adminUser = User.builder()
+			.id(1)
+			.role(UserRole.ROLE_ADMIN)
+			.build();
+		when(securityService.getLoggedInUser()).thenReturn(adminUser);
+
+		User userToRemove = User.builder()
+			.id(targetUserId)
+			.status(true)
+			.build();
+		when(userService.getUserById(targetUserId)).thenReturn(userToRemove);
+
+		// when
+		userAppService.removeUser(targetUserId);
+
+		// then
+		assertThat(userToRemove.getStatus()).isFalse();
+		verify(userService).getUserById(targetUserId);
+	}
+
+	@Test
+	@DisplayName("removeUser: 권한 부족 - 로그인 사용자가 다른 사용자를 삭제하려 할 경우")
+	void removeUser_whenNonAdminDeletesAnotherUser_thenThrowsException() {
+		// given
+		int targetUserId = 2;
+		// 로그인 사용자가 관리자도 아니고, 삭제 대상도 본인이 아님
+		User nonAdminUser = User.builder()
+			.id(1)
+			.role(UserRole.ROLE_MEMBER)
+			.build();
+		when(securityService.getLoggedInUser()).thenReturn(nonAdminUser);
+
+		// when & then: 예외 발생을 검증
+		CustomException exception = assertThrows(CustomException.class, () -> userAppService.removeUser(targetUserId));
+		assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN_USER);
+		// userService.getUserById는 호출되지 않아야 함
+		verify(userService, never()).getUserById(anyInt());
+	}
 }
