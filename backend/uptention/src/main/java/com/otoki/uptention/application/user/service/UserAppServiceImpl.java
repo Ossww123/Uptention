@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
+import com.otoki.uptention.application.user.dto.response.UserResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.enums.UserRole;
@@ -97,6 +98,20 @@ public class UserAppServiceImpl implements UserAppService {
 
 		return ProfileImageResponseDto.builder()
 			.profileImage(imageUploadService.getImageUrl(PROFILE_DEFAULT_IMAGE))
+			.build();
+	}
+
+	@Override
+	public UserResponseDto getUser(Integer userId) {
+		User user = userService.getUserById(userId);
+
+		return UserResponseDto.builder()
+			.username(user.getUsername())
+			.employeeNumber(user.getEmployeeNumber())
+			.userId(user.getId())
+			.name(user.getName())
+			.profileImage(imageUploadService.getImageUrl(user.getProfileImage())) // key 값으로 실제 접근 주소 조회
+			.wallet(user.getWallet())
 			.build();
 	}
 }
