@@ -15,10 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.otoki.uptention.application.mining.service.MiningTimeAppService;
+import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.service.UserAppService;
-import com.otoki.uptention.domain.mining.entity.MiningTime;
-import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.presentation.user.docs.UserApiDoc;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 
@@ -54,8 +53,8 @@ public class UserController implements UserApiDoc {
 	}
 
 	// 유저 채굴시간 조회
-	@GetMapping("/{userId}")
-	public ResponseEntity<List<MiningTime>> getMiningTimes(
+	@GetMapping("/{userId}/mining-times")
+	public ResponseEntity<List<MiningTimeResponseDto>> getMiningTimes(
 		@PathVariable Integer userId,
 		@RequestParam LocalDateTime startTime,
 		@RequestParam LocalDateTime endTime) {
