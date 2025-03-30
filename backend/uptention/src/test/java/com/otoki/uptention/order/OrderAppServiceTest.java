@@ -16,7 +16,9 @@ import com.otoki.uptention.AppServiceTestSupport;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
+import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
@@ -50,6 +52,9 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 	@MockBean
 	private GiftService giftService;
 
+	@MockBean
+	private SecurityService securityService;
+
 	@Test
 	@DisplayName("구매 상품 리스트를 받아 주문을 생성한다.")
 	void createOrder() {
@@ -70,20 +75,32 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 
 		Order savedOrder = createOrder(1, user, "서울시 강남구 테스트로 123");
 
+		// Mock OrderItem 객체 생성
+		OrderItem orderItem1 = createOrderItem(1, savedOrder, item1, 2, item1.getPrice());
+		OrderItem orderItem2 = createOrderItem(2, savedOrder, item2, 1, item2.getPrice());
+		OrderItem orderItem3 = createOrderItem(3, savedOrder, item3, 3, item3.getPrice());
+
+		// 총 결제 금액 계산 (10000 * 2 + 20000 * 1 + 30000 * 3 = 130000)
+		int expectedTotalAmount = (10000 * 2) + (20000 * 1) + (30000 * 3);
+
 		// when
-		when(userService.getUserById(anyInt())).thenReturn(user);
+		when(securityService.getLoggedInUser()).thenReturn(user);
 		when(itemService.getItemById(1)).thenReturn(item1);
 		when(itemService.getItemById(2)).thenReturn(item2);
 		when(itemService.getItemById(3)).thenReturn(item3);
 		when(orderService.saveOrder(any(Order.class))).thenReturn(savedOrder);
 
-		Order result = orderAppService.createOrder(orderRequestDto);
+		// OrderItem 생성 시 반환값 설정
+		when(orderItemService.saveOrderItem(argThat(oi -> oi.getItem().getId().equals(1)))).thenReturn(orderItem1);
+		when(orderItemService.saveOrderItem(argThat(oi -> oi.getItem().getId().equals(2)))).thenReturn(orderItem2);
+		when(orderItemService.saveOrderItem(argThat(oi -> oi.getItem().getId().equals(3)))).thenReturn(orderItem3);
+
+		InitiateOrderResponseDto result = orderAppService.createOrder(orderRequestDto);
 
 		// then
 		assertThat(result).isNotNull();
-		assertThat(result.getId()).isEqualTo(1);
-		assertThat(result.getAddress()).isEqualTo("서울시 강남구 테스트로 123");
-		assertThat(result.getUser()).isEqualTo(user);
+		assertThat(result.getOrderId()).isEqualTo(1);
+		assertThat(result.getPaymentAmount()).isEqualTo(expectedTotalAmount);
 
 		verify(orderService, times(1)).saveOrder(any(Order.class));
 		verify(orderItemService, times(3)).saveOrderItem(any(OrderItem.class));
@@ -97,9 +114,6 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		assertThat(item1.getQuantity()).isEqualTo(8); // 상품1 재고 감소
 		assertThat(item2.getQuantity()).isEqualTo(9); // 상품2 재고 감소
 		assertThat(item3.getQuantity()).isEqualTo(7); // 상품3 재고 감소
-
-		// OrderItem 생성 시 적절한 값 전달 확인 (세 번의 호출)
-		verify(orderItemService, times(3)).saveOrderItem(any(OrderItem.class));
 	}
 
 	@Test
@@ -114,19 +128,22 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 
 		Order savedOrder = createOrder(1, sender, null); // 선물은 주소가 필요 없음
 
+		// Mock OrderItem 객체 생성
+		OrderItem orderItem = createOrderItem(1, savedOrder, item, 1, item.getPrice());
+
 		// when
-		when(userService.getUserById(2)).thenReturn(sender);
+		when(securityService.getLoggedInUser()).thenReturn(sender);
 		when(userService.getUserById(3)).thenReturn(receiver);
 		when(itemService.getItemById(3)).thenReturn(item);
 		when(orderService.saveOrder(any(Order.class))).thenReturn(savedOrder);
+		when(orderItemService.saveOrderItem(any(OrderItem.class))).thenReturn(orderItem);
 
-		Order result = orderAppService.createGiftOrder(giftRequestDto);
+		InitiateOrderResponseDto result = orderAppService.createGiftOrder(giftRequestDto);
 
 		// then
 		assertThat(result).isNotNull();
-		assertThat(result.getId()).isEqualTo(1);
-		assertThat(result.getUser()).isEqualTo(sender);
-		assertThat(result.getAddress()).isNull(); // 선물은 주소가 없음
+		assertThat(result.getOrderId()).isEqualTo(1);
+		assertThat(result.getPaymentAmount()).isEqualTo(15000); // 선물 상품 1개 가격
 
 		verify(orderService, times(1)).saveOrder(any(Order.class));
 		verify(orderItemService, times(1)).saveOrderItem(any(OrderItem.class));
@@ -135,28 +152,26 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		// 판매량 증가 확인 (선물은 수량 1개)
 		assertThat(item.getSalesCount()).isEqualTo(1);
 		assertThat(item.getQuantity()).isEqualTo(9);
-
 	}
 
 	@Test
 	@DisplayName("일반 주문 시 재고가 부족한 상품을 주문하려고 하면 예외가 발생한다.")
 	void createOrder_ThrowsException_WhenStockIsInsufficient() {
 		// given
+		User user = createUser(1);
 		Integer itemId = 1;
 		int orderQuantity = 10;
 
 		// 재고가 5개인 상품을 Mock
-		Item item = mock(Item.class);
+		Item item = createItem(itemId, "재고 부족 상품", 10000, 5);
+		when(securityService.getLoggedInUser()).thenReturn(user);
 		when(itemService.getItemById(itemId)).thenReturn(item);
-		when(item.getQuantity()).thenReturn(5);  // 재고 5개 설정
 
 		// 주문 요청 DTO 생성 (상품 1개를 10개 주문하려는 요청)
-		OrderRequestDto orderRequestDto = OrderRequestDto.builder()
-			.items(Arrays.asList(
-				ItemQuantityRequestDto.builder().itemId(itemId).quantity(orderQuantity).build()
-			))
-			.address("테스트 주소")
-			.build();
+		OrderRequestDto orderRequestDto = new OrderRequestDto(
+			Arrays.asList(createItemQuantityRequestDto(itemId, orderQuantity)),
+			"테스트 주소"
+		);
 
 		// when & then
 		assertThatThrownBy(() -> orderAppService.createOrder(orderRequestDto))
@@ -171,11 +186,12 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 	@DisplayName("선물 주문 시 재고가 부족하면 예외가 발생한다.")
 	void createGiftOrder_ThrowsException_WhenStockIsInsufficient() {
 		// given
+		User sender = createUser(2);
 		Integer itemId = 1;
-		int orderQuantity = 1;  // 선물 수량은 1개
-		Item item = mock(Item.class);
+		Item item = createItem(itemId, "재고 부족 선물", 10000, 0);  // 재고가 0개
+
+		when(securityService.getLoggedInUser()).thenReturn(sender);
 		when(itemService.getItemById(itemId)).thenReturn(item);
-		when(item.getQuantity()).thenReturn(0);  // 재고가 0개
 
 		GiftRequestDto giftRequestDto = createGiftRequestDto(itemId, 3);  // 선물 받는 사람 ID: 3
 
@@ -215,24 +231,25 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 			.build();
 	}
 
-	private OrderRequestDto createOrderRequestDto(String address, List<ItemQuantityRequestDto> items) {
-		return OrderRequestDto.builder()
-			.items(items)
-			.address(address)
+	private OrderItem createOrderItem(Integer id, Order order, Item item, int quantity, int itemPrice) {
+		return OrderItem.builder()
+			.id(id)
+			.order(order)
+			.item(item)
+			.quantity(quantity)
+			.itemPrice(itemPrice)
 			.build();
+	}
+
+	private OrderRequestDto createOrderRequestDto(String address, List<ItemQuantityRequestDto> items) {
+		return new OrderRequestDto(items, address);
 	}
 
 	private ItemQuantityRequestDto createItemQuantityRequestDto(Integer itemId, int quantity) {
-		return ItemQuantityRequestDto.builder()
-			.itemId(itemId)
-			.quantity(quantity)
-			.build();
+		return new ItemQuantityRequestDto(itemId, quantity);
 	}
 
 	private GiftRequestDto createGiftRequestDto(Integer itemId, Integer receiverId) {
-		return GiftRequestDto.builder()
-			.itemId(itemId)
-			.receiverId(receiverId)
-			.build();
+		return new GiftRequestDto(itemId, receiverId);
 	}
 }
