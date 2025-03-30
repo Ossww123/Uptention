@@ -17,6 +17,7 @@ public enum ErrorCode {
 	AUTH_FAILED_LOGIN(HttpStatus.UNAUTHORIZED, "AUTH_004", "아이디, 비밀번호가 일치하지 않습니다."),
 	AUTH_DUPLICATE_EMPLOYEE_NUMBER(HttpStatus.CONFLICT, "AUTH_005", "사번이 이미 사용 중입니다."),
 	AUTH_DUPLICATE_USERNAME(HttpStatus.CONFLICT, "AUTH_006", "아이디가 이미 사용중입니다."),
+	AUTH_BAD_REQUEST_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_007", "현재 비밀번호가 일치하지 않습니다."),
 
 	// 아이템 관련 에러
 	ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "ITEM_001", "상품이 존재하지 않습니다."),
@@ -66,8 +67,6 @@ public enum ErrorCode {
 
 	// 대시보드 관련 에러
 	INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "DASHBOARD_001", "종료 시간이 시작 시간보다 이전입니다.");
-
-
 
 	// http 상태 코드
 	private final HttpStatus status;

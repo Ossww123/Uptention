@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
+import com.otoki.uptention.application.user.dto.request.UpdatePasswordRequestDto;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
@@ -177,6 +178,22 @@ public class UserAppServiceImpl implements UserAppService {
 
 		User user = userService.getUserById(userId);
 		user.setStatus(false);
+	}
+
+	// 비밀번호 변경 메서드
+	@Override
+	@Transactional
+	public void updatePassword(Integer userId, UpdatePasswordRequestDto updatePasswordRequestDto) {
+		User loggedInUser = securityService.getLoggedInUser();
+
+		if (!loggedInUser.getId().equals(userId)) {
+			throw new CustomException(ErrorCode.FORBIDDEN_USER);
+		}
+
+		if (!passwordEncoder.matches(updatePasswordRequestDto.getCurrentPassword(), loggedInUser.getPassword())) {
+			throw new CustomException(ErrorCode.AUTH_BAD_REQUEST_PASSWORD);
+		}
+		loggedInUser.setPassword(passwordEncoder.encode(updatePasswordRequestDto.getNewPassword()));
 	}
 
 	private UserResponseDto mapToDto(User user) {
