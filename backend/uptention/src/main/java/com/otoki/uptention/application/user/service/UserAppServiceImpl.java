@@ -103,7 +103,8 @@ public class UserAppServiceImpl implements UserAppService {
 
 	@Override
 	public UserResponseDto getUser(Integer userId) {
-		User user = userService.getUserById(userId);
+		User user = userService.getUserByIdAndCompany(userId,
+			securityService.getLoggedInUser().getCompany()); // 로그인 한 유저와 같은 회사의 회원만 조회 가능함.
 
 		return UserResponseDto.builder()
 			.username(user.getUsername())
