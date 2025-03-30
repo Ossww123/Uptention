@@ -101,7 +101,7 @@ public class UserAppServiceImpl implements UserAppService {
 			.build();
 	}
 
-	// 포인트 조회회
+	// 포인트 조회
 	@Override
 	public PointResponseDto getUserPoints(Integer userId) {
 
@@ -113,5 +113,6 @@ public class UserAppServiceImpl implements UserAppService {
 
 		return PointResponseDto.builder()
 			.point(userService.getUserById(userId).getPoint())
+			.build();
 	}
 }

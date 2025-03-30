@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,6 +42,7 @@ public class UserController implements UserApiDoc {
 
 	// 유저 포인트 조회
 	@GetMapping("/{userId}/point")
-	public PointResponseDto getUserPoint(@PathVariable Integer userId) {
-		return userAppService.getUserPoints(userId);
+	public ResponseEntity<PointResponseDto> getUserPoint(@PathVariable Integer userId) {
+		return ResponseEntity.ok(userAppService.getUserPoints(userId));
+	}
 }
