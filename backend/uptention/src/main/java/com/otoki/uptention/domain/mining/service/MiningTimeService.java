@@ -11,4 +11,5 @@ public interface MiningTimeService {
 	void saveMiningTime(MiningTime miningTime);
 	MiningTime findMiningTime(User user);
 	int updateEndTimeForUnfinishedMining(LocalDateTime endTime);
+	int calculatePoint(LocalDateTime inspectionTime);
 }
