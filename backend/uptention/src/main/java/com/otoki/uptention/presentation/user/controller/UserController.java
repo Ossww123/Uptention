@@ -52,6 +52,7 @@ public class UserController implements UserApiDoc {
 		return ResponseEntity.ok(response);
 	}
 
+	// 유저 삭제
 	@DeleteMapping("/{userId}")
 	public ResponseEntity<String> deleteUser(@PathVariable Integer userId) {
 		userAppService.removeUser(userId);
