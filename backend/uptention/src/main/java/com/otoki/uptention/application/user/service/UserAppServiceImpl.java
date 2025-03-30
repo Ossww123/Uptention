@@ -164,6 +164,21 @@ public class UserAppServiceImpl implements UserAppService {
 			.build();
 	}
 
+	// 회원 삭제 메서드
+	@Override
+	@Transactional
+	public void removeUser(Integer userId) {
+		User loggedInUser = securityService.getLoggedInUser();
+
+		// 요청한 자신도 아니고, 관리자도 아니라면 예외 발생
+		if (!loggedInUser.getId().equals(userId) && !loggedInUser.getRole().equals(UserRole.ROLE_ADMIN)) {
+			throw new CustomException(ErrorCode.FORBIDDEN_USER);
+		}
+
+		User user = userService.getUserById(userId);
+		user.setStatus(false);
+	}
+
 	private UserResponseDto mapToDto(User user) {
 		return UserResponseDto.builder()
 			.userId(user.getId())
