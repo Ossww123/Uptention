@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class UserCursorResponseDto {
-	@Schema(description = "상품 목록")
+	@Schema(description = "유저 목록")
 	private List<UserResponseDto> users;
 
 	@Schema(description = "다음 페이지 존재 여부", example = "true")
