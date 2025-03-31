@@ -49,7 +49,7 @@ export const apiRequest = async (endpoint, options = {}) => {
     
     // 토큰이 있으면 Authorization 헤더 추가
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers['Authorization'] = `${token}`;
     }
     
     const config = {
