@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.otoki.uptention.auth.dto.CustomUserDetails;
 import com.otoki.uptention.auth.dto.LoginRequestDto;
 import com.otoki.uptention.auth.service.CustomAuthenticationToken;
-import com.otoki.uptention.auth.service.TokenAppService;
+import com.otoki.uptention.auth.service.TokenService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
@@ -29,12 +29,12 @@ import jakarta.servlet.http.HttpServletResponse;
 public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 	private final AuthenticationManager authenticationManager;
-	private final TokenAppService tokenAppService;
+	private final TokenService tokenService;
 
-	public LoginFilter(AuthenticationManager authenticationManager, TokenAppService tokenAppService) {
+	public LoginFilter(AuthenticationManager authenticationManager, TokenService tokenService) {
 		super(authenticationManager);
 		this.authenticationManager = authenticationManager;
-		this.tokenAppService = tokenAppService;
+		this.tokenService = tokenService;
 	}
 
 	@Override
@@ -65,7 +65,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 		GrantedAuthority auth = iterator.next();
 		String role = auth.getAuthority();
 
-		tokenAppService.issueToken(response, userId, role);
+		tokenService.issueToken(response, userId, role);
 
 		// 응답 본문에 JSON 메시지 작성
 		response.setContentType("application/json;charset=UTF-8");

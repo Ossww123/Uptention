@@ -15,6 +15,7 @@ import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
+import com.otoki.uptention.auth.service.TokenService;
 import com.otoki.uptention.domain.company.entity.Company;
 import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.User;
@@ -25,6 +26,7 @@ import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 import com.otoki.uptention.global.service.ImageUploadService;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -36,6 +38,7 @@ public class UserAppServiceImpl implements UserAppService {
 	private final SecurityService securityService;
 	private final ImageUploadService imageUploadService;
 	private final PasswordEncoder passwordEncoder;
+	private	final TokenService tokenService;
 
 	// 일반 멤버 회원가입
 	@Override
@@ -116,7 +119,7 @@ public class UserAppServiceImpl implements UserAppService {
 
 		User loggedInUser = securityService.getLoggedInUser();
 
-		if (loggedInUser.getId().equals(userId)) {
+		if (!loggedInUser.getId().equals(userId)) {
 			throw new CustomException(ErrorCode.FORBIDDEN_USER);
 		}
 
@@ -194,6 +197,25 @@ public class UserAppServiceImpl implements UserAppService {
 			throw new CustomException(ErrorCode.AUTH_BAD_REQUEST_PASSWORD);
 		}
 		loggedInUser.setPassword(passwordEncoder.encode(updatePasswordRequestDto.getNewPassword()));
+	}
+
+	@Override
+	@Transactional
+	public void connectWallet(HttpServletResponse response, Integer userId, String wallet) {
+		User loggedInUser = securityService.getLoggedInUser();
+
+		// 권한 확인
+		if (!loggedInUser.getId().equals(userId)) {
+			throw new CustomException(ErrorCode.FORBIDDEN_USER);
+		}
+
+		loggedInUser.setRole(UserRole.ROLE_MEMBER);
+
+		// 지갑 연동
+		loggedInUser.setWallet(wallet);
+
+		// accessToken 재발급
+		tokenService.issueToken(response, userId, loggedInUser.getRole().name());
 	}
 
 	private UserResponseDto mapToDto(User user) {

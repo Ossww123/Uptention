@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class TokenAppServiceImpl implements TokenAppService {
+public class TokenServiceImpl implements TokenService {
 	private final JWTUtil jwtUtil;
 
 	// AccessToken 발급
