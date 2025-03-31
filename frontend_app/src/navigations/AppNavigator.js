@@ -34,6 +34,15 @@ const AppNavigator = () => {
         // 1초 지연 (스플래시 화면 표시 목적)
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
+        // 테스트를 위한 상태 초기화 코드 추가
+        // 테스트를 위한 상태 초기화 코드 추가
+        // 테스트를 위한 상태 초기화 코드 추가
+        // 테스트를 위한 상태 초기화 코드 추가
+        // 테스트를 위한 상태 초기화 코드 추가
+        await AsyncStorage.setItem(AUTH_STATUS_KEY, "false");
+        await AsyncStorage.setItem(SCREEN_TIME_PERMISSION_KEY, "false");
+        await AsyncStorage.setItem(WALLET_CONNECTED_KEY, "false");
+
         // AsyncStorage에서 로그인, 권한, 지갑 연결 상태 확인
         const authStatus = await AsyncStorage.getItem(AUTH_STATUS_KEY);
         const screenTimeStatus = await AsyncStorage.getItem(
