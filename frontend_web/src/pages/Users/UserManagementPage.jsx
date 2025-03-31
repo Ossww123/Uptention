@@ -1,8 +1,8 @@
 // src/pages/Users/UserManagementPage.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './UserManagementPage.css';
-import axios from 'axios'; // axios 사용, 필요시 설치: npm install axios
 
 const UserManagementPage = () => {
   // 상태 관리
@@ -12,28 +12,61 @@ const UserManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [hasMore, setHasMore] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
+  const [sortOption, setSortOption] = useState('REGISTER_DATE_DESC'); // 기본 정렬: 가입일 내림차순
+  const [userRole, setUserRole] = useState(''); // 기본값: 모든 역할
   
   // Refs
   const observer = useRef();
   const navigate = useNavigate();
 
-  // API에서 사용자 데이터 가져오기 (useCallback으로 감싸기)
+  // API 기본 URL
+  const API_BASE_URL = 'https://j12d211.p.ssafy.io';
+
+  // API에서 사용자 데이터 가져오기
   const fetchUsers = useCallback(async (isSearch = false) => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await axios.get('/api/users', {
-        params: {
-          keyword: searchTerm,
-          cursor: isSearch ? null : nextCursor,
-          size: 10
-        }
+      // 토큰 가져오기
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      const params = {
+        size: 20,
+        sort: sortOption
+      };
+      
+      // searchTerm이 있을 때만 keyword 파라미터 추가
+      if (searchTerm && searchTerm.trim() !== '') {
+        params.keyword = searchTerm;
+      }
+      
+      // userRole이 있을 때만 userRole 파라미터 추가
+      if (userRole && userRole.trim() !== '') {
+        params.userRole = userRole;
+      }
+      
+      // nextCursor가 있고 isSearch가 false일 때만 cursor 파라미터 추가
+      if (nextCursor && !isSearch) {
+        params.cursor = nextCursor;
+      }
+
+      console.log('요청 파라미터:', params);
+      console.log('요청 토큰:', token);
+      
+      const response = await axios.get(`${API_BASE_URL}/api/users`, {
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json'
+        },
+        params: params
       });
       
       const data = response.data;
       
-      // 응답 형식에 따라 조정 (API 응답에는 hasMore 정보와 nextCursor가 포함되어 있어야 함)
       if (isSearch) {
         setUsers(data.users || []);
       } else {
@@ -41,23 +74,43 @@ const UserManagementPage = () => {
       }
       
       setNextCursor(data.nextCursor);
-      setHasMore(data.hasMore);
+      setHasMore(data.hasNextPage);
     } catch (err) {
-      setError('사용자 정보를 불러오는 데 실패했습니다.');
       console.error('API 에러:', err);
+      
+      if (err.response) {
+        console.error('오류 응답 데이터:', err.response.data);
+        const { status, data } = err.response;
+        
+        if (status === 401) {
+          setError('인증이 만료되었습니다. 다시 로그인해주세요.');
+          // 로그인 페이지로 리다이렉트
+          setTimeout(() => navigate('/login'), 2000);
+        } else if (status === 400) {
+          setError(data.message || '잘못된 요청입니다.');
+        } else if (status === 500) {
+          setError(data.message || '서버 오류가 발생했습니다.');
+        } else {
+          setError('사용자 정보를 불러오는 데 실패했습니다.');
+        }
+      } else if (err.request) {
+        setError('서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.');
+      } else {
+        setError(err.message || '사용자 정보를 불러오는 데 실패했습니다.');
+      }
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, nextCursor]); // 종속성에 searchTerm과 nextCursor 추가
+  }, [searchTerm, nextCursor, sortOption, userRole, navigate]);
 
-  // 무한 스크롤을 위한 추가 데이터 로드 (useCallback으로 감싸기)
+  // 무한 스크롤을 위한 추가 데이터 로드
   const fetchMoreUsers = useCallback(() => {
     if (!loading && hasMore) {
       fetchUsers();
     }
-  }, [loading, hasMore, fetchUsers]); // fetchUsers도 종속성에 추가
+  }, [loading, hasMore, fetchUsers]);
 
-  // 마지막 요소 ref callback (종속성 배열 업데이트)
+  // 마지막 요소 ref callback
   const lastUserElementRef = useCallback(node => {
     if (loading) return;
     if (observer.current) observer.current.disconnect();
@@ -69,12 +122,15 @@ const UserManagementPage = () => {
     });
     
     if (node) observer.current.observe(node);
-  }, [loading, hasMore, fetchMoreUsers]); // fetchMoreUsers 추가
+  }, [loading, hasMore, fetchMoreUsers]);
 
-  // 초기 사용자 데이터 로드 (종속성 배열 업데이트)
+  // 초기 사용자 데이터 로드
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]); // fetchUsers 추가
+    setUsers([]);
+    setNextCursor(null);
+    setHasMore(true);
+    fetchUsers(true);
+  }, [fetchUsers, sortOption, userRole]);
 
   // 검색어 변경 핸들러
   const handleSearchChange = (e) => {
@@ -90,20 +146,45 @@ const UserManagementPage = () => {
     fetchUsers(true);
   };
 
+  // 정렬 옵션 변경 핸들러
+  const handleSortChange = (e) => {
+    setSortOption(e.target.value);
+  };
+
+  // 역할 필터 변경 핸들러
+  const handleRoleChange = (e) => {
+    setUserRole(e.target.value);
+  };
+
   // 사용자 삭제 핸들러
   const handleDeleteUser = async (userId) => {
     if (window.confirm('정말로 이 회원을 삭제하시겠습니까?')) {
       try {
-        await axios.delete(`/api/users/${userId}`);
+        // 토큰 가져오기
+        const token = localStorage.getItem('auth-token');
+        if (!token) {
+          throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        }
+
+        await axios.delete(`${API_BASE_URL}/api/users/${userId}`, {
+          headers: {
+            'Authorization': `${token}`
+          }
+        });
         
         // UI에서 사용자 제거
-        setUsers(users.filter(user => user.employeeNumber !== userId));
+        setUsers(users.filter(user => user.userId !== userId));
         
         // 성공 메시지 표시
         alert('회원이 성공적으로 삭제되었습니다.');
       } catch (err) {
-        alert('회원 삭제에 실패했습니다.');
         console.error('회원 삭제 오류:', err);
+        
+        if (err.response) {
+          alert(`회원 삭제에 실패했습니다: ${err.response.data.message || '알 수 없는 오류'}`);
+        } else {
+          alert('회원 삭제에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
       }
     }
   };
@@ -122,20 +203,68 @@ const UserManagementPage = () => {
     return `${year}. ${month}. ${day}`;
   };
 
+  // 역할 표시 함수
+  const formatRole = (role) => {
+    switch (role) {
+      case 'ROLE_ADMIN':
+        return '관리자';
+      case 'ROLE_MEMBER':
+        return '회원';
+      case 'ROLE_TEMP_MEMBER':
+        return '회원(지갑 미연동)';
+      default:
+        return role;
+    }
+  };
+
   return (
     <div className="user-management">
-      {/* 상단 검색바 영역 */}
-      <div className="search-bar">
-        <form onSubmit={handleSearch}>
-          <input
-            type="text"
-            placeholder="회원 검색"
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className="search-input"
-          />
-          <button type="submit" className="search-button">검색</button>
-        </form>
+      {/* 상단 필터 및 검색 영역 */}
+      <div className="filters-container">
+        {/* 정렬 옵션 선택 */}
+        <div className="filter-group">
+          <label htmlFor="sortOption">정렬: </label>
+          <select
+            id="sortOption"
+            value={sortOption}
+            onChange={handleSortChange}
+            className="filter-select"
+          >
+            <option value="NAMES_ASC">이름 내림차순</option>
+            <option value="REGISTER_DATE_ASC">가입날짜 오름차순</option>
+            <option value="REGISTER_DATE_DESC">가입날짜 내림차순</option>
+          </select>
+        </div>
+        
+        {/* 역할 필터 */}
+        <div className="filter-group">
+          <label htmlFor="userRole">역할: </label>
+          <select
+            id="userRole"
+            value={userRole}
+            onChange={handleRoleChange}
+            className="filter-select"
+          >
+            <option value="">전체</option>
+            <option value="ROLE_ADMIN">관리자</option>
+            <option value="ROLE_MEMBER">회원</option>
+            <option value="ROLE_TEMP_MEMBER">회원(지갑 미연동)</option>
+          </select>
+        </div>
+        
+        {/* 검색바 */}
+        <div className="search-bar">
+          <form onSubmit={handleSearch}>
+            <input
+              type="text"
+              placeholder="회원 검색"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="search-input"
+            />
+            <button type="submit" className="search-button">검색</button>
+          </form>
+        </div>
       </div>
       
       {/* 회원 목록 영역 - 흰색 카드 */}
@@ -157,9 +286,11 @@ const UserManagementPage = () => {
           <table className="user-table">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>사원번호</th>
                 <th>회원아이디</th>
                 <th>이름</th>
+                <th>역할</th>
                 <th>가입날짜</th>
                 <th>회원삭제</th>
               </tr>
@@ -167,17 +298,20 @@ const UserManagementPage = () => {
             <tbody>
               {users.map((user, index) => (
                 <tr 
-                  key={user.employeeNumber} 
+                  key={user.userId} 
                   ref={index === users.length - 1 ? lastUserElementRef : null}
                 >
-                  <td>{user.employeeNumber}</td>
                   <td>{user.userId}</td>
+                  <td>{user.employeeNumber}</td>
                   <td>{user.username}</td>
+                  <td>{user.name}</td>
+                  <td><span className={`role-badge role-${user.role.toLowerCase()}`}>{formatRole(user.role)}</span></td>
                   <td>{formatDate(user.createdAt)}</td>
                   <td>
                     <button 
                       className="delete-button"
-                      onClick={() => handleDeleteUser(user.employeeNumber)}
+                      onClick={() => handleDeleteUser(user.userId)}
+                      disabled={user.role === 'ROLE_ADMIN'} // 관리자는 삭제 불가
                     >
                       삭제하기
                     </button>

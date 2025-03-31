@@ -1,3 +1,4 @@
+// src/pages/Users/UserCreatePage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './UserCreatePage.css';
@@ -62,7 +63,18 @@ const UserCreatePage = () => {
     
     try {
       // API 호출
-      const response = await axios.get(`${BASE_URL}/api/join/check-username?username=${formData.username}`);
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      const response = await axios.get(`${BASE_URL}/api/join/check-username?username=${formData.username}`, {
+        headers: {
+          'Authorization': `${token}`
+        }
+      });
+
+      console.log(response)
       
       // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsIdAvailable(true);
@@ -70,7 +82,7 @@ const UserCreatePage = () => {
         ...prev,
         username: ''
       }));
-      alert(response.data); // "사용 가능한 아이디입니다."
+      alert('사용 가능한 아이디입니다.');
     } catch (error) {
       setIsIdAvailable(false);
       
@@ -116,15 +128,26 @@ const UserCreatePage = () => {
     
     try {
       // API 호출
-      const response = await axios.get(`${BASE_URL}/api/join/check-employee-number?employeeNumber=${formData.employeeNumber}`);
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      const response = await axios.get(`${BASE_URL}/api/join/check-employee-number?employeeNumber=${formData.employeeNumber}`, {
+        headers: {
+          'Authorization': `${token}`
+        }
+      });
       
+      console.log(response)
+
       // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsEmpNumAvailable(true);
       setErrors(prev => ({
         ...prev,
         employeeNumber: ''
       }));
-      alert(response.data); // "사용 가능한 사번입니다."
+      alert('사용 가능한 사번입니다.');
     } catch (error) {
       setIsEmpNumAvailable(false);
       
@@ -219,39 +242,59 @@ const UserCreatePage = () => {
       // 필요없는 confirmPassword 제거
       const { confirmPassword, ...dataToSubmit } = formData;
       
+      // 토큰 가져오기
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
       // API 호출
-      const response = await axios.post(`${BASE_URL}/api/join`, dataToSubmit);
+      const response = await axios.post(`${BASE_URL}/api/join`, dataToSubmit, {
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log(response)
       
       // 성공 응답 처리
-      alert(response); 
+      alert('회원가입 성공');
       navigate('/admin/users');
     } catch (error) {
       console.error('회원 등록 중 오류 발생:', error);
       
-      // 중복 아이디 에러 처리 (409)
-      if (error.response && error.response.status === 409) {
-        if (error.response.data.code === 'AUTH_005') {
-          setErrors(prev => ({
-            ...prev,
-            employeeNumber: error.response.data.message || '사번이 이미 사용 중입니다.'
-          }));
-          setIsEmpNumAvailable(false);
-        } else if (error.response.data.code === 'AUTH_006') {
-          setErrors(prev => ({
-            ...prev,
-            username: error.response.data.message || '아이디가 이미 사용 중입니다.'
-          }));
-          setIsIdAvailable(false);
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        // 400 오류: 잘못된 요청
+        if (status === 400) {
+          alert(data.message || '입력 정보를 확인해주세요.');
+        } 
+        // 409 오류: 중복된 아이디 또는 사번
+        else if (status === 409) {
+          if (data.code === 'AUTH_006') {
+            setErrors(prev => ({
+              ...prev,
+              username: data.message || '아이디가 이미 사용중입니다.'
+            }));
+            setIsIdAvailable(false);
+          } else if (data.code === 'AUTH_005') {
+            setErrors(prev => ({
+              ...prev,
+              employeeNumber: data.message || '사번이 이미 사용중입니다.'
+            }));
+            setIsEmpNumAvailable(false);
+          } else {
+            alert(data.message || '회원 등록에 실패했습니다.');
+          }
         } else {
-          alert(error.response.data.message || '회원 등록에 실패했습니다.');
+          alert('회원 등록에 실패했습니다. 다시 시도해 주세요.');
         }
-      } 
-      // 잘못된 요청 에러 처리 (400)
-      else if (error.response && error.response.status === 400) {
-        alert(error.response.data.message || '입력 정보를 확인해주세요.');
-      } 
-      else {
-        alert('회원 등록에 실패했습니다. 다시 시도해 주세요.');
+      } else if (error.request) {
+        alert('서버 응답이 없습니다. 네트워크 연결을 확인해주세요.');
+      } else {
+        alert(error.message || '회원 등록 중 오류가 발생했습니다.');
       }
     }
   };
