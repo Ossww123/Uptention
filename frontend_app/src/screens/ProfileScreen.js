@@ -9,6 +9,8 @@ import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import * as Linking from 'expo-linking';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { removeToken } from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
 if (typeof globalThis.Buffer === 'undefined') {
   globalThis.Buffer = Buffer;
@@ -43,6 +45,38 @@ const ProfileScreen = ({ navigation }) => {
   const [publicKey, setPublicKey] = useState(null);
   const [solBalance, setSolBalance] = useState(null);
   const [tokenBalance, setTokenBalance] = useState(null);
+
+  // 로그아웃 함수를 컴포넌트 내부로 이동
+  const handleLogout = async () => {
+    try {
+      // API 토큰 제거
+      await removeToken();
+      
+      // AsyncStorage의 auth 관련 데이터 제거
+      await AsyncStorage.removeItem('auth_status');
+      
+      // 로그아웃 후 앱 초기 화면(로그인 화면)으로 이동
+      Alert.alert(
+        "로그아웃",
+        "로그아웃 되었습니다.",
+        [
+          {
+            text: "확인",
+            onPress: () => {
+              // 앱을 처음부터 다시 실행하도록 앱 상태 재설정
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('로그아웃 오류:', error);
+      Alert.alert('오류', '로그아웃 중 문제가 발생했습니다.');
+    }
+  };
 
   // 복호화 함수
   const decryptPayload = useCallback((data, nonce, sharedSecret) => {
@@ -300,9 +334,12 @@ const ProfileScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.logoutButton}>
-            <Text style={styles.logoutText}>로그아웃</Text>
-          </TouchableOpacity>
+          <TouchableOpacity 
+  style={styles.logoutButton}
+  onPress={handleLogout}
+>
+  <Text style={styles.logoutText}>로그아웃</Text>
+</TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

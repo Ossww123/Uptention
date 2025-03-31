@@ -13,7 +13,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
-import ProductGridView from "../components/ProductGridView"; // 분리된 컴포넌트 임포트
+import ProductGridView from "../components/ProductGridView";
+import { get } from '../services/api';
 
 // 화면 너비 가져오기
 const { width } = Dimensions.get("window");
@@ -90,11 +91,11 @@ const StoreScreen = ({ navigation }) => {
   // 검색 텍스트를 저장하기 위한 ref
   const searchInputRef = useRef(null);
   const searchTimeoutRef = useRef(null);
-  const onEndReachedTimeoutRef = useRef(null); // 무한 스크롤 디바운싱용 ref 추가
+  const onEndReachedTimeoutRef = useRef(null);
   const isInitialLoadRef = useRef(true);
   const currentApiCallIdRef = useRef(null);
-  const requestTimerRef = useRef(null); // 더블 요청 방지 타이머
-  const loadRequestedRef = useRef(false); // 동기화된 로드 상태 관리
+  const requestTimerRef = useRef(null);
+  const loadRequestedRef = useRef(false);
 
   // 첫 마운트 시에만 실행되는 useEffect
   useEffect(() => {
@@ -187,24 +188,13 @@ const StoreScreen = ({ navigation }) => {
   // 장바구니 개수 가져오기
   const fetchCartItemCount = async () => {
     try {
-      const response = await fetch(
-        "https://j12d211.p.ssafy.io/api/shopping-cart/count",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            // 필요한 경우 인증 토큰 추가
-            // 'Authorization': `Bearer ${token}`
-          },
-        }
-      );
+      const { data, ok } = await get('/shopping-cart/count');
 
-      if (!response.ok) {
+      if (!ok) {
         throw new Error("장바구니 개수 조회에 실패했습니다.");
       }
 
-      const count = await response.json();
-      setCartItemCount(count);
+      setCartItemCount(data);
     } catch (error) {
       console.error("장바구니 개수 조회 오류:", error);
       // 오류 발생 시 기본값으로 0 설정 (UI에 아무것도 표시하지 않음)
@@ -258,35 +248,41 @@ const StoreScreen = ({ navigation }) => {
       }
 
       try {
-        // API 요청 URL 구성
-        let url = `https://j12d211.p.ssafy.io/api/items?size=8`;
+        // API 요청 파라미터 구성
+        let params = { size: 8 };
 
         // 카테고리 필터 추가
         if (selectedCategory) {
-          url += `&categoryId=${selectedCategory}`;
+          params.categoryId = selectedCategory;
         }
 
         // 검색어 필터 추가
         if (searchText.trim()) {
-          url += `&keyword=${encodeURIComponent(searchText.trim())}`;
+          params.keyword = searchText.trim();
         }
 
         // 정렬 옵션 추가
-        url += `&sort=${currentSort.id}`;
+        params.sort = currentSort.id;
 
         // 커서 추가 (다음 페이지 로드 시)
         if (nextCursor && !isRefresh) {
-          url += `&cursor=${nextCursor}`;
+          params.cursor = nextCursor;
         }
 
-        console.log(`API 요청 URL (${callId}):`, url);
+        // 쿼리 파라미터 URL로 인코딩
+        const queryParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+          queryParams.append(key, value);
+        });
 
-        // 실제 API 요청 (fetch 사용)
-        const response = await fetch(url);
-        const data = await response.json();
+        const endpoint = `/items?${queryParams.toString()}`;
+        console.log(`API 요청 URL (${callId}):`, endpoint);
+
+        // API 요청
+        const { data, ok } = await get(endpoint);
 
         // 에러 처리
-        if (data.code) {
+        if (!ok) {
           throw new Error(data.message || "상품을 불러오지 못했습니다.");
         }
 
@@ -510,7 +506,6 @@ const StoreScreen = ({ navigation }) => {
               keyExtractor={(item) => `category-${item.id}`}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={false}
-              
             />
           </View>
         )}

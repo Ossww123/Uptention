@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { get, post } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -108,21 +109,13 @@ const ProductDetailScreen = ({ route, navigation }) => {
   // 장바구니 개수 가져오기
   const fetchCartItemCount = async () => {
     try {
-      const response = await fetch('https://j12d211.p.ssafy.io/api/shopping-cart/count', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // 필요한 경우 인증 토큰 추가
-          // 'Authorization': `Bearer ${token}`
-        }
-      });
+      const { data, ok } = await get('/shopping-cart/count');
       
-      if (!response.ok) {
+      if (!ok) {
         throw new Error('장바구니 개수 조회에 실패했습니다.');
       }
       
-      const count = await response.json();
-      setCartItemCount(count);
+      setCartItemCount(data);
     } catch (error) {
       console.error('장바구니 개수 조회 오류:', error);
       // 오류 발생 시 기본값으로 0 설정 (UI에 아무것도 표시하지 않음)
@@ -131,53 +124,35 @@ const ProductDetailScreen = ({ route, navigation }) => {
   };
 
   const fetchProductDetails = async () => {
-    const abortController = new AbortController();
-    
     try {
       setLoading(true);
-      const response = await fetch(`https://j12d211.p.ssafy.io/api/items/${productId}`, {
-        signal: abortController.signal
-      });
-      const data = await response.json();
+      const { data, ok } = await get(`/items/${productId}`);
       
       // API에서 에러 응답이 왔는지 확인
-      if (data.code) {
+      if (!ok) {
         throw new Error(data.message || '상품 정보를 불러오지 못했습니다.');
       }
       
       setProduct(data);
       setError(null);
     } catch (error) {
-      if (error.name !== 'AbortError') {
-        console.error('상품 상세 정보 로드 에러:', error);
-        setError(error.message || '상품 정보를 불러오는데 문제가 발생했습니다.');
-      }
+      console.error('상품 상세 정보 로드 에러:', error);
+      setError(error.message || '상품 정보를 불러오는데 문제가 발생했습니다.');
     } finally {
       setLoading(false);
     }
-    
-    return () => {
-      abortController.abort(); // API 요청 취소
-    };
   };
 
   // 장바구니에 추가 기능
   const addToCart = async () => {
     try {
-      const response = await fetch('https://j12d211.p.ssafy.io/api/shopping-cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemId: productId,
-          quantity: 1
-        })
+      const { data, ok } = await post('/shopping-cart', {
+        itemId: productId,
+        quantity: 1
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '장바구니 추가에 실패했습니다.');
+      if (!ok) {
+        throw new Error(data.message || '장바구니 추가에 실패했습니다.');
       }
       
       setShowCartMessage(true);
