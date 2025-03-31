@@ -20,7 +20,7 @@ import { API_BASE_URL } from '../config/config';
 const { AppBlockerModule } = NativeModules;
 
 const HomeScreen = ({ navigation }) => {
-  const { tokenBalance, publicKey } = useWallet();
+  const { tokenBalance, publicKey, userId } = useWallet();
 
   // 앱제한 관련 권한 상태 관리
   const [hasAccessibilityPermission, setHasAccessibilityPermission] = useState(false);
@@ -93,7 +93,16 @@ const HomeScreen = ({ navigation }) => {
 
     try {
       // 집중 모드 시작 API 호출
-      const response = await axios.post(`${API_BASE_URL}/api/focus`);
+      const response = await axios.post(
+        `${API_BASE_URL}/api/mining-time/focus/4`,
+        null,  // 요청 본문이 필요없으므로 null로 변경
+        {
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       
       if (response.status === 200) {
         console.log('집중 모드 시작 API 호출 성공');
@@ -113,6 +122,12 @@ const HomeScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('집중 모드 시작 API 호출 실패:', error);
+      console.error('에러 상세 정보:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
       Alert.alert(
         '오류 발생',
         '집중 모드를 시작할 수 없습니다. 다시 시도해주세요.',

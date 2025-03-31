@@ -12,6 +12,7 @@ import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useWallet } from '../contexts/WalletContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 if (typeof globalThis.Buffer === 'undefined') {
   globalThis.Buffer = Buffer;
@@ -51,6 +52,7 @@ const ProfileScreen = ({ navigation }) => {
   const [connecting, setConnecting] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
   const [userInfo, setUserInfo] = useState(null);
+  const [showDeleteButton, setShowDeleteButton] = useState(false);
 
   // 복호화 함수
   const decryptPayload = useCallback((data, nonce, sharedSecret) => {
@@ -243,6 +245,88 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  const handleImageUpload = async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 1,
+        selectionLimit: 1,
+        includeBase64: false,
+      });
+
+      if (result.didCancel) {
+        return;
+      }
+
+      if (result.errorCode) {
+        Alert.alert('오류', '이미지를 선택하는 중 오류가 발생했습니다.');
+        return;
+      }
+
+      const selectedImage = result.assets[0];
+      
+      // 이미지 파일로 FormData 생성
+      const formData = new FormData();
+      formData.append('profileImage', {
+        uri: selectedImage.uri,
+        type: selectedImage.type,
+        name: selectedImage.fileName || 'profile.jpg',
+      });
+
+      // 프로필 이미지 업로드 API 호출
+      const response = await axios.put(
+        `${API_BASE_URL}/api/users/4/profiles`,
+        formData,
+        {
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        Alert.alert('성공', '프로필 이미지가 업데이트되었습니다.');
+        fetchUserInfo(); // 프로필 정보 새로고침
+      }
+    } catch (error) {
+      console.error('이미지 업로드 오류:', error);
+      Alert.alert('오류', '이미지 업로드에 실패했습니다.');
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    try {
+      const response = await axios.delete(
+        `${API_BASE_URL}/api/users/4/profiles`,
+        {
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+          }
+        }
+      );
+
+      if (response.status === 200) {
+        Alert.alert('성공', '프로필 이미지가 삭제되었습니다.');
+        setShowDeleteButton(false);
+        fetchUserInfo(); // 프로필 정보 새로고침
+      }
+    } catch (error) {
+      console.error('이미지 삭제 오류:', error);
+      Alert.alert('오류', '이미지 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleImagePress = () => {
+    handleImageUpload();  // 항상 갤러리 열기
+  };
+
+  const handleLongPress = () => {
+    if (userInfo?.profileImage) {
+      setShowDeleteButton(!showDeleteButton);  // X 버튼 토글
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -264,20 +348,38 @@ const ProfileScreen = ({ navigation }) => {
 
           {/* 프로필 섹션 */}
           <View style={styles.profileSection}>
-            <TouchableOpacity style={styles.editButton}>
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={handleImagePress}
+            >
               <Ionicons name="pencil" size={15} color="black" />
             </TouchableOpacity>
             <View style={styles.profileInfo}>
-              <View style={styles.profileImageContainer}>
+              <TouchableOpacity 
+                style={styles.profileImageContainer}
+                onPress={handleImagePress}
+                onLongPress={handleLongPress}
+                delayLongPress={500}
+              >
                 {userInfo?.profileImage ? (
-                  <Image 
-                    source={{ uri: userInfo.profileImage }} 
-                    style={styles.profileImage}
-                  />
+                  <>
+                    <Image 
+                      source={{ uri: userInfo.profileImage }} 
+                      style={styles.profileImage}
+                    />
+                    {showDeleteButton && (
+                      <TouchableOpacity 
+                        style={styles.deleteButton}
+                        onPress={handleDeleteImage}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    )}
+                  </>
                 ) : (
                   <View style={styles.profileImage} />
                 )}
-              </View>
+              </TouchableOpacity>
               <View style={styles.infoContainer}>
                 <View style={styles.textContainer}>
                   <View style={styles.profileDetails}>
@@ -390,6 +492,10 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   profileImageContainer: {
+    position: 'relative',
+    width: 100,
+    height: 100,
+    overflow: 'visible',
     marginRight: 20,
   },
   profileImage: {
@@ -528,6 +634,14 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#4CAF50',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 2,
   },
 });
 

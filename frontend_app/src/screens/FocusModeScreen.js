@@ -67,9 +67,6 @@ const FocusModeScreen = ({ navigation }) => {
   useEffect(() => {
     const initialize = async () => {
       try {
-        // 포커스 모드 시작 API 호출
-        await axios.post(`${API_BASE_URL}/api/focus`);
-        
         // 앱 차단 활성화 및 타이머 시작
         await AppBlockerModule.setAppBlockingEnabled(true);
         startTimer();
@@ -107,7 +104,16 @@ const FocusModeScreen = ({ navigation }) => {
       const finalPoints = Math.floor(finalSeconds / 60);
       
       // 포커스 모드 종료 API 호출
-      await axios.patch(`${API_BASE_URL}/api/focus`);
+      await axios.patch(
+        `${API_BASE_URL}/api/mining-time/focus/4`,
+        null,
+        {
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
       console.log('포커스 모드 종료 API 호출 성공');
       
       stopTimer();
