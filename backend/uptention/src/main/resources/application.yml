@@ -42,3 +42,9 @@ aws:
   s3:
     bucket: uptention
     cloudfront-domain: ddnwvg9t77g5o.cloudfront.net
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
