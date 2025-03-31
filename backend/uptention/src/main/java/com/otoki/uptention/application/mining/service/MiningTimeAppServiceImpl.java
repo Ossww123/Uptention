@@ -44,12 +44,15 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	@Transactional
 	@Override
 	public void focusModeOn(Integer userId) {
-		// security 구현 후, 코드 수정 필요
-		User findUser = userService.getUserById(userId);
+		User loggedInUser = securityService.getLoggedInUser();
+
+		if (loggedInUser.getId().equals(userId)) {
+			throw new CustomException(ErrorCode.FORBIDDEN_USER);
+		}
 
 		// 1. 채굴시간 생성
 		MiningTime miningTime = MiningTime.builder()
-			.user(findUser)
+			.user(loggedInUser)
 			.startTime(LocalDateTime.now())
 			.endTime(null)
 			.build();
@@ -61,10 +64,14 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	@Transactional
 	@Override
 	public void focusModeOff(Integer userId) {
-		User findUser = userService.getUserById(userId);
+		User loggedInUser = securityService.getLoggedInUser();
+
+		if (loggedInUser.getId().equals(userId)) {
+			throw new CustomException(ErrorCode.FORBIDDEN_USER);
+		}
 
 		// 1. 채굴 시간 조회
-		MiningTime findMiningTime = miningTimeService.findMiningTime(findUser);
+		MiningTime findMiningTime = miningTimeService.findMiningTime(loggedInUser);
 
 		// 2. 현재 시간 및 기준 시간 지정
 		LocalDateTime now = LocalDateTime.now();
