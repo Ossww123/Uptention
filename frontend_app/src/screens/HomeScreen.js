@@ -21,6 +21,7 @@ const { AppBlockerModule } = NativeModules;
 
 const HomeScreen = ({ navigation }) => {
   const { tokenBalance, publicKey, userId } = useWallet();
+  const [userInfo, setUserInfo] = useState(null);
 
   // 앱제한 관련 권한 상태 관리
   const [hasAccessibilityPermission, setHasAccessibilityPermission] = useState(false);
@@ -205,19 +206,41 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  // 사용자 정보 조회 함수
+  const fetchUserInfo = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/users/4`, {
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+        }
+      });
+      
+      setUserInfo(response.data);
+    } catch (error) {
+      console.error('사용자 정보 조회 오류:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={{fontSize: 16, fontWeight: 'bold'}}>소속</Text>
+            <View style={styles.userInfoContainer}>
+              <Text style={{fontSize: 16, fontWeight: 'bold'}}>{userInfo?.employeeNumber || '-'}</Text>
+              <Text style={styles.nameText}>{userInfo?.name || '-'}</Text>
+            </View>
             <View style={styles.iconContainer}>
               <Ionicons name="medal-outline" size={20} />
               <Ionicons name="notifications-outline" size={20} />
             </View>
           </View>
           <View style={styles.subHeader}>
-            <Text style={styles.nameText}>홍길동</Text>
+            <Text></Text>
             <View style={styles.walletContainer}>
               <Text style={styles.walletWorkToken}>
                 {publicKey ? `${tokenBalance} ` : '연결 필요 '}
@@ -322,9 +345,17 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    height: 20,
+    height: 45,
     alignItems: 'center',
     marginTop: 50,
+  },
+  userInfoContainer: {
+    justifyContent: 'center',
+  },
+  userInfoText: {
+    fontSize: 14,
+    marginBottom: 5,
+    color: '#000',
   },
   iconContainer: {
     flexDirection: 'row',
@@ -335,8 +366,9 @@ const styles = StyleSheet.create({
   subHeader: {
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+    marginBottom: 20,
   },
   walletContainer: {
     flexDirection: 'row',
