@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { post, saveToken } from '../services/api';
 
 const LoginScreen = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
@@ -33,26 +34,21 @@ const LoginScreen = ({ onLoginSuccess }) => {
       setLoading(true);
 
       // API 호출
-      const response = await fetch('https://j12d211.p.ssafy.io/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          username, 
-          password, 
-          loginType: 'member' // 모바일 서비스는 항상 member 타입
-        }),
+      const { data, ok } = await post('/login', { 
+        username, 
+        password, 
+        loginType: 'member' // 모바일 서비스는 항상 member 타입
       });
       
       // 응답 처리
-      if (response.ok) {
+      if (ok) {
+        // 토큰 저장
+        await saveToken(data.token); // API 응답 구조에 따라 필드명 변경 가능
         // 로그인 성공
         onLoginSuccess();
       } else {
         // 에러 메시지 표시
-        const errorData = await response.json();
-        Alert.alert('로그인 실패', errorData.message || '아이디 또는 비밀번호가 올바르지 않습니다.');
+        Alert.alert('로그인 실패', data.message || '아이디 또는 비밀번호가 올바르지 않습니다.');
       }
     } catch (error) {
       console.error('Login error:', error);
