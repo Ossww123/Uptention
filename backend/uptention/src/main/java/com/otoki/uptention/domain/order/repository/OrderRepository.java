@@ -10,6 +10,14 @@ import com.otoki.uptention.domain.order.entity.Order;
 
 public interface OrderRepository extends JpaRepository<Order, Integer> {
 
+	@Query("SELECT o.address FROM Order o " +
+		"LEFT JOIN Gift g ON o.id = g.order.id " +
+		"WHERE o.user.id = :userId " +
+		"AND g.order.id IS NULL " +
+		"ORDER BY o.createdAt DESC " +
+		"LIMIT 1")
+	String findLatestDeliveryAddressByUserId(@Param("userId") Integer userId);
+
 	// 구매 주문 조회 (첫 페이지)
 	@Query("SELECT o FROM Order o " +
 		"WHERE o.user.id = :userId " +
