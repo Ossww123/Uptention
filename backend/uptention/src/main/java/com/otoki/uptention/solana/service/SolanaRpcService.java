@@ -193,6 +193,60 @@ public class SolanaRpcService {
 	}
 
 	/**
+	 * 특정 소유자의 토큰 계정 조회
+	 *
+	 * @param owner 소유자 지갑 주소
+	 * @param filter 필터 (예: 특정 민트로 필터링)
+	 * @param options 추가 옵션
+	 * @return 토큰 계정 정보
+	 */
+	@Retryable(value = {IOException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
+	public JsonNode getTokenAccountsByOwner(String owner, Object filter, Object options) throws IOException {
+		log.debug("토큰 계정 RPC 조회: 소유자={}", owner);
+
+		ObjectNode requestNode = objectMapper.createObjectNode();
+		requestNode.put("jsonrpc", "2.0");
+		requestNode.put("id", 1);
+		requestNode.put("method", "getTokenAccountsByOwner");
+
+		// 파라미터 배열 생성
+		requestNode.putArray("params")
+			.add(owner)
+			.add(objectMapper.valueToTree(filter))
+			.add(objectMapper.valueToTree(options));
+
+		String requestJson = objectMapper.writeValueAsString(requestNode);
+		log.debug("RPC 요청 JSON: {}", requestJson);
+
+		RequestBody body = RequestBody.create(
+			MediaType.parse("application/json"), requestJson);
+
+		Request request = new Request.Builder()
+			.url(solanaProperties.getRpcUrl())
+			.post(body)
+			.build();
+
+		log.info("토큰 계정 조회 HTTP 요청 실행");
+
+		try (Response response = httpClient.newCall(request).execute()) {
+			log.info("HTTP 응답 코드: {}", response.code());
+
+			if (!response.isSuccessful()) {
+				String errorMsg = "RPC 요청 실패: " + response.code();
+				log.error(errorMsg);
+				throw new IOException(errorMsg);
+			}
+
+			String responseBody = response.body().string();
+			log.debug("RPC 응답 본문: {}", responseBody);
+
+			JsonNode result = objectMapper.readTree(responseBody);
+			log.info("토큰 계정 조회 RPC 호출 완료");
+			return result;
+		}
+	}
+
+	/**
 	 * WebSocket 구독 메시지 생성
 	 *
 	 * @return 회사 지갑 주소에 대한 WebSocket 구독 메시지
