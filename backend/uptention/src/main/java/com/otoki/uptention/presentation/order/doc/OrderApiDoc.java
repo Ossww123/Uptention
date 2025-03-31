@@ -42,10 +42,7 @@ public interface OrderApiDoc {
 			responseCode = "200",
 			description = "주문 성공",
 			content = @Content(
-				schema = @Schema(implementation = String.class),
-				examples = {
-					@ExampleObject(value = "주문 처리 성공")
-				}
+				schema = @Schema(implementation = InitiateOrderResponseDto.class)
 			)
 		),
 		@ApiResponse(
@@ -93,10 +90,7 @@ public interface OrderApiDoc {
 			responseCode = "200",
 			description = "선물 주문 성공",
 			content = @Content(
-				schema = @Schema(implementation = String.class),
-				examples = {
-					@ExampleObject(value = "선물 처리 성공")
-				}
+				schema = @Schema(implementation = InitiateOrderResponseDto.class)
 			)
 		),
 		@ApiResponse(
