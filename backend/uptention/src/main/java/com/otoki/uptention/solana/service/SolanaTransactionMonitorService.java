@@ -247,17 +247,28 @@ public class SolanaTransactionMonitorService {
 			// Solana RPC를 통해 트랜잭션 세부 정보 조회
 			JsonNode transactionData = fetchTransactionDetails(signature);
 
-			if (transactionData == null || !isValidTransaction(transactionData)) {
-				log.debug("유효하지 않은 트랜잭션: {}", signature);
+			if (transactionData == null) {
+				log.warn("트랜잭션 세부 정보 조회 실패: {}", signature);
 				return;
 			}
+			log.info("트랜잭션 세부 정보 조회 성공: {}", signature);
+
+			// 2. 트랜잭션 유효성 검증
+			log.info("트랜잭션 유효성 검증 시도: {}", signature);
+			if (!isValidTransaction(transactionData)) {
+				log.warn("유효하지 않은 트랜잭션: {}", signature);
+				return;
+			}
+			log.info("트랜잭션 유효성 검증 성공: {}", signature);
 
 			// 메모 필드에서 주문 ID 추출
+			log.info("메모 필드 추출 시도: {}", signature);
 			String memo = extractMemoFromTransaction(transactionData);
 			if (memo == null || !memo.startsWith("ORDER_")) {
-				log.debug("주문 관련 메모가 없는 트랜잭션: {}", signature);
+				log.warn("주문 관련 메모가 없는 트랜잭션: {}", signature);
 				return;
 			}
+			log.info("메모 필드 추출 성공: {} ({})", signature, memo);
 
 			// 주문 ID 파싱
 			Integer orderId = parseOrderIdFromMemo(memo);
@@ -319,22 +330,22 @@ public class SolanaTransactionMonitorService {
 	 */
 	private JsonNode fetchTransactionDetails(String signature) {
 		try {
-			// SolanaRpcService를 주입받아 사용
+			log.info("트랜잭션 세부 정보 조회 시작: {}", signature);
+
 			if (solanaRpcService == null) {
 				log.error("SolanaRpcService가 주입되지 않았습니다.");
 				return null;
 			}
 
-			// 트랜잭션 서명을 이용해 트랜잭션 세부 정보 조회
+			log.info("SolanaRpcService.getTransaction 호출: {}", signature);
 			JsonNode transactionData = solanaRpcService.getTransaction(signature);
+			log.info("SolanaRpcService.getTransaction 호출 완료: {}", signature);
 
-			// 트랜잭션 데이터 유효성 간단 확인
 			if (transactionData == null) {
-				log.warn("트랜잭션 데이터를 가져오지 못했습니다: {}", signature);
+				log.warn("트랜잭션 데이터가 null입니다: {}", signature);
 				return null;
 			}
 
-			// 오류가 있는 경우 체크
 			if (transactionData.has("error")) {
 				log.warn("트랜잭션 조회 중 오류 발생: {} - {}",
 					signature,
@@ -342,13 +353,13 @@ public class SolanaTransactionMonitorService {
 				return null;
 			}
 
-			log.debug("트랜잭션 세부 정보 조회 성공: {}", signature);
+			log.info("트랜잭션 세부 정보 조회 성공: {}", signature);
 			return transactionData;
 		} catch (IOException e) {
-			log.error("트랜잭션 세부 정보 조회 실패: " + signature, e);
+			log.error("트랜잭션 세부 정보 조회 중 IOException 발생: {}", signature, e);
 			return null;
 		} catch (Exception e) {
-			log.error("트랜잭션 세부 정보 처리 중 예상치 못한 오류: " + signature, e);
+			log.error("트랜잭션 세부 정보 처리 중 예상치 못한 오류: {}", signature, e);
 			return null;
 		}
 	}

@@ -54,7 +54,7 @@ public class SolanaRpcService {
 	 */
 	@Retryable(value = {IOException.class}, maxAttempts = 3, backoff = @Backoff(delay = 1000))
 	public JsonNode getTransaction(String signature) throws IOException {
-		log.debug("트랜잭션 세부 정보 조회: {}", signature);
+		log.debug("트랜잭션 세부 정보 RPC 조회: {}", signature);
 
 		ObjectNode requestNode = objectMapper.createObjectNode();
 		requestNode.put("jsonrpc", "2.0");
@@ -69,6 +69,7 @@ public class SolanaRpcService {
 			.add(paramsObj);
 
 		String requestJson = objectMapper.writeValueAsString(requestNode);
+		log.debug("RPC 요청 JSON: {}", requestJson);
 
 		RequestBody body = RequestBody.create(
 			MediaType.parse("application/json"), requestJson);
@@ -78,13 +79,23 @@ public class SolanaRpcService {
 			.post(body)
 			.build();
 
+		log.info("HTTP 요청 실행: {}", solanaProperties.getRpcUrl());
+
 		try (Response response = httpClient.newCall(request).execute()) {
+			log.info("HTTP 응답 코드: {}", response.code());
+
 			if (!response.isSuccessful()) {
-				throw new IOException("RPC 요청 실패: " + response.code());
+				String errorMsg = "RPC 요청 실패: " + response.code();
+				log.error(errorMsg);
+				throw new IOException(errorMsg);
 			}
 
 			String responseBody = response.body().string();
-			return objectMapper.readTree(responseBody);
+			log.debug("RPC 응답 본문: {}", responseBody);
+
+			JsonNode result = objectMapper.readTree(responseBody);
+			log.info("트랜잭션 세부 정보 RPC 호출 완료: {}", signature);
+			return result;
 		}
 	}
 
