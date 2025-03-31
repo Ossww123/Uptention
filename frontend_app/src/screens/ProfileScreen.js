@@ -10,6 +10,8 @@ import bs58 from 'bs58';
 import * as Linking from 'expo-linking';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useWallet } from '../contexts/WalletContext';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
 
 if (typeof globalThis.Buffer === 'undefined') {
   globalThis.Buffer = Buffer;
@@ -48,6 +50,7 @@ const ProfileScreen = ({ navigation }) => {
   const [dappKeyPair] = useState(nacl.box.keyPair());
   const [connecting, setConnecting] = useState(false);
   const [walletAddress, setWalletAddress] = useState('');
+  const [userInfo, setUserInfo] = useState(null);
 
   // 복호화 함수
   const decryptPayload = useCallback((data, nonce, sharedSecret) => {
@@ -92,6 +95,26 @@ const ProfileScreen = ({ navigation }) => {
       console.error('잔액 조회 오류:', error);
       setSolBalance(null);
       setTokenBalance(null);
+    }
+  };
+
+  // 사용자 정보 조회 함수
+  const fetchUserInfo = async () => {
+    try {
+      // TODO: 로그인 구현 시 수정 필요
+      // - userId는 로그인한 사용자의 ID로 대체
+      // - Authorization 헤더의 토큰은 로그인 시 받은 JWT 토큰으로 대체
+      // - 예시: const { userId, token } = useAuth();
+      const response = await axios.get(`${API_BASE_URL}/api/users/4`, {
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+        }
+      });
+      
+      setUserInfo(response.data);
+    } catch (error) {
+      console.error('사용자 정보 조회 오류:', error);
+      Alert.alert('오류', '사용자 정보를 불러오는데 실패했습니다.');
     }
   };
 
@@ -166,6 +189,10 @@ const ProfileScreen = ({ navigation }) => {
       console.error('Error processing deeplink:', error);
     }
   }, [deepLink, decryptPayload, dappKeyPair.secretKey]);
+
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
 
   const handleConnectWallet = async () => {
     try {
@@ -242,19 +269,26 @@ const ProfileScreen = ({ navigation }) => {
             </TouchableOpacity>
             <View style={styles.profileInfo}>
               <View style={styles.profileImageContainer}>
-                <View style={styles.profileImage} />
+                {userInfo?.profileImage ? (
+                  <Image 
+                    source={{ uri: userInfo.profileImage }} 
+                    style={styles.profileImage}
+                  />
+                ) : (
+                  <View style={styles.profileImage} />
+                )}
               </View>
               <View style={styles.infoContainer}>
                 <View style={styles.textContainer}>
                   <View style={styles.profileDetails}>
-                    <Text style={styles.label}>소속:</Text>
+                    <Text style={styles.label}>사원번호:</Text>
                     <Text style={styles.label}>이름:</Text>
                     <Text style={styles.label}>아이디:</Text>
                   </View>
                   <View style={styles.profileValues}>
-                    <Text style={styles.value}>싸피</Text>
-                    <Text style={styles.value}>박준수</Text>
-                    <Text style={styles.value}>jjjjjuuuu</Text>
+                    <Text style={styles.value}>{userInfo?.employeeNumber || '-'}</Text>
+                    <Text style={styles.value}>{userInfo?.name || '-'}</Text>
+                    <Text style={styles.value}>{userInfo?.username || '-'}</Text>
                   </View>
                 </View>
               </View>
