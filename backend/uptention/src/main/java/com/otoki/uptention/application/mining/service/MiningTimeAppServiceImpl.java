@@ -81,6 +81,14 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		}
 
 		findMiningTime.updateEndTime(now);
+
+		LocalDateTime startTime = findMiningTime.getStartTime();
+		LocalDateTime endTime = findMiningTime.getEndTime();
+
+		long diffMinutes = Duration.between(startTime, endTime).toMinutes();
+
+		loggedInUser.setPoint((int)(loggedInUser.getPoint() + diffMinutes));
+
 		miningTimeService.saveMiningTime(findMiningTime);
 	}
 
