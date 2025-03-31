@@ -66,7 +66,10 @@ public enum ErrorCode {
 	FOCUS_MODE_INSPECTION(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_003", "포인트 정산 중입니다."),
 
 	// 대시보드 관련 에러
-	INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "DASHBOARD_001", "종료 시간이 시작 시간보다 이전입니다.");
+	INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "DASHBOARD_001", "종료 시간이 시작 시간보다 이전입니다."),
+
+	// 우수사원 관련 에러
+	TOP_VARIABLE_ERROR(HttpStatus.BAD_REQUEST, "RANK_001", "top 변수가 올바르지 않습니다.");
 
 	// http 상태 코드
 	private final HttpStatus status;
