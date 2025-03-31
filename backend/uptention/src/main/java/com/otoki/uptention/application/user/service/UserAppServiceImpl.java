@@ -116,7 +116,7 @@ public class UserAppServiceImpl implements UserAppService {
 
 		User loggedInUser = securityService.getLoggedInUser();
 
-		if (loggedInUser.getId().equals(userId)) {
+		if (!loggedInUser.getId().equals(userId)) {
 			throw new CustomException(ErrorCode.FORBIDDEN_USER);
 		}
 
