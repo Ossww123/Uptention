@@ -101,7 +101,7 @@ public class SolanaTestController {
 			cacheField.setAccessible(true);
 
 			Map<Integer, Order> pendingOrders =
-				(Map<Integer, Order>) cacheField.get(monitorService);
+				(Map<Integer, Order>)cacheField.get(monitorService);
 
 			// 보안을 위해 필요한 정보만 응답
 			List<Map<String, Object>> orderInfoList = pendingOrders.entrySet().stream()
@@ -120,14 +120,14 @@ public class SolanaTestController {
 		}
 	}
 
-	@PostMapping("/refresh-orders")
-	public ResponseEntity<?> refreshPendingOrders() {
-		try {
-			monitorService.refreshPendingOrders();
-			return ResponseEntity.ok("대기 중인 주문 목록 새로고침 완료");
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body("대기 주문 새로고침 실패: " + e.getMessage());
-		}
-	}
+	// @PostMapping("/refresh-orders")
+	// public ResponseEntity<?> refreshPendingOrders() {
+	// 	try {
+	// 		monitorService.refreshPendingOrders();
+	// 		return ResponseEntity.ok("대기 중인 주문 목록 새로고침 완료");
+	// 	} catch (Exception e) {
+	// 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+	// 			.body("대기 주문 새로고침 실패: " + e.getMessage());
+	// 	}
+	// }
 }
