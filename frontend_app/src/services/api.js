@@ -37,48 +37,58 @@ export const removeToken = async () => {
 
 // API 요청 함수
 export const apiRequest = async (endpoint, options = {}) => {
-  try {
-    const token = await getToken();
-    const url = `${BASE_URL}${endpoint}`;
-    
-    // 기본 헤더
-    const headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-    
-    // 토큰이 있으면 Authorization 헤더 추가
-    if (token) {
-      headers['Authorization'] = `${token}`;
+    try {
+      const token = await getToken();
+      const url = `${BASE_URL}${endpoint}`;
+      
+      // 기본 헤더
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+      
+      // 토큰이 있으면 Authorization 헤더 추가
+      if (token) {
+        headers['Authorization'] = `${token}`;
+      }
+      
+      const config = {
+        ...options,
+        headers,
+      };
+      
+      const response = await fetch(url, config);
+      
+      // 401 Unauthorized 상태 처리
+      if (response.status === 401) {
+        throw new Error('Unauthorized: Token may be invalid or expired');
+      }
+      
+      // JSON 응답이 아닌 경우를 위한 처리
+      const contentType = response.headers.get('content-type');
+      let data = null;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      }
+      
+      // 헤더 정보도 반환
+      const responseHeaders = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+      
+      return { 
+        data, 
+        status: response.status, 
+        ok: response.ok,
+        headers: responseHeaders
+      };
+    } catch (error) {
+      console.error('API request error:', error);
+      throw error;
     }
-    
-    const config = {
-      ...options,
-      headers,
-    };
-    
-    const response = await fetch(url, config);
-    
-    // 401 Unauthorized 상태 처리 (토큰 만료 또는 유효하지 않음)
-    if (response.status === 401) {
-      // 토큰 삭제하고 로그인 화면으로 리다이렉트 로직 추가 가능
-      // 여기서는 에러만 발생시킵니다
-      throw new Error('Unauthorized: Token may be invalid or expired');
-    }
-    
-    // JSON 응답이 아닌 경우를 위한 처리
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      const data = await response.json();
-      return { data, status: response.status, ok: response.ok };
-    } else {
-      return { status: response.status, ok: response.ok };
-    }
-  } catch (error) {
-    console.error('API request error:', error);
-    throw error;
-  }
-};
+  };
 
 // 편의를 위한 HTTP 메서드별 함수
 export const get = (endpoint, options = {}) => {

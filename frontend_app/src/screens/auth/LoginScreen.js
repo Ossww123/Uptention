@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { post, saveToken } from '../services/api';
+import { post, saveToken } from '../../services/api';
 
 const LoginScreen = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
@@ -29,23 +29,33 @@ const LoginScreen = ({ onLoginSuccess }) => {
       Alert.alert('오류', '아이디와 비밀번호를 입력해주세요.');
       return;
     }
-
+  
     try {
       setLoading(true);
-
+  
       // API 호출
-      const { data, ok } = await post('/login', { 
+      const { data, ok, headers } = await post('/login', { 
         username, 
         password, 
-        loginType: 'member' // 모바일 서비스는 항상 member 타입
+        loginType: 'member'
       });
+      
+      console.log('응답 헤더:', headers);
       
       // 응답 처리
       if (ok) {
-        // 토큰 저장
-        await saveToken(data.token); // API 응답 구조에 따라 필드명 변경 가능
-        // 로그인 성공
-        onLoginSuccess();
+        // 헤더에서 토큰 추출
+        const authToken = headers['authorization'] || headers['Authorization'];
+        console.log('인증 토큰:', authToken);
+        
+        if (authToken) {
+          // "Bearer " 접두사 제거
+          const token = authToken.replace('Bearer ', '');
+          await saveToken(token);
+          onLoginSuccess();
+        } else {
+          Alert.alert('로그인 실패', '인증 토큰을 받지 못했습니다.');
+        }
       } else {
         // 에러 메시지 표시
         Alert.alert('로그인 실패', data.message || '아이디 또는 비밀번호가 올바르지 않습니다.');
