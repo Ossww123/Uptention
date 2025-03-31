@@ -1,170 +1,282 @@
 /* src/pages/Products/ProductManagementPage.css */
 .product-management {
-    padding: 20px;
-    background-color: #f1f1f1;
-    min-height: 100vh;
-  }
-  
-  .content-card {
-    background-color: white;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-  
-  .page-title {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #333;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .search-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .search-form {
-    display: flex;
-    align-items: center;
-    max-width: 500px;
-    width: 100%;
-  }
-  
-  .search-input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-  
-  .search-input:focus {
-    border-color: #FF8C00;
-    outline: none;
-  }
-  
-  .search-button {
-    padding: 10px 20px;
-    background-color: #FF8C00;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    font-size: 14px;
-    margin-left: 10px;
-    cursor: pointer;
-  }
-  
-  .search-button:hover {
-    background-color: #e67e00;
-  }
-  
-  .add-button {
-    padding: 10px 20px;
-    background-color: #FF8C00;
-    border: none;
-    border-radius: 4px;
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  
-  .add-button:hover {
-    background-color: #e67e00;
-  }
-  
-  .products-table-container {
-    overflow-x: auto;
-    margin-bottom: 20px;
-  }
-  
-  .products-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-  }
-  
-  .products-table th,
-  .products-table td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .products-table th {
-    background-color: #f8f8f8;
-    font-weight: 500;
-    color: #333;
-  }
-  
-  .products-table tr:hover {
-    background-color: #f9f9f9;
-  }
-  
-  .action-buttons {
-    display: flex;
-    gap: 8px;
-  }
-  
-  .edit-button, .delete-button {
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    border: none;
-  }
-  
-  .edit-button {
-    background-color: #f1f1f1;
-    color: #555;
-  }
-  
-  .edit-button:hover {
-    background-color: #e5e5e5;
-  }
-  
-  .delete-button {
-    background-color: #ffebee;
-    color: #e53935;
-  }
-  
-  .delete-button:hover {
-    background-color: #ffe0e0;
-  }
-  
-  .pagination {
-    display: flex;
-    justify-content: center;
-    gap: 5px;
-    margin-top: 20px;
-  }
-  
-  .pagination-button {
-    width: 36px;
-    height: 36px;
-    border: 1px solid #ddd;
-    background-color: white;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .pagination-button:hover {
-    border-color: #FF8C00;
-    color: #FF8C00;
-  }
-  
-  .pagination-button.active {
-    background-color: #FF8C00;
-    color: white;
-    border-color: #FF8C00;
-  }
+  padding: 20px;
+  background-color: #f1f1f1;
+  min-height: 100vh;
+}
+
+.content-card {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.search-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.search-form {
+  display: flex;
+  align-items: center;
+  max-width: 500px;
+  width: 100%;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  border-color: #FF8C00;
+  outline: none;
+}
+
+.search-button {
+  padding: 10px 20px;
+  background-color: #FF8C00;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+.search-button:hover {
+  background-color: #e67e00;
+}
+
+.add-button {
+  padding: 10px 20px;
+  background-color: #FF8C00;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.add-button:hover {
+  background-color: #e67e00;
+}
+
+/* 내부 스크롤을 위해 테이블 컨테이너 스타일 추가/수정 */
+.products-table-container {
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+/* 스크롤 가능한 고정 높이 컨테이너 스타일 */
+.scrollable-container {
+  height: 500px; /* 원하는 높이로 조정 */
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  /* 스크롤바 스타일링 (웹킷 브라우저용) */
+  scrollbar-width: thin;
+  scrollbar-color: #ddd #f5f5f5;
+}
+
+/* 웹킷 브라우저를 위한 스크롤바 스타일링 */
+.scrollable-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-container::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.scrollable-container::-webkit-scrollbar-thumb {
+  background-color: #ddd;
+  border-radius: 4px;
+}
+
+.scrollable-container::-webkit-scrollbar-thumb:hover {
+  background-color: #ccc;
+}
+
+.products-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+/* 스크롤 시 헤더가 고정되도록 설정 */
+.products-table thead {
+  position: sticky;
+  top: 0;
+  background-color: #f8f8f8;
+  z-index: 10;
+}
+
+.products-table th,
+.products-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.products-table th {
+  background-color: #f8f8f8;
+  font-weight: 500;
+  color: #333;
+}
+
+.products-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-button, .delete-button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+}
+
+.edit-button {
+  background-color: #f1f1f1;
+  color: #555;
+}
+
+.edit-button:hover {
+  background-color: #e5e5e5;
+}
+
+.delete-button {
+  background-color: #ffebee;
+  color: #e53935;
+}
+
+.delete-button:hover {
+  background-color: #ffe0e0;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 20px;
+}
+
+.pagination-button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ddd;
+  background-color: white;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pagination-button:hover {
+  border-color: #FF8C00;
+  color: #FF8C00;
+}
+
+.pagination-button.active {
+  background-color: #FF8C00;
+  color: white;
+  border-color: #FF8C00;
+}
+
+/* 로딩 스피너 스타일 */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #FF8C00;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 에러 메시지 스타일 */
+.error-message {
+  padding: 15px;
+  background-color: #ffebee;
+  color: #e53935;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* 필터 컨테이너 스타일 */
+.filters-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  background-color: white;
+  padding: 15px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+/* 카테고리 라벨 스타일 */
+.filter-group label {
+  font-weight: 500;
+  color: #555;
+}
+
+/* 데이터가 없을 때 스타일 */
+.no-products {
+  text-align: center;
+  color: #888;
+  padding: 30px;
+  font-style: italic;
+}
