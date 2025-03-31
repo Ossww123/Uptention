@@ -59,6 +59,8 @@ dependencies {
 
     // health-check 를 위한 의존성 추가
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Prometheus metrics를 위한 Micrometer Registry
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 
     // lombok 관련
     compileOnly 'org.projectlombok:lombok'
