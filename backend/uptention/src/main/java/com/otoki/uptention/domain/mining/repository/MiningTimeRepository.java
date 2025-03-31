@@ -30,8 +30,9 @@ public interface MiningTimeRepository extends JpaRepository<MiningTime, Integer>
 		"    WHERE start_time > DATE_SUB(:inspectionTime, INTERVAL 1 DAY) " +
 		"    GROUP BY user_id " +
 		") m ON u.id = m.user_id " +
-		"SET u.point = u.point + m.additional_points", nativeQuery = true)
+		"SET u.point = u.point + LEAST(m.additional_points, 8)", nativeQuery = true)
 	int updateUserPoints(@Param("inspectionTime") LocalDateTime specifiedTime);
+
 
 	@Query("SELECT m FROM MiningTime m WHERE m.user.id = :userId AND m.startTime >= :startTime AND m.endTime <= :endTime")
 	List<MiningTime> findMiningTimesByUserIdAndTimeRange(
