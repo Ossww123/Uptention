@@ -10,9 +10,11 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderItemResponseDto;
+import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
@@ -40,6 +42,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	private final ItemService itemService;
 	private final UserService userService;
 	private final GiftService giftService;
+	private final SecurityService securityService;
 
 	/**
 	 * 일반 주문 생성
@@ -102,7 +105,6 @@ public class OrderAppServiceImpl implements OrderAppService {
 			.paymentAmount(totalPaymentAmount)
 			.build();
 	}
-
 
 	/**
 	 * 선물 받은 사용자의 배송지 정보 등록
