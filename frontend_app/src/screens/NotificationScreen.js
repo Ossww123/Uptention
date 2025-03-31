@@ -11,6 +11,7 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { get, patch, del } from '../services/api';
 
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
@@ -114,8 +115,10 @@ const NotificationScreen = ({ navigation }) => {
       setLoading(true);
       
       // 실제 API 호출 대신 더미 데이터를 사용
-      // const response = await fetch('https://j12d211.p.ssafy.io/api/notifications');
-      // const data = await response.json();
+      // const { data, ok } = await get('/notifications');
+      // if (!ok) {
+      //   throw new Error('알림 목록을 불러오는데 실패했습니다.');
+      // }
       
       // 더미 데이터
       const dummyData = generateDummyNotifications();
@@ -135,12 +138,10 @@ const NotificationScreen = ({ navigation }) => {
   const markAsRead = async (notificationId) => {
     try {
       // 실제 API 호출
-      // await fetch(`https://j12d211.p.ssafy.io/api/notifications/${notificationId}`, {
-      //   method: 'PATCH',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   }
-      // });
+      // const { ok, data } = await patch(`/notifications/${notificationId}`, { read: true });
+      // if (!ok) {
+      //   throw new Error(data.message || '알림 읽음 처리에 실패했습니다.');
+      // }
       
       // 더미 데이터 업데이트
       setNotifications(prevNotifications => 
@@ -172,9 +173,10 @@ const NotificationScreen = ({ navigation }) => {
             text: '삭제',
             onPress: async () => {
               // 실제 API 호출
-              // await fetch(`https://j12d211.p.ssafy.io/api/notifications/${notificationId}`, {
-              //   method: 'DELETE'
-              // });
+              // const { ok, data } = await del(`/notifications/${notificationId}`);
+              // if (!ok) {
+              //   throw new Error(data.message || '알림 삭제에 실패했습니다.');
+              // }
               
               // 더미 데이터 업데이트
               setNotifications(prevNotifications => 
