@@ -10,6 +10,7 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.DeliveryAddressResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderItemResponseDto;
@@ -105,6 +106,16 @@ public class OrderAppServiceImpl implements OrderAppService {
 		order.updateAddress(deliveryInfoRequestDto.getAddress());
 		return orderService.saveOrder(order);
 	}
+
+	@Override
+	public DeliveryAddressResponseDto getLatestDeliveryAddress() {
+		Integer userId = securityService.getLoggedInUser().getId();
+		String latestAddress = orderService.getLatestDeliveryAddress(userId);
+		return DeliveryAddressResponseDto.builder()
+			.address(latestAddress)
+			.build();
+	}
+
 
 	/**
 	 * OrderItem을 생성하고 저장하는 공통 로직
