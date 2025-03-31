@@ -8,12 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.gift.dto.response.GiftHistoryCursorResponseDto;
 import com.otoki.uptention.application.gift.dto.response.GiftItemResponseDto;
+import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.order.dto.GiftItemDto;
 import com.otoki.uptention.domain.order.enums.GiftStatus;
 import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.user.entity.User;
-import com.otoki.uptention.domain.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,12 +23,11 @@ import lombok.RequiredArgsConstructor;
 public class GiftAppServiceImpl implements GiftAppService {
 
 	private final GiftService giftService;
-	private final UserService userService;
+	private final SecurityService securityService;
 
 	@Override
 	public GiftHistoryCursorResponseDto getGiftHistory(String cursorStr, int size, GiftStatus type) {
-		// 현재 로그인한 사용자 (임시로 ID 2 사용)
-		User user = userService.getUserById(2);
+		User user = securityService.getLoggedInUser();
 
 		// 선물 목록 조회
 		List<GiftItemDto> giftItems = fetchGiftsByStatus(user.getId(), cursorStr, size + 1, type);

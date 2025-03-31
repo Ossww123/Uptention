@@ -7,13 +7,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.cart.dto.request.CartQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
+import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.cart.dto.CartItemDto;
 import com.otoki.uptention.domain.cart.entity.Cart;
 import com.otoki.uptention.domain.cart.service.CartService;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.user.entity.User;
-import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
@@ -29,7 +29,7 @@ public class CartAppServiceImpl implements CartAppService {
 
 	private final CartService cartService;
 	private final ItemService itemService;
-	private final UserService userService;
+	private final SecurityService securityService;
 
 	/**
 	 * 장바구니에 상품 추가
@@ -40,8 +40,7 @@ public class CartAppServiceImpl implements CartAppService {
 	public Cart addToCart(ItemQuantityRequestDto itemQuantityRequestDto) {
 		validateQuantity(itemQuantityRequestDto.getQuantity());
 
-		// security 구현 후, 코드 수정 필요
-		User user = userService.getUserById(1);
+		User user = securityService.getLoggedInUser();
 		Item item = itemService.getItemById(itemQuantityRequestDto.getItemId());
 
 		// 기존 장바구니 항목 확인 및 처리
@@ -56,8 +55,7 @@ public class CartAppServiceImpl implements CartAppService {
 
 	@Override
 	public List<CartItemDto> getUserCartItems() {
-		// security 구현 후, 코드 수정 필요
-		User user = userService.getUserById(1);
+		User user = securityService.getLoggedInUser();
 
 		return cartService.getCartItemsByUserId(user.getId());
 	}
@@ -89,7 +87,7 @@ public class CartAppServiceImpl implements CartAppService {
 	 */
 	@Override
 	public int countCartItems() {
-		User user = userService.getUserById(1);
+		User user = securityService.getLoggedInUser();
 		return cartService.countCartItemsByUserId(user.getId());
 	}
 
