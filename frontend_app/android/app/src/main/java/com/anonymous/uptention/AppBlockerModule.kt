@@ -23,12 +23,23 @@ class AppBlockerModule(reactContext: ReactApplicationContext) : ReactContextBase
 
     @ReactMethod
     fun setAppBlockingEnabled(enabled: Boolean, promise: Promise) {
-        val prefs = reactApplicationContext.getSharedPreferences(
-            AppBlockerService.PREFS_NAME, 
-            Context.MODE_PRIVATE
-        )
-        prefs.edit().putBoolean(AppBlockerService.KEY_BLOCKING_ENABLED, enabled).apply()
-        promise.resolve(true)
+        try {
+            if (enabled) {
+                // 앱 차단 상태 초기화
+                appBlockerManager.initializeAppBlockingStates()
+                // 시스템 앱들의 초기 상태 설정
+                appBlockerManager.getSystemApps()
+            }
+            isAppBlockingEnabled = enabled
+            val prefs = reactApplicationContext.getSharedPreferences(
+                AppBlockerService.PREFS_NAME, 
+                Context.MODE_PRIVATE
+            )
+            prefs.edit().putBoolean(AppBlockerService.KEY_BLOCKING_ENABLED, enabled).apply()
+            promise.resolve(true)
+        } catch (e: Exception) {
+            promise.reject("APP_BLOCKING_ERROR", "앱 차단 상태 변경 중 오류 발생", e)
+        }
     }
 
     @ReactMethod
