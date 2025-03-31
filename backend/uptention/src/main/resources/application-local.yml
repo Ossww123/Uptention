@@ -20,9 +20,8 @@ spring:
 
 solana:
   network: ${SOLANA_NETWORK}
-  rpc:
-    url: ${SOLANA_RPC_URL}
-  websocket:
-    url: ${SOLANA_WEBSOCKET_URL}
-  company:
-    wallet: ${SOLANA_COMPANY_WALLET}
+  rpc-url: ${SOLANA_RPC_URL}
+  websocket-url: ${SOLANA_WEBSOCKET_URL}
+  company-wallet: ${SOLANA_COMPANY_WALLET}
+  token-program-id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+  work-token-mint: ${WORK_TOKEN_MINT}

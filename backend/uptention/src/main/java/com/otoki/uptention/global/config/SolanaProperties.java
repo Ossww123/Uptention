@@ -16,4 +16,8 @@ public class SolanaProperties {
 	private String websocketUrl;
 	private String companyWallet;
 
+	// SPL 토큰 관련 속성
+	private String tokenProgramId;
+	private String workTokenMint;
+
 }
