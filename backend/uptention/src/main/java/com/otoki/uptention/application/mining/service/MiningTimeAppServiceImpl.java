@@ -26,7 +26,6 @@ import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
 import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.domain.mining.service.MiningTimeService;
 import com.otoki.uptention.domain.user.entity.User;
-import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
@@ -38,7 +37,6 @@ import lombok.RequiredArgsConstructor;
 public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 	private final MiningTimeService miningTimeService;
-	private final UserService userService;
 	private final SecurityService securityService;
 
 	@Transactional
@@ -46,7 +44,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	public void focusModeOn(Integer userId) {
 		User loggedInUser = securityService.getLoggedInUser();
 
-		if (loggedInUser.getId().equals(userId)) {
+		if (!loggedInUser.getId().equals(userId)) {
 			throw new CustomException(ErrorCode.FORBIDDEN_USER);
 		}
 
@@ -66,7 +64,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	public void focusModeOff(Integer userId) {
 		User loggedInUser = securityService.getLoggedInUser();
 
-		if (loggedInUser.getId().equals(userId)) {
+		if (!loggedInUser.getId().equals(userId)) {
 			throw new CustomException(ErrorCode.FORBIDDEN_USER);
 		}
 
@@ -106,7 +104,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	public List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime) {
 		User loggedInUser = securityService.getLoggedInUser();
 
-		if (loggedInUser.getId().equals(userId)) {
+		if (!loggedInUser.getId().equals(userId)) {
 			throw new CustomException(ErrorCode.FORBIDDEN_USER);
 		}
 
