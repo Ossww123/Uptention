@@ -32,6 +32,7 @@ public class SolanaTransactionMonitorService {
 	private final SolanaProperties solanaProperties;
 	private final SolanaRpcService solanaRpcService;
 	private final ObjectMapper objectMapper;
+	private final PaymentProcessService paymentProcessService;
 
 	private RpcClient rpcClient;
 	private SubscriptionWebSocketClient webSocketClient;
@@ -375,6 +376,14 @@ public class SolanaTransactionMonitorService {
 								if (memoData.startsWith("ORDER_")) {
 									String orderId = memoData.substring(6);
 									log.info("주문 ID 감지: {}", orderId);
+
+									// 결제 처리 서비스 호출
+									boolean processed = paymentProcessService.processPaymentSuccess(orderId, signature);
+									if (processed) {
+										log.info("주문 ID({})의 결제가 성공적으로 처리되었습니다.", orderId);
+									} else {
+										log.warn("주문 ID({})의 결제 처리에 실패했습니다.", orderId);
+									}
 								}
 							}
 						}
