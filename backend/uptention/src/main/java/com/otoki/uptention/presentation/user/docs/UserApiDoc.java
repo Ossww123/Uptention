@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Tag(name = "유저 API", description = "유저 API")
 public interface UserApiDoc {
@@ -363,4 +364,53 @@ public interface UserApiDoc {
 		@PathVariable Integer userId,
 		@RequestParam LocalDateTime startTime,
 		@RequestParam LocalDateTime endTime);
+
+	@Operation(summary = "지갑 연결", description = "사용자의 지갑을 연동한다. 로그인한 사용자의 권한을 확인 후, 지갑 연동 및 accessToken 재발급을 수행한다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "지갑 연동 성공",
+			content = @Content(
+				schema = @Schema(implementation = String.class),
+				examples = {
+					@ExampleObject(value = "\"지갑 연동 성공\"")
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "403",
+			description = "권한 없음",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"code\":\"FORBIDDEN_USER\",\"message\":\"접근 권한이 없습니다.\",\"path\":\"/api/users/{userId}/wallet\"}"
+					)
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "500",
+			description = "서버 내부 오류",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						value = "{\"code\":\"INTERNAL_SERVER_ERROR\",\"message\":\"서버 내부 오류가 발생했습니다.\",\"path\":\"/api/users/{userId}/wallet\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<String> connectWallet(
+		@Parameter(description = "응답", required = true)
+		HttpServletResponse response,
+
+		@Parameter(description = "사용자 ID", required = true)
+		@PathVariable Integer userId,
+
+		@Parameter(description = "연동할 지갑 주소", required = true)
+		@RequestParam String wallet
+	);
+
 }

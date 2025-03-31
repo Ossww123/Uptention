@@ -20,7 +20,7 @@ import org.springframework.web.cors.CorsConfiguration;
 
 import com.otoki.uptention.auth.filter.JWTFilter;
 import com.otoki.uptention.auth.filter.LoginFilter;
-import com.otoki.uptention.auth.service.TokenAppService;
+import com.otoki.uptention.auth.service.TokenService;
 import com.otoki.uptention.global.exception.FilterExceptionHandler;
 
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 	private final JWTFilter jwtFilter;
-	private final TokenAppService tokenAppService;
+	private final TokenService tokenService;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -45,7 +45,7 @@ public class SecurityConfig {
 
 	@Bean
 	public LoginFilter loginFilter(AuthenticationManager authenticationManager) {
-		LoginFilter loginFilter = new LoginFilter(authenticationManager, tokenAppService);
+		LoginFilter loginFilter = new LoginFilter(authenticationManager, tokenService);
 		loginFilter.setFilterProcessesUrl("/api/login");
 		return loginFilter;
 	}
