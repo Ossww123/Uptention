@@ -10,11 +10,9 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
-import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderItemResponseDto;
-import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
@@ -42,7 +40,6 @@ public class OrderAppServiceImpl implements OrderAppService {
 	private final ItemService itemService;
 	private final UserService userService;
 	private final GiftService giftService;
-	private final SecurityService securityService;
 
 	/**
 	 * 일반 주문 생성
@@ -150,8 +147,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	@Override
 	public OrderHistoryCursorResponseDto getOrderHistory(String cursorStr, int size, OrderHistoryType type) {
 
-		// 현재 사용자 조회 (임시로 ID 2 사용)
-		User user = userService.getUserById(2);
+		User user = securityService.getLoggedInUser();
 
 		// 커서 처리 및 주문 목록 조회
 		List<Order> orders = fetchOrdersByType(user.getId(), cursorStr, size + 1, type);

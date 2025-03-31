@@ -16,5 +16,6 @@ public class MiningTimeScheduler {
 	@Scheduled(cron = "0 30 14 * * *", zone = "UTC")
 	public void updateNullEndTime() {
 		miningTimeAppService.bulkUpdateMiningTime();
+		miningTimeAppService.bulkUpdateUserPoints();
 	}
 }
