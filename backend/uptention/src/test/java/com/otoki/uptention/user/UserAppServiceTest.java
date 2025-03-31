@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
+import com.otoki.uptention.application.user.dto.request.UpdatePasswordRequestDto;
 import com.otoki.uptention.application.user.service.UserAppServiceImpl;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.company.entity.Company;
@@ -172,5 +173,46 @@ public class UserAppServiceTest {
 		assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN_USER);
 		// userService.getUserById는 호출되지 않아야 함
 		verify(userService, never()).getUserById(anyInt());
+	}
+
+	@Test
+	@DisplayName("updatePassword: 정상 케이스 - 현재 비밀번호가 일치하면 비밀번호 업데이트 성공")
+	void updatePassword_whenCurrentPasswordMatches_thenUpdatesPassword() {
+		// given
+		UpdatePasswordRequestDto dto = new UpdatePasswordRequestDto("currentPass", "newPass");
+
+		User loggedInUser = User.builder()
+			.id(1)
+			.password("encodedCurrentPass")
+			.build();
+		when(securityService.getLoggedInUser()).thenReturn(loggedInUser);
+		when(passwordEncoder.matches("currentPass", "encodedCurrentPass")).thenReturn(true);
+		when(passwordEncoder.encode("newPass")).thenReturn("encodedNewPass");
+
+		// when
+		userAppService.updatePassword(1, dto);
+
+		// then: 비밀번호가 새 값으로 업데이트 되었는지 검증
+		assertThat(loggedInUser.getPassword()).isEqualTo("encodedNewPass");
+	}
+
+	@Test
+	@DisplayName("updatePassword: 비정상 케이스 - 현재 비밀번호 불일치로 인한 예외 발생")
+	void updatePassword_whenCurrentPasswordDoesNotMatch_thenThrowException() {
+		// given
+		UpdatePasswordRequestDto dto = new UpdatePasswordRequestDto("currentPass", "newPass");
+
+		User loggedInUser = User.builder()
+			.id(1)
+			.password("encodedCurrentPass")
+			.build();
+		when(securityService.getLoggedInUser()).thenReturn(loggedInUser);
+		when(passwordEncoder.matches("currentPass", "encodedCurrentPass")).thenReturn(false);
+
+		// when & then: 현재 비밀번호 불일치 시 CustomException 발생
+		CustomException exception = assertThrows(CustomException.class, () -> {
+			userAppService.updatePassword(1, dto);
+		});
+		assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.AUTH_BAD_REQUEST_PASSWORD);
 	}
 }

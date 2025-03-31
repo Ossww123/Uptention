@@ -2,10 +2,12 @@ package com.otoki.uptention.presentation.user.docs;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
+import com.otoki.uptention.application.user.dto.request.UpdatePasswordRequestDto;
 import com.otoki.uptention.auth.dto.LoginRequestDto;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,6 +18,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @Tag(name = "인증, 인가 관련 API", description = "인증, 인가 관련 API")
 public interface AuthApiDoc {
@@ -170,4 +173,39 @@ public interface AuthApiDoc {
 		)
 	})
 	ResponseEntity<String> signIn(@RequestBody LoginRequestDto loginRequestDTO);
+
+	@Operation(summary = "비밀번호 변경", description = "사용자의 현재 비밀번호와 새 비밀번호를 받아 비밀번호를 변경합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "비밀번호 변경 성공",
+			content = @Content(
+				schema = @Schema(implementation = String.class),
+				examples = {
+					@ExampleObject(value = "\"비밀번호 변경 성공\"")
+				}
+			)
+		),
+		@ApiResponse(
+			responseCode = "400",
+			description = "현재 비밀번호 불일치 또는 잘못된 파라미터 전달",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "현재 비밀번호 불일치",
+						value = "{\"code\":\"AUTH_007\",\"message\":\"현재 비밀번호가 일치하지 않습니다.\",\"path\":\"/users/{userId}/password\"}"
+					),
+					@ExampleObject(
+						name = "잘못된 파라미터",
+						value = "{\"code\":\"X002\",\"message\":\"잘못된 파라미터가 전달되었습니다.\",\"path\":\"/users/{userId}/password\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<String> updateUserPassword(
+		@PathVariable Integer userId,
+		@RequestBody @Valid UpdatePasswordRequestDto updatePasswordRequestDto
+	);
 }

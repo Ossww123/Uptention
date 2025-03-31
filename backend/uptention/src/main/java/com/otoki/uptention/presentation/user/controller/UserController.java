@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,6 +25,7 @@ import com.otoki.uptention.domain.user.enums.UserRole;
 import com.otoki.uptention.domain.user.enums.UserSortType;
 import com.otoki.uptention.presentation.user.docs.UserApiDoc;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @RequestMapping("/api/users")
@@ -86,5 +88,12 @@ public class UserController implements UserApiDoc {
 		@RequestParam LocalDateTime startTime,
 		@RequestParam LocalDateTime endTime) {
 		return ResponseEntity.ok(miningTimeAppService.findAllMiningTimes(userId, startTime, endTime));
+	}
+
+	// 지갑 연결
+	@PostMapping("/{userId}/wallet")
+	public ResponseEntity<String> connectWallet(HttpServletResponse response, @PathVariable Integer userId, @RequestParam String wallet) {
+		userAppService.connectWallet(response, userId, wallet);
+		return ResponseEntity.ok("지갑 연동 성공");
 	}
 }

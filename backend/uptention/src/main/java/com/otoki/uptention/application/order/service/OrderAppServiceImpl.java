@@ -13,6 +13,7 @@ import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderItemResponseDto;
+import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
@@ -40,6 +41,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	private final ItemService itemService;
 	private final UserService userService;
 	private final GiftService giftService;
+	private final SecurityService securityService;
 
 	/**
 	 * 일반 주문 생성
@@ -47,8 +49,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	@Transactional
 	@Override
 	public Order createOrder(OrderRequestDto orderRequestDto) {
-		// security 구현 후, 코드 수정 필요
-		User user = userService.getUserById(1);
+		User user = securityService.getLoggedInUser();
 
 		// 1. Order 생성
 		Order order = Order.builder()
@@ -71,8 +72,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	@Transactional
 	@Override
 	public Order createGiftOrder(GiftRequestDto giftRequestDto) {
-		// security 구현 후, 코드 수정 필요
-		User sender = userService.getUserById(1);
+		User sender = securityService.getLoggedInUser();
 		User receiver = userService.getUserById(giftRequestDto.getReceiverId());
 
 		// 1. Order 생성 - 선물의 경우 주소 X
@@ -139,8 +139,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	@Override
 	public OrderHistoryCursorResponseDto getOrderHistory(String cursorStr, int size, OrderHistoryType type) {
 
-		// 현재 사용자 조회 (임시로 ID 2 사용)
-		User user = userService.getUserById(2);
+		User user = securityService.getLoggedInUser();
 
 		// 커서 처리 및 주문 목록 조회
 		List<Order> orders = fetchOrdersByType(user.getId(), cursorStr, size + 1, type);

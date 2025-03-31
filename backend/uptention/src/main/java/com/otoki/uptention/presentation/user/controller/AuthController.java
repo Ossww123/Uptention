@@ -2,16 +2,20 @@ package com.otoki.uptention.presentation.user.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.otoki.uptention.application.user.dto.request.JoinRequestDto;
+import com.otoki.uptention.application.user.dto.request.UpdatePasswordRequestDto;
 import com.otoki.uptention.application.user.service.UserAppService;
 import com.otoki.uptention.auth.dto.LoginRequestDto;
 import com.otoki.uptention.presentation.user.docs.AuthApiDoc;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -41,6 +45,15 @@ public class AuthController implements AuthApiDoc {
 		// 중복이면 userAppService 내부에서 예외 발생
 		userAppService.checkDuplicateEmployeeNumber(employeeNumber);
 		return ResponseEntity.ok("사용 가능한 사번입니다.");
+	}
+
+	// 비밀번호 변경 엔드포인트
+	@PatchMapping("/api/users/{userId}/password")
+	public ResponseEntity<String> updateUserPassword(@PathVariable Integer userId,
+		@RequestBody @Valid UpdatePasswordRequestDto updatePasswordRequestDto) {
+		userAppService.updatePassword(userId, updatePasswordRequestDto);
+
+		return ResponseEntity.ok("비밀번호 변경 성공");
 	}
 
 	// Swagger-ui 문서용 메서드, 동작하지 않습니다.
