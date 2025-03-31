@@ -1,15 +1,14 @@
 package com.otoki.uptention.solana.service;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.Base64;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
@@ -21,14 +20,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.otoki.uptention.domain.order.entity.Order;
-import com.otoki.uptention.domain.order.enums.OrderStatus;
-import com.otoki.uptention.domain.order.service.OrderService;
-import com.otoki.uptention.domain.orderitem.entity.OrderItem;
-import com.otoki.uptention.domain.orderitem.service.OrderItemService;
 import com.otoki.uptention.global.config.SolanaProperties;
-import com.otoki.uptention.global.exception.CustomException;
-import com.otoki.uptention.solana.event.PaymentCompletedEvent;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -42,29 +34,94 @@ public class SolanaTransactionMonitorService {
 
 	private final SolanaProperties solanaProperties;
 	private final SolanaRpcService solanaRpcService;
-	private final OrderService orderService;
-	private final OrderItemService orderItemService;
-	private final RabbitTemplate rabbitTemplate;
 	private final ObjectMapper objectMapper;
 
 	private WebSocketSession webSocketSession;
 	private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
-	// 대기 중인 주문을 메모리에 캐싱 (성능 최적화)
-	private final Map<Integer, Order> pendingOrdersCache = new ConcurrentHashMap<>();
 	// 이미 처리된 트랜잭션 서명을 추적 (중복 처리 방지)
 	private final List<String> processedSignatures = new CopyOnWriteArrayList<>();
+	// 회사 지갑의 토큰 계정 주소 저장 (토큰 타입별)
+	private final Map<String, String> tokenAccountMap = new ConcurrentHashMap<>();
 
 	@PostConstruct
 	public void init() {
+		log.info("Solana 트랜잭션 모니터링 서비스 초기화 중...");
+		log.info("네트워크: {}", solanaProperties.getNetwork());
+		log.info("RPC URL: {}", solanaProperties.getRpcUrl());
+		log.info("WebSocket URL: {}", solanaProperties.getWebsocketUrl());
+		log.info("회사 지갑 주소: {}", solanaProperties.getCompanyWallet());
+		log.info("토큰 프로그램 ID: {}", solanaProperties.getTokenProgramId());
+		log.info("워크 토큰 민트: {}", solanaProperties.getWorkTokenMint());
+
+		// 워크 토큰 민트 주소가 설정되어 있는지 확인
+		if (solanaProperties.getWorkTokenMint() == null || solanaProperties.getWorkTokenMint().isEmpty()) {
+			log.warn("워크 토큰 민트 주소가 설정되지 않았습니다. SPL 토큰 모니터링이 비활성화됩니다.");
+		}
+
 		connectWebSocket();
-		// 시작 시 대기 중인 주문을 메모리에 로드
-		refreshPendingOrders();
+
+		// 워크 토큰 민트가 설정된 경우에만 토큰 계정 검색
+		if (solanaProperties.getWorkTokenMint() != null && !solanaProperties.getWorkTokenMint().isEmpty()) {
+			findTokenAccounts();
+		}
 	}
 
 	@PreDestroy
 	public void cleanup() {
 		disconnectWebSocket();
+	}
+
+	/**
+	 * 회사 지갑이 소유한 토큰 계정 조회
+	 */
+	private void findTokenAccounts() {
+		try {
+			log.info("회사 지갑의 토큰 계정 조회 중...");
+
+			// 회사 지갑이 소유한 토큰 계정 조회
+			JsonNode response = solanaRpcService.getTokenAccountsByOwner(
+				solanaProperties.getCompanyWallet(),
+				Map.of("mint", solanaProperties.getWorkTokenMint()),
+				Map.of("encoding", "jsonParsed")
+			);
+
+			if (response == null) {
+				log.warn("토큰 계정 조회 결과가 null입니다");
+				return;
+			}
+
+			if (response.has("error")) {
+				log.warn("토큰 계정 조회 중 오류 발생: {}",
+					response.path("error").path("message").asText("알 수 없는 오류"));
+				return;
+			}
+
+			if (response.has("result") && response.get("result").has("value")) {
+				JsonNode accounts = response.get("result").get("value");
+
+				if (accounts.size() == 0) {
+					log.warn("회사 지갑({})에 워크 토큰({})의 토큰 계정이 없습니다.",
+						solanaProperties.getCompanyWallet(),
+						solanaProperties.getWorkTokenMint());
+					return;
+				}
+
+				for (JsonNode account : accounts) {
+					if (account.has("pubkey")) {
+						String tokenAccount = account.get("pubkey").asText();
+						tokenAccountMap.put(solanaProperties.getWorkTokenMint(), tokenAccount);
+						log.info("워크 토큰({})의 토큰 계정 찾음: {}",
+							solanaProperties.getWorkTokenMint(), tokenAccount);
+
+						// 토큰 계정 구독
+						subscribeToTokenAccount(tokenAccount);
+					}
+				}
+			}
+		} catch (Exception e) {
+			log.error("토큰 계정 조회 실패", e);
+		}
 	}
 
 	/**
@@ -79,13 +136,18 @@ public class SolanaTransactionMonitorService {
 			webSocketSession = client.execute(handler, wsUrl).get();
 			isRunning.set(true);
 
-			// 회사 지갑 주소로 들어오는 트랜잭션 구독
+			// 회사 지갑 주소로 들어오는 SOL 트랜잭션 구독
 			subscribeToAccountTransactions();
+
+			// 워크 토큰 민트가 설정된 경우에만 토큰 프로그램 구독
+			if (solanaProperties.getWorkTokenMint() != null && !solanaProperties.getWorkTokenMint().isEmpty()) {
+				// SPL 토큰 프로그램 구독
+				subscribeToTokenProgram();
+			}
 
 			log.info("Solana WebSocket 연결 성공");
 		} catch (Exception e) {
 			log.error("Solana WebSocket 연결 실패", e);
-			// 연결 실패 시 재시도 로직 (생략)
 		}
 	}
 
@@ -116,6 +178,58 @@ public class SolanaTransactionMonitorService {
 	}
 
 	/**
+	 * SPL 토큰 프로그램을 구독
+	 */
+	private void subscribeToTokenProgram() {
+		try {
+			if (webSocketSession != null && webSocketSession.isOpen()) {
+				// 토큰 프로그램 구독 요청 메시지 생성
+				Map<String, Object> params = Map.of(
+					"jsonrpc", "2.0",
+					"id", 2,
+					"method", "programSubscribe",
+					"params", List.of(
+						solanaProperties.getTokenProgramId(),
+						Map.of("encoding", "jsonParsed", "commitment", "confirmed")
+					)
+				);
+
+				String subscribeMessage = objectMapper.writeValueAsString(params);
+				webSocketSession.sendMessage(new TextMessage(subscribeMessage));
+				log.info("SPL 토큰 프로그램 구독 요청 전송: {}", solanaProperties.getTokenProgramId());
+			}
+		} catch (Exception e) {
+			log.error("토큰 프로그램 구독 요청 실패", e);
+		}
+	}
+
+	/**
+	 * 특정 토큰 계정 구독
+	 */
+	private void subscribeToTokenAccount(String tokenAccount) {
+		try {
+			if (webSocketSession != null && webSocketSession.isOpen()) {
+				// 토큰 계정 구독 요청 메시지 생성
+				Map<String, Object> params = Map.of(
+					"jsonrpc", "2.0",
+					"id", 3,
+					"method", "accountSubscribe",
+					"params", List.of(
+						tokenAccount,
+						Map.of("encoding", "jsonParsed", "commitment", "confirmed")
+					)
+				);
+
+				String subscribeMessage = objectMapper.writeValueAsString(params);
+				webSocketSession.sendMessage(new TextMessage(subscribeMessage));
+				log.info("토큰 계정 구독 요청 전송: {}", tokenAccount);
+			}
+		} catch (Exception e) {
+			log.error("토큰 계정 구독 요청 실패", e);
+		}
+	}
+
+	/**
 	 * WebSocket 연결 종료
 	 */
 	private void disconnectWebSocket() {
@@ -128,33 +242,6 @@ public class SolanaTransactionMonitorService {
 			log.error("Solana WebSocket 연결 종료 실패", e);
 		} finally {
 			isRunning.set(false);
-		}
-	}
-
-	/**
-	 * 주기적으로 대기 중인 주문을 메모리에 로드
-	 */
-	@Scheduled(fixedDelay = 60000) // 60초마다 실행
-	public void refreshPendingOrders() {
-		try {
-			log.debug("대기 중인 주문 목록 갱신 중...");
-
-			List<Order> pendingOrders = orderService.getOrdersByStatus(OrderStatus.PAYMENT_PENDING);
-
-			// 캐시 업데이트
-			pendingOrdersCache.clear();
-			for (Order order : pendingOrders) {
-				pendingOrdersCache.put(order.getId(), order);
-			}
-
-			log.debug("대기 중인 주문 {}건 메모리에 로드됨", pendingOrders.size());
-
-			// 지나치게 오래된 처리 완료된 트랜잭션 서명 정리 (메모리 관리)
-			if (processedSignatures.size() > 1000) {
-				processedSignatures.subList(0, 500).clear();
-			}
-		} catch (Exception e) {
-			log.error("대기 중인 주문 갱신 실패", e);
 		}
 	}
 
@@ -172,6 +259,8 @@ public class SolanaTransactionMonitorService {
 		protected void handleTextMessage(WebSocketSession session, TextMessage message) {
 			try {
 				String payload = message.getPayload();
+				log.debug("수신된 WebSocket 메시지: {}", payload);
+
 				JsonNode jsonNode = objectMapper.readTree(payload);
 
 				// 구독 확인 응답 처리
@@ -183,18 +272,50 @@ public class SolanaTransactionMonitorService {
 				// 실제 트랜잭션 데이터 처리
 				if (jsonNode.has("params") && jsonNode.get("params").has("result")) {
 					JsonNode result = jsonNode.get("params").get("result");
+					log.info("WebSocket 알림 수신: {}", result.toString());
 
-					// 트랜잭션 정보 추출
-					if (result.has("value") && result.get("value").has("data")) {
-						// 트랜잭션 서명 추출
-						String signature = extractSignatureFromNotification(result);
+					// 트랜잭션 서명 추출
+					String signature = extractSignatureFromNotification(result);
 
-						// 이미 처리된 트랜잭션인지 확인
-						if (signature != null && !processedSignatures.contains(signature)) {
-							// 트랜잭션 처리
-							processTransaction(signature);
+					// 서명이 있는 경우 (직접적인 트랜잭션 알림)
+					if (signature != null) {
+						log.info("추출된 트랜잭션 서명: {}", signature);
+
+						// 이미 처리된 트랜잭션 제외
+						if (processedSignatures.contains(signature)) {
+							log.info("이미 처리된 트랜잭션: {}", signature);
+							return;
+						}
+
+						// 트랜잭션 유형 확인 및 로깅
+						boolean isSplToken = isSplTokenNotification(result);
+						log.info("SPL 토큰 트랜잭션 여부: {}", isSplToken);
+
+						if (isSplToken) {
+							// 트랜잭션 세부 정보 조회 및 로깅만 수행
+							logTransactionDetails(fetchTransactionDetails(signature), signature);
+							// 처리된 트랜잭션으로 기록하여 중복 처리 방지
+							processedSignatures.add(signature);
+						} else {
+							log.debug("SOL 트랜잭션 감지됨 (가스비용): {}", signature);
 						}
 					}
+					// 서명이 없는 경우 (계정 상태 변경 알림)
+					else {
+						log.info("트랜잭션 서명이 없는 알림 수신 - 계정 상태 변경으로 간주");
+
+						// 워크 토큰 계정 상태 변경 확인
+						boolean isWorkTokenAccount = isWorkTokenAccountChange(result);
+
+						if (isWorkTokenAccount) {
+							log.info("워크 토큰 계정 상태 변경 감지됨");
+						} else {
+							log.debug("관련 없는 계정 상태 변경 알림 무시");
+						}
+					}
+				} else {
+					// 예상치 못한 형식의 메시지 로깅
+					log.info("예상치 못한 형식의 WebSocket 메시지: {}", payload);
 				}
 			} catch (Exception e) {
 				log.error("Solana WebSocket 메시지 처리 실패", e);
@@ -223,106 +344,74 @@ public class SolanaTransactionMonitorService {
 	}
 
 	/**
+	 * WebSocket 알림이 SPL 토큰 트랜잭션인지 확인
+	 */
+	private boolean isSplTokenNotification(JsonNode result) {
+		try {
+			// SPL 토큰 트랜잭션 확인 로직
+			if (result.has("value")) {
+				JsonNode value = result.get("value");
+
+				// 프로그램 ID 확인
+				if (value.has("owner") &&
+					value.get("owner").asText().equals(solanaProperties.getTokenProgramId())) {
+					return true;
+				}
+
+				// 데이터 확인
+				if (value.has("data") && value.get("data").has("program")) {
+					String program = value.get("data").path("program").asText("");
+					if ("spl-token".equals(program)) {
+						return true;
+					}
+				}
+
+				// 토큰 계정 확인
+				if (value.has("pubkey")) {
+					String pubkey = value.get("pubkey").asText();
+					// 회사의 토큰 계정인지 확인
+					return tokenAccountMap.containsValue(pubkey);
+				}
+			}
+		} catch (Exception e) {
+			log.error("SPL 토큰 트랜잭션 확인 중 오류", e);
+		}
+		return false;
+	}
+
+	/**
 	 * WebSocket 알림에서 트랜잭션 서명 추출
 	 */
 	private String extractSignatureFromNotification(JsonNode result) {
 		try {
-			// 이 부분은 실제 Solana WebSocket 응답 구조에 맞게 조정 필요
+			// 여러 형태의 응답에서 서명 추출 시도
+
+			// 1. 직접적인 서명 필드 확인
+			if (result.has("signature")) {
+				return result.get("signature").asText();
+			}
+
+			// 2. value 내의 서명 필드 확인
+			if (result.has("value") && result.get("value").has("signature")) {
+				return result.get("value").get("signature").asText();
+			}
+
+			// 3. value 내의 txid 필드 확인
+			if (result.has("value") && result.get("value").has("txid")) {
+				return result.get("value").get("txid").asText();
+			}
+
+			// 4. transaction 필드 확인
 			if (result.has("transaction")) {
 				return result.get("transaction").asText();
 			}
+
+			// 서명을 찾을 수 없는 경우
+			log.debug("트랜잭션 서명을 찾을 수 없음: {}", result.toString());
 		} catch (Exception e) {
 			log.error("트랜잭션 서명 추출 실패", e);
 		}
 		return null;
-	}
-
-	/**
-	 * 트랜잭션 처리
-	 */
-	private void processTransaction(String signature) {
-		try {
-			log.info("트랜잭션 처리 중: {}", signature);
-
-			// Solana RPC를 통해 트랜잭션 세부 정보 조회
-			JsonNode transactionData = fetchTransactionDetails(signature);
-
-			if (transactionData == null) {
-				log.warn("트랜잭션 세부 정보 조회 실패: {}", signature);
-				return;
-			}
-			log.info("트랜잭션 세부 정보 조회 성공: {}", signature);
-
-			// 2. 트랜잭션 유효성 검증
-			log.info("트랜잭션 유효성 검증 시도: {}", signature);
-			if (!isValidTransaction(transactionData)) {
-				log.warn("유효하지 않은 트랜잭션: {}", signature);
-				return;
-			}
-			log.info("트랜잭션 유효성 검증 성공: {}", signature);
-
-			// 메모 필드에서 주문 ID 추출
-			log.info("메모 필드 추출 시도: {}", signature);
-			String memo = extractMemoFromTransaction(transactionData);
-			if (memo == null || !memo.startsWith("ORDER_")) {
-				log.warn("주문 관련 메모가 없는 트랜잭션: {}", signature);
-				return;
-			}
-			log.info("메모 필드 추출 성공: {} ({})", signature, memo);
-
-			// 주문 ID 파싱
-			Integer orderId = parseOrderIdFromMemo(memo);
-			if (orderId == null) {
-				log.warn("메모에서 주문 ID 파싱 실패: {}", memo);
-				return;
-			}
-
-			// 캐시에서 주문 조회
-			Order order = pendingOrdersCache.get(orderId);
-			if (order == null) {
-				// 캐시에 없는 경우 DB에서 직접 조회
-				try {
-					Order foundOrder = orderService.getOrderById(orderId);
-					// 주문이 결제 대기 상태인지 확인
-					if (OrderStatus.PAYMENT_PENDING.equals(foundOrder.getStatus())) {
-						order = foundOrder;
-						pendingOrdersCache.put(orderId, order);
-					} else {
-						log.debug("대기 중인 주문이 아님: {}", orderId);
-						return;
-					}
-				} catch (CustomException e) {
-					// 주문을 찾지 못한 경우
-					log.debug("주문을 찾을 수 없음: {}", orderId);
-					return;
-				}
-			}
-
-			// 결제 금액 확인
-			BigDecimal amount = extractAmountFromTransaction(transactionData);
-			BigDecimal orderTotal = calculateOrderTotal(order);
-			if (amount.compareTo(orderTotal) < 0) {
-				log.warn("결제 금액 부족: 예상={}, 실제={}", orderTotal, amount);
-				return;
-			}
-
-			// 결제 완료 처리
-			order.updateStatus(OrderStatus.PAYMENT_COMPLETED);
-			orderService.saveOrder(order);
-
-			// 중복 처리 방지를 위해 처리된 트랜잭션 서명 기록
-			processedSignatures.add(signature);
-
-			// 캐시에서 제거
-			pendingOrdersCache.remove(orderId);
-
-			// RabbitMQ를 통해 결제 완료 이벤트 발행
-			publishPaymentCompletedEvent(order);
-
-			log.info("주문 ID {} 결제 완료 처리됨 (트랜잭션: {})", orderId, signature);
-		} catch (Exception e) {
-			log.error("트랜잭션 처리 중 오류 발생: " + signature, e);
-		}
 	}
 
 	/**
@@ -365,167 +454,160 @@ public class SolanaTransactionMonitorService {
 	}
 
 	/**
-	 * 트랜잭션이 유효한지 확인
+	 * WebSocket 알림이 워크 토큰 계정 상태 변경인지 확인
 	 */
-	private boolean isValidTransaction(JsonNode transactionData) {
+	private boolean isWorkTokenAccountChange(JsonNode result) {
 		try {
-			// 트랜잭션이 성공적으로 처리되었는지 확인
-			if (transactionData.has("result") &&
-				transactionData.get("result").has("meta") &&
-				transactionData.get("result").get("meta").has("err")) {
+			// 계정 정보가 포함되어 있는지 확인
+			if (result.has("pubkey") && result.has("account")) {
+				JsonNode account = result.get("account");
 
-				JsonNode err = transactionData.get("result").get("meta").get("err");
-				return err == null || err.isNull();
+				// SPL 토큰 프로그램인지 확인
+				if (account.has("owner") &&
+					account.get("owner").asText().equals(solanaProperties.getTokenProgramId())) {
+
+					// 데이터 필드에 SPL 토큰 정보가 있는지 확인
+					if (account.has("data") && account.get("data").has("program") &&
+						"spl-token".equals(account.get("data").path("program").asText())) {
+
+						// 회사의 토큰 계정인지 확인
+						String pubkey = result.get("pubkey").asText();
+						String companyTokenAccount = tokenAccountMap.get(solanaProperties.getWorkTokenMint());
+
+						if (pubkey.equals(companyTokenAccount)) {
+							log.info("회사 워크 토큰 계정 상태 변경 감지: {}", pubkey);
+							return true;
+						}
+
+						// 민트 확인 (계정 데이터에서)
+						String mint = account.get("data").path("parsed").path("info").path("mint").asText("");
+						if (mint.equals(solanaProperties.getWorkTokenMint())) {
+							log.info("워크 토큰 관련 계정 상태 변경 감지: {}", pubkey);
+							return true;
+						}
+					}
+				}
 			}
 		} catch (Exception e) {
-			log.error("트랜잭션 유효성 검사 중 오류", e);
+			log.error("토큰 계정 상태 변경 확인 중 오류", e);
 		}
 		return false;
 	}
 
 	/**
-	 * 트랜잭션에서 메모 필드 추출
+	 * 트랜잭션 데이터의 중요 정보를 로깅
 	 */
-	private String extractMemoFromTransaction(JsonNode transactionData) {
+	private void logTransactionDetails(JsonNode transactionData, String signature) {
 		try {
+			log.info("======== 트랜잭션 상세 정보 ========");
+			log.info("트랜잭션 서명: {}", signature);
+
+			if (transactionData == null) {
+				log.info("트랜잭션 데이터가 없습니다");
+				return;
+			}
+
 			JsonNode result = transactionData.get("result");
-			if (result != null && result.has("meta") && result.get("meta").has("logMessages")) {
+			if (result == null) {
+				log.info("트랜잭션 데이터에 result 필드 없음");
+				return;
+			}
+
+			// 블록 정보
+			if (result.has("slot")) {
+				log.info("블록 번호: {}", result.get("slot").asText());
+			}
+
+			if (result.has("blockTime")) {
+				long blockTime = result.get("blockTime").asLong();
+				Date date = new Date(blockTime * 1000L);
+				log.info("블록 타임스탬프: {} ({})", blockTime,
+					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date));
+			}
+
+			// 로그 메시지
+			if (result.has("meta") && result.get("meta").has("logMessages")) {
 				JsonNode logMessages = result.get("meta").get("logMessages");
-
-				// 로그 메시지를 순회하며 메모 찾기
-				for (JsonNode logMessage : logMessages) {
-					String message = logMessage.asText();
-
-					// 메모 프로그램 관련 로그 검사
-					if (message.contains("Program log: Memo") ||
-						message.contains("Program log: Instruction: Memo")) {
-
-						// 메모 내용 추출
-						int startIndex = message.indexOf("Memo") + 5;
-						String memoContent = message.substring(startIndex).trim();
-
-						// 괄호 제거
-						if (memoContent.startsWith("(") && memoContent.endsWith(")")) {
-							memoContent = memoContent.substring(1, memoContent.length() - 1);
-						}
-
-						return memoContent;
-					}
+				log.info("로그 메시지:");
+				for (JsonNode message : logMessages) {
+					log.info(" - {}", message.asText());
 				}
 			}
 
-			// 트랜잭션 명령어를 직접 확인
-			if (result != null && result.has("transaction") &&
-				result.get("transaction").has("message") &&
-				result.get("transaction").get("message").has("instructions")) {
-
-				JsonNode instructions = result.get("transaction").get("message").get("instructions");
-
-				// 메모 프로그램 명령어 찾기
-				for (JsonNode instruction : instructions) {
-					// 메모 프로그램 ID 확인
-					if (instruction.has("programId") &&
-						instruction.get("programId").asText().equals("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")) {
-
-						// 데이터 필드에서 메모 내용 디코딩
-						if (instruction.has("data")) {
-							String base64Data = instruction.get("data").asText();
-							byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
-							return new String(decodedBytes);
-						}
-					}
-				}
-			}
-		} catch (Exception e) {
-			log.error("메모 필드 추출 중 오류", e);
-		}
-
-		return null;
-	}
-
-	/**
-	 * 메모에서 주문 ID 파싱
-	 */
-	private Integer parseOrderIdFromMemo(String memo) {
-		try {
-			if (memo != null && memo.startsWith("ORDER_")) {
-				String orderIdStr = memo.substring(6);
-				return Integer.parseInt(orderIdStr);
-			}
-		} catch (NumberFormatException e) {
-			log.warn("주문 ID 파싱 실패: {}", memo);
-		}
-		return null;
-	}
-
-	/**
-	 * 트랜잭션에서 결제 금액 추출
-	 */
-	private BigDecimal extractAmountFromTransaction(JsonNode transactionData) {
-		try {
-			JsonNode result = transactionData.get("result");
-			if (result != null && result.has("meta")) {
+			// 토큰 잔액 변화
+			if (result.has("meta")) {
 				JsonNode meta = result.get("meta");
+				if (meta.has("preTokenBalances") && meta.has("postTokenBalances")) {
+					JsonNode preBalances = meta.get("preTokenBalances");
+					JsonNode postBalances = meta.get("postTokenBalances");
 
-				// 사전 잔액과 사후 잔액의 차이로 결제 금액 계산
-				if (meta.has("preBalances") && meta.has("postBalances")) {
-					JsonNode preBalances = meta.get("preBalances");
-					JsonNode postBalances = meta.get("postBalances");
+					log.info("토큰 잔액 변화:");
+					for (int i = 0; i < preBalances.size(); i++) {
+						JsonNode pre = preBalances.get(i);
 
-					// 발신자 잔액 변화 (일반적으로 0번 인덱스가 발신자)
-					long preBalance = preBalances.get(0).asLong();
-					long postBalance = postBalances.get(0).asLong();
+						// 같은 인덱스의 post 잔액 찾기
+						JsonNode post = null;
+						for (int j = 0; j < postBalances.size(); j++) {
+							if (postBalances.get(j).get("accountIndex").asInt() ==
+								pre.get("accountIndex").asInt()) {
+								post = postBalances.get(j);
+								break;
+							}
+						}
 
-					// 수수료 고려
-					long fee = meta.has("fee") ? meta.get("fee").asLong() : 0;
+						if (post != null) {
+							String owner = pre.has("owner") ? pre.get("owner").asText() : "알 수 없음";
+							String mint = pre.has("mint") ? pre.get("mint").asText() : "알 수 없음";
+							String preAmount = pre.path("uiTokenAmount").path("uiAmountString").asText("0");
+							String postAmount = post.path("uiTokenAmount").path("uiAmountString").asText("0");
 
-					// 발신 금액 = (사전 잔액 - 사후 잔액 - 수수료)
-					long lamportsAmount = preBalance - postBalance - fee;
-
-					// Lamports를 SOL로 변환 (1 SOL = 10^9 lamports)
-					return BigDecimal.valueOf(lamportsAmount).divide(BigDecimal.valueOf(1_000_000_000L));
+							log.info(" - 계정: {}, 민트: {}, 이전: {}, 이후: {}",
+								owner, mint, preAmount, postAmount);
+						}
+					}
 				}
 			}
-		} catch (Exception e) {
-			log.error("결제 금액 추출 중 오류", e);
-		}
 
-		return BigDecimal.ZERO;
+			log.info("================================");
+		} catch (Exception e) {
+			log.error("트랜잭션 상세 정보 로깅 중 오류", e);
+		}
 	}
 
 	/**
-	 * RabbitMQ를 통해 결제 완료 이벤트 발행
+	 * 지나치게 오래된 처리 완료된 트랜잭션 서명 정리 (메모리 관리)
 	 */
-	private void publishPaymentCompletedEvent(Order order) {
+	@Scheduled(fixedDelay = 60000) // 60초마다 실행
+	public void cleanupProcessedSignatures() {
 		try {
-			PaymentCompletedEvent event = new PaymentCompletedEvent();
-			event.setOrderId(order.getId());
-			event.setUserId(order.getUser().getId());
-			event.setTotalAmount(calculateOrderTotal(order));
-			event.setCompletedAt(System.currentTimeMillis());
-
-			rabbitTemplate.convertAndSend("payment.exchange", "payment.completed", event);
-			log.info("결제 완료 이벤트 발행: 주문 ID {}", order.getId());
+			if (processedSignatures.size() > 1000) {
+				log.info("오래된 트랜잭션 서명 정리 중... (현재 크기: {})", processedSignatures.size());
+				processedSignatures.subList(0, 500).clear();
+				log.info("오래된 트랜잭션 서명 정리 완료 (현재 크기: {})", processedSignatures.size());
+			}
 		} catch (Exception e) {
-			log.error("결제 완료 이벤트 발행 실패", e);
+			log.error("트랜잭션 서명 정리 실패", e);
 		}
 	}
 
-	/**
-	 * 주문의 총 금액을 계산하는 헬퍼 메서드
-	 */
-	private BigDecimal calculateOrderTotal(Order order) {
-		// OrderItem 리포지토리를 주입받아 사용
-		List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(order.getId());
+	/* 주문 처리 관련 코드는 주석 처리
 
-		if (orderItems == null || orderItems.isEmpty()) {
-			return BigDecimal.ZERO;
+	// 주문 및 결제 처리 부분은 제외하고 트랜잭션 감지와 로깅만 남깁니다
+
+	private void processSplTokenTransaction(String signature) {
+		// 트랜잭션 감지 및 로깅 중심으로 코드 수정
+		try {
+			log.info("워크 토큰 트랜잭션 감지: {}", signature);
+			JsonNode transactionData = fetchTransactionDetails(signature);
+
+			if (transactionData != null) {
+				// 트랜잭션 상세 정보 로깅
+				logTransactionDetails(transactionData, signature);
+				processedSignatures.add(signature);
+			}
+		} catch (Exception e) {
+			log.error("트랜잭션 처리 중 오류: {}", signature, e);
 		}
-
-		int total = orderItems.stream()
-			.mapToInt(OrderItem::getTotalPrice)
-			.sum();
-
-		return new BigDecimal(total);
 	}
+	*/
 }
