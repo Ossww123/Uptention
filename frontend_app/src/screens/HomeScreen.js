@@ -22,6 +22,7 @@ const { AppBlockerModule } = NativeModules;
 const HomeScreen = ({ navigation }) => {
   const { tokenBalance, publicKey, userId } = useWallet();
   const [userInfo, setUserInfo] = useState(null);
+  const [userPoint, setUserPoint] = useState(0);
 
   // 앱제한 관련 권한 상태 관리
   const [hasAccessibilityPermission, setHasAccessibilityPermission] = useState(false);
@@ -221,9 +222,33 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  // 사용자 포인트 조회 함수
+  const fetchUserPoint = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/users/4/point`, {
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+        }
+      });
+      setUserPoint(response.data.point); // point 값만 추출하여 저장
+    } catch (error) {
+      console.error('포인트 조회 오류:', error);
+    }
+  };
+
   useEffect(() => {
     fetchUserInfo();
+    fetchUserPoint();
   }, []);
+
+  // 화면이 포커스될 때마다 포인트 업데이트
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchUserPoint();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -290,12 +315,12 @@ const HomeScreen = ({ navigation }) => {
               <View style={styles.headerRow}>
                 <Text style={styles.labelText}>포인트</Text>
                 <View style={styles.progressInfo}>
-                  <Text style={styles.valueText}>8.00/</Text>
-                  <Text style={styles.maxText}>8</Text>
+                  <Text style={styles.valueText}>{userPoint}/</Text>
+                  <Text style={styles.maxText}>480</Text>
                 </View>
               </View>
               <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { backgroundColor: '#0F51F6', width: '100%' }]} />
+                <View style={[styles.progressFill, { backgroundColor: '#0F51F6', width: `${(userPoint / 480) * 100}%` }]} />
               </View>
             </View>
 

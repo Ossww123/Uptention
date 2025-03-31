@@ -115,17 +115,51 @@ const FocusModeScreen = ({ navigation }) => {
         }
       );
       console.log('포커스 모드 종료 API 호출 성공');
+
+      // 포인트 업데이트를 위해 최대 3번까지 시도
+      let updatedPoint = 0;
+      for (let i = 0; i < 3; i++) {
+        // 2초씩 대기
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // 포인트 조회 시도
+        try {
+          const pointResponse = await axios.get(`${API_BASE_URL}/api/users/4/point`, {
+            headers: {
+              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+            }
+          });
+
+          console.log(`${i + 1}번째 포인트 조회 응답:`, pointResponse.data);
+          
+          // 포인트가 0보다 크면 업데이트 성공으로 간주하고 종료
+          if (pointResponse.data.point > 0) {
+            updatedPoint = pointResponse.data.point;
+            break;
+          }
+        } catch (error) {
+          console.error(`${i + 1}번째 포인트 조회 실패:`, error);
+        }
+      }
       
       stopTimer();
       resetTimer();
+      
       navigation.goBack();
       
       console.log('포커스 모드 종료:', {
         totalSeconds: finalSeconds,
-        earnedPoints: finalPoints
+        earnedPoints: finalPoints,
+        updatedPoint: updatedPoint
       });
     } catch (error) {
       console.error('포커스 모드 종료 실패:', error);
+      console.error('에러 상세 정보:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
       Alert.alert(
         '알림',
         '포커스 모드 종료에 실패했습니다.',
