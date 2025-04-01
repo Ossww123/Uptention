@@ -30,6 +30,18 @@ public interface MiningApiDoc {
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "집중모드 시작 성공",
 			content = @Content(schema = @Schema(implementation = String.class))),
+		@ApiResponse(responseCode = "500", description = "집중모드 실행 실패",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "실행 실패",
+						summary = "집중모드 실행 중 오류가 발생",
+						value = "{\"code\":\"FOCUS_001\",\"message\":\"집중모드 실행 중 오류가 발생했습니다.\",\"path\":\"/api/mining-time/focus\"}"
+					)
+				}
+			)
+		),
 		@ApiResponse(responseCode = "500", description = "서버 내부 오류",
 			content = @Content(
 				schema = @Schema(implementation = ErrorResponse.class),
@@ -49,6 +61,18 @@ public interface MiningApiDoc {
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "집중모드 종료 성공",
 			content = @Content(schema = @Schema(implementation = String.class))),
+		@ApiResponse(responseCode = "500", description = "집중모드 종료 실패",
+			content = @Content(
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "종료 실패",
+						summary = "집중모드 종료 중 오류가 발생",
+						value = "{\"code\":\"FOCUS_002\",\"message\":\"집중모드 종료 중 오류가 발생했습니다.\",\"path\":\"/api/mining-time/focus\"}"
+					)
+				}
+			)
+		),
 		@ApiResponse(responseCode = "500", description = "서버 내부 오류",
 			content = @Content(
 				schema = @Schema(implementation = ErrorResponse.class),
