@@ -36,7 +36,7 @@ public interface CartRepository extends JpaRepository<Cart, Integer> {
 	/**
 	 * 특정 사용자의 장바구니에 담긴 상품 종류의 개수를 조회
 	 */
-	@Query("SELECT COUNT(c) FROM Cart c WHERE c.user.id = :userId")
+	@Query("SELECT COUNT(c) FROM Cart c JOIN c.item i WHERE c.user.id = :userId AND i.status = true")
 	Integer countCartItemsByUserId(@Param("userId") Integer userId);
 
 }
