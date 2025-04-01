@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,15 +9,36 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
 
 const { height } = Dimensions.get('window');
 
-const OrderDetailBottomSheet = ({ visible, onClose, order }) => {
+const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }) => {
   const slideAnim = useRef(new Animated.Value(height)).current;
+  const [orderDetail, setOrderDetail] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchOrderDetail = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.get(`${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`);
+      setOrderDetail(response.data);
+    } catch (err) {
+      setError('주문 상세 정보를 불러오는데 실패했습니다.');
+      console.error('Error fetching order detail:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (visible) {
+    if (visible && orderId && orderItemId) {
+      fetchOrderDetail();
       // 바텀 시트를 올리는 애니메이션
       Animated.spring(slideAnim, {
         toValue: 0,
@@ -32,100 +53,87 @@ const OrderDetailBottomSheet = ({ visible, onClose, order }) => {
         useNativeDriver: true,
       }).start();
     }
-  }, [visible]);
+  }, [visible, orderId, orderItemId]);
 
-  if (!order) return null;
+  if (!orderId || !orderItemId) return null;
 
   const renderContent = () => {
-    if (order.type === 'gift') {
-      // 선물 목록일 경우
+    if (loading) {
       return (
-        <>
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>주문 상태</Text>
-            <Text style={styles.value}>{order.status}</Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>브랜드</Text>
-            <Text style={styles.value}>두레주로</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>상품명</Text>
-            <Text style={styles.value}>{order.title}</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>결제 금액</Text>
-            <Text style={[styles.value, styles.amount]}>{order.amount}</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>주문 일시</Text>
-            <Text style={styles.value}>{order.date}</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.recipientInfo}>
-            <Text style={styles.recipientTitle}>받는 사람 정보</Text>
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>이름</Text>
-              <Text style={styles.value}>홍길동</Text>
-            </View>
-          </View>
-        </>
-      );
-    } else {
-      // 구매 목록일 경우
-      return (
-        <>
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>주문 상태</Text>
-            <Text style={styles.value}>{order.status}</Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>브랜드</Text>
-            <Text style={styles.value}>두레주로</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>상품명</Text>
-            <Text style={styles.value}>{order.title}</Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>수량</Text>
-            <Text style={styles.value}>1개</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>결제 금액</Text>
-            <Text style={[styles.value, styles.amount]}>{order.amount}</Text>
-          </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>주문 일시</Text>
-            <Text style={styles.value}>{order.date}</Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.deliveryInfo}>
-            <Text style={styles.deliveryTitle}>배송 정보</Text>
-            <View style={styles.deliveryAddress}>
-              <Text style={styles.addressLabel}>배송지</Text>
-              <Text style={styles.addressValue}>
-                대전광역시 유성구 동서대로 125{'\n'}
-                한국과학기술원 E11
-              </Text>
-            </View>
-          </View>
-        </>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#FF8C00" />
+        </View>
       );
     }
+
+    if (error) {
+      return (
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      );
+    }
+
+    if (!orderDetail) return null;
+
+    return (
+      <>
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>주문 상태</Text>
+          <Text style={styles.value}>{orderDetail.status}</Text>
+        </View>
+
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>브랜드</Text>
+          <Text style={styles.value}>{orderDetail.brand}</Text>
+        </View>
+        
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>상품명</Text>
+          <Text 
+            style={[styles.value, styles.itemName]} 
+            numberOfLines={1} 
+            ellipsizeMode="tail"
+          >
+            {orderDetail.itemName}
+          </Text>
+        </View>
+
+        {type === 'PURCHASE' && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>수량</Text>
+            <Text style={styles.value}>{orderDetail.quantity}개</Text>
+          </View>
+        )}
+        
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>결제 금액</Text>
+          <Text style={[styles.value, styles.amount]}>-{orderDetail.totalPrice.toLocaleString()} WORK</Text>
+        </View>
+        
+        <View style={styles.detailRow}>
+          <Text style={styles.label}>주문 일시</Text>
+          <Text style={styles.value}>
+            {new Date(orderDetail.orderDate).toLocaleDateString('ko-KR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit'
+            }).split(' ').join('')}
+          </Text>
+        </View>
+
+        <View style={styles.divider} />
+
+        {type === 'PURCHASE' && orderDetail.address && (
+          <View style={styles.deliveryInfo}>
+            <Text style={styles.orderTitle}>배송 주소</Text>
+            <Text style={styles.addressText} numberOfLines={2}>
+              {orderDetail.address}
+            </Text>
+          </View>
+        )}
+      </>
+    );
   };
 
   return (
@@ -203,11 +211,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     color: '#666666',
+    minWidth: 70,
   },
   value: {
     fontSize: 14,
     color: '#000000',
     fontWeight: '500',
+    textAlign: 'right',
+  },
+  itemName: {
+    flex: 1,
+    marginLeft: 16,
+    textAlign: 'right',
   },
   amount: {
     color: '#FF8C00',
@@ -223,33 +238,24 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
   },
-  deliveryTitle: {
+  orderTitle: {
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 12,
   },
-  deliveryAddress: {
-    marginTop: 4,
+  centerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
   },
-  addressLabel: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 8,
+  errorText: {
+    color: '#FF0000',
+    textAlign: 'center',
   },
-  addressValue: {
+  addressText: {
     fontSize: 14,
     color: '#000000',
     lineHeight: 20,
-  },
-  recipientInfo: {
-    backgroundColor: '#F8F8F8',
-    padding: 16,
-    borderRadius: 12,
-  },
-  recipientTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
   },
 });
 

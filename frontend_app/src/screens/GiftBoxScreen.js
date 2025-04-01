@@ -1,90 +1,140 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Dimensions, 
+  ScrollView, 
+  TouchableOpacity, 
+  Image,
+  ActivityIndicator,
+  RefreshControl
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
+import { useAuth } from '../contexts/AuthContext';
 
 const GiftBoxScreen = () => {
-  const [activeTab, setActiveTab] = useState('waiting');
+  const [activeTab, setActiveTab] = useState('PENDING');
+  const [gifts, setGifts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [cursor, setCursor] = useState(null);
+  const [hasNextPage, setHasNextPage] = useState(true);
   const navigation = useNavigation();
+  const { authToken } = useAuth();
 
-  const giftData = useMemo(() => [
-    {
-      id: '1',
-      storeName: '투썸플레이스',
-      itemName: '스트로베리 케이크',
-      sender: '박준수',
-      date: '2025.03.02',
-      status: 'waiting',
-      quantity: 1,
-    },
-    {
-      id: '2',
-      storeName: '투썸플레이스',
-      itemName: '스트로베리 케이크',
-      sender: '박준수',
-      date: '2025.03.02',
-      status: 'completed',
-      quantity: 1,
-    },
-    {
-      id: '3',
-      storeName: '투썸플레이스',
-      itemName: '스트로베리 케이크',
-      sender: '박준수',
-      date: '2025.03.02',
-      status: 'waiting',
-      quantity: 1,
-    },
-    {
-      id: '4',
-      storeName: '투썸플레이스',
-      itemName: '스트로베리 케이크',
-      sender: '박준수',
-      date: '2025.03.02',
-      status: 'completed',
-      quantity: 1,
-    },
-  ], []);
+  const fetchGifts = async (newCursor = null, refresh = false) => {
+    if (loading || (!hasNextPage && !refresh)) return;
 
-  const filteredGiftData = useMemo(() => {
-    return giftData.filter(item => item.status === activeTab);
-  }, [giftData, activeTab]);
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/gifts`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
+        params: {
+          cursor: newCursor,
+          size: 10,
+          type: activeTab
+        }
+      });
+
+      const { giftItems, hasNextPage: nextPage, nextCursor } = response.data;
+      
+      setGifts(prev => refresh ? giftItems : [...prev, ...giftItems]);
+      setHasNextPage(nextPage);
+      setCursor(nextCursor);
+    } catch (error) {
+      console.error('선물 목록 조회 오류:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    fetchGifts(null, true);
+  }, [activeTab]);
+
+  // 새로고침 처리
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchGifts(null, true);
+  };
+
+  // 스크롤 끝에서 추가 데이터 로드
+  const onEndReached = () => {
+    if (!loading && hasNextPage) {
+      fetchGifts(cursor);
+    }
+  };
+
+  const handleGiftPress = (item) => {
+    navigation.navigate('GiftDetail', {
+      item,
+      onRefresh: fetchGifts,
+    });
+  };
 
   const renderGiftItems = () => {
     const rows = [];
-    for (let i = 0; i < filteredGiftData.length; i += 2) {
+    for (let i = 0; i < gifts.length; i += 2) {
       const row = (
         <View key={`row-${i}`} style={styles.row}>
           <TouchableOpacity
             style={styles.giftItem}
-            onPress={() => navigation.navigate('GiftDetail', { item: filteredGiftData[i] })}
+            onPress={() => handleGiftPress(gifts[i])}
           >
-            <View style={styles.imagePlaceholder}>
-              <Text style={styles.placeholderText}>케이크 이미지</Text>
-            </View>
+            {gifts[i].imageUrl ? (
+              <Image
+                source={{ uri: gifts[i].imageUrl }}
+                style={styles.giftImage}
+                onError={(error) => console.log('이미지 로딩 실패:', error)}
+              />
+            ) : (
+              <View style={[styles.giftImage, styles.defaultImageContainer]}>
+                <Text style={styles.defaultImageText}>선물 이미지</Text>
+              </View>
+            )}
             <View style={styles.itemInfo}>
-              <Text style={styles.storeName}>{filteredGiftData[i].storeName}</Text>
-              <Text style={styles.itemName}>{filteredGiftData[i].itemName}</Text>
+              <Text style={styles.storeName}>{gifts[i].brand}</Text>
+              <Text style={styles.itemName}>{gifts[i].itemName}</Text>
               <View style={styles.bottomInfo}>
-                <Text style={styles.sender}>보낸이 : {filteredGiftData[i].sender}</Text>
-                <Text style={styles.date}>{filteredGiftData[i].date}</Text>
+                <Text style={styles.sender}>보낸이 : {gifts[i].senderName}</Text>
+                <Text style={styles.date}>
+                  {new Date(gifts[i].receivedDate).toLocaleDateString('ko-KR')}
+                </Text>
               </View>
             </View>
           </TouchableOpacity>
-          {i + 1 < filteredGiftData.length && (
+          {i + 1 < gifts.length && (
             <TouchableOpacity
               style={styles.giftItem}
-              onPress={() => navigation.navigate('GiftDetail', { item: filteredGiftData[i + 1] })}
+              onPress={() => handleGiftPress(gifts[i + 1])}
             >
-              <View style={styles.imagePlaceholder}>
-                <Text style={styles.placeholderText}>케이크 이미지</Text>
-              </View>
+              {gifts[i + 1].imageUrl ? (
+                <Image
+                  source={{ uri: gifts[i + 1].imageUrl }}
+                  style={styles.giftImage}
+                  onError={(error) => console.log('이미지 로딩 실패:', error)}
+                />
+              ) : (
+                <View style={[styles.giftImage, styles.defaultImageContainer]}>
+                  <Text style={styles.defaultImageText}>선물 이미지</Text>
+                </View>
+              )}
               <View style={styles.itemInfo}>
-                <Text style={styles.storeName}>{filteredGiftData[i + 1].storeName}</Text>
-                <Text style={styles.itemName}>{filteredGiftData[i + 1].itemName}</Text>
+                <Text style={styles.storeName}>{gifts[i + 1].brand}</Text>
+                <Text style={styles.itemName}>{gifts[i + 1].itemName}</Text>
                 <View style={styles.bottomInfo}>
-                  <Text style={styles.sender}>보낸이 : {filteredGiftData[i + 1].sender}</Text>
-                  <Text style={styles.date}>{filteredGiftData[i + 1].date}</Text>
+                  <Text style={styles.sender}>보낸이 : {gifts[i + 1].senderName}</Text>
+                  <Text style={styles.date}>
+                    {new Date(gifts[i + 1].receivedDate).toLocaleDateString('ko-KR')}
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -101,21 +151,21 @@ const GiftBoxScreen = () => {
       {/* 탭 */}
       <View style={styles.tabContainer}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'waiting' && styles.activeTab]}
-          onPress={() => setActiveTab('waiting')}
+          style={[styles.tab, activeTab === 'PENDING' && styles.activeTab]}
+          onPress={() => setActiveTab('PENDING')}
         >
           <Text style={[
             styles.tabText,
-            activeTab === 'waiting' && styles.activeTabText
+            activeTab === 'PENDING' && styles.activeTabText
           ]}>수령 대기</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'completed' && styles.activeTab]}
-          onPress={() => setActiveTab('completed')}
+          style={[styles.tab, activeTab === 'RECEIVED' && styles.activeTab]}
+          onPress={() => setActiveTab('RECEIVED')}
         >
           <Text style={[
             styles.tabText,
-            activeTab === 'completed' && styles.activeTabText
+            activeTab === 'RECEIVED' && styles.activeTabText
           ]}>수령 완료</Text>
         </TouchableOpacity>
       </View>
@@ -123,8 +173,27 @@ const GiftBoxScreen = () => {
       <ScrollView 
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        }
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isEndReached = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+          if (isEndReached) {
+            onEndReached();
+          }
+        }}
+        scrollEventThrottle={400}
       >
         {renderGiftItems()}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FF8C00" />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -225,7 +294,21 @@ const styles = StyleSheet.create({
   giftImage: {
     width: '100%',
     height: itemWidth,
+    borderRadius: 10,
+    backgroundColor: '#F0F0F0'
   },
+  defaultImageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  defaultImageText: {
+    fontSize: 14,
+    color: '#999999',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center'
+  }
 });
 
 export default GiftBoxScreen; 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,19 @@ import {
   TouchableWithoutFeedback,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
+import { useAuth } from '../contexts/AuthContext';
 
 const { height } = Dimensions.get('window');
 
-const DeliveryAddressBottomSheet = ({ visible, onClose, onSubmit }) => {
+const DeliveryAddressBottomSheet = ({ visible, onClose, orderId }) => {
   const slideAnim = useRef(new Animated.Value(height)).current;
-  const [address, setAddress] = React.useState('');
-  const [detailAddress, setDetailAddress] = React.useState('');
+  const [address, setAddress] = useState('');
+  const [detailAddress, setDetailAddress] = useState('');
+  const { authToken } = useAuth();
 
   useEffect(() => {
     if (visible) {
@@ -31,12 +36,43 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, onSubmit }) => {
         duration: 250,
         useNativeDriver: true,
       }).start();
+      // 바텀시트가 닫힐 때 입력값 초기화
+      setAddress('');
+      setDetailAddress('');
     }
   }, [visible]);
 
-  const handleSubmit = () => {
-    onSubmit({ address, detailAddress });
-    onClose();
+  const handleSubmit = async () => {
+    try {
+      const fullAddress = `${address} ${detailAddress}`.trim();
+      
+      if (!fullAddress) {
+        Alert.alert('알림', '주소를 입력해주세요.');
+        return;
+      }
+
+      // 배송 정보 등록 API 호출
+      await axios.post(
+        `${API_BASE_URL}/api/orders/${orderId}/delivery-info`,
+        { address: fullAddress },
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          }
+        }
+      );
+
+      Alert.alert('알림', '배송지가 등록되었습니다.', [
+        {
+          text: '확인',
+          onPress: onClose
+        }
+      ]);
+    } catch (error) {
+      console.error('배송지 등록 오류:', error);
+      Alert.alert('오류', '배송지 등록에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   return (
@@ -71,7 +107,14 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, onSubmit }) => {
                 />
               </View>
 
-              <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+              <TouchableOpacity 
+                style={[
+                  styles.submitButton,
+                  (!address || !detailAddress) && styles.submitButtonDisabled
+                ]} 
+                onPress={handleSubmit}
+                disabled={!address || !detailAddress}
+              >
                 <Text style={styles.submitButtonText}>확인</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -135,6 +178,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  submitButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+  }
 });
 
 export default DeliveryAddressBottomSheet; 

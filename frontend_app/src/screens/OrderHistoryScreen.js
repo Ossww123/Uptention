@@ -1,49 +1,68 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
+import { useAuth } from '../contexts/AuthContext';
 import OrderDetailBottomSheet from '../components/OrderDetailBottomSheet';
 
-const OrderHistoryScreen = ({ navigation }) => {
-  const [activeTab, setActiveTab] = useState('purchase'); // 'purchase' or 'gift'
+const OrderHistoryScreen = () => {
+  const [activeTab, setActiveTab] = useState('PURCHASE');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [cursor, setCursor] = useState(null);
+  const [hasNextPage, setHasNextPage] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
+  const { authToken } = useAuth();
 
-  const mockOrders = {
-    purchase: [
-      {
-        id: 1,
-        type: 'purchase',
-        status: '구매 완료',
-        title: '두레주로 10000원 교환권',
-        amount: '-1000 WORK',
-        date: '2025.02.13'
-      },
-      {
-        id: 2,
-        type: 'purchase',
-        status: '구매 완료',
-        title: '두레주로 10000원 교환권',
-        amount: '-1000 WORK',
-        date: '2025.02.13'
-      }
-    ],
-    gift: [
-      {
-        id: 3,
-        type: 'gift',
-        status: '선물 완료',
-        title: '두레주로 10000원 교환권',
-        amount: '-1000 WORK',
-        date: '2025.02.13'
-      },
-      {
-        id: 4,
-        type: 'gift',
-        status: '선물 완료',
-        title: '두레주로 10000원 교환권',
-        amount: '-1000 WORK',
-        date: '2025.02.13'
-      }
-    ]
+  const fetchOrders = async (newCursor = null, refresh = false) => {
+    if (loading || (!hasNextPage && !refresh)) return;
+
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/orders`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        },
+        params: {
+          cursor: newCursor,
+          size: 10,
+          type: activeTab
+        }
+      });
+
+      console.log('주문 내역 응답:', response.data);
+
+      const { orderItems, hasNextPage: nextPage, nextCursor } = response.data;
+      
+      setOrders(prev => refresh ? orderItems : [...prev, ...orderItems]);
+      setHasNextPage(nextPage);
+      setCursor(nextCursor);
+    } catch (error) {
+      console.error('주문 내역 조회 오류:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders(null, true);
+  }, [activeTab]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchOrders(null, true);
   };
 
   const handleOrderPress = (order) => {
@@ -51,57 +70,93 @@ const OrderHistoryScreen = ({ navigation }) => {
     setIsBottomSheetVisible(true);
   };
 
-  const currentOrders = mockOrders[activeTab] || [];
+  const renderOrderItem = (item) => (
+    <TouchableOpacity 
+      key={item.orderItemId.toString()}
+      style={styles.orderItem}
+      onPress={() => handleOrderPress(item)}
+    >
+      <View style={styles.orderLeft}>
+        <Text style={styles.orderStatus}>{item.status}</Text>
+        <Text style={styles.orderTitle} numberOfLines={1} ellipsizeMode="tail">
+          {item.itemName}
+        </Text>
+      </View>
+      <View style={styles.orderRight}>
+        <Text style={styles.orderAmount}>-{item.totalPrice.toLocaleString()} WORK</Text>
+        <Text style={styles.orderDate}>
+          {new Date(item.orderDate).toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }).split(' ').join('')}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 탭 */}
       <View style={styles.tabContainer}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'purchase' && styles.activeTab]}
-          onPress={() => setActiveTab('purchase')}
+          style={[styles.tab, activeTab === 'PURCHASE' && styles.activeTab]}
+          onPress={() => setActiveTab('PURCHASE')}
         >
           <Text style={[
             styles.tabText,
-            activeTab === 'purchase' && styles.activeTabText
+            activeTab === 'PURCHASE' && styles.activeTabText
           ]}>구매 목록</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'gift' && styles.activeTab]}
-          onPress={() => setActiveTab('gift')}
+          style={[styles.tab, activeTab === 'GIFT' && styles.activeTab]}
+          onPress={() => setActiveTab('GIFT')}
         >
           <Text style={[
             styles.tabText,
-            activeTab === 'gift' && styles.activeTabText
+            activeTab === 'GIFT' && styles.activeTabText
           ]}>선물 목록</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 주문 목록 */}
-      <ScrollView style={styles.orderList}>
-        {currentOrders.map((order) => (
-          <TouchableOpacity
-            key={order.id}
-            style={styles.orderItem}
-            onPress={() => handleOrderPress(order)}
-          >
-            <View>
-              <Text style={styles.orderStatus}>{order.status}</Text>
-              <Text style={styles.orderTitle}>{order.title}</Text>
-            </View>
-            <View style={styles.orderRight}>
-              <Text style={styles.orderAmount}>{order.amount}</Text>
-              <Text style={styles.orderDate}>{order.date}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+      <ScrollView
+        style={styles.orderList}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        }
+        onScroll={({ nativeEvent }) => {
+          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+          const isEndReached = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+          if (isEndReached && hasNextPage && !loading) {
+            fetchOrders(cursor);
+          }
+        }}
+        scrollEventThrottle={400}
+      >
+        {orders.length === 0 && !loading ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>주문 내역이 없습니다.</Text>
+          </View>
+        ) : (
+          <>
+            {orders.map(item => renderOrderItem(item))}
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FF8C00" />
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
 
-      {/* 주문 상세 바텀 시트 */}
       <OrderDetailBottomSheet
         visible={isBottomSheetVisible}
         onClose={() => setIsBottomSheetVisible(false)}
-        order={selectedOrder}
+        orderId={selectedOrder?.orderId}
+        orderItemId={selectedOrder?.orderItemId}
+        type={activeTab}
       />
     </SafeAreaView>
   );
@@ -144,6 +199,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
+  orderLeft: {
+    flex: 1,
+    paddingRight: 16,
+    maxWidth: '60%',
+  },
   orderStatus: {
     fontSize: 12,
     color: '#666666',
@@ -155,6 +215,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   orderRight: {
+    width: 140,
     alignItems: 'flex-end',
   },
   orderAmount: {
@@ -162,11 +223,27 @@ const styles = StyleSheet.create({
     color: '#FF8C00',
     fontWeight: '600',
     marginBottom: 4,
+    textAlign: 'right',
   },
   orderDate: {
     fontSize: 12,
     color: '#999999',
-  }
+    textAlign: 'right',
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+    marginTop: 100,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666666',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
 });
 
-export default OrderHistoryScreen; 
+export default OrderHistoryScreen;
+
