@@ -28,16 +28,18 @@
 /* 통계 카드 컨테이너 스타일 */
 .stats-container {
   display: flex;
+  align-items: center; /* 수직 정렬 */
   gap: 15px;
   margin-bottom: 20px;
 }
 
 .stat-box {
+  display: flex;
+  align-items: center; /* 라벨과 값을 수직 중앙 정렬 */
+  gap: 10px; /* 라벨과 값 사이 간격 */
   background-color: #f6f6f6;
   border-radius: 8px;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
+  padding: 10px 15px;
   min-width: 140px;
   border-left: 4px solid #ddd;
 }
@@ -55,11 +57,11 @@
 .stat-label {
   font-size: 14px;
   color: #666;
-  margin-bottom: 5px;
+  margin-right: 5px;
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   color: #333;
 }
