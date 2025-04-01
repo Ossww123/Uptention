@@ -4,14 +4,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.otoki.uptention.application.mining.service.dto.request.FocusModeOnRequestDto;
 import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
 import com.otoki.uptention.global.exception.ErrorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -43,10 +43,7 @@ public interface MiningApiDoc {
 			)
 		)
 	})
-	ResponseEntity<String> focusModeOn(
-		@Parameter(description = "사용자 ID", required = true)
-		@PathVariable Integer userId
-	);
+	ResponseEntity<String> focusModeOn(@RequestBody FocusModeOnRequestDto focusModeOnRequestDto);
 
 	@Operation(summary = "집중 모드 종료", description = "사용자의 집중 모드를 종료한다.")
 	@ApiResponses(value = {
@@ -65,10 +62,7 @@ public interface MiningApiDoc {
 			)
 		)
 	})
-	ResponseEntity<String> focusModeOff(
-		@Parameter(description = "사용자 ID", required = true)
-		@PathVariable Integer userId
-	);
+	ResponseEntity<String> focusModeOff();
 
 
 	@Operation(summary = "우수 사원 랭킹 조회", description = "상위 top개의 결과를 기반으로 우수 사원 랭킹을 조회한다.")
