@@ -1,6 +1,5 @@
 package com.otoki.uptention.application.item.service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -44,13 +43,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 		// 카테고리 검증
 		Category category = categoryService.getCategoryById(itemCreateRequestDto.getCategoryId());
 
-		// 이미지 업로드 후 URL 목록 생성
-		List<String> imageKeys = new ArrayList<>();
-		for (MultipartFile file : images) {
-			String imageKey = imageUploadService.uploadImage(file);
-			imageKeys.add(imageKey);
-		}
-
+		// Item 객체 생성
 		Item item = Item.builder()
 			.name(itemCreateRequestDto.getName())
 			.detail(itemCreateRequestDto.getDetail())
@@ -60,17 +53,22 @@ public class ItemAppServiceImpl implements ItemAppService {
 			.category(category)
 			.build();
 
-		Item savedItem = itemService.saveItem(item);
+		// 이미지 업로드와 Image 객체 생성을 한 번의 순회로 처리
+		List<Image> imageEntities = images.stream()
+			.map(file -> {
+				String imageKey = imageUploadService.uploadImage(file);
+				return Image.builder()
+					.url(imageKey)
+					.item(item)
+					.build();
+			})
+			.toList();
 
-		for (String imageKey : imageKeys) {
-			Image image = Image.builder()
-				.url(imageKey)
-				.item(savedItem)
-				.build();
-			savedItem.getImages().add(image);
-		}
+		// 이미지 목록 설정
+		item.getImages().addAll(imageEntities);
 
-		return savedItem;
+		// 아이템 저장 및 반환
+		return itemService.saveItem(item);
 	}
 
 	/**
