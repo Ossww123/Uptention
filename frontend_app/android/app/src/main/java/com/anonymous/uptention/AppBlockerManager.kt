@@ -14,17 +14,6 @@ class AppBlockerManager(private val context: Context) {
         const val KEY_BLOCKED_SYSTEM_APPS = "blocked_system_apps"
         private const val TAG = "AppBlockerManager"
         
-        // 관리할 시스템 앱 목록
-        private val MANAGED_SYSTEM_APPS = setOf(
-            "com.android.dialer",           // 전화
-            "com.android.calculator2",      // 계산기
-            "com.android.camera2",          // 카메라
-            "com.android.mms",             // 문자
-            "com.sec.android.gallery3d",    // 갤러리 (삼성)
-            "com.android.gallery3d",        // 갤러리 (AOSP)
-            "com.google.android.apps.photos" // 구글 포토
-        )
-        
         // 항상 허용되어야 하는 필수 앱 목록
         private val ESSENTIAL_APPS = setOf(
             "com.android.launcher3",                     // 기본 홈 런처
@@ -39,8 +28,17 @@ class AppBlockerManager(private val context: Context) {
             "com.google.android.launcher.layouts.nexus", // Nexus 런처 레이아웃
             "android",                                   // 안드로이드 시스템
             "com.android.launcher2",                     // 레거시 런처
-            "com.google.android.googlequicksearchbox"    // 구글 검색
+            "com.google.android.googlequicksearchbox",   // 구글 검색
+            "com.google.android.inputmethod.latin",      // Gboard
+            "com.samsung.android.honeyboard"            // 삼성 키보드
         )
+    }
+
+    // 앱 차단 상태 초기화 (앱 제한 기능 켤 때 호출)
+    fun initializeAppBlockingStates() {
+        // 기존의 차단된 앱 목록을 모두 초기화
+        prefs.edit().putStringSet(KEY_BLOCKED_SYSTEM_APPS, emptySet()).apply()
+        Log.d(TAG, "앱 차단 상태가 초기화되었습니다.")
     }
 
     // 시스템 앱 목록 가져오기

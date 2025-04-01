@@ -260,7 +260,9 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.nameText}>{userInfo?.name || '-'}</Text>
             </View>
             <View style={styles.iconContainer}>
-              <Ionicons name="medal-outline" size={20} />
+              <TouchableOpacity onPress={() => navigation.navigate('Ranking')}>
+                <Ionicons name="medal-outline" size={20} />
+              </TouchableOpacity>
               <Ionicons name="notifications-outline" size={20} />
             </View>
           </View>

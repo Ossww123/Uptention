@@ -30,7 +30,6 @@ class AppBlockerModule(reactContext: ReactApplicationContext) : ReactContextBase
                 // 시스템 앱들의 초기 상태 설정
                 appBlockerManager.getSystemApps()
             }
-            isAppBlockingEnabled = enabled
             val prefs = reactApplicationContext.getSharedPreferences(
                 AppBlockerService.PREFS_NAME, 
                 Context.MODE_PRIVATE
