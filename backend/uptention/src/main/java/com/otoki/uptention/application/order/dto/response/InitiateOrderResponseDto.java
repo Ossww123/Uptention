@@ -13,9 +13,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Schema(description = "주문 초기화 응답 DTO")
 public class InitiateOrderResponseDto {
-	@Schema(description = "주문 ID", example = "1", required = true)
+	@Schema(description = "주문 ID", example = "1")
 	private Integer orderId;
 
-	@Schema(description = "결제 금액", example = "1000", required = true)
+	@Schema(description = "결제 금액", example = "1000")
 	private Integer paymentAmount;
 }
