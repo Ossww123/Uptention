@@ -111,10 +111,28 @@ const DailyView = () => {
   };
 
   // 특정 날짜 선택 처리
-  const handleSelectDay = (item) => {
-    setSelectedDayData(item);
-    setSelectedDate(new Date(2025, item.month - 1, item.day));
-  };
+const handleSelectDay = async (item) => {
+  setSelectedDayData(item);
+  
+  // 선택한 날짜 객체 생성
+  const selectedDateObj = new Date(2025, item.month - 1, item.day);
+  setSelectedDate(selectedDateObj);
+  
+  try {
+    // 선택한 날짜의 스크린타임 데이터 가져오기
+    const screenTimeData = await ScreenTime.getScreenTimeByDate(selectedDateObj);
+    
+    if (screenTimeData.hasPermission) {
+      setDailyScreenTime(screenTimeData.totalScreenTimeMinutes);
+      // 앱 이름과 아이콘이 포함된 appUsageWithNames 사용
+      setAppUsage(screenTimeData.appUsageWithNames || {});
+    }
+  } catch (error) {
+    console.error(`${item.month}월 ${item.day}일 데이터 가져오기 오류:`, error);
+    // 오류 발생 시 빈 데이터 설정
+    setAppUsage({});
+  }
+};
 
   // 앱 사용 시간 바 너비 계산
   const getBarWidth = (usageTime) => {
