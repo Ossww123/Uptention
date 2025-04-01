@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -65,6 +64,14 @@ public class ItemController implements ItemApiDoc {
 	public ResponseEntity<String> deleteItem(@PathVariable Integer itemId) {
 		itemAppService.deleteItem(itemId);
 		return ResponseEntity.ok("상품 삭제 완료");
+	}
+
+	@PatchMapping("/{itemId}")
+	public ResponseEntity<String> updateItem(
+		@PathVariable Integer itemId,
+		@RequestBody ItemUpdateRequestDto updateRequest) {
+		itemAppService.updateItem(itemId, updateRequest);
+		return ResponseEntity.ok("상품 수정 완료");
 	}
 
 }
