@@ -49,8 +49,9 @@ public class Item extends TimeStampEntity {
 	@Column(name = "brand", length = 31)
 	private String brand;
 
+	@Builder.Default
 	@Column(name = "status")
-	private Boolean status;
+	private Boolean status = true;
 
 	@Column(name = "quantity")
 	private Integer quantity;

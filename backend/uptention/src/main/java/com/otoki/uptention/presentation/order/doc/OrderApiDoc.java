@@ -11,6 +11,7 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.DeliveryAddressResponseDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
@@ -32,7 +33,7 @@ import jakarta.validation.Valid;
  * 상품 검증 및 주문 관리 API 문서화를 위한 인터페이스
  * 실제 구현체는 없으며, Swagger 문서화 목적으로만 사용됩니다.
  */
-@Tag(name = "상품 주문/조회 API", description = "상품 구매, 선물을 담당하는 컨트롤러")
+@Tag(name = "상품 주문 API", description = "상품 구매, 선물을 담당하는 컨트롤러")
 public interface OrderApiDoc {
 
 	@Operation(summary = "상품 주문", description = "주문 정보를 받아 주문을 생성합니다.")
@@ -253,6 +254,28 @@ public interface OrderApiDoc {
 		@PathVariable Integer orderId,
 		@Parameter(description = "배송 정보", required = true)
 		@Valid @RequestBody DeliveryInfoRequestDto deliveryInfoRequestDto);
+
+	@Operation(summary = "최근 배송지 조회", description = "사용자의 최근 배송지를 조회합니다.")
+	@ApiResponses(value = {
+		@ApiResponse(
+			responseCode = "200",
+			description = "최근 배송지 조회 성공",
+			content = @Content(
+				schema = @Schema(implementation = DeliveryAddressResponseDto.class),
+				examples = {
+					@ExampleObject(
+						name = "배송지 존재",
+						value = "{\"address\": \"서울특별시 강남구 테헤란로 123\"}"
+					),
+					@ExampleObject(
+						name = "배송지 없음",
+						value = "{\"address\": \"\"}"
+					)
+				}
+			)
+		)
+	})
+	ResponseEntity<DeliveryAddressResponseDto> getRecentDeliveryInfo();
 
 	@Operation(summary = "주문 내역 조회", description = "사용자의 주문 내역을 커서 기반 페이지네이션으로 조회합니다.")
 	@ApiResponses(value = {

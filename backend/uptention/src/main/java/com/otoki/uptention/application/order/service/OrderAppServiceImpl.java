@@ -10,6 +10,7 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.DeliveryAddressResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderItemResponseDto;
@@ -19,6 +20,7 @@ import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
 import com.otoki.uptention.domain.order.entity.Order;
+import com.otoki.uptention.domain.order.enums.GiftStatus;
 import com.otoki.uptention.domain.order.enums.OrderHistoryType;
 import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.order.service.OrderService;
@@ -103,7 +105,23 @@ public class OrderAppServiceImpl implements OrderAppService {
 	public Order registerDeliveryInfo(Integer orderId, DeliveryInfoRequestDto deliveryInfoRequestDto) {
 		Order order = orderService.getOrderById(orderId);
 		order.updateAddress(deliveryInfoRequestDto.getAddress());
-		return orderService.saveOrder(order);
+
+		// Gift 엔티티의 상태를 수령 완료로 업데이트
+		Gift gift = order.getGift();
+		if (gift != null) {
+			gift.updateStatus(GiftStatus.RECEIVED);
+		}
+
+		return order;
+	}
+
+	@Override
+	public DeliveryAddressResponseDto getLatestDeliveryAddress() {
+		Integer userId = securityService.getLoggedInUser().getId();
+		String latestAddress = orderService.getLatestDeliveryAddress(userId);
+		return DeliveryAddressResponseDto.builder()
+			.address(latestAddress != null ? latestAddress : "")
+			.build();
 	}
 
 	/**

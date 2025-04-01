@@ -28,6 +28,11 @@ public class OrderServiceImpl implements OrderService {
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 	}
 
+	@Override
+	public String getLatestDeliveryAddress(Integer userId) {
+		return orderRepository.findLatestDeliveryAddressByUserId(userId);
+	}
+
 	// 구매 주문 조회 (첫 페이지)
 	@Override
 	public List<Order> findPurchaseOrdersByUserIdWithLimit(Integer userId, int limit) {

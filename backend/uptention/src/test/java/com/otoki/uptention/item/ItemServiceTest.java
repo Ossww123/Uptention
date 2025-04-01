@@ -32,6 +32,37 @@ public class ItemServiceTest {
 	private ItemServiceImpl itemService;
 
 	@Test
+	@DisplayName("상품 ID로 조회할 때 상품이 존재하지 않으면 ITEM_NOT_FOUND 예외가 발생한다")
+	void testGetItemDetails_ItemDoesNotExist() {
+		// given
+		Integer itemId = 2;
+		when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
+
+		// when & then
+		assertThatThrownBy(() -> itemService.getItemById(itemId))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.ITEM_NOT_FOUND);
+	}
+
+	@Test
+	@DisplayName("상품 ID로 조회할 때 상품이 비활성화 상태면 ITEM_UNAVAILABLE 예외가 발생한다")
+	void testGetItemDetails_ItemInactive() {
+		// given
+		Integer itemId = 3;
+		Item inactiveItem = Item.builder()
+			.id(itemId)
+			.name("비활성 상품")
+			.status(false) // 비활성화 상태
+			.build();
+		when(itemRepository.findById(itemId)).thenReturn(Optional.of(inactiveItem));
+
+		// when & then
+		assertThatThrownBy(() -> itemService.getItemById(itemId))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.ITEM_UNAVAILABLE);
+	}
+
+	@Test
 	@DisplayName("상품 ID로 조회할 때 활성화된 상품이 존재하면 해당 상품을 반환한다")
 	void testGetItemDetails_ItemExists() {
 		// given
@@ -39,8 +70,9 @@ public class ItemServiceTest {
 		Item expectedItem = Item.builder()
 			.id(itemId)
 			.name("테스트 상품")
+			.status(true) // 활성화 상태
 			.build();
-		when(itemRepository.findActiveByIdWithImages(itemId)).thenReturn(Optional.of(expectedItem));
+		when(itemRepository.findById(itemId)).thenReturn(Optional.of(expectedItem));
 
 		// when
 		Item actualItem = itemService.getItemById(itemId);
@@ -48,19 +80,6 @@ public class ItemServiceTest {
 		// then
 		assertThat(actualItem).isNotNull();
 		assertThat(actualItem.getId()).isEqualTo(expectedItem.getId());
-	}
-
-	@Test
-	@DisplayName("상품 ID로 조회할 때 활성화된 상품이 존재하지 않으면 예외가 발생한다")
-	void testGetItemDetails_ItemDoesNotExist() {
-		// given
-		Integer itemId = 2;
-		when(itemRepository.findActiveByIdWithImages(itemId)).thenReturn(Optional.empty());
-
-		// when & then
-		assertThatThrownBy(() -> itemService.getItemById(itemId))
-			.isInstanceOf(CustomException.class)
-			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.ITEM_NOT_FOUND);
 	}
 
 	@Test

@@ -127,13 +127,25 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		LocalDateTime startUtc = startKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
 		LocalDateTime endUtc = endKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
 
-		return miningTimeService.findMiningTimesByUserIdAndTimeRange(userId, startUtc, endUtc)
-			.stream()
-			.map(miningTime -> MiningTimeResponseDto.builder()
-				.startTime(miningTime.getStartTime())
-				.endTime(miningTime.getEndTime())
-				.totalTime(Duration.between(miningTime.getStartTime(), miningTime.getEndTime()).toMinutes())
-				.build())
+		List<MiningTime> miningTimeList = miningTimeService.findMiningTimesByUserIdAndTimeRange(userId,
+			startUtc, endUtc);
+
+		return miningTimeList.stream()
+			// 각 MiningTime을 KST 날짜와 해당 시간(분)을 계산한 결과로 매핑한 후 그룹화
+			.collect(Collectors.groupingBy(
+				miningTime -> miningTime.getStartTime().plusHours(9).toLocalDate(),
+				Collectors.summingLong(miningTime ->
+					Duration.between(miningTime.getStartTime(), miningTime.getEndTime()).toMinutes()
+				)
+			))
+			// 그룹화된 Map의 엔트리를 MiningTimeResponseDto로 변환
+			.entrySet().stream()
+			.map(entry -> MiningTimeResponseDto.builder()
+				.date(entry.getKey())
+				.totalTime(Math.toIntExact(entry.getValue()))
+				.build()
+			)
+			// 최종 결과를 List로 수집
 			.collect(Collectors.toList());
 	}
 
