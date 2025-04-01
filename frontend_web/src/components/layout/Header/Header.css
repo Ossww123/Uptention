@@ -1,0 +1,45 @@
+/* src/components/layout/Header/Header.css */
+.admin-header {
+    background-color: white;
+    border-bottom: 1px solid #eaeaea;
+    padding: 15px 25px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    border-radius: 8px;
+  }
+  
+  .header-title h1 {
+    font-size: 24px;
+    color: #333;
+    margin: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+  }
+  
+  .header-title h1::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 24px;
+    background-color: #FF8C00;
+    margin-right: 15px;
+    border-radius: 3px;
+  }
+  
+  /* 반응형 스타일 */
+  @media (max-width: 768px) {
+    .admin-header {
+      padding: 12px 15px;
+    }
+    
+    .header-title h1 {
+      font-size: 20px;
+    }
+    
+    .header-title h1::before {
+      width: 4px;
+      height: 20px;
+      margin-right: 10px;
+    }
+  }
