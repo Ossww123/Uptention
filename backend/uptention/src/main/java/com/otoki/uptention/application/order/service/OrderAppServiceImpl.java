@@ -20,6 +20,7 @@ import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
 import com.otoki.uptention.domain.order.entity.Order;
+import com.otoki.uptention.domain.order.enums.GiftStatus;
 import com.otoki.uptention.domain.order.enums.OrderHistoryType;
 import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.order.service.OrderService;
@@ -104,7 +105,14 @@ public class OrderAppServiceImpl implements OrderAppService {
 	public Order registerDeliveryInfo(Integer orderId, DeliveryInfoRequestDto deliveryInfoRequestDto) {
 		Order order = orderService.getOrderById(orderId);
 		order.updateAddress(deliveryInfoRequestDto.getAddress());
-		return orderService.saveOrder(order);
+
+		// Gift 엔티티의 상태를 수령 완료로 업데이트
+		Gift gift = order.getGift();
+		if (gift != null) {
+			gift.updateStatus(GiftStatus.RECEIVED);
+		}
+
+		return order;
 	}
 
 	@Override
