@@ -115,7 +115,7 @@ public interface ItemApiDoc {
 		@Parameter(description = "정렬 방식")
 		@RequestParam(defaultValue = "SALES") SortType sort);
 
-	@Operation(summary = "상품 등록", description = "새로운 상품을 마켓에 등록합니다")
+	@Operation(summary = "상품 등록", description = "관리자는 새로운 상품을 마켓에 등록 <br><br>📌 요청 시 Content-Type 지정이 필수입니다. <br>- 상품 정보(item): <b>application/json</b> <br>- 이미지(images): <b>multipart/form-data</b>")
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "상품 등록 성공",
 			content = @Content(
@@ -138,32 +138,97 @@ public interface ItemApiDoc {
 						value = "{\"code\":\"ITEM_010\",\"message\":\"이미지는 1개 이상 3개 이하로 업로드해야 합니다.\",\"path\":\"/api/items\"}"
 					),
 					@ExampleObject(
+						name = "카테고리 ID 필수",
+						summary = "카테고리 ID가 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[categoryId] 카테고리 ID는 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "상품명 필수",
+						summary = "상품명이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[name] 상품명은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "브랜드명 필수",
+						summary = "브랜드명이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[brand] 브랜드명은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "가격 필수",
+						summary = "가격이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[price] 가격은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "상품 설명 필수",
+						summary = "상품 설명이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[detail] 상품 설명은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "수량 필수",
+						summary = "수량이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[quantity] 수량은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "상품명 길이 초과",
+						summary = "상품명이 최대 길이를 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[name] 상품명은 최대 30자까지 입력 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "브랜드명 길이 초과",
+						summary = "브랜드명이 최대 길이를 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[brand] 브랜드명은 최대 30자까지 입력 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "상품 설명 길이 초과",
+						summary = "상품 설명이 최대 길이를 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[detail] 상품 설명은 최대 255자까지 입력 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "가격 범위 초과",
+						summary = "상품 가격이 허용 범위를 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[price] 가격은 최대 5000원까지 설정 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "가격 최소값 미달",
+						summary = "상품 가격이 최소값 미만임",
+						value = "{\"code\":\"X002\",\"message\":\"[price] 가격은 1원 이상이어야 합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "수량 최소값 미달",
+						summary = "상품 수량이 최소값 미만임",
+						value = "{\"code\":\"X002\",\"message\":\"[quantity] 수량은 1개 이상이어야 합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "수량 최대값 초과",
+						summary = "상품 수량이 최대값을 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[quantity] 수량은 최대 99개까지 설정 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
 						name = "파일이 비어있습니다.",
-						value = "{\"code\":\"FILE_001\",\"message\":\"파일이 비어있습니다.\",\"path\":\"/api/users/{userId}/profiles\"}"
+						value = "{\"code\":\"FILE_001\",\"message\":\"파일이 비어있습니다.\",\"path\":\"/api/items\"}"
 					),
 					@ExampleObject(
 						name = "파일 크기가 너무 큽니다.",
-						value = "{\"code\":\"FILE_002\",\"message\":\"파일 크기가 너무 큽니다. 최대 허용 크기는 5MB 바이트 입니다.\",\"path\":\"/api/users/{userId}/profiles\"}"
+						value = "{\"code\":\"FILE_002\",\"message\":\"파일 크기가 너무 큽니다. 최대 허용 크기는 5MB 바이트 입니다.\",\"path\":\"/api/items\"}"
 					),
 					@ExampleObject(
 						name = "유효하지 않은 파일 이름입니다.",
-						value = "{\"code\":\"FILE_003\",\"message\":\"유효하지 않은 파일 이름입니다.\",\"path\":\"/api/users/{userId}/profiles\"}"
+						value = "{\"code\":\"FILE_003\",\"message\":\"유효하지 않은 파일 이름입니다.\",\"path\":\"/api/items\"}"
 					),
 					@ExampleObject(
 						name = "허용되지 않은 파일 확장자입니다.",
-						value = "{\"code\":\"FILE_004\",\"message\":\"허용되지 않은 파일 확장자입니다.\",\"path\":\"/api/users/{userId}/profiles\"}"
+						value = "{\"code\":\"FILE_004\",\"message\":\"허용되지 않은 파일 확장자입니다.\",\"path\":\"/api/items\"}"
 					),
 					@ExampleObject(
 						name = "허용되지 않은 MIME 타입입니다.",
-						value = "{\"code\":\"FILE_005\",\"message\":\"허용되지 않은 MIME 타입입니다.\",\"path\":\"/api/users/{userId}/profiles\"}"
+						value = "{\"code\":\"FILE_005\",\"message\":\"허용되지 않은 MIME 타입입니다.\",\"path\":\"/api/items\"}"
 					),
 					@ExampleObject(
 						name = "파일 헤더 정보를 읽어오지 못했습니다.",
-						value = "{\"code\":\"FILE_006\",\"message\":\"파일 헤더 정보를 읽어오지 못했습니다.\",\"path\":\"/api/users/{userId}/profiles\"}"
+						value = "{\"code\":\"FILE_006\",\"message\":\"파일 헤더 정보를 읽어오지 못했습니다.\",\"path\":\"/api/items\"}"
 					),
 					@ExampleObject(
 						name = "파일의 매직 넘버 불일치",
-						value = "{\"code\":\"FILE_007\",\"message\":\"파일의 매직 넘버가 확장자와 일치하지 않습니다.\",\"path\":\"/api/users/{userId}/profiles\"}"
+						value = "{\"code\":\"FILE_007\",\"message\":\"파일의 매직 넘버가 확장자와 일치하지 않습니다.\",\"path\":\"/api/items\"}"
 					)
 				}
 			)),
