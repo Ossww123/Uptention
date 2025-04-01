@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../config/config';
 
-const BASE_URL = 'https://j12d211.p.ssafy.io/api';
+const BASE_URL = `${API_BASE_URL}/api`;
 const TOKEN_KEY = 'auth_token';
 
 // 토큰 가져오기

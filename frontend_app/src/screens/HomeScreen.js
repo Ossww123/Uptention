@@ -14,13 +14,17 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { NativeModules } from 'react-native';
 import { useWallet } from '../contexts/WalletContext';
+import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken } from '../services/api';
 
 const { AppBlockerModule } = NativeModules;
 
 const HomeScreen = ({ navigation }) => {
-  const { tokenBalance, publicKey, userId } = useWallet();
+  const { tokenBalance, publicKey } = useWallet();
+  const { userId, authToken } = useAuth();
   const [userInfo, setUserInfo] = useState(null);
   const [userPoint, setUserPoint] = useState(0);
 
@@ -39,16 +43,66 @@ const HomeScreen = ({ navigation }) => {
   const svgProgress = (progress * circum) / 100;  // 이 계산식으로 하면 progress가 
                                                  // 커질수록 프로그레스바가 줄어듦
   
-  // 앱 권한 상태 확인 (컴포넌트 마운트시 실행)
+  // JWT 토큰에서 payload를 추출하는 함수
+  const parseJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('JWT 파싱 오류:', error);
+      return null;
+    }
+  };
+
+  // userId와 토큰을 가져오는 함수
+  const loadUserData = async () => {
+    try {
+      const storedUserId = await AsyncStorage.getItem('userId');
+      const token = await getToken();
+      
+      if (token) {
+        setAuthToken(token);
+        
+        // userId가 저장되어 있지 않다면 토큰에서 추출
+        if (!storedUserId) {
+          const payload = parseJwt(token);
+          if (payload && payload.userId) {
+            const extractedUserId = payload.userId.toString();
+            await AsyncStorage.setItem('userId', extractedUserId);
+            setUserId(extractedUserId);
+            console.log('토큰에서 추출한 userId:', extractedUserId);
+            return { userId: extractedUserId, token };
+          }
+        } else {
+          setUserId(storedUserId);
+          console.log('저장된 userId:', storedUserId);
+          return { userId: storedUserId, token };
+        }
+      }
+      console.log('저장된 데이터 없음 - userId:', storedUserId, 'token:', token);
+      return null;
+    } catch (error) {
+      console.error('사용자 데이터 로드 오류:', error);
+      return null;
+    }
+  };
+
+  // 컴포넌트 마운트 시 사용자 데이터 로드
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  // 앱 권한 상태 확인
   useEffect(() => {
     if (Platform.OS === 'android') {
-      // AppBlockerModule이 제대로 로드됐는지 확인
-      console.log('AppBlockerModule 확인:', AppBlockerModule);
-      
       if (!AppBlockerModule) {
         console.error('AppBlockerModule이 로드되지 않았습니다.');
       } else {
-        console.log('AppBlockerModule 메서드:', Object.keys(AppBlockerModule));
         checkAppBlockerPermissions();
       }
     }
@@ -74,35 +128,19 @@ const HomeScreen = ({ navigation }) => {
   
   // 집중 모드 시작 함수
   const startFocusMode = async () => {
-    if (Platform.OS === 'android') {
-      // 필요한 권한이 모두 있는지 확인
-      if (!hasAccessibilityPermission || !hasOverlayPermission) {
-        Alert.alert(
-          '권한 필요',
-          '집중 모드에서 앱 제한 기능을 사용하려면 접근성 서비스와 화면 오버레이 권한이 필요합니다.',
-          [
-            { 
-              text: '취소', 
-              style: 'cancel'
-            },
-            { 
-              text: '권한 설정', 
-              onPress: () => requestAppBlockerPermissions()
-            }
-          ]
-        );
-        return;
-      }
+    if (!userId || !authToken) {
+      Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
+      return;
     }
 
     try {
       // 집중 모드 시작 API 호출
       const response = await axios.post(
-        `${API_BASE_URL}/api/mining-time/focus/4`,
-        null,  // 요청 본문이 필요없으므로 null로 변경
+        `${API_BASE_URL}/api/mining-time/focus/${userId}`,
+        null,
         {
           headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }
@@ -112,7 +150,6 @@ const HomeScreen = ({ navigation }) => {
         console.log('집중 모드 시작 API 호출 성공');
         
         if (Platform.OS === 'android') {
-          // 앱 차단 기능 활성화
           try {
             await AppBlockerModule.setAppBlockingEnabled(true);
             console.log('앱 차단 기능 활성화 성공');
@@ -121,7 +158,6 @@ const HomeScreen = ({ navigation }) => {
           }
         }
         
-        // 포커스 모드 화면으로 이동
         navigation.navigate('FocusMode');
       }
     } catch (error) {
@@ -211,10 +247,12 @@ const HomeScreen = ({ navigation }) => {
 
   // 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
+    if (!userId || !authToken) return;
+
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/users/4`, {
+      const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+          'Authorization': `Bearer ${authToken}`
         }
       });
       
@@ -226,31 +264,37 @@ const HomeScreen = ({ navigation }) => {
 
   // 사용자 포인트 조회 함수
   const fetchUserPoint = async () => {
+    if (!userId || !authToken) return;
+
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/users/4/point`, {
+      const response = await axios.get(`${API_BASE_URL}/api/users/${userId}/point`, {
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+          'Authorization': `Bearer ${authToken}`
         }
       });
-      setUserPoint(response.data.point); // point 값만 추출하여 저장
+      setUserPoint(response.data.point);
     } catch (error) {
       console.error('포인트 조회 오류:', error);
     }
   };
 
   useEffect(() => {
-    fetchUserInfo();
-    fetchUserPoint();
-  }, []);
+    if (userId && authToken) {
+      fetchUserInfo();
+      fetchUserPoint();
+    }
+  }, [userId, authToken]);
 
   // 화면이 포커스될 때마다 포인트 업데이트
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      fetchUserPoint();
+      if (userId && authToken) {
+        fetchUserPoint();
+      }
     });
 
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, userId, authToken]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

@@ -10,6 +10,7 @@ import bs58 from 'bs58';
 import * as Linking from 'expo-linking';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { useWallet } from '../contexts/WalletContext';
+import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -48,6 +49,7 @@ const ProfileScreen = ({ navigation }) => {
     session, setSession,
     solBalance, setSolBalance
   } = useWallet();
+  const { userId, authToken, logout } = useAuth();
   
   const [deepLink, setDeepLink] = useState("");
   const [dappKeyPair] = useState(nacl.box.keyPair());
@@ -59,12 +61,7 @@ const ProfileScreen = ({ navigation }) => {
   // 로그아웃 함수를 컴포넌트 내부로 이동
   const handleLogout = async () => {
     try {
-      // API 토큰 제거
-      await removeToken();
-      
-      // AsyncStorage의 auth 관련 데이터 제거
-      await AsyncStorage.removeItem('auth_status');
-      
+      await logout();
       // 로그아웃 후 앱 초기 화면(로그인 화면)으로 이동
       Alert.alert(
         "로그아웃",
@@ -136,14 +133,12 @@ const ProfileScreen = ({ navigation }) => {
 
   // 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
+    if (!userId || !authToken) return;
+
     try {
-      // TODO: 로그인 구현 시 수정 필요
-      // - userId는 로그인한 사용자의 ID로 대체
-      // - Authorization 헤더의 토큰은 로그인 시 받은 JWT 토큰으로 대체
-      // - 예시: const { userId, token } = useAuth();
-      const response = await axios.get(`${API_BASE_URL}/api/users/4`, {
+      const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+          'Authorization': `Bearer ${authToken}`
         }
       });
       
@@ -280,6 +275,11 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleImageUpload = async () => {
+    if (!userId || !authToken) {
+      Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
+      return;
+    }
+
     try {
       const result = await launchImageLibrary({
         mediaType: 'photo',
@@ -309,11 +309,11 @@ const ProfileScreen = ({ navigation }) => {
 
       // 프로필 이미지 업로드 API 호출
       const response = await axios.put(
-        `${API_BASE_URL}/api/users/4/profiles`,
+        `${API_BASE_URL}/api/users/${userId}/profiles`,
         formData,
         {
           headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'multipart/form-data',
           },
         }
@@ -330,12 +330,14 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleDeleteImage = async () => {
+    if (!userId || !authToken) return;
+
     try {
       const response = await axios.delete(
-        `${API_BASE_URL}/api/users/4/profiles`,
+        `${API_BASE_URL}/api/users/${userId}/profiles`,
         {
           headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Authorization': `Bearer ${authToken}`
           }
         }
       );
