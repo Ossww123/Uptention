@@ -14,13 +14,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { post, saveToken } from '../../services/api';
+import { post } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const LoginScreen = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
   // 로그인 처리 함수
   const handleLogin = async () => {
@@ -51,8 +53,20 @@ const LoginScreen = ({ onLoginSuccess }) => {
         if (authToken) {
           // "Bearer " 접두사 제거
           const token = authToken.replace('Bearer ', '');
-          await saveToken(token);
-          onLoginSuccess();
+          
+          // 토큰에서 userId 추출
+          const payload = parseJwt(token);
+          if (payload && payload.userId) {
+            // AuthContext를 통해 로그인 처리
+            const loginSuccess = await login(token, payload.userId.toString());
+            if (loginSuccess) {
+              onLoginSuccess();
+            } else {
+              Alert.alert('로그인 실패', '로그인 정보 저장에 실패했습니다.');
+            }
+          } else {
+            Alert.alert('로그인 실패', '토큰에서 사용자 정보를 추출할 수 없습니다.');
+          }
         } else {
           Alert.alert('로그인 실패', '인증 토큰을 받지 못했습니다.');
         }
@@ -68,8 +82,22 @@ const LoginScreen = ({ onLoginSuccess }) => {
     }
   };
 
-  // 개발용 임시 다음 화면 이동 함수
-  // 개발용 임시 다음 화면 이동 함수
+  // JWT 토큰에서 payload를 추출하는 함수
+  const parseJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('JWT 파싱 오류:', error);
+      return null;
+    }
+  };
+
   // 개발용 임시 다음 화면 이동 함수
   const handleDevSkip = () => {
     onLoginSuccess();
@@ -147,8 +175,6 @@ const LoginScreen = ({ onLoginSuccess }) => {
               * 계정이 없으신 경우 관리자에게 문의하세요.
             </Text>
             
-            {/* 개발용 임시 버튼 */}
-            {/* 개발용 임시 버튼 */}
             {/* 개발용 임시 버튼 */}
             <TouchableOpacity
               style={styles.devSkipButton}
@@ -242,8 +268,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  // 개발용 임시 버튼 스타일
-  // 개발용 임시 버튼 스타일
   // 개발용 임시 버튼 스타일
   devSkipButton: {
     backgroundColor: '#E0E0E0',

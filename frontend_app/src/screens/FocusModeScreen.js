@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTimer } from '../hooks/useTimer';
+import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
 
@@ -12,6 +13,7 @@ const FocusModeScreen = ({ navigation }) => {
   const [points, setPoints] = useState(0);
   const [appState, setAppState] = useState(AppState.currentState);
   const totalSecondsRef = useRef(0);
+  const { userId, authToken } = useAuth();
 
   // 포인트 계산 함수
   const calculatePoints = useCallback((seconds) => {
@@ -98,18 +100,23 @@ const FocusModeScreen = ({ navigation }) => {
   }, []);
 
   const handleExit = async () => {
+    if (!userId || !authToken) {
+      Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
+      return;
+    }
+
     try {
       await AppBlockerModule.setAppBlockingEnabled(false);
       const finalSeconds = getTimeInSeconds();
       const finalPoints = Math.floor(finalSeconds / 60);
-      
+
       // 포커스 모드 종료 API 호출
       await axios.patch(
-        `${API_BASE_URL}/api/mining-time/focus/4`,
+        `${API_BASE_URL}/api/mining-time/focus/${userId}`,
         null,
         {
           headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }
@@ -124,9 +131,9 @@ const FocusModeScreen = ({ navigation }) => {
 
         // 포인트 조회 시도
         try {
-          const pointResponse = await axios.get(`${API_BASE_URL}/api/users/4/point`, {
+          const pointResponse = await axios.get(`${API_BASE_URL}/api/users/${userId}/point`, {
             headers: {
-              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+              'Authorization': `Bearer ${authToken}`
             }
           });
 
@@ -153,18 +160,8 @@ const FocusModeScreen = ({ navigation }) => {
         updatedPoint: updatedPoint
       });
     } catch (error) {
-      console.error('포커스 모드 종료 실패:', error);
-      console.error('에러 상세 정보:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers
-      });
-      Alert.alert(
-        '알림',
-        '포커스 모드 종료에 실패했습니다.',
-        [{ text: '확인', onPress: () => navigation.goBack() }]
-      );
+      console.error('포커스 모드 종료 오류:', error);
+      Alert.alert('오류', '포커스 모드 종료 중 문제가 발생했습니다.');
     }
   };
 
