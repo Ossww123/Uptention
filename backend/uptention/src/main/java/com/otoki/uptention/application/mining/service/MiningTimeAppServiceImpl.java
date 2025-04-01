@@ -12,15 +12,14 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
 import com.otoki.uptention.domain.mining.entity.MiningTime;
@@ -109,7 +108,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 	// 채굴 시간 조회
 	@Override
-	public List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime) {
+	public Map<LocalDate, Long> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime) {
 		User loggedInUser = securityService.getLoggedInUser();
 
 		if (!loggedInUser.getId().equals(userId)) {
@@ -127,14 +126,17 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		LocalDateTime startUtc = startKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
 		LocalDateTime endUtc = endKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
 
-		return miningTimeService.findMiningTimesByUserIdAndTimeRange(userId, startUtc, endUtc)
-			.stream()
-			.map(miningTime -> MiningTimeResponseDto.builder()
-				.startTime(miningTime.getStartTime())
-				.endTime(miningTime.getEndTime())
-				.totalTime(Duration.between(miningTime.getStartTime(), miningTime.getEndTime()).toMinutes())
-				.build())
-			.collect(Collectors.toList());
+		List<MiningTime> miningTimeList = miningTimeService.findMiningTimesByUserIdAndTimeRange(userId,
+			startUtc, endUtc);
+
+		Map<LocalDate, Long> response = new HashMap<>();
+		for (MiningTime miningTime : miningTimeList) {
+			LocalDateTime kstTime = miningTime.getStartTime().plusHours(9);
+			LocalDate date = kstTime.toLocalDate();
+			Long total = Duration.between(miningTime.getStartTime(), miningTime.getEndTime()).toMinutes();
+			response.merge(date, total, Long::sum);
+		}
+		return response;
 	}
 
 	// 우수사원 랭킹 조회
