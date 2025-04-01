@@ -8,7 +8,7 @@
 /* 콘텐츠 카드 스타일 */
 .content-card {
   background-color: white;
-  border-radius: 4px;
+  border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 20px;
   margin-bottom: 20px;
@@ -25,40 +25,55 @@
   color: #333;
 }
 
-.user-stats {
+/* 통계 카드 컨테이너 스타일 */
+.stats-container {
   display: flex;
+  gap: 15px;
   margin-bottom: 20px;
 }
 
 .stat-box {
   background-color: #f6f6f6;
-  border-radius: 4px;
-  padding: 10px 15px;
+  border-radius: 8px;
+  padding: 15px;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
+  flex-direction: column;
+  min-width: 140px;
+  border-left: 4px solid #ddd;
+}
+
+.connected-box {
+  background-color: #E8F5E9;
+  border-left: 4px solid #4CAF50;
+}
+
+.disconnected-box {
+  background-color: #FFF8E1;
+  border-left: 4px solid #FF9800;
 }
 
 .stat-label {
   font-size: 14px;
   color: #666;
-  margin-right: 10px;
+  margin-bottom: 5px;
 }
 
 .stat-value {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: bold;
   color: #333;
 }
 
 /* 필터 컨테이너 스타일 */
 .filters-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
@@ -127,68 +142,79 @@
   min-height: 200px;
 }
 
+/* 테이블 스타일 개선 */
 .user-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.user-table th,
+.user-table th {
+  background-color: #f8f9fa;
+  color: #444;
+  font-weight: 600;
+  padding: 15px;
+  text-align: left;
+  border-bottom: 2px solid #eee;
+}
+
+.user-table tr:nth-child(even) {
+  background-color: #f8fbff;
+}
+
 .user-table td {
   padding: 15px;
   text-align: left;
   border-bottom: 1px solid #eee;
 }
 
-.user-table th {
-  background-color: #f8f9fa;
-  color: #666;
-  font-weight: 500;
-}
-
-.user-table tbody tr:nth-child(even) {
-  background-color: #f8f9fa;
-}
-
-.user-table tbody tr:hover {
-  background-color: #f0f0f0;
+.user-table tr:hover {
+  background-color: #f5f5f5;
 }
 
 /* 지갑 연동 뱃지 스타일 */
 .wallet-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 500;
   display: inline-block;
 }
 
 .wallet-connected {
-  background-color: #4caf50;
+  background-color: #4CAF50;
   color: white;
 }
 
 .wallet-disconnected {
-  background-color: #ff9800;
+  background-color: #FF9800;
   color: white;
 }
 
+/* 삭제 버튼 스타일 개선 */
 .delete-button {
-  background-color: #e74c3c;
-  color: white;
+  background-color: #ffebee;
+  color: #e53935;
   border: none;
   padding: 8px 15px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 13px;
+  transition: all 0.2s;
 }
 
 .delete-button:hover {
-  background-color: #c0392b;
+  background-color: #ef5350;
+  color: white;
 }
 
 /* 비활성화된 버튼 스타일 */
 .delete-button:disabled {
-  background-color: #cccccc;
+  background-color: #eeeeee;
+  color: #bbbbbb;
   cursor: not-allowed;
 }
 
@@ -197,19 +223,31 @@
   justify-content: flex-end;
 }
 
+/* 추가 버튼 스타일 개선 */
 .add-button {
   background-color: #FF8C00;
   color: white;
   border: none;
-  padding: 10px 25px;
-  border-radius: 4px;
+  padding: 12px 25px;
+  border-radius: 20px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(255, 140, 0, 0.3);
+}
+
+.add-button::before {
+  content: "+";
+  margin-right: 8px;
+  font-size: 18px;
 }
 
 .add-button:hover {
   background-color: #e67e00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 140, 0, 0.4);
 }
 
 /* 로딩 상태 표시 */
@@ -283,5 +321,10 @@
   .delete-button {
     padding: 6px 10px;
     font-size: 12px;
+  }
+  
+  .stats-container {
+    flex-direction: column;
+    gap: 10px;
   }
 }

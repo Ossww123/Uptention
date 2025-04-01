@@ -1,107 +1,110 @@
 // src/pages/Users/UserManagementPage.jsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import './UserManagementPage.css';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import "./UserManagementPage.css";
 
 const UserManagementPage = () => {
   // 상태 관리
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [hasMore, setHasMore] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
-  const [sortOption, setSortOption] = useState('REGISTER_DATE_DESC'); // 기본 정렬: 가입일 내림차순
-  const [userRole, setUserRole] = useState(''); // 기본값: 모든 역할
-  
+  const [sortOption, setSortOption] = useState("REGISTER_DATE_DESC"); // 기본 정렬: 가입일 내림차순
+  const [userRole, setUserRole] = useState(""); // 기본값: 모든 역할
+
   // Refs
   const observer = useRef();
   const navigate = useNavigate();
 
   // API 기본 URL
-  const API_BASE_URL = 'https://j12d211.p.ssafy.io';
+  const API_BASE_URL = "https://j12d211.p.ssafy.io";
 
   // API에서 사용자 데이터 가져오기
-  const fetchUsers = useCallback(async (isSearch = false) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // 토큰 가져오기
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
-      }
+  const fetchUsers = useCallback(
+    async (isSearch = false) => {
+      setLoading(true);
+      setError(null);
 
-      const params = {
-        size: 20,
-        sort: sortOption
-      };
-      
-      // searchTerm이 있을 때만 keyword 파라미터 추가
-      if (searchTerm && searchTerm.trim() !== '') {
-        params.keyword = searchTerm;
-      }
-      
-      // userRole이 있을 때만 userRole 파라미터 추가
-      if (userRole && userRole.trim() !== '') {
-        params.userRole = userRole;
-      }
-      
-      // nextCursor가 있고 isSearch가 false일 때만 cursor 파라미터 추가
-      if (nextCursor && !isSearch) {
-        params.cursor = nextCursor;
-      }
-
-      console.log('요청 파라미터:', params);
-      console.log('요청 토큰:', token);
-      
-      const response = await axios.get(`${API_BASE_URL}/api/users`, {
-        headers: {
-          'Authorization': `${token}`,
-          'Content-Type': 'application/json'
-        },
-        params: params
-      });
-      
-      const data = response.data;
-      
-      if (isSearch) {
-        setUsers(data.users || []);
-      } else {
-        setUsers(prev => [...prev, ...(data.users || [])]);
-      }
-      
-      setNextCursor(data.nextCursor);
-      setHasMore(data.hasNextPage);
-    } catch (err) {
-      console.error('API 에러:', err);
-      
-      if (err.response) {
-        console.error('오류 응답 데이터:', err.response.data);
-        const { status, data } = err.response;
-        
-        if (status === 401) {
-          setError('인증이 만료되었습니다. 다시 로그인해주세요.');
-          // 로그인 페이지로 리다이렉트
-          setTimeout(() => navigate('/login'), 2000);
-        } else if (status === 400) {
-          setError(data.message || '잘못된 요청입니다.');
-        } else if (status === 500) {
-          setError(data.message || '서버 오류가 발생했습니다.');
-        } else {
-          setError('사용자 정보를 불러오는 데 실패했습니다.');
+      try {
+        // 토큰 가져오기
+        const token = localStorage.getItem("auth-token");
+        if (!token) {
+          throw new Error("인증 토큰이 없습니다. 다시 로그인해주세요.");
         }
-      } else if (err.request) {
-        setError('서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.');
-      } else {
-        setError(err.message || '사용자 정보를 불러오는 데 실패했습니다.');
+
+        const params = {
+          size: 20,
+          sort: sortOption,
+        };
+
+        // searchTerm이 있을 때만 keyword 파라미터 추가
+        if (searchTerm && searchTerm.trim() !== "") {
+          params.keyword = searchTerm;
+        }
+
+        // userRole이 있을 때만 userRole 파라미터 추가
+        if (userRole && userRole.trim() !== "") {
+          params.userRole = userRole;
+        }
+
+        // nextCursor가 있고 isSearch가 false일 때만 cursor 파라미터 추가
+        if (nextCursor && !isSearch) {
+          params.cursor = nextCursor;
+        }
+
+        console.log("요청 파라미터:", params);
+        console.log("요청 토큰:", token);
+
+        const response = await axios.get(`${API_BASE_URL}/api/users`, {
+          headers: {
+            Authorization: `${token}`,
+            "Content-Type": "application/json",
+          },
+          params: params,
+        });
+
+        const data = response.data;
+
+        if (isSearch) {
+          setUsers(data.users || []);
+        } else {
+          setUsers((prev) => [...prev, ...(data.users || [])]);
+        }
+
+        setNextCursor(data.nextCursor);
+        setHasMore(data.hasNextPage);
+      } catch (err) {
+        console.error("API 에러:", err);
+
+        if (err.response) {
+          console.error("오류 응답 데이터:", err.response.data);
+          const { status, data } = err.response;
+
+          if (status === 401) {
+            setError("인증이 만료되었습니다. 다시 로그인해주세요.");
+            // 로그인 페이지로 리다이렉트
+            setTimeout(() => navigate("/login"), 2000);
+          } else if (status === 400) {
+            setError(data.message || "잘못된 요청입니다.");
+          } else if (status === 500) {
+            setError(data.message || "서버 오류가 발생했습니다.");
+          } else {
+            setError("사용자 정보를 불러오는 데 실패했습니다.");
+          }
+        } else if (err.request) {
+          setError("서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.");
+        } else {
+          setError(err.message || "사용자 정보를 불러오는 데 실패했습니다.");
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [searchTerm, nextCursor, sortOption, userRole, navigate]);
+    },
+    [searchTerm, nextCursor, sortOption, userRole, navigate]
+  );
 
   // 무한 스크롤을 위한 추가 데이터 로드
   const fetchMoreUsers = useCallback(() => {
@@ -111,18 +114,21 @@ const UserManagementPage = () => {
   }, [loading, hasMore, fetchUsers]);
 
   // 마지막 요소 ref callback
-  const lastUserElementRef = useCallback(node => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        fetchMoreUsers();
-      }
-    });
-    
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore, fetchMoreUsers]);
+  const lastUserElementRef = useCallback(
+    (node) => {
+      if (loading) return;
+      if (observer.current) observer.current.disconnect();
+
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          fetchMoreUsers();
+        }
+      });
+
+      if (node) observer.current.observe(node);
+    },
+    [loading, hasMore, fetchMoreUsers]
+  );
 
   // 초기 사용자 데이터 로드
   useEffect(() => {
@@ -158,32 +164,36 @@ const UserManagementPage = () => {
 
   // 사용자 삭제 핸들러
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('정말로 이 회원을 삭제하시겠습니까?')) {
+    if (window.confirm("정말로 이 회원을 삭제하시겠습니까?")) {
       try {
         // 토큰 가져오기
-        const token = localStorage.getItem('auth-token');
+        const token = localStorage.getItem("auth-token");
         if (!token) {
-          throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+          throw new Error("인증 토큰이 없습니다. 다시 로그인해주세요.");
         }
 
         await axios.delete(`${API_BASE_URL}/api/users/${userId}`, {
           headers: {
-            'Authorization': `${token}`
-          }
+            Authorization: `${token}`,
+          },
         });
-        
+
         // UI에서 사용자 제거
-        setUsers(users.filter(user => user.userId !== userId));
-        
+        setUsers(users.filter((user) => user.userId !== userId));
+
         // 성공 메시지 표시
-        alert('회원이 성공적으로 삭제되었습니다.');
+        alert("회원이 성공적으로 삭제되었습니다.");
       } catch (err) {
-        console.error('회원 삭제 오류:', err);
-        
+        console.error("회원 삭제 오류:", err);
+
         if (err.response) {
-          alert(`회원 삭제에 실패했습니다: ${err.response.data.message || '알 수 없는 오류'}`);
+          alert(
+            `회원 삭제에 실패했습니다: ${
+              err.response.data.message || "알 수 없는 오류"
+            }`
+          );
         } else {
-          alert('회원 삭제에 실패했습니다. 네트워크 연결을 확인해주세요.');
+          alert("회원 삭제에 실패했습니다. 네트워크 연결을 확인해주세요.");
         }
       }
     }
@@ -191,15 +201,15 @@ const UserManagementPage = () => {
 
   // 사용자 추가 버튼 핸들러
   const handleAddUser = () => {
-    navigate('/admin/users/create');
+    navigate("/admin/users/create");
   };
 
   // 날짜 포맷 함수
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}. ${month}. ${day}`;
   };
 
@@ -221,7 +231,7 @@ const UserManagementPage = () => {
             <option value="REGISTER_DATE_DESC">가입날짜 내림차순</option>
           </select>
         </div>
-        
+
         {/* 지갑 연동 필터 */}
         <div className="filter-group">
           <label htmlFor="userRole">지갑 연동:</label>
@@ -236,7 +246,7 @@ const UserManagementPage = () => {
             <option value="ROLE_TEMP_MEMBER">미연동</option>
           </select>
         </div>
-        
+
         {/* 검색바 */}
         <div className="search-bar">
           <form onSubmit={handleSearch}>
@@ -247,27 +257,48 @@ const UserManagementPage = () => {
               onChange={handleSearchChange}
               className="search-input"
             />
-            <button type="submit" className="search-button">검색</button>
+            <button type="submit" className="search-button">
+              검색
+            </button>
           </form>
         </div>
       </div>
-      
+
       {/* 회원 목록 영역 - 흰색 카드 */}
       <div className="content-card">
         <div className="user-management-header">
           <h1 className="page-title">회원 목록</h1>
-          
-          <div className="user-stats">
+
+          <div className="stats-container">
             <div className="stat-box">
               <span className="stat-label">총회원수</span>
               <span className="stat-value">{users.length}명</span>
             </div>
+
+            {/* 추가된 통계 카드 */}
+            <div className="stat-box connected-box">
+              <span className="stat-label">지갑 연동</span>
+              <span className="stat-value">
+                {users.filter((user) => user.role === "ROLE_MEMBER").length}명
+              </span>
+            </div>
+
+            <div className="stat-box disconnected-box">
+              <span className="stat-label">지갑 미연동</span>
+              <span className="stat-value">
+                {
+                  users.filter((user) => user.role === "ROLE_TEMP_MEMBER")
+                    .length
+                }
+                명
+              </span>
+            </div>
           </div>
         </div>
-        
+
         <div className="user-table-container">
           {error && <div className="error-message">{error}</div>}
-          
+
           <table className="user-table">
             <thead>
               <tr>
@@ -281,24 +312,30 @@ const UserManagementPage = () => {
             </thead>
             <tbody>
               {users.map((user, index) => (
-                <tr 
-                  key={user.userId} 
+                <tr
+                  key={user.userId}
                   ref={index === users.length - 1 ? lastUserElementRef : null}
                 >
                   <td>{user.employeeNumber}</td>
                   <td>{user.username}</td>
                   <td>{user.name}</td>
                   <td>
-                    <span className={`wallet-badge ${user.role === 'ROLE_MEMBER' ? 'wallet-connected' : 'wallet-disconnected'}`}>
-                      {user.role === 'ROLE_MEMBER' ? '연동됨' : '미연동'}
+                    <span
+                      className={`wallet-badge ${
+                        user.role === "ROLE_MEMBER"
+                          ? "wallet-connected"
+                          : "wallet-disconnected"
+                      }`}
+                    >
+                      {user.role === "ROLE_MEMBER" ? "연동됨" : "미연동"}
                     </span>
                   </td>
                   <td>{formatDate(user.createdAt)}</td>
                   <td>
-                    <button 
+                    <button
                       className="delete-button"
                       onClick={() => handleDeleteUser(user.userId)}
-                      disabled={user.role === 'ROLE_ADMIN'} // 관리자는 삭제 불가
+                      disabled={user.role === "ROLE_ADMIN"} // 관리자는 삭제 불가
                     >
                       삭제하기
                     </button>
@@ -307,14 +344,14 @@ const UserManagementPage = () => {
               ))}
             </tbody>
           </table>
-          
+
           {loading && (
             <div className="loading">
               <div className="loading-spinner"></div>
               <p>데이터를 불러오는 중...</p>
             </div>
           )}
-          
+
           {!loading && users.length === 0 && (
             <div className="no-users-message">
               <p>등록된 회원이 없습니다.</p>
@@ -322,9 +359,11 @@ const UserManagementPage = () => {
           )}
         </div>
       </div>
-      
+
       <div className="action-buttons">
-        <button className="add-button" onClick={handleAddUser}>추가</button>
+        <button className="add-button" onClick={handleAddUser}>
+          추가
+        </button>
       </div>
     </div>
   );
