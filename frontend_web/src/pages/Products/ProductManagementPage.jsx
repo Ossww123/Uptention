@@ -1,28 +1,231 @@
-// src/pages/Products/ProductManagementPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './ProductManagementPage.css';
 
 const ProductManagementPage = () => {
   const navigate = useNavigate();
   
-  // 검색어 상태
+  // 상태 관리
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+  const [nextCursor, setNextCursor] = useState(null);
   
-  // 더미 데이터: 상품 목록
-  const [products, setProducts] = useState([
-    { id: '1233122', name: '가나초콜릿', brand: '롯데', category: '식품', price: '0.5' },
-    { id: '4566789', name: '블루투스 이어폰', brand: '삼성', category: '가전디지털', price: '2.0' },
-    { id: '7891234', name: '향수', brand: '디올', category: '뷰티', price: '3.5' },
-    { id: '5671234', name: '몽블랑 펜', brand: '몽블랑', category: '문화여가', price: '1.8' },
-    { id: '9876543', name: '아기용 장난감', brand: '피셔프라이스', category: '키즈', price: '0.7' },
-  ]);
+  // 정렬 및 필터링 상태
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [sortOption, setSortOption] = useState('SALES'); // 기본 정렬: 인기순
+  const pageSize = 20; // 페이지당 아이템 수
   
-  // 상품 검색 핸들러
+  // Refs
+  const tableContainerRef = useRef(null); // 테이블 컨테이너에 대한 ref
+  const isInitialMount = useRef(true); // 초기 마운트 플래그
+  const observer = useRef(null); // Intersection Observer용 ref
+  
+  // API 기본 URL
+  const API_BASE_URL = 'https://j12d211.p.ssafy.io';
+  
+  // 최신 상태를 추적하는 ref
+  const stateRef = useRef({
+    loading,
+    hasMore,
+    nextCursor,
+    sortOption,
+    selectedCategory,
+    searchTerm
+  });
+
+  // ref 업데이트
+  useEffect(() => {
+    stateRef.current = {
+      loading,
+      hasMore,
+      nextCursor,
+      sortOption,
+      selectedCategory,
+      searchTerm
+    };
+  }, [loading, hasMore, nextCursor, sortOption, selectedCategory, searchTerm]);
+  
+  // 카테고리 목록
+  const categories = [
+    { id: "1", name: "가전디지털" },
+    { id: "2", name: "뷰티" },
+    { id: "3", name: "리빙/키친" },
+    { id: "4", name: "패션의류/잡화" },
+    { id: "5", name: "문화여가" },
+    { id: "6", name: "생활용품" },
+    { id: "7", name: "식품" },
+    { id: "8", name: "키즈" },
+  ];
+  
+  // 정렬 옵션
+  const sortOptions = [
+    { id: "SALES", name: "인기 순" },
+    { id: "LOW_PRICE", name: "가격 낮은순" },
+    { id: "HIGH_PRICE", name: "가격 높은순" },
+  ];
+
+  // fetchProducts를 useCallback 없이 함수로 정의
+  const fetchProducts = async (isSearch = false) => {
+    const state = stateRef.current;
+    
+    if (state.loading || (!state.hasMore && !isSearch)) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // 토큰 가져오기
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      const params = {
+        size: pageSize,
+        sort: state.sortOption
+      };
+      
+      // 카테고리 필터 추가
+      if (state.selectedCategory) {
+        params.categoryId = state.selectedCategory;
+      }
+      
+      // 검색어 필터 추가
+      if (state.searchTerm && state.searchTerm.trim() !== '') {
+        params.keyword = state.searchTerm.trim();
+      }
+      
+      // 커서 추가 (다음 페이지 로드 시)
+      if (state.nextCursor && !isSearch) {
+        params.cursor = state.nextCursor;
+      }
+
+      console.log('요청 파라미터:', params);
+      
+      const response = await axios.get(`${API_BASE_URL}/api/items`, {
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json'
+        },
+        params: params
+      });
+      
+      const data = response.data;
+      
+      // 유효한 itemId를 가진 항목만 필터링
+      const validItems = data.items ? data.items.filter(item => item.itemId) : [];
+      
+      if (isSearch) {
+        setProducts(validItems);
+      } else {
+        setProducts(prev => [...prev, ...validItems]);
+      }
+      
+      setNextCursor(data.nextCursor);
+      setHasMore(data.hasNextPage);
+    } catch (err) {
+      console.error('API 에러:', err);
+      
+      if (err.response) {
+        console.error('오류 응답 데이터:', err.response.data);
+        const { status, data } = err.response;
+        
+        if (status === 401) {
+          setError('인증이 만료되었습니다. 다시 로그인해주세요.');
+          // 로그인 페이지로 리다이렉트
+          setTimeout(() => navigate('/login'), 2000);
+        } else if (status === 400) {
+          setError(data.message || '잘못된 요청입니다.');
+        } else if (status === 500) {
+          setError(data.message || '서버 오류가 발생했습니다.');
+        } else {
+          setError('상품 정보를 불러오는 데 실패했습니다.');
+        }
+      } else if (err.request) {
+        setError('서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.');
+      } else {
+        setError(err.message || '상품 정보를 불러오는 데 실패했습니다.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 마지막 요소 참조 콜백 함수 
+  const lastProductElementRef = (node) => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && stateRef.current.hasMore) {
+        // 마지막 요소가 화면에 보이고 더 불러올 데이터가 있으면 추가 로드
+        fetchProducts(false);
+      }
+    }, {
+      root: tableContainerRef.current, // 스크롤 컨테이너를 root로 지정
+      rootMargin: '0px 0px 100px 0px', // 하단에서 100px 떨어진 지점에서 감지
+      threshold: 0.1 // 10% 이상 보이면 감지
+    });
+    
+    if (node) observer.current.observe(node);
+  };
+
+  // 초기 데이터 로드 (컴포넌트 마운트 시 1회만 실행)
+  useEffect(() => {
+    fetchProducts(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 빈 의존성 배열로 초기 마운트 시에만 실행
+
+  // 카테고리나 정렬 옵션 변경 시 실행
+  useEffect(() => {
+    if (!isInitialMount.current) { // 초기 마운트가 아닐 때만 실행
+      setProducts([]);
+      setNextCursor(null);
+      setHasMore(true);
+      fetchProducts(true);
+    } else {
+      isInitialMount.current = false; // 초기 마운트 플래그 설정
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, sortOption]); // fetchProducts 제거
+
+  // 스크롤 이벤트 처리
+  const handleScroll = () => {
+    if (!tableContainerRef.current || loading || !hasMore) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.current;
+    const scrollBottom = scrollHeight - scrollTop - clientHeight;
+    
+    // 스크롤이 하단에 도달했을 때 추가 데이터 로드
+    if (scrollBottom < 50) {
+      fetchProducts(false);
+    }
+  };
+
+  // 스크롤 이벤트 리스너 등록
+  useEffect(() => {
+    const currentRef = tableContainerRef.current;
+    if (currentRef) {
+      currentRef.addEventListener('scroll', handleScroll);
+      
+      return () => {
+        currentRef.removeEventListener('scroll', handleScroll);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, hasMore]); // fetchProducts 제거
+
+  // 검색 핸들러
   const handleSearch = (e) => {
     e.preventDefault();
-    // 실제로는 API 호출로 검색 기능 구현
-    console.log('검색어:', searchTerm);
+    setProducts([]);
+    setNextCursor(null);
+    setHasMore(true);
+    fetchProducts(true);
   };
   
   // 상품 추가 페이지로 이동
@@ -36,20 +239,92 @@ const ProductManagementPage = () => {
   };
   
   // 상품 삭제 핸들러
-  const handleDeleteProduct = (productId) => {
+  const handleDeleteProduct = async (productId) => {
     if (window.confirm('정말로 이 상품을 삭제하시겠습니까?')) {
-      // 실제로는 API 호출로 삭제 기능 구현
-      console.log('삭제할 상품 ID:', productId);
-      
-      // 임시로 프론트엔드에서 상품 목록에서 제거
-      setProducts(products.filter(product => product.id !== productId));
+      try {
+        // 토큰 가져오기
+        const token = localStorage.getItem('auth-token');
+        if (!token) {
+          throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+        }
+
+        await axios.delete(`${API_BASE_URL}/api/items/${productId}`, {
+          headers: {
+            'Authorization': `${token}`
+          }
+        });
+        
+        // UI에서 상품 제거
+        setProducts(products.filter(product => product.itemId !== productId));
+        
+        // 성공 메시지 표시
+        alert('상품이 성공적으로 삭제되었습니다.');
+      } catch (err) {
+        console.error('상품 삭제 오류:', err);
+        
+        if (err.response) {
+          alert(`상품 삭제에 실패했습니다: ${err.response.data.message || '알 수 없는 오류'}`);
+        } else {
+          alert('상품 삭제에 실패했습니다. 네트워크 연결을 확인해주세요.');
+        }
+      }
     }
   };
   
+  // 카테고리 변경 핸들러
+  const handleCategoryChange = (e) => {
+    const categoryId = e.target.value;
+    setSelectedCategory(categoryId === "all" ? null : categoryId);
+  };
+  
+  // 정렬 옵션 변경 핸들러
+  const handleSortChange = (e) => {
+    setSortOption(e.target.value);
+  };
+
   return (
     <div className="product-management">
+      <div className="filters-container">
+        {/* 카테고리 필터 */}
+        <div className="filter-group">
+          <label htmlFor="category-select">카테고리:</label>
+          <select 
+            id="category-select"
+            value={selectedCategory || "all"}
+            onChange={handleCategoryChange}
+            className="filter-select"
+          >
+            <option value="all">전체</option>
+            {categories.map(category => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* 정렬 옵션 */}
+        <div className="filter-group">
+          <label htmlFor="sort-select">정렬:</label>
+          <select 
+            id="sort-select"
+            value={sortOption}
+            onChange={handleSortChange}
+            className="filter-select"
+          >
+            {sortOptions.map(option => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      
       <div className="content-card">
-        <h1 className="page-title">상품 관리</h1>
+        <div className="product-management-header">
+          <h1 className="page-title">상품 관리</h1>
+        </div>
         
         <div className="search-section">
           <form onSubmit={handleSearch} className="search-form">
@@ -71,7 +346,13 @@ const ProductManagementPage = () => {
           </button>
         </div>
         
-        <div className="products-table-container">
+        {/* 테이블 컨테이너에 ref 추가 및 클래스 추가 */}
+        <div 
+          className="products-table-container scrollable-container" 
+          ref={tableContainerRef}
+        >
+          {error && <div className="error-message">{error}</div>}
+          
           <table className="products-table">
             <thead>
               <tr>
@@ -84,40 +365,48 @@ const ProductManagementPage = () => {
               </tr>
             </thead>
             <tbody>
-              {products.map(product => (
-                <tr key={product.id}>
-                  <td>{product.id}</td>
-                  <td>{product.name}</td>
-                  <td>{product.brand}</td>
-                  <td>{product.category}</td>
-                  <td>{product.price}</td>
-                  <td className="action-buttons">
-                    <button 
-                      className="edit-button"
-                      onClick={() => handleEditProduct(product.id)}
-                    >
-                      수정
-                    </button>
-                    <button 
-                      className="delete-button"
-                      onClick={() => handleDeleteProduct(product.id)}
-                    >
-                      삭제
-                    </button>
-                  </td>
+              {products.length === 0 && !loading ? (
+                <tr>
+                  <td colSpan="6" className="no-products">상품이 없습니다.</td>
                 </tr>
-              ))}
+              ) : (
+                products.map((product, index) => (
+                  <tr 
+                    key={product.itemId}
+                    // 마지막 요소에 ref 추가
+                    ref={index === products.length - 1 ? lastProductElementRef : null}
+                  >
+                    <td>{product.itemId}</td>
+                    <td>{product.name}</td>
+                    <td>{product.brand}</td>
+                    <td>{product.categoryName}</td>
+                    <td>{product.price}</td>
+                    <td className="action-buttons">
+                      <button 
+                        className="edit-button"
+                        onClick={() => handleEditProduct(product.itemId)}
+                      >
+                        수정
+                      </button>
+                      <button 
+                        className="delete-button"
+                        onClick={() => handleDeleteProduct(product.itemId)}
+                      >
+                        삭제
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-        </div>
-        
-        {/* 페이지네이션 (실제 구현 시 추가) */}
-        <div className="pagination">
-          <button className="pagination-button">&lt;</button>
-          <button className="pagination-button active">1</button>
-          <button className="pagination-button">2</button>
-          <button className="pagination-button">3</button>
-          <button className="pagination-button">&gt;</button>
+          
+          {loading && (
+            <div className="loading">
+              <div className="loading-spinner"></div>
+              <p>상품을 불러오는 중...</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
