@@ -11,38 +11,52 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 const CheckoutScreen = ({ navigation, route }) => {
+  // CartScreen에서 전달받은 선택된 상품 정보와 총 가격
+  const { selectedItems = [], totalPrice = 0 } = route.params || {};
+  
   // 더미 데이터 - 배송 정보
   const shippingAddress = {
     address: '경상북도 진평시 진평길 55-5',
     detail: '최강아파트 211호',
   };
 
-  // 더미 데이터 - 주문 상품
-  const orderItems = [
-    {
-      id: '1',
-      brand: '브랜드',
-      name: '상품 이름',
-      price: 2.9,
-      quantity: 1,
-      image: require('../../assets/product-placeholder.png'),
-    },
-    {
-      id: '2',
-      brand: '브랜드',
-      name: '상품 이름',
-      price: 2.9,
-      quantity: 1,
-      image: require('../../assets/product-placeholder.png'),
-    },
-  ];
+  // 주문 상품 (CartScreen에서 전달받은 데이터가 있으면 사용, 없으면 더미 데이터 사용)
+  const orderItems = selectedItems.length > 0
+    ? selectedItems.map(item => ({
+        id: item.cartId || item.itemId,
+        brand: item.brand,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.thumbnail 
+          ? { uri: item.thumbnail } 
+          : require('../../assets/product-placeholder.png'),
+      }))
+    : [
+        {
+          id: '1',
+          brand: '브랜드',
+          name: '상품 이름',
+          price: 2.9,
+          quantity: 1,
+          image: require('../../assets/product-placeholder.png'),
+        },
+        {
+          id: '2',
+          brand: '브랜드',
+          name: '상품 이름',
+          price: 2.9,
+          quantity: 1,
+          image: require('../../assets/product-placeholder.png'),
+        },
+      ];
 
-  // 더미 데이터 - 결제 정보
+  // 결제 정보 (CartScreen에서 전달받은 총액 사용)
   const paymentInfo = {
-    availableWorkCoins: 10.0,
-    productTotal: 5.8,
-    finalAmount: 4.2,
-    paymentAmount: 1.0,
+    availableWorkCoins: 10.0, // 실제 환경에서는 API로 사용자의 보유 코인 조회
+    productTotal: totalPrice > 0 ? totalPrice : 5.8, // 전달받은 총액 사용 또는 더미 데이터
+    get finalAmount() { return this.availableWorkCoins - this.productTotal; }, // 계산값
+    paymentAmount: totalPrice > 0 ? totalPrice : 1.0, // 결제 금액
   };
 
   // 뒤로 가기
@@ -53,7 +67,7 @@ const CheckoutScreen = ({ navigation, route }) => {
   // 결제하기
   const handlePayment = () => {
     // 결제 처리 로직
-    alert('결제가 완료되었습니다.');
+    // 실제 환경에서는 여기서 결제 API 호출 등의 로직이 들어갈 수 있습니다
     navigation.navigate('PaymentComplete');
   };
 
