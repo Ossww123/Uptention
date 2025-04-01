@@ -2,6 +2,7 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabNavigator from './BottomTabNavigator';
 import FocusModeScreen from '../screens/FocusModeScreen';
+import RankingScreen from '../screens/RankingScreen';
 import NotificationScreen from '../screens/NotificationScreen';
 
 const Stack = createNativeStackNavigator();
@@ -17,6 +18,11 @@ const StackNavigator = () => {
       <Stack.Screen 
         name="FocusMode" 
         component={FocusModeScreen} 
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="Ranking" 
+        component={RankingScreen} 
         options={{ headerShown: false }}
       />
       <Stack.Screen 

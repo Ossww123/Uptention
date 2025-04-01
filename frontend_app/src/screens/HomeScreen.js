@@ -1,10 +1,32 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity,
+  Alert,
+  Platform,
+  Image
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
+import { NativeModules } from 'react-native';
+import { useWallet } from '../contexts/WalletContext';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
+
+const { AppBlockerModule } = NativeModules;
 
 const HomeScreen = ({ navigation }) => {
+  const { tokenBalance, publicKey, userId } = useWallet();
+  const [userInfo, setUserInfo] = useState(null);
+  const [userPoint, setUserPoint] = useState(0);
+
+  // 앱제한 관련 권한 상태 관리
+  const [hasAccessibilityPermission, setHasAccessibilityPermission] = useState(false);
+  const [hasOverlayPermission, setHasOverlayPermission] = useState(false);
   // 읽지 않은 알림 개수 상태 (더미 데이터)
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   
@@ -17,21 +39,232 @@ const HomeScreen = ({ navigation }) => {
   const svgProgress = (progress * circum) / 100;  // 이 계산식으로 하면 progress가 
                                                  // 커질수록 프로그레스바가 줄어듦
   
-  // 예: progress가
-  // 100일 때 -> 프로그레스바 완전히 사라짐
-  // 75일 때 -> 프로그레스바 1/4만 남음
-  // 50일 때 -> 프로그레스바 절반 남음
-  // 25일 때 -> 프로그레스바 3/4 남음
-  // 0일 때 -> 프로그레스바 완전히 채워짐
+  // 앱 권한 상태 확인 (컴포넌트 마운트시 실행)
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      // AppBlockerModule이 제대로 로드됐는지 확인
+      console.log('AppBlockerModule 확인:', AppBlockerModule);
+      
+      if (!AppBlockerModule) {
+        console.error('AppBlockerModule이 로드되지 않았습니다.');
+      } else {
+        console.log('AppBlockerModule 메서드:', Object.keys(AppBlockerModule));
+        checkAppBlockerPermissions();
+      }
+    }
+  }, []);
+  
+  // 앱 차단 권한 확인 함수
+  const checkAppBlockerPermissions = async () => {
+    try {
+      if (AppBlockerModule) {
+        const accessibility = await AppBlockerModule.isAccessibilityServiceEnabled();
+        const overlay = await AppBlockerModule.hasOverlayPermission();
+        
+        console.log('접근성 서비스 권한 상태:', accessibility);
+        console.log('화면 오버레이 권한 상태:', overlay);
+        
+        setHasAccessibilityPermission(accessibility);
+        setHasOverlayPermission(overlay);
+      }
+    } catch (error) {
+      console.error('권한 확인 오류:', error);
+    }
+  };
+  
+  // 집중 모드 시작 함수
+  const startFocusMode = async () => {
+    if (Platform.OS === 'android') {
+      // 필요한 권한이 모두 있는지 확인
+      if (!hasAccessibilityPermission || !hasOverlayPermission) {
+        Alert.alert(
+          '권한 필요',
+          '집중 모드에서 앱 제한 기능을 사용하려면 접근성 서비스와 화면 오버레이 권한이 필요합니다.',
+          [
+            { 
+              text: '취소', 
+              style: 'cancel'
+            },
+            { 
+              text: '권한 설정', 
+              onPress: () => requestAppBlockerPermissions()
+            }
+          ]
+        );
+        return;
+      }
+    }
+
+    try {
+      // 집중 모드 시작 API 호출
+      const response = await axios.post(
+        `${API_BASE_URL}/api/mining-time/focus/4`,
+        null,  // 요청 본문이 필요없으므로 null로 변경
+        {
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (response.status === 200) {
+        console.log('집중 모드 시작 API 호출 성공');
+        
+        if (Platform.OS === 'android') {
+          // 앱 차단 기능 활성화
+          try {
+            await AppBlockerModule.setAppBlockingEnabled(true);
+            console.log('앱 차단 기능 활성화 성공');
+          } catch (error) {
+            console.error('앱 차단 기능 활성화 실패:', error);
+          }
+        }
+        
+        // 포커스 모드 화면으로 이동
+        navigation.navigate('FocusMode');
+      }
+    } catch (error) {
+      console.error('집중 모드 시작 API 호출 실패:', error);
+      console.error('에러 상세 정보:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
+      Alert.alert(
+        '오류 발생',
+        '집중 모드를 시작할 수 없습니다. 다시 시도해주세요.',
+        [{ text: '확인' }]
+      );
+    }
+  };
+  
+  // 앱 차단에 필요한 권한 요청
+  const requestAppBlockerPermissions = async () => {
+    try {
+      if (!hasAccessibilityPermission) {
+        Alert.alert(
+          '접근성 권한 필요',
+          '앱 제한 기능을 사용하기 위해서는 접근성 권한이 필요합니다.\n\n설정 > 접근성 > 설치된 앱 > Uptention > 허용',
+          [
+            { 
+              text: '취소', 
+              style: 'cancel' 
+            },
+            {
+              text: '설정으로 이동',
+              onPress: async () => {
+                try {
+                  await AppBlockerModule.openAccessibilitySettings();
+                  // 설정 화면에서 돌아온 후 권한 상태 다시 확인
+                  setTimeout(async () => {
+                    const newStatus = await AppBlockerModule.isAccessibilityServiceEnabled();
+                    setHasAccessibilityPermission(newStatus);
+                    if (newStatus && !hasOverlayPermission) {
+                      requestAppBlockerPermissions(); // 다음 권한 요청
+                    }
+                  }, 1000);
+                } catch (error) {
+                  console.error('접근성 설정 화면 열기 실패:', error);
+                }
+              }
+            }
+          ]
+        );
+      } else if (!hasOverlayPermission) {
+        Alert.alert(
+          '화면 오버레이 권한 필요',
+          '앱 제한 기능을 사용하기 위해서는 화면 오버레이 권한이 필요합니다.\n\n설정 > 앱 > Uptention > 다른 앱 위에 표시 > 허용',
+          [
+            { 
+              text: '취소', 
+              style: 'cancel' 
+            },
+            {
+              text: '설정으로 이동',
+              onPress: async () => {
+                try {
+                  await AppBlockerModule.openOverlaySettings();
+                  // 설정 화면에서 돌아온 후 권한 상태 다시 확인
+                  setTimeout(async () => {
+                    const newStatus = await AppBlockerModule.hasOverlayPermission();
+                    setHasOverlayPermission(newStatus);
+                  }, 1000);
+                } catch (error) {
+                  console.error('오버레이 설정 화면 열기 실패:', error);
+                }
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('권한 설정 화면 열기 실패:', error);
+      Alert.alert(
+        '오류 발생',
+        '권한 설정 화면을 열 수 없습니다. 설정 앱에서 직접 권한을 설정해주세요.',
+        [{ text: '확인' }]
+      );
+    }
+  };
+
+  // 사용자 정보 조회 함수
+  const fetchUserInfo = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/users/4`, {
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+        }
+      });
+      
+      setUserInfo(response.data);
+    } catch (error) {
+      console.error('사용자 정보 조회 오류:', error);
+    }
+  };
+
+  // 사용자 포인트 조회 함수
+  const fetchUserPoint = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/users/4/point`, {
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+        }
+      });
+      setUserPoint(response.data.point); // point 값만 추출하여 저장
+    } catch (error) {
+      console.error('포인트 조회 오류:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserInfo();
+    fetchUserPoint();
+  }, []);
+
+  // 화면이 포커스될 때마다 포인트 업데이트
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchUserPoint();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={{fontSize: 16, fontWeight: 'bold'}}>소속</Text>
+            <View style={styles.userInfoContainer}>
+              <Text style={{fontSize: 16, fontWeight: 'bold'}}>{userInfo?.employeeNumber || '-'}</Text>
+              <Text style={styles.nameText}>{userInfo?.name || '-'}</Text>
+            </View>
             <View style={styles.iconContainer}>
-              <Ionicons name="medal-outline" size={20} />
+              <TouchableOpacity onPress={() => navigation.navigate('Ranking')}>
+                <Ionicons name="medal-outline" size={20} />
+              </TouchableOpacity>
               <TouchableOpacity 
                 onPress={() => navigation.navigate('Notification')}
                 style={styles.notificationButton}
@@ -46,9 +279,11 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
           <View style={styles.subHeader}>
-            <Text style={styles.nameText}>홍길동</Text>
+            <Text></Text>
             <View style={styles.walletContainer}>
-              <Text style={styles.walletWorkToken}>1000 </Text>
+              <Text style={styles.walletWorkToken}>
+                {publicKey ? `${tokenBalance} ` : '연결 필요 '}
+              </Text>
               <Text style={styles.workText}>WORK</Text>
             </View>
           </View>
@@ -94,12 +329,12 @@ const HomeScreen = ({ navigation }) => {
               <View style={styles.headerRow}>
                 <Text style={styles.labelText}>포인트</Text>
                 <View style={styles.progressInfo}>
-                  <Text style={styles.valueText}>8.00/</Text>
-                  <Text style={styles.maxText}>8</Text>
+                  <Text style={styles.valueText}>{userPoint}/</Text>
+                  <Text style={styles.maxText}>480</Text>
                 </View>
               </View>
               <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { backgroundColor: '#0F51F6', width: '100%' }]} />
+                <View style={[styles.progressFill, { backgroundColor: '#0F51F6', width: `${(userPoint / 480) * 100}%` }]} />
               </View>
             </View>
 
@@ -120,7 +355,7 @@ const HomeScreen = ({ navigation }) => {
           <TouchableOpacity 
             style={styles.workModeStartButton}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('FocusMode')}
+            onPress={startFocusMode}
           >
             <Text style={styles.buttonText}>집중하기</Text>
           </TouchableOpacity>
@@ -149,9 +384,17 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    height: 20,
+    height: 45,
     alignItems: 'center',
     marginTop: 50,
+  },
+  userInfoContainer: {
+    justifyContent: 'center',
+  },
+  userInfoText: {
+    fontSize: 14,
+    marginBottom: 5,
+    color: '#000',
   },
   iconContainer: {
     flexDirection: 'row',
@@ -182,8 +425,9 @@ const styles = StyleSheet.create({
   subHeader: {
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+    marginBottom: 20,
   },
   walletContainer: {
     flexDirection: 'row',

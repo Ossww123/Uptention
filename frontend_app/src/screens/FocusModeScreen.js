@@ -1,19 +1,179 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTimer } from '../hooks/useTimer';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
+
+const { AppBlockerModule } = NativeModules;
 
 const FocusModeScreen = ({ navigation }) => {
-  const [time, setTime] = useState('00:00:00');
-  const [points, setPoints] = useState({ current: 8, max: 8 });
-  const [energy, setEnergy] = useState({ current: 8, max: 8 });
-  const [coins, setCoins] = useState(0);
+  const { time, isActive, startTimer, stopTimer, resetTimer, getTimeInSeconds } = useTimer();
+  const [points, setPoints] = useState(0);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const totalSecondsRef = useRef(0);
+
+  // 포인트 계산 함수
+  const calculatePoints = useCallback((seconds) => {
+    return Math.floor(seconds / 60);
+  }, []);
+
+  // 포인트 업데이트 함수
+  const updatePoints = useCallback(() => {
+    const totalSeconds = getTimeInSeconds();
+    totalSecondsRef.current = totalSeconds;
+    const newPoints = calculatePoints(totalSeconds);
+    
+    if (newPoints !== points) {
+      setPoints(newPoints);
+      console.log('Points Updated:', {
+        previousPoints: points,
+        newPoints,
+        totalSeconds,
+        timeString: time
+      });
+    }
+  }, [getTimeInSeconds, points, time, calculatePoints]);
+
+  // AppState 변경 감지
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      console.log('App State Changed:', { previous: appState, next: nextAppState });
+      setAppState(nextAppState);
+      
+      if (nextAppState === 'active') {
+        // 포그라운드로 돌아올 때 즉시 포인트 업데이트
+        updatePoints();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appState, updatePoints]);
+
+  // 포인트 주기적 업데이트
+  useEffect(() => {
+    // 초기 포인트 설정
+    updatePoints();
+
+    // 3초마다 포인트 업데이트 (더 부드러운 UX를 위해)
+    const pointsInterval = setInterval(updatePoints, 3000);
+
+    return () => clearInterval(pointsInterval);
+  }, [updatePoints]);
+
+  // 컴포넌트 마운트 시 자동으로 타이머 시작 및 앱 제한 기능 활성화
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        // 앱 차단 활성화 및 타이머 시작
+        await AppBlockerModule.setAppBlockingEnabled(true);
+        startTimer();
+        console.log('포커스 모드 시작됨');
+      } catch (error) {
+        console.error('포커스 모드 시작 실패:', error);
+        Alert.alert(
+          '알림',
+          '포커스 모드를 시작하는데 실패했습니다.',
+          [{ text: '확인' }]
+        );
+      }
+    };
+    initialize();
+
+    return () => {
+      const cleanup = async () => {
+        try {
+          await AppBlockerModule.setAppBlockingEnabled(false);
+          stopTimer();
+          resetTimer();
+          console.log('포커스 모드 종료됨');
+        } catch (error) {
+          console.error('포커스 모드 종료 실패:', error);
+        }
+      };
+      cleanup();
+    };
+  }, []);
+
+  const handleExit = async () => {
+    try {
+      await AppBlockerModule.setAppBlockingEnabled(false);
+      const finalSeconds = getTimeInSeconds();
+      const finalPoints = Math.floor(finalSeconds / 60);
+      
+      // 포커스 모드 종료 API 호출
+      await axios.patch(
+        `${API_BASE_URL}/api/mining-time/focus/4`,
+        null,
+        {
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      console.log('포커스 모드 종료 API 호출 성공');
+
+      // 포인트 업데이트를 위해 최대 3번까지 시도
+      let updatedPoint = 0;
+      for (let i = 0; i < 3; i++) {
+        // 2초씩 대기
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // 포인트 조회 시도
+        try {
+          const pointResponse = await axios.get(`${API_BASE_URL}/api/users/4/point`, {
+            headers: {
+              'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+            }
+          });
+
+          console.log(`${i + 1}번째 포인트 조회 응답:`, pointResponse.data);
+          
+          // 포인트가 0보다 크면 업데이트 성공으로 간주하고 종료
+          if (pointResponse.data.point > 0) {
+            updatedPoint = pointResponse.data.point;
+            break;
+          }
+        } catch (error) {
+          console.error(`${i + 1}번째 포인트 조회 실패:`, error);
+        }
+      }
+      
+      stopTimer();
+      resetTimer();
+      
+      navigation.goBack();
+      
+      console.log('포커스 모드 종료:', {
+        totalSeconds: finalSeconds,
+        earnedPoints: finalPoints,
+        updatedPoint: updatedPoint
+      });
+    } catch (error) {
+      console.error('포커스 모드 종료 실패:', error);
+      console.error('에러 상세 정보:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
+      Alert.alert(
+        '알림',
+        '포커스 모드 종료에 실패했습니다.',
+        [{ text: '확인', onPress: () => navigation.goBack() }]
+      );
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* 코인 표시 */}
+        {/* 포인트 표시 */}
         <View style={styles.coinContainer}>
-          <Text style={styles.coinText}>+ {coins}p</Text>
+          <Text style={styles.coinText}>+ {points}p</Text>
         </View>
 
         {/* 캐릭터 영역 */}
@@ -22,65 +182,18 @@ const FocusModeScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.bottomContainer}>
-          {/* 프로그레스 바 영역 */}
-          <View style={styles.progressWrapper}>
-            <View style={styles.progressContainer}>
-              {/* 포인트 섹션 */}
-              <View style={styles.progressSection}>
-                <View style={styles.headerRow}>
-                  <Text style={styles.labelText}>포인트</Text>
-                  <View style={styles.progressInfo}>
-                    <Text style={styles.valueText}>{points.current.toFixed(2)}/</Text>
-                    <Text style={styles.maxText}>{points.max}</Text>
-                  </View>
-                </View>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { 
-                        backgroundColor: '#2F2F2F', 
-                        width: `${(points.current / points.max) * 100}%` 
-                      }
-                    ]} 
-                  />
-                </View>
-              </View>
-
-              {/* 에너지 섹션 */}
-              <View style={styles.progressSection}>
-                <View style={styles.headerRow}>
-                  <Text style={styles.labelText}>에너지</Text>
-                  <View style={styles.progressInfo}>
-                    <Text style={styles.valueText}>{energy.current.toFixed(2)}/</Text>
-                    <Text style={styles.maxText}>{energy.max}</Text>
-                  </View>
-                </View>
-                <View style={styles.progressBar}>
-                  <View 
-                    style={[
-                      styles.progressFill, 
-                      { 
-                        backgroundColor: '#404040', 
-                        width: `${(energy.current / energy.max) * 100}%` 
-                      }
-                    ]} 
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
-
           {/* 타이머 */}
           <Text style={styles.timerText}>{time}</Text>
 
           {/* 종료하기 버튼 */}
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.buttonText}>종료하기</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[styles.button, styles.exitButton]} 
+              onPress={handleExit}
+            >
+              <Text style={styles.buttonText}>종료하기</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -117,58 +230,15 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  progressWrapper: {
-    width: '100%',
-    backgroundColor: '#272626',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 30,
-  },
-  progressContainer: {
-    width: '100%',
-    flexDirection: 'row',
-  },
-  progressSection: {
-    width: '50%',
-    paddingHorizontal: 10,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  labelText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-  },
-  progressInfo: {
-    flexDirection: 'row',
-  },
-  valueText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  maxText: {
-    fontSize: 12,
-    color: '#D4D1D1',
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#333333',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
   timerText: {
     color: '#FFFFFF',
     fontSize: 64,
     fontWeight: 'bold',
     marginBottom: 40,
+  },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
   button: {
     width: '100%',
@@ -182,6 +252,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  exitButton: {
+    backgroundColor: '#FF8C00',
   },
 });
 

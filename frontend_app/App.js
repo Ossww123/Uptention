@@ -1,13 +1,21 @@
 import React from 'react';
-import { StatusBar } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AppNavigator from './src/navigations/AppNavigator';
+import StackNavigator from './src/navigations/StackNavigator';
+import { WalletProvider } from './src/contexts/WalletContext';
 
-export default function App() {
+const App = () => {
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <AppNavigator />
-    </SafeAreaProvider>
+    <WalletProvider>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <StatusBar style="dark" />
+          <StackNavigator />
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </WalletProvider>
   );
-}
+};
+
+export default App;

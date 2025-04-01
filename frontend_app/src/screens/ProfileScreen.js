@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Platform, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import 'react-native-get-random-values';
@@ -9,6 +9,10 @@ import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import * as Linking from 'expo-linking';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useWallet } from '../contexts/WalletContext';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { removeToken } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
@@ -37,14 +41,20 @@ const encryptPayload = (payload, sharedSecret) => {
 };
 
 const ProfileScreen = ({ navigation }) => {
+  const { 
+    publicKey, setPublicKey,
+    tokenBalance, setTokenBalance,
+    sharedSecret, setSharedSecret,
+    session, setSession,
+    solBalance, setSolBalance
+  } = useWallet();
+  
   const [deepLink, setDeepLink] = useState("");
   const [dappKeyPair] = useState(nacl.box.keyPair());
-  const [sharedSecret, setSharedSecret] = useState();
-  const [session, setSession] = useState();
   const [connecting, setConnecting] = useState(false);
-  const [publicKey, setPublicKey] = useState(null);
-  const [solBalance, setSolBalance] = useState(null);
-  const [tokenBalance, setTokenBalance] = useState(null);
+  const [walletAddress, setWalletAddress] = useState('');
+  const [userInfo, setUserInfo] = useState(null);
+  const [showDeleteButton, setShowDeleteButton] = useState(false);
 
   // 로그아웃 함수를 컴포넌트 내부로 이동
   const handleLogout = async () => {
@@ -112,8 +122,8 @@ const ProfileScreen = ({ navigation }) => {
       );
 
       if (tokenAccounts.value.length > 0) {
-        const tokenBalance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-        setTokenBalance(tokenBalance);
+        const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+        setTokenBalance(balance);
       } else {
         setTokenBalance(0);
       }
@@ -121,6 +131,26 @@ const ProfileScreen = ({ navigation }) => {
       console.error('잔액 조회 오류:', error);
       setSolBalance(null);
       setTokenBalance(null);
+    }
+  };
+
+  // 사용자 정보 조회 함수
+  const fetchUserInfo = async () => {
+    try {
+      // TODO: 로그인 구현 시 수정 필요
+      // - userId는 로그인한 사용자의 ID로 대체
+      // - Authorization 헤더의 토큰은 로그인 시 받은 JWT 토큰으로 대체
+      // - 예시: const { userId, token } = useAuth();
+      const response = await axios.get(`${API_BASE_URL}/api/users/4`, {
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+        }
+      });
+      
+      setUserInfo(response.data);
+    } catch (error) {
+      console.error('사용자 정보 조회 오류:', error);
+      Alert.alert('오류', '사용자 정보를 불러오는데 실패했습니다.');
     }
   };
 
@@ -196,7 +226,11 @@ const ProfileScreen = ({ navigation }) => {
     }
   }, [deepLink, decryptPayload, dappKeyPair.secretKey]);
 
-  const connect = async () => {
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
+
+  const handleConnectWallet = async () => {
     try {
       setConnecting(true);
       const redirectUrl = Linking.createURL('onConnect');
@@ -209,21 +243,19 @@ const ProfileScreen = ({ navigation }) => {
         redirect_link: redirectUrl
       });
 
-      const url = Platform.OS === 'android'
-        ? `https://phantom.app/ul/v1/connect?${params.toString()}`
-        : `phantom://ul/v1/connect?${params.toString()}`;
-
+      const url = `https://phantom.app/ul/v1/connect?${params.toString()}`;
       console.log('Connection URL:', url); // 디버깅용
+      
       await Linking.openURL(url);
-    } catch (err) {
-      console.error('Connection error:', err);
+    } catch (error) {
+      console.error('Connection error:', error);
       Alert.alert('연결 오류', '팬텀 지갑 연결 중 오류가 발생했습니다.');
     } finally {
       setConnecting(false);
     }
   };
 
-  const disconnect = async () => {
+  const handleDisconnectWallet = async () => {
     try {
       const redirectUrl = Linking.createURL('onDisconnect');
       const payload = { session };
@@ -241,9 +273,91 @@ const ProfileScreen = ({ navigation }) => {
         : `phantom://ul/v1/disconnect?${params.toString()}`;
 
       await Linking.openURL(url);
-    } catch (err) {
-      console.error('Disconnect error:', err);
+    } catch (error) {
+      console.error('Disconnect error:', error);
       Alert.alert('연결 해제 오류', '팬텀 지갑 연결 해제 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleImageUpload = async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 1,
+        selectionLimit: 1,
+        includeBase64: false,
+      });
+
+      if (result.didCancel) {
+        return;
+      }
+
+      if (result.errorCode) {
+        Alert.alert('오류', '이미지를 선택하는 중 오류가 발생했습니다.');
+        return;
+      }
+
+      const selectedImage = result.assets[0];
+      
+      // 이미지 파일로 FormData 생성
+      const formData = new FormData();
+      formData.append('profileImage', {
+        uri: selectedImage.uri,
+        type: selectedImage.type,
+        name: selectedImage.fileName || 'profile.jpg',
+      });
+
+      // 프로필 이미지 업로드 API 호출
+      const response = await axios.put(
+        `${API_BASE_URL}/api/users/4/profiles`,
+        formData,
+        {
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        Alert.alert('성공', '프로필 이미지가 업데이트되었습니다.');
+        fetchUserInfo(); // 프로필 정보 새로고침
+      }
+    } catch (error) {
+      console.error('이미지 업로드 오류:', error);
+      Alert.alert('오류', '이미지 업로드에 실패했습니다.');
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    try {
+      const response = await axios.delete(
+        `${API_BASE_URL}/api/users/4/profiles`,
+        {
+          headers: {
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+          }
+        }
+      );
+
+      if (response.status === 200) {
+        Alert.alert('성공', '프로필 이미지가 삭제되었습니다.');
+        setShowDeleteButton(false);
+        fetchUserInfo(); // 프로필 정보 새로고침
+      }
+    } catch (error) {
+      console.error('이미지 삭제 오류:', error);
+      Alert.alert('오류', '이미지 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleImagePress = () => {
+    handleImageUpload();  // 항상 갤러리 열기
+  };
+
+  const handleLongPress = () => {
+    if (userInfo?.profileImage) {
+      setShowDeleteButton(!showDeleteButton);  // X 버튼 토글
     }
   };
 
@@ -255,7 +369,7 @@ const ProfileScreen = ({ navigation }) => {
           <View style={styles.headerSection}>
             <TouchableOpacity 
               style={styles.walletIconContainer}
-              onPress={publicKey ? disconnect : connect}
+              onPress={publicKey ? handleDisconnectWallet : handleConnectWallet}
             >
               <Ionicons 
                 name={publicKey ? "wallet" : "wallet-outline"} 
@@ -268,24 +382,49 @@ const ProfileScreen = ({ navigation }) => {
 
           {/* 프로필 섹션 */}
           <View style={styles.profileSection}>
-            <TouchableOpacity style={styles.editButton}>
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={handleImagePress}
+            >
               <Ionicons name="pencil" size={15} color="black" />
             </TouchableOpacity>
             <View style={styles.profileInfo}>
-              <View style={styles.profileImageContainer}>
-                <View style={styles.profileImage} />
-              </View>
+              <TouchableOpacity 
+                style={styles.profileImageContainer}
+                onPress={handleImagePress}
+                onLongPress={handleLongPress}
+                delayLongPress={500}
+              >
+                {userInfo?.profileImage ? (
+                  <>
+                    <Image 
+                      source={{ uri: userInfo.profileImage }} 
+                      style={styles.profileImage}
+                    />
+                    {showDeleteButton && (
+                      <TouchableOpacity 
+                        style={styles.deleteButton}
+                        onPress={handleDeleteImage}
+                      >
+                        <Ionicons name="close-circle" size={24} color="red" />
+                      </TouchableOpacity>
+                    )}
+                  </>
+                ) : (
+                  <View style={styles.profileImage} />
+                )}
+              </TouchableOpacity>
               <View style={styles.infoContainer}>
                 <View style={styles.textContainer}>
                   <View style={styles.profileDetails}>
-                    <Text style={styles.label}>소속:</Text>
+                    <Text style={styles.label}>사원번호:</Text>
                     <Text style={styles.label}>이름:</Text>
                     <Text style={styles.label}>아이디:</Text>
                   </View>
                   <View style={styles.profileValues}>
-                    <Text style={styles.value}>싸피</Text>
-                    <Text style={styles.value}>박준수</Text>
-                    <Text style={styles.value}>jjjjjuuuu</Text>
+                    <Text style={styles.value}>{userInfo?.employeeNumber || '-'}</Text>
+                    <Text style={styles.value}>{userInfo?.name || '-'}</Text>
+                    <Text style={styles.value}>{userInfo?.username || '-'}</Text>
                   </View>
                 </View>
               </View>
@@ -390,6 +529,10 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   profileImageContainer: {
+    position: 'relative',
+    width: 100,
+    height: 100,
+    overflow: 'visible',
     marginRight: 20,
   },
   profileImage: {
@@ -528,6 +671,14 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#4CAF50',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 2,
   },
 });
 
