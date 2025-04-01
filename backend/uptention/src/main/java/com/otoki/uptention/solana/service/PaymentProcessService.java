@@ -1,17 +1,13 @@
 package com.otoki.uptention.solana.service;
 
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.domain.item.entity.Item;
-import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Order;
 import com.otoki.uptention.domain.order.enums.OrderStatus;
 import com.otoki.uptention.domain.order.service.OrderService;
@@ -34,7 +30,6 @@ public class PaymentProcessService {
 
 	private final OrderService orderService;
 	private final OrderItemService orderItemService;
-	private final ItemService itemService;
 	private final RabbitTemplate rabbitTemplate;
 
 	/**
@@ -166,38 +161,4 @@ public class PaymentProcessService {
 		}
 	}
 
-	/**
-	 * 결제 대기 주문 타임아웃 확인 (스케줄러)
-	 */
-	@Scheduled(fixedRate = 300000) // 5분마다 실행
-	public void checkPendingPayments() {
-		log.info("결제 대기 주문 타임아웃 확인 시작");
-
-		// 결제 대기 상태인 주문 조회
-		List<Order> pendingOrders = orderService.getOrdersByStatus(OrderStatus.PAYMENT_PENDING);
-
-		for (Order order : pendingOrders) {
-			// LocalDateTime을 Instant로 변환하고 경과 시간 계산
-			long orderAgeMinutes = Duration.between(
-				order.getCreatedAt(),
-				LocalDateTime.now()
-			).toMinutes();
-
-			if (orderAgeMinutes >= 30) {
-				log.info("주문 ID({})의 결제 시간 초과 (경과 시간: {}분)", order.getId(), orderAgeMinutes);
-
-				// 결제 실패 처리 - 트랜잭션 문제 해결을 위해 서비스를 주입받아 사용
-				String orderId = String.valueOf(order.getId());
-				boolean success = processPaymentFailure(orderId, "결제 시간 초과 (30분)");
-
-				if (success) {
-					log.info("주문 ID({})의 결제 실패 처리가 완료되었습니다.", orderId);
-				} else {
-					log.error("주문 ID({})의 결제 실패 처리에 실패했습니다.", orderId);
-				}
-			}
-		}
-
-		log.info("결제 대기 주문 타임아웃 확인 완료");
-	}
 }
