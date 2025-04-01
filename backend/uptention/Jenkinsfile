@@ -131,7 +131,7 @@ pipeline {
                                     echo "Nginx 설정을 리로드했습니다."
 
                                     echo "Prometheus 타겟 파일을 업데이트합니다."
-                                    cat <<EOF > /home/ubuntu/uptention/prometheus/active-spring-targets.json
+                                    cat <<EOF > /home/ubuntu/uptention/monitoring/active-spring-targets.json
                                     [
                                       {
                                         "targets": ["\$NEW_CONTAINER_NAME:${DOCKER_PORT}"]
