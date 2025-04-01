@@ -15,6 +15,7 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.DeliveryAddressResponseDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
@@ -57,6 +58,11 @@ public class OrderController implements OrderApiDoc {
 		@Valid @RequestBody DeliveryInfoRequestDto deliveryInfoRequestDto) {
 		orderAppService.registerDeliveryInfo(orderId, deliveryInfoRequestDto);
 		return ResponseEntity.ok("배송지 정보 등록 성공");
+	}
+
+	@GetMapping("/delivery-info")
+	public ResponseEntity<DeliveryAddressResponseDto> getRecentDeliveryInfo(){
+		return ResponseEntity.ok(orderAppService.getLatestDeliveryAddress());
 	}
 
 	@GetMapping("")
