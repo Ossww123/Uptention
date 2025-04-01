@@ -44,11 +44,11 @@ aws:
     cloudfront-domain: ddnwvg9t77g5o.cloudfront.net
 
 solana:
-  network: ${SOLANA_NETWORK}
-  rpc-url: ${SOLANA_RPC_URL}
-  websocket-url: ${SOLANA_WEBSOCKET_URL}
-  company-wallet: ${SOLANA_COMPANY_WALLET}
+  network: devnet
+  rpc-url: https://api.devnet.solana.com
+  websocket-url: wss://api.devnet.solana.com
   token-program-id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+  company-wallet: ${SOLANA_COMPANY_WALLET}
   work-token-mint: ${WORK_TOKEN_MINT}
 
 logging:
