@@ -1,7 +1,9 @@
 package com.otoki.uptention.presentation.user.docs;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.ErrorResponse;
@@ -9,7 +11,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
@@ -360,7 +361,7 @@ public interface UserApiDoc {
 			)
 		)
 	})
-	ResponseEntity<List<MiningTimeResponseDto>> getMiningTimes(
+	ResponseEntity<Map<LocalDate, Long>> getMiningTimes(
 		@PathVariable Integer userId,
 		@RequestParam LocalDateTime startTime,
 		@RequestParam LocalDateTime endTime);
