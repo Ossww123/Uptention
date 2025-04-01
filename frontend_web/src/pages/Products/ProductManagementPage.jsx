@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './ProductManagementPage.css';
@@ -27,6 +27,28 @@ const ProductManagementPage = () => {
   // API 기본 URL
   const API_BASE_URL = 'https://j12d211.p.ssafy.io';
   
+  // 최신 상태를 추적하는 ref
+  const stateRef = useRef({
+    loading,
+    hasMore,
+    nextCursor,
+    sortOption,
+    selectedCategory,
+    searchTerm
+  });
+
+  // ref 업데이트
+  useEffect(() => {
+    stateRef.current = {
+      loading,
+      hasMore,
+      nextCursor,
+      sortOption,
+      selectedCategory,
+      searchTerm
+    };
+  }, [loading, hasMore, nextCursor, sortOption, selectedCategory, searchTerm]);
+  
   // 카테고리 목록
   const categories = [
     { id: "1", name: "가전디지털" },
@@ -46,28 +68,11 @@ const ProductManagementPage = () => {
     { id: "HIGH_PRICE", name: "가격 높은순" },
   ];
 
-  // 마지막 요소 참조 콜백 함수 (Intersection Observer 설정)
-  const lastProductElementRef = useCallback(node => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        // 마지막 요소가 화면에 보이고 더 불러올 데이터가 있으면 추가 로드
-        fetchProducts(false);
-      }
-    }, {
-      root: tableContainerRef.current, // 스크롤 컨테이너를 root로 지정
-      rootMargin: '0px 0px 100px 0px', // 하단에서 100px 떨어진 지점에서 감지
-      threshold: 0.1 // 10% 이상 보이면 감지
-    });
-    
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore]);
-
-  // API에서 상품 데이터 가져오기
+  // fetchProducts를 useCallback 없이 함수로 정의
   const fetchProducts = async (isSearch = false) => {
-    if (loading || (!hasMore && !isSearch)) return;
+    const state = stateRef.current;
+    
+    if (state.loading || (!state.hasMore && !isSearch)) return;
     
     setLoading(true);
     setError(null);
@@ -81,22 +86,22 @@ const ProductManagementPage = () => {
 
       const params = {
         size: pageSize,
-        sort: sortOption
+        sort: state.sortOption
       };
       
       // 카테고리 필터 추가
-      if (selectedCategory) {
-        params.categoryId = selectedCategory;
+      if (state.selectedCategory) {
+        params.categoryId = state.selectedCategory;
       }
       
       // 검색어 필터 추가
-      if (searchTerm && searchTerm.trim() !== '') {
-        params.keyword = searchTerm.trim();
+      if (state.searchTerm && state.searchTerm.trim() !== '') {
+        params.keyword = state.searchTerm.trim();
       }
       
       // 커서 추가 (다음 페이지 로드 시)
-      if (nextCursor && !isSearch) {
-        params.cursor = nextCursor;
+      if (state.nextCursor && !isSearch) {
+        params.cursor = state.nextCursor;
       }
 
       console.log('요청 파라미터:', params);
@@ -150,11 +155,30 @@ const ProductManagementPage = () => {
     }
   };
 
+  // 마지막 요소 참조 콜백 함수 
+  const lastProductElementRef = (node) => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && stateRef.current.hasMore) {
+        // 마지막 요소가 화면에 보이고 더 불러올 데이터가 있으면 추가 로드
+        fetchProducts(false);
+      }
+    }, {
+      root: tableContainerRef.current, // 스크롤 컨테이너를 root로 지정
+      rootMargin: '0px 0px 100px 0px', // 하단에서 100px 떨어진 지점에서 감지
+      threshold: 0.1 // 10% 이상 보이면 감지
+    });
+    
+    if (node) observer.current.observe(node);
+  };
+
   // 초기 데이터 로드 (컴포넌트 마운트 시 1회만 실행)
   useEffect(() => {
     fetchProducts(true);
-    // 의존성 배열이 비어있어 컴포넌트 마운트 시 1회만 실행됨
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 빈 의존성 배열로 초기 마운트 시에만 실행
 
   // 카테고리나 정렬 옵션 변경 시 실행
   useEffect(() => {
@@ -166,10 +190,11 @@ const ProductManagementPage = () => {
     } else {
       isInitialMount.current = false; // 초기 마운트 플래그 설정
     }
-  }, [selectedCategory, sortOption]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, sortOption]); // fetchProducts 제거
 
-  // 스크롤 이벤트 처리를 위한 추가 함수
-  const handleScroll = useCallback(() => {
+  // 스크롤 이벤트 처리
+  const handleScroll = () => {
     if (!tableContainerRef.current || loading || !hasMore) return;
     
     const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.current;
@@ -179,7 +204,7 @@ const ProductManagementPage = () => {
     if (scrollBottom < 50) {
       fetchProducts(false);
     }
-  }, [loading, hasMore]);
+  };
 
   // 스크롤 이벤트 리스너 등록
   useEffect(() => {
@@ -191,7 +216,8 @@ const ProductManagementPage = () => {
         currentRef.removeEventListener('scroll', handleScroll);
       };
     }
-  }, [handleScroll]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, hasMore]); // fetchProducts 제거
 
   // 검색 핸들러
   const handleSearch = (e) => {
@@ -381,8 +407,6 @@ const ProductManagementPage = () => {
               <p>상품을 불러오는 중...</p>
             </div>
           )}
-          
-          {/* "더 불러오기" 버튼 제거 (무한 스크롤로 대체) */}
         </div>
       </div>
     </div>
