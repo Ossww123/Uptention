@@ -1,7 +1,11 @@
 package com.otoki.uptention;
 
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+
+import com.otoki.uptention.solana.service.SolanaRpcService;
+import com.otoki.uptention.solana.service.SolanaTransactionMonitorService;
 
 /**
  * Application Service 레이어 테스트용 기본 지원 클래스.
@@ -12,5 +16,11 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @ActiveProfiles("test")
 @SpringBootTest
-public abstract class AppServiceTestSupport {
+public abstract class ServiceTestSupport {
+
+	@MockBean
+	private SolanaTransactionMonitorService solanaTransactionMonitorService;
+
+	@MockBean
+	private SolanaRpcService solanaRpcService;
 }
