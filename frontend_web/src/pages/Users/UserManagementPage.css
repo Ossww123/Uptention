@@ -153,8 +153,8 @@
   background-color: #f0f0f0;
 }
 
-/* 역할 뱃지 스타일 */
-.role-badge {
+/* 지갑 연동 뱃지 스타일 */
+.wallet-badge {
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 12px;
@@ -162,17 +162,12 @@
   display: inline-block;
 }
 
-.role-role_admin {
+.wallet-connected {
   background-color: #4caf50;
   color: white;
 }
 
-.role-role_member {
-  background-color: #2196f3;
-  color: white;
-}
-
-.role-role_temp_member {
+.wallet-disconnected {
   background-color: #ff9800;
   color: white;
 }

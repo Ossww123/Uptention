@@ -203,20 +203,6 @@ const UserManagementPage = () => {
     return `${year}. ${month}. ${day}`;
   };
 
-  // 역할 표시 함수
-  const formatRole = (role) => {
-    switch (role) {
-      case 'ROLE_ADMIN':
-        return '관리자';
-      case 'ROLE_MEMBER':
-        return '회원';
-      case 'ROLE_TEMP_MEMBER':
-        return '회원(지갑 미연동)';
-      default:
-        return role;
-    }
-  };
-
   return (
     <div className="user-management">
       {/* 상단 필터 및 검색 영역 */}
@@ -236,9 +222,9 @@ const UserManagementPage = () => {
           </select>
         </div>
         
-        {/* 역할 필터 */}
+        {/* 지갑 연동 필터 */}
         <div className="filter-group">
-          <label htmlFor="userRole">역할: </label>
+          <label htmlFor="userRole">지갑 연동:</label>
           <select
             id="userRole"
             value={userRole}
@@ -246,9 +232,8 @@ const UserManagementPage = () => {
             className="filter-select"
           >
             <option value="">전체</option>
-            <option value="ROLE_ADMIN">관리자</option>
-            <option value="ROLE_MEMBER">회원</option>
-            <option value="ROLE_TEMP_MEMBER">회원(지갑 미연동)</option>
+            <option value="ROLE_MEMBER">연동됨</option>
+            <option value="ROLE_TEMP_MEMBER">미연동</option>
           </select>
         </div>
         
@@ -286,11 +271,10 @@ const UserManagementPage = () => {
           <table className="user-table">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>사원번호</th>
                 <th>회원아이디</th>
                 <th>이름</th>
-                <th>역할</th>
+                <th>지갑 연동</th>
                 <th>가입날짜</th>
                 <th>회원삭제</th>
               </tr>
@@ -301,11 +285,14 @@ const UserManagementPage = () => {
                   key={user.userId} 
                   ref={index === users.length - 1 ? lastUserElementRef : null}
                 >
-                  <td>{user.userId}</td>
                   <td>{user.employeeNumber}</td>
                   <td>{user.username}</td>
                   <td>{user.name}</td>
-                  <td><span className={`role-badge role-${user.role.toLowerCase()}`}>{formatRole(user.role)}</span></td>
+                  <td>
+                    <span className={`wallet-badge ${user.role === 'ROLE_MEMBER' ? 'wallet-connected' : 'wallet-disconnected'}`}>
+                      {user.role === 'ROLE_MEMBER' ? '연동됨' : '미연동'}
+                    </span>
+                  </td>
                   <td>{formatDate(user.createdAt)}</td>
                   <td>
                     <button 
