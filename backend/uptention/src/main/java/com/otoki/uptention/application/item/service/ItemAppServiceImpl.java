@@ -32,6 +32,9 @@ public class ItemAppServiceImpl implements ItemAppService {
 	private final CategoryService categoryService;
 	private final ImageUploadService imageUploadService;
 
+	/**
+	 * 상품 등록
+	 */
 	@Override
 	@Transactional
 	public Item createItem(ItemCreateRequestDto itemCreateRequestDto, List<MultipartFile> images) {
@@ -69,6 +72,16 @@ public class ItemAppServiceImpl implements ItemAppService {
 
 		// 아이템 저장 및 반환
 		return itemService.saveItem(item);
+	}
+
+	/**
+	 * 상품 삭제
+	 */
+	@Override
+	@Transactional
+	public void deleteItem(Integer itemId) {
+		Item item = itemService.getItemById(itemId);
+		item.updateStatus(false); // 상품 비활성화
 	}
 
 	/**

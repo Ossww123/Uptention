@@ -14,6 +14,8 @@ public interface ItemAppService {
 
 	Item createItem(ItemCreateRequestDto itemCreateRequestDto, List<MultipartFile> images);
 
+	void deleteItem(Integer itemId);
+
 	ItemResponseDto getItemDetails(Integer itemId);
 
 	ItemCursorResponseDto getItems(Integer categoryId, String keyword, String cursorStr, SortType sortType, int size);
