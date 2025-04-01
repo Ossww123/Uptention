@@ -27,6 +27,8 @@ const HomeScreen = ({ navigation }) => {
   // 앱제한 관련 권한 상태 관리
   const [hasAccessibilityPermission, setHasAccessibilityPermission] = useState(false);
   const [hasOverlayPermission, setHasOverlayPermission] = useState(false);
+  // 읽지 않은 알림 개수 상태 (더미 데이터)
+  const [unreadNotifications, setUnreadNotifications] = useState(3);
   
   // 프로그레스바 관련 계산
   const size = 280;
@@ -263,7 +265,17 @@ const HomeScreen = ({ navigation }) => {
               <TouchableOpacity onPress={() => navigation.navigate('Ranking')}>
                 <Ionicons name="medal-outline" size={20} />
               </TouchableOpacity>
-              <Ionicons name="notifications-outline" size={20} />
+              <TouchableOpacity 
+                onPress={() => navigation.navigate('Notification')}
+                style={styles.notificationButton}
+              >
+                <Ionicons name="notifications-outline" size={20} />
+                {unreadNotifications > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>{unreadNotifications}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
             </View>
           </View>
           <View style={styles.subHeader}>
@@ -389,6 +401,26 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     gap: 10,
+  },
+  notificationButton: {
+    position: 'relative',
+    padding: 3,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FF0000',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   subHeader: {
     width: '100%',

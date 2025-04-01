@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { get, patch, del } from '../services/api';
 
 const CartScreen = ({ navigation }) => {
   // 장바구니 상품 상태 관리
@@ -38,21 +39,11 @@ const CartScreen = ({ navigation }) => {
     try {
       setLoading(true);
       
-      const response = await fetch('https://j12d211.p.ssafy.io/api/shopping-cart', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // 필요한 경우 인증 토큰 추가
-          // 'Authorization': `Bearer ${token}`
-        }
-      });
+      const { data, ok } = await get('/shopping-cart');
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '장바구니 조회에 실패했습니다.');
+      if (!ok) {
+        throw new Error(data.message || '장바구니 조회에 실패했습니다.');
       }
-      
-      const data = await response.json();
       
       // API에서 받아온 데이터를 UI에 맞게 변환
       const formattedData = data.map(item => ({
@@ -100,18 +91,10 @@ const CartScreen = ({ navigation }) => {
   // 수량 변경 API 호출
   const updateCartItemQuantity = async (cartId, quantity) => {
     try {
-      const response = await fetch(`https://j12d211.p.ssafy.io/api/shopping-cart/${cartId}/quantity`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ quantity })
-      });
+      const { ok, data } = await patch(`/shopping-cart/${cartId}/quantity`, { quantity });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '수량 변경에 실패했습니다.');
+      if (!ok) {
+        throw new Error(data.message || '수량 변경에 실패했습니다.');
       }
       
       console.log(`카트 아이템 ${cartId} 수량이 ${quantity}로 변경되었습니다.`);
@@ -144,18 +127,12 @@ const CartScreen = ({ navigation }) => {
     }
     
     try {
-      const response = await fetch(`https://j12d211.p.ssafy.io/api/shopping-cart`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${token}`
-        },
+      const { ok, data } = await del('/shopping-cart', {
         body: JSON.stringify(selectedCartIds)
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '삭제에 실패했습니다.');
+      if (!ok) {
+        throw new Error(data.message || '삭제에 실패했습니다.');
       }
       
       // 성공적으로 삭제된 경우, UI에서도 해당 아이템 제거
@@ -172,18 +149,12 @@ const CartScreen = ({ navigation }) => {
   // 상품 개별 삭제 함수
   const deleteItem = async (cartId) => {
     try {
-      const response = await fetch(`https://j12d211.p.ssafy.io/api/shopping-cart`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${token}`
-        },
+      const { ok, data } = await del('/shopping-cart', {
         body: JSON.stringify([cartId]) // 배열 형태로 전송
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || '삭제에 실패했습니다.');
+      if (!ok) {
+        throw new Error(data.message || '삭제에 실패했습니다.');
       }
       
       // 성공적으로 삭제된 경우, UI에서도 해당 아이템 제거
