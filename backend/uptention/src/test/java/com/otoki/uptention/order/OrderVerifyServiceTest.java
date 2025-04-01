@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import com.otoki.uptention.AppServiceTestSupport;
+import com.otoki.uptention.ServiceTestSupport;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.service.OrderVerifyAppService;
@@ -21,7 +21,7 @@ import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
-public class OrderVerifyAppServiceTest extends AppServiceTestSupport {
+public class OrderVerifyServiceTest extends ServiceTestSupport {
 
 	@Autowired
 	private OrderVerifyAppService orderVerifyAppService;

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import com.otoki.uptention.AppServiceTestSupport;
+import com.otoki.uptention.ServiceTestSupport;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
 import com.otoki.uptention.application.item.service.ItemAppService;
 import com.otoki.uptention.domain.category.entity.Category;
@@ -21,7 +21,7 @@ import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 
-class ItemAppServiceTest extends AppServiceTestSupport {
+class ItemAppServiceTest extends ServiceTestSupport {
 
 	@Autowired
 	private ItemAppService itemAppService;
