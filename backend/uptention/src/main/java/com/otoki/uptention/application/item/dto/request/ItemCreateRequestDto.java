@@ -28,7 +28,7 @@ public class ItemCreateRequestDto {
 	private String brand;
 
 	@NotNull(message = "가격은 필수입니다.")
-	@Min(value = 0, message = "가격은 0원 이상이어야 합니다.")
+	@Min(value = 1, message = "가격은 1원 이상이어야 합니다.")
 	@Max(value = 5000, message = "가격은 최대 5000원까지 설정 가능합니다.")
 	@Schema(description = "가격", example = "4500")
 	private Integer price;
@@ -39,7 +39,7 @@ public class ItemCreateRequestDto {
 	private String detail;
 
 	@NotNull(message = "수량은 필수입니다.")
-	@Min(value = 0, message = "수량은 0개 이상이어야 합니다.")
+	@Min(value = 1, message = "수량은 1개 이상이어야 합니다.")
 	@Max(value = 99, message = "수량은 최대 99개까지 설정 가능합니다.")
 	@Schema(description = "수량", example = "50")
 	private Integer quantity;
