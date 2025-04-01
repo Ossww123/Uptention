@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.category.repository.CategoryRepository;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +25,15 @@ public class CategoryServiceImpl implements CategoryService {
 	@Override
 	public boolean isCategoryExists(Integer categoryId) {
 		return categoryRepository.existsById(categoryId);
+	}
+
+	/**
+	 * 카테고리 ID로 카테고리 정보 조회
+	 */
+	@Override
+	public Category getCategoryById(Integer categoryId) {
+		return categoryRepository.findById(categoryId)
+			.orElseThrow(() -> new CustomException(ErrorCode.ITEM_CATEGORY_NOT_FOUND));
 	}
 
 	/**

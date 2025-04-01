@@ -7,5 +7,7 @@ import com.otoki.uptention.domain.category.entity.Category;
 public interface CategoryService {
 	boolean isCategoryExists(Integer categoryId);
 
+	Category getCategoryById(Integer categoryId);
+
 	List<Category> getAllCategories();
 }
