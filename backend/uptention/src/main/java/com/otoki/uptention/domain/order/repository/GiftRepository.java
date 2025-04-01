@@ -29,7 +29,8 @@ public interface GiftRepository extends JpaRepository<Gift, Integer> {
 		"(SELECT img.url FROM Image img WHERE img.item = oi.item AND img.id = " +
 		"(SELECT MIN(subImg.id) FROM Image subImg WHERE subImg.item = oi.item)), " +
 		"o.user.id, " +
-		"o.user.name) " +
+		"o.user.name, " +
+		"o.address) " +
 		"FROM Gift g " +
 		"JOIN g.order o " +
 		"JOIN OrderItem oi ON oi.order = o " +
@@ -55,7 +56,8 @@ public interface GiftRepository extends JpaRepository<Gift, Integer> {
 		"(SELECT img.url FROM Image img WHERE img.item = oi.item AND img.id = " +
 		"(SELECT MIN(subImg.id) FROM Image subImg WHERE subImg.item = oi.item)), " +
 		"o.user.id, " +
-		"o.user.name) " +
+		"o.user.name, " +
+		"o.address) " +
 		"FROM Gift g " +
 		"JOIN g.order o " +
 		"JOIN OrderItem oi ON oi.order = o " +
