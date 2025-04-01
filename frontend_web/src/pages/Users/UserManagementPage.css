@@ -74,9 +74,14 @@
   margin-bottom: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* 좌우 정렬 유지 */
   align-items: center;
   flex-wrap: wrap;
+}
+
+.filters-container > div:first-child {
+  display: flex;
+  align-items: center;
 }
 
 .filter-group {
@@ -112,6 +117,7 @@
   width: 100%;
   max-width: 400px;
   display: flex;
+  margin-left: auto;
 }
 
 .search-bar form {
