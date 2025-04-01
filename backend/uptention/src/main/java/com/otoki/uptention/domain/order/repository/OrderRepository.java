@@ -18,6 +18,14 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
 	// 특정 사용자의 특정 상태 주문 목록 조회
 	List<Order> findByUserIdAndStatus(Integer userId, OrderStatus status);
 
+	@Query("SELECT o.address FROM Order o " +
+		"LEFT JOIN Gift g ON o.id = g.order.id " +
+		"WHERE o.user.id = :userId " +
+		"AND g.order.id IS NULL " +
+		"ORDER BY o.createdAt DESC " +
+		"LIMIT 1")
+	String findLatestDeliveryAddressByUserId(@Param("userId") Integer userId);
+
 	// 구매 주문 조회 (첫 페이지)
 	@Query("SELECT o FROM Order o " +
 		"WHERE o.user.id = :userId " +

@@ -80,28 +80,96 @@ pipeline {
                         transfers: [
                             sshTransfer(
                                 execCommand: """
-                                    docker stop ${DOCKER_CONTAINER} || true
-                                    docker rm ${DOCKER_CONTAINER} || true
-                                    docker rmi ${DOCKER_IMAGE}:latest || true
+                                    #!/bin/bash
+                                    # 기존 컨테이너 판단 후 신규 배포 (위의 스크립트 내용 삽입)
+                                    if [ \$(docker ps -q -f name=uptention-spring-container-blue) ]; then
+                                      ACTIVE_CONTAINER="blue"
+                                      NEW_CONTAINER="green"
+                                      NEW_CONTAINER_NAME="uptention-spring-container-green"
+                                      OLD_CONTAINER_NAME="uptention-spring-container-blue"
+                                    else
+                                      ACTIVE_CONTAINER="green"
+                                      NEW_CONTAINER="blue"
+                                      NEW_CONTAINER_NAME="uptention-spring-container-blue"
+                                      OLD_CONTAINER_NAME="uptention-spring-container-green"
+                                    fi
+
+                                    echo "현재 운영중인 컨테이너: \$ACTIVE_CONTAINER. 신규 배포 컨테이너: \$NEW_CONTAINER_NAME"
+
                                     docker pull ${DOCKER_IMAGE}:latest
-                                    docker run -d --name ${DOCKER_CONTAINER} \\
-                                      --network uptention_network \\
-                                      -e SPRING_PROFILES_ACTIVE=prod \\
-                                      -e TZ=UTC \\
-                                      -e SERVER_PORT=${DOCKER_PORT} \\
-                                      -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \\
-                                      -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
-                                      -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
-                                    -e S3_ACCESS_TOKEN="${S3_ACCESS_TOKEN}" \\
-                                    -e S3_SECRET_TOKEN="${S3_SECRET_TOKEN}" \\
-                                    -e JWT_SECRET_KEY="${JWT_SECRET_KEY}" \\
-                                      ${DOCKER_IMAGE}:latest
+                                    docker run -d --name \$NEW_CONTAINER_NAME \\
+                                        --network uptention_network \\
+                                        -e SPRING_PROFILES_ACTIVE=prod \\
+                                        -e TZ=UTC \\
+                                        -e SERVER_PORT=${DOCKER_PORT} \\
+                                        -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \\
+                                        -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
+                                        -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
+                                        -e S3_ACCESS_TOKEN="${S3_ACCESS_TOKEN}" \\
+                                        -e S3_SECRET_TOKEN="${S3_SECRET_TOKEN}" \\
+                                        -e JWT_SECRET_KEY="${JWT_SECRET_KEY}" \\
+                                        ${DOCKER_IMAGE}:latest
+
+                                    echo "신규 컨테이너 헬스 체크 중..."
+                                    for i in {1..30}; do
+                                      STATUS=\$(docker exec \$NEW_CONTAINER_NAME curl -s http://localhost:${DOCKER_PORT}/actuator/health | grep '"status":"UP"')
+                                      if [ ! -z "\$STATUS" ]; then
+                                        echo "신규 컨테이너 헬스 체크 성공."
+                                        break
+                                      fi
+                                      sleep 2
+                                    done
+
+                                    echo "Nginx upstream 구성을 \$NEW_CONTAINER_NAME로 업데이트합니다."
+                                    cat <<EOF > /home/ubuntu/uptention/nginx/conf/upstream-spring.conf
+                                    upstream spring_backend {
+                                        server \$NEW_CONTAINER_NAME:${DOCKER_PORT};
+                                    }
+                                    EOF
+
+                                    docker exec nginx nginx -s reload
+                                    echo "Nginx 설정을 리로드했습니다."
+
+                                    echo "이전 컨테이너 (\$OLD_CONTAINER_NAME) 중지 및 삭제 중..."
+                                    docker stop \$OLD_CONTAINER_NAME || true
+                                    docker rm \$OLD_CONTAINER_NAME || true
+
                                     docker image prune -f
                                 """.stripIndent()
                             )
                         ]
                     )
                 ])
+
+
+//                 sshPublisher(publishers: [
+//                     sshPublisherDesc(
+//                         configName: 'EC2-Server',
+//                         transfers: [
+//                             sshTransfer(
+//                                 execCommand: """
+//                                     docker stop ${DOCKER_CONTAINER} || true
+//                                     docker rm ${DOCKER_CONTAINER} || true
+//                                     docker rmi ${DOCKER_IMAGE}:latest || true
+//                                     docker pull ${DOCKER_IMAGE}:latest
+//                                     docker run -d --name ${DOCKER_CONTAINER} \\
+//                                       --network uptention_network \\
+//                                       -e SPRING_PROFILES_ACTIVE=prod \\
+//                                       -e TZ=UTC \\
+//                                       -e SERVER_PORT=${DOCKER_PORT} \\
+//                                       -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \\
+//                                       -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
+//                                       -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
+//                                     -e S3_ACCESS_TOKEN="${S3_ACCESS_TOKEN}" \\
+//                                     -e S3_SECRET_TOKEN="${S3_SECRET_TOKEN}" \\
+//                                     -e JWT_SECRET_KEY="${JWT_SECRET_KEY}" \\
+//                                       ${DOCKER_IMAGE}:latest
+//                                     docker image prune -f
+//                                 """.stripIndent()
+//                             )
+//                         ]
+//                     )
+//                 ])
             }
         }
     }

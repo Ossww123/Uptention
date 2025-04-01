@@ -58,3 +58,9 @@ logging:
         uptention:
           solana:
             service=DEBUG:
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus

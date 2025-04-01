@@ -81,6 +81,14 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		}
 
 		findMiningTime.updateEndTime(now);
+
+		LocalDateTime startTime = findMiningTime.getStartTime();
+		LocalDateTime endTime = findMiningTime.getEndTime();
+
+		long diffMinutes = Duration.between(startTime, endTime).toMinutes();
+
+		loggedInUser.setPoint((int)(loggedInUser.getPoint() + diffMinutes));
+
 		miningTimeService.saveMiningTime(findMiningTime);
 	}
 
@@ -112,7 +120,14 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 			throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
 		}
 
-		return miningTimeService.findMiningTimesByUserIdAndTimeRange(userId, startTime, endTime)
+		// KST에서 UTC로 변환
+		ZoneId kstZone = ZoneId.of("Asia/Seoul");
+		ZonedDateTime startKst = startTime.atZone(kstZone);
+		ZonedDateTime endKst = endTime.atZone(kstZone);
+		LocalDateTime startUtc = startKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+		LocalDateTime endUtc = endKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+
+		return miningTimeService.findMiningTimesByUserIdAndTimeRange(userId, startUtc, endUtc)
 			.stream()
 			.map(miningTime -> MiningTimeResponseDto.builder()
 				.startTime(miningTime.getStartTime())

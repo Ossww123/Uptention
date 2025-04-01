@@ -158,9 +158,11 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 	@DisplayName("일반 주문 시 재고가 부족한 상품을 주문하려고 하면 예외가 발생한다.")
 	void createOrder_ThrowsException_WhenStockIsInsufficient() {
 		// given
-		User user = createUser(1);
 		Integer itemId = 1;
 		int orderQuantity = 10;
+
+		User user = createUser(1);
+		when(securityService.getLoggedInUser()).thenReturn(user);
 
 		// 재고가 5개인 상품을 Mock
 		Item item = createItem(itemId, "재고 부족 상품", 10000, 5);
@@ -186,12 +188,18 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 	@DisplayName("선물 주문 시 재고가 부족하면 예외가 발생한다.")
 	void createGiftOrder_ThrowsException_WhenStockIsInsufficient() {
 		// given
-		User sender = createUser(2);
 		Integer itemId = 1;
+		int orderQuantity = 1;  // 선물 수량은 1개
+
+		User sender = createUser(2);
+		when(securityService.getLoggedInUser()).thenReturn(sender);
+
 		Item item = createItem(itemId, "재고 부족 선물", 10000, 0);  // 재고가 0개
 
 		when(securityService.getLoggedInUser()).thenReturn(sender);
 		when(itemService.getItemById(itemId)).thenReturn(item);
+		when(item.getQuantity()).thenReturn(0);  // 재고가 0개
+		when(item.hasStock(orderQuantity)).thenReturn(false);
 
 		GiftRequestDto giftRequestDto = createGiftRequestDto(itemId, 3);  // 선물 받는 사람 ID: 3
 

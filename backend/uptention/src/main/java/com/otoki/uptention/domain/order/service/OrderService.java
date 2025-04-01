@@ -9,6 +9,7 @@ public interface OrderService {
 	Order saveOrder(Order order);
 	Order getOrderById(Integer id);
 	List<Order> getOrdersByStatus(OrderStatus status);
+	String getLatestDeliveryAddress(Integer userId);
 	List<Order> findPurchaseOrdersByUserIdWithLimit(Integer userId, int limit);
 	List<Order> findPurchaseOrdersByUserIdAndCursor(Integer userId, Integer orderId, int limit);
 	List<Order> findGiftOrdersByUserIdWithLimit(Integer userId, int limit);

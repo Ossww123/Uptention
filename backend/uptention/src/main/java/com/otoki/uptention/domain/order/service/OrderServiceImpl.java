@@ -34,6 +34,11 @@ public class OrderServiceImpl implements OrderService {
 		return orderRepository.findByStatus(OrderStatus.PAYMENT_PENDING);
 	}
 
+	@Override
+	public String getLatestDeliveryAddress(Integer userId) {
+		return orderRepository.findLatestDeliveryAddressByUserId(userId);
+	}
+
 	// 구매 주문 조회 (첫 페이지)
 	@Override
 	public List<Order> findPurchaseOrdersByUserIdWithLimit(Integer userId, int limit) {
