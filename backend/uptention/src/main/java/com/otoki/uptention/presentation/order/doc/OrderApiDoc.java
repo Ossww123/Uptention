@@ -269,7 +269,7 @@ public interface OrderApiDoc {
 					),
 					@ExampleObject(
 						name = "배송지 없음",
-						value = "{\"address\": null}"
+						value = "{\"address\": \"\"}"
 					)
 				}
 			)
