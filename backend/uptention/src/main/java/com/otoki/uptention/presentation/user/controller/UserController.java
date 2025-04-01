@@ -1,9 +1,7 @@
 package com.otoki.uptention.presentation.user.controller;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.application.mining.service.MiningTimeAppService;
+import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
@@ -84,7 +83,7 @@ public class UserController implements UserApiDoc {
 
 	// 유저 채굴시간 조회
 	@GetMapping("/{userId}/mining-times")
-	public ResponseEntity<Map<LocalDate, Long>> getMiningTimes(
+	public ResponseEntity<List<MiningTimeResponseDto>> getMiningTimes(
 		@PathVariable Integer userId,
 		@RequestParam LocalDateTime startTime,
 		@RequestParam LocalDateTime endTime) {
