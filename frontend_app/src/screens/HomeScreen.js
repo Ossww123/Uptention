@@ -27,6 +27,7 @@ const HomeScreen = ({ navigation }) => {
   const { userId, authToken } = useAuth();
   const [userInfo, setUserInfo] = useState(null);
   const [userPoint, setUserPoint] = useState(0);
+  const [dailyFocusTime, setDailyFocusTime] = useState(0);
 
   // 앱제한 관련 권한 상태 관리
   const [hasAccessibilityPermission, setHasAccessibilityPermission] = useState(false);
@@ -39,9 +40,11 @@ const HomeScreen = ({ navigation }) => {
   const strokeWidth = 5;
   const radius = (size - strokeWidth) / 2;
   const circum = radius * 2 * Math.PI;
-  const progress = 30;  // progress가 클수록 프로그레스바는 줄어듦
-  const svgProgress = (progress * circum) / 100;  // 이 계산식으로 하면 progress가 
-                                                 // 커질수록 프로그레스바가 줄어듦
+  const maxFocusHours = 8; // 최대 8시간
+  const maxFocusMinutes = maxFocusHours * 60; // 480분
+  const remainingMinutes = maxFocusMinutes - dailyFocusTime; // 남은 시간 계산
+  const progress = (remainingMinutes / maxFocusMinutes) * 100; // 남은 시간의 비율
+  const svgProgress = (progress * circum) / 100; // progress가 클수록 비어있는 상태
   
   // JWT 토큰에서 payload를 추출하는 함수
   const parseJwt = (token) => {
@@ -278,18 +281,99 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  // 오늘의 집중 시간 조회 함수
+  const fetchDailyFocusTime = async () => {
+    if (!userId || !authToken) return;
+
+    try {
+      // 오늘 날짜의 시작과 끝 시간 설정
+      const now = new Date();
+      const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+      // 날짜를 YYYY-MM-DDTHH:mm:ss 형식으로 변환
+      const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+      };
+      
+      console.log('API 요청 파라미터:', {
+        startTime: formatDate(startTime),
+        endTime: formatDate(endTime)
+      });
+
+      // API 호출
+      const response = await axios.get(
+        `${API_BASE_URL}/api/users/${userId}/mining-times`,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
+          params: {
+            startTime: formatDate(startTime),
+            endTime: formatDate(endTime)
+          }
+        }
+      );
+      
+      console.log('API 응답 데이터:', response.data);
+      
+      if (response.data && Array.isArray(response.data)) {
+        // 집중 시간 세션 로그 출력
+        console.log('=== 오늘의 집중 시간 세션 ===');
+        let totalMinutes = 0;
+
+        response.data.forEach((session, index) => {
+          console.log(`세션 ${index + 1}:`);
+          console.log(`날짜: ${session.date}`);
+          console.log(`총 시간: ${session.totalTime}분`);
+          console.log('------------------------');
+          
+          // 문자열이나 숫자 모두 처리 가능하도록
+          const sessionTime = parseInt(session.totalTime || 0);
+          if (!isNaN(sessionTime)) {
+            totalMinutes += sessionTime;
+          }
+        });
+        
+        console.log(`총 집중 시간: ${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분`);
+        setDailyFocusTime(totalMinutes);
+      } else {
+        console.error('잘못된 응답 형식:', response.data);
+        setDailyFocusTime(0);
+      }
+    } catch (error) {
+      console.error('집중 시간 조회 오류:', error);
+      if (error.response) {
+        console.error('에러 상세 정보:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      }
+      setDailyFocusTime(0);
+    }
+  };
+
   useEffect(() => {
     if (userId && authToken) {
       fetchUserInfo();
       fetchUserPoint();
+      fetchDailyFocusTime();
     }
   }, [userId, authToken]);
 
-  // 화면이 포커스될 때마다 포인트 업데이트
+  // 화면이 포커스될 때마다 데이터 업데이트
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       if (userId && authToken) {
         fetchUserPoint();
+        fetchDailyFocusTime();
       }
     });
 
@@ -347,11 +431,11 @@ const HomeScreen = ({ navigation }) => {
                     cy={size / 2}
                     r={radius}
                     strokeWidth={strokeWidth}
-                    strokeLinecap="butt"
+                    strokeLinecap="round"
                   />
                   {/* 위에 덮이는 주황색 원 */}
                   <Circle
-                    stroke="#E0E0E0"
+                    stroke="#E0E0E0" 
                     fill="none"
                     cx={size / 2}
                     cy={size / 2}
@@ -363,7 +447,6 @@ const HomeScreen = ({ navigation }) => {
                     transform={`rotate(-90, ${size / 2}, ${size / 2})`}
                   />
                 </Svg>
-                
               </View>
             </View>
           </View>
@@ -387,12 +470,18 @@ const HomeScreen = ({ navigation }) => {
               <View style={styles.headerRow}>
                 <Text style={styles.labelText}>에너지</Text>
                 <View style={styles.progressInfo}>
-                  <Text style={styles.valueText}>8.00/</Text>
+                  <Text style={styles.valueText}>{(remainingMinutes / 60).toFixed(2)}/</Text>
                   <Text style={styles.maxText}>8</Text>
                 </View>
               </View>
               <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { backgroundColor: '#00C862', width: '100%' }]} />
+                <View style={[
+                  styles.progressFill, 
+                  { 
+                    backgroundColor: '#00C862', 
+                    width: `${progress}%` 
+                  }
+                ]} />
               </View>
             </View>
           </View>
