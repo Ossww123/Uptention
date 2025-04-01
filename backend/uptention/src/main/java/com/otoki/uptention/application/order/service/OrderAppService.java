@@ -3,6 +3,7 @@ package com.otoki.uptention.application.order.service;
 import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.DeliveryAddressResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.domain.order.entity.Order;
@@ -14,6 +15,8 @@ public interface OrderAppService {
 	Order createGiftOrder(GiftRequestDto giftRequestDto);
 
 	Order registerDeliveryInfo(Integer orderId, DeliveryInfoRequestDto deliveryInfoRequestDto);
+
+	DeliveryAddressResponseDto getLatestDeliveryAddress();
 
 	OrderHistoryCursorResponseDto getOrderHistory(String cursor, int size, OrderHistoryType type);
 

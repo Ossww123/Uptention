@@ -17,6 +17,7 @@ import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
+import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
@@ -50,6 +51,9 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 	@MockBean
 	private GiftService giftService;
 
+	@MockBean
+	private SecurityService securityService;
+
 	@Test
 	@DisplayName("구매 상품 리스트를 받아 주문을 생성한다.")
 	void createOrder() {
@@ -71,7 +75,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		Order savedOrder = createOrder(1, user, "서울시 강남구 테스트로 123");
 
 		// when
-		when(userService.getUserById(anyInt())).thenReturn(user);
+		when(securityService.getLoggedInUser()).thenReturn(user);
 		when(itemService.getItemById(1)).thenReturn(item1);
 		when(itemService.getItemById(2)).thenReturn(item2);
 		when(itemService.getItemById(3)).thenReturn(item3);
@@ -115,7 +119,7 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		Order savedOrder = createOrder(1, sender, null); // 선물은 주소가 필요 없음
 
 		// when
-		when(userService.getUserById(2)).thenReturn(sender);
+		when(securityService.getLoggedInUser()).thenReturn(sender);
 		when(userService.getUserById(3)).thenReturn(receiver);
 		when(itemService.getItemById(3)).thenReturn(item);
 		when(orderService.saveOrder(any(Order.class))).thenReturn(savedOrder);
@@ -145,6 +149,9 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		Integer itemId = 1;
 		int orderQuantity = 10;
 
+		User user = createUser(1);
+		when(securityService.getLoggedInUser()).thenReturn(user);
+
 		// 재고가 5개인 상품을 Mock
 		Item item = mock(Item.class);
 		when(itemService.getItemById(itemId)).thenReturn(item);
@@ -173,9 +180,14 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		// given
 		Integer itemId = 1;
 		int orderQuantity = 1;  // 선물 수량은 1개
+
+		User sender = createUser(2);
+		when(securityService.getLoggedInUser()).thenReturn(sender);
+
 		Item item = mock(Item.class);
 		when(itemService.getItemById(itemId)).thenReturn(item);
 		when(item.getQuantity()).thenReturn(0);  // 재고가 0개
+		when(item.hasStock(orderQuantity)).thenReturn(false);
 
 		GiftRequestDto giftRequestDto = createGiftRequestDto(itemId, 3);  // 선물 받는 사람 ID: 3
 
