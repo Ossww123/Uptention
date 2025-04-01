@@ -91,9 +91,10 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		when(orderService.saveOrder(any(Order.class))).thenReturn(savedOrder);
 
 		// OrderItem 생성 시 반환값 설정
-		when(orderItemService.saveOrderItem(argThat(oi -> oi.getItem().getId().equals(1)))).thenReturn(orderItem1);
-		when(orderItemService.saveOrderItem(argThat(oi -> oi.getItem().getId().equals(2)))).thenReturn(orderItem2);
-		when(orderItemService.saveOrderItem(argThat(oi -> oi.getItem().getId().equals(3)))).thenReturn(orderItem3);
+		when(orderItemService.saveOrderItem(any(OrderItem.class)))
+			.thenReturn(orderItem1)
+			.thenReturn(orderItem2)
+			.thenReturn(orderItem3);
 
 		InitiateOrderResponseDto result = orderAppService.createOrder(orderRequestDto);
 
@@ -192,14 +193,14 @@ public class OrderAppServiceTest extends AppServiceTestSupport {
 		int orderQuantity = 1;  // 선물 수량은 1개
 
 		User sender = createUser(2);
-		when(securityService.getLoggedInUser()).thenReturn(sender);
+		User receiver = createUser(3);
 
 		Item item = createItem(itemId, "재고 부족 선물", 10000, 0);  // 재고가 0개
 
+		// when
 		when(securityService.getLoggedInUser()).thenReturn(sender);
+		when(userService.getUserById(3)).thenReturn(receiver);
 		when(itemService.getItemById(itemId)).thenReturn(item);
-		when(item.getQuantity()).thenReturn(0);  // 재고가 0개
-		when(item.hasStock(orderQuantity)).thenReturn(false);
 
 		GiftRequestDto giftRequestDto = createGiftRequestDto(itemId, 3);  // 선물 받는 사람 ID: 3
 
