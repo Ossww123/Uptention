@@ -19,7 +19,7 @@ public enum ErrorCode {
 	AUTH_DUPLICATE_USERNAME(HttpStatus.CONFLICT, "AUTH_006", "아이디가 이미 사용중입니다."),
 	AUTH_BAD_REQUEST_PASSWORD(HttpStatus.BAD_REQUEST, "AUTH_007", "현재 비밀번호가 일치하지 않습니다."),
 
-	// 아이템 관련 에러
+	// 상품 관련 에러
 	ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "ITEM_001", "상품이 존재하지 않습니다."),
 	ITEM_INVALID_SORT_TYPE(HttpStatus.BAD_REQUEST, "ITEM_002", "지원하지 않는 정렬 방식입니다."),
 	ITEM_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "ITEM_003", "카테고리가 존재하지 않습니다."),
@@ -29,6 +29,9 @@ public enum ErrorCode {
 	ITEM_UNAVAILABLE(HttpStatus.NOT_FOUND, "ITEM_007", "삭제된 상품 입니다."),
 	ITEM_QUANTITY_MIN_REQUIRED(HttpStatus.BAD_REQUEST, "ITEM_008", "상품 수량은 1개 이상이어야 합니다."),
 	ITEM_QUANTITY_MAX_EXCEEDED(HttpStatus.BAD_REQUEST, "ITEM_009", "상품 수량은 99개 이하여야 합니다."),
+
+	// 상품 등록 관련 에러
+	ITEM_IMAGE_COUNT_INVALID(HttpStatus.BAD_REQUEST, "ITEM_010", "이미지는 1개 이상 3개 이하로 업로드해야 합니다."),
 
 	// 주문 관련 에러
 	ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_001", "주문이 존재하지 않습니다."),

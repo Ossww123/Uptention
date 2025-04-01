@@ -4,17 +4,22 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.otoki.uptention.application.item.dto.request.ItemCreateRequestDto;
 import com.otoki.uptention.application.item.dto.response.ItemCursorResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
+import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.category.service.CategoryService;
 import com.otoki.uptention.domain.common.CursorDto;
+import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.enums.SortType;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
+import com.otoki.uptention.global.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +30,46 @@ public class ItemAppServiceImpl implements ItemAppService {
 
 	private final ItemService itemService;
 	private final CategoryService categoryService;
+	private final ImageUploadService imageUploadService;
+
+	@Override
+	@Transactional
+	public Item createItem(ItemCreateRequestDto itemCreateRequestDto, List<MultipartFile> images) {
+		// 이미지 개수 검증 (1~3개)
+		if (images.isEmpty() || images.size() > 3) {
+			throw new CustomException(ErrorCode.ITEM_IMAGE_COUNT_INVALID);
+		}
+
+		// 카테고리 검증
+		Category category = categoryService.getCategoryById(itemCreateRequestDto.getCategoryId());
+
+		// Item 객체 생성
+		Item item = Item.builder()
+			.name(itemCreateRequestDto.getName())
+			.detail(itemCreateRequestDto.getDetail())
+			.price(itemCreateRequestDto.getPrice())
+			.brand(itemCreateRequestDto.getBrand())
+			.quantity(itemCreateRequestDto.getQuantity())
+			.category(category)
+			.build();
+
+		// 이미지 업로드와 Image 객체 생성을 한 번의 순회로 처리
+		List<Image> imageEntities = images.stream()
+			.map(file -> {
+				String imageKey = imageUploadService.uploadImage(file);
+				return Image.builder()
+					.url(imageKey)
+					.item(item)
+					.build();
+			})
+			.toList();
+
+		// 이미지 목록 설정
+		item.getImages().addAll(imageEntities);
+
+		// 아이템 저장 및 반환
+		return itemService.saveItem(item);
+	}
 
 	/**
 	 * 상품의 상세 정보 조회
