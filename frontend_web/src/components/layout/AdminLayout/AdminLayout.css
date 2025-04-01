@@ -9,7 +9,6 @@
   flex: 1;
   margin-left: 260px; /* 사이드바 너비와 동일 */
   width: calc(100% - 260px);
-  padding: 20px;
   overflow-x: hidden;
 }
 
@@ -22,6 +21,5 @@
   .admin-content-wrapper {
     margin-left: 0;
     width: 100%;
-    padding: 10px;
   }
 }

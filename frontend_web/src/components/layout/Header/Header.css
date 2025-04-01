@@ -5,7 +5,6 @@
     padding: 15px 25px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     margin-bottom: 20px;
-    border-radius: 8px;
   }
   
   .header-title h1 {
@@ -21,7 +20,7 @@
     content: '';
     display: inline-block;
     width: 5px;
-    height: 24px;
+    height: 40px;
     background-color: #FF8C00;
     margin-right: 15px;
     border-radius: 3px;
