@@ -41,4 +41,7 @@ public class GiftItemResponseDto {
 	@Schema(description = "보낸 사람 이름", example = "홍길동")
 	private String senderName;
 
+	@Schema(description = "배송지", example = "서울시 강남구 행복동")
+	private String address;
+
 }

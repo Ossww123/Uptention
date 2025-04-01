@@ -29,8 +29,7 @@ public class MiningTimeServiceImpl implements MiningTimeService {
 	@Override
 	public MiningTime findMiningTime(User user) {
 		return miningTimeRepository.findTopByUserOrderByStartTimeDesc(user)
-			.filter(mt -> mt.getEndTime() == null) // 종료시간이 null 아닌 경우 에러 발생
-			.orElseThrow(() -> new CustomException(ErrorCode.FOCUS_MODE_OFF_FAILED));
+			.orElseThrow(() -> new CustomException(ErrorCode.FOCUS_MODE_NOT_FOUND));
 	}
 
 	@Override

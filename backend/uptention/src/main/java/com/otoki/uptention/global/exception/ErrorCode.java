@@ -67,6 +67,8 @@ public enum ErrorCode {
 	FOCUS_MODE_ON_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_001", "집중모드 실행 중 오류가 발생했습니다."),
 	FOCUS_MODE_OFF_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_002", "집중모드 종료 중 오류가 발생했습니다."),
 	FOCUS_MODE_INSPECTION(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_003", "포인트 정산 중입니다."),
+	FOCUS_MODE_INVALID_RANGE(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_004", "유효 구역이 아닙니다."),
+	FOCUS_MODE_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "FOCUS_005", "집중모드 시간을 찾을 수 없습니다."),
 
 	// 대시보드 관련 에러
 	INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "DASHBOARD_001", "종료 시간이 시작 시간보다 이전입니다."),
