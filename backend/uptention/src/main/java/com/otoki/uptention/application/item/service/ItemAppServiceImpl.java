@@ -1,20 +1,26 @@
 package com.otoki.uptention.application.item.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.otoki.uptention.application.item.dto.request.ItemCreateRequestDto;
 import com.otoki.uptention.application.item.dto.response.ItemCursorResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
+import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.category.service.CategoryService;
 import com.otoki.uptention.domain.common.CursorDto;
+import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.enums.SortType;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
+import com.otoki.uptention.global.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +31,47 @@ public class ItemAppServiceImpl implements ItemAppService {
 
 	private final ItemService itemService;
 	private final CategoryService categoryService;
+	private final ImageUploadService imageUploadService;
+
+	@Override
+	@Transactional
+	public Item createItem(ItemCreateRequestDto itemCreateRequestDto, List<MultipartFile> images) {
+		// 이미지 개수 검증 (1~3개)
+		if (images.isEmpty() || images.size() > 3) {
+			throw new CustomException(ErrorCode.ITEM_IMAGE_COUNT_INVALID);
+		}
+
+		// 카테고리 검증
+		Category category = categoryService.getCategoryById(itemCreateRequestDto.getCategoryId());
+
+		// 이미지 업로드 후 URL 목록 생성
+		List<String> imageKeys = new ArrayList<>();
+		for (MultipartFile file : images) {
+			String imageKey = imageUploadService.uploadImage(file);
+			imageKeys.add(imageKey);
+		}
+
+		Item item = Item.builder()
+			.name(itemCreateRequestDto.getName())
+			.detail(itemCreateRequestDto.getDetail())
+			.price(itemCreateRequestDto.getPrice())
+			.brand(itemCreateRequestDto.getBrand())
+			.quantity(itemCreateRequestDto.getQuantity())
+			.category(category)
+			.build();
+
+		Item savedItem = itemService.saveItem(item);
+
+		for (String imageKey : imageKeys) {
+			Image image = Image.builder()
+				.url(imageKey)
+				.item(savedItem)
+				.build();
+			savedItem.getImages().add(image);
+		}
+
+		return savedItem;
+	}
 
 	/**
 	 * 상품의 상세 정보 조회
