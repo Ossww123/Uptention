@@ -234,7 +234,7 @@ const UserManagementPage = () => {
 
         {/* 지갑 연동 필터 */}
         <div className="filter-group">
-          <label htmlFor="userRole">지갑 연동:</label>
+          <label htmlFor="userRole">지갑 연동 여부:</label>
           <select
             id="userRole"
             value={userRole}
