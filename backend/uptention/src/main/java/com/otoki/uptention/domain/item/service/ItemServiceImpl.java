@@ -22,6 +22,11 @@ public class ItemServiceImpl implements ItemService {
 	private final ItemRepository itemRepository;
 
 	@Override
+	public Item saveItem(Item item) {
+		return itemRepository.save(item);
+	}
+
+	@Override
 	public Item getItemById(Integer id) {
 		return itemRepository.findActiveByIdWithImages(id)
 			.orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
