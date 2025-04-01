@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.p2p.solanaj.rpc.RpcClient;
 import org.p2p.solanaj.ws.SubscriptionWebSocketClient;
 import org.p2p.solanaj.ws.listeners.NotificationEventListener;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -200,7 +199,7 @@ public class SolanaTransactionMonitorService {
 
 							// 로그 데이터에서 트랜잭션 서명 추출
 							@SuppressWarnings("unchecked")
-							Map<String, Object> dataMap = (Map<String, Object>) data;
+							Map<String, Object> dataMap = (Map<String, Object>)data;
 
 							if (dataMap.containsKey("signature")) {
 								String signature = dataMap.get("signature").toString();
@@ -237,7 +236,7 @@ public class SolanaTransactionMonitorService {
 
 								// 로그 데이터에서 트랜잭션 서명 추출
 								@SuppressWarnings("unchecked")
-								Map<String, Object> dataMap = (Map<String, Object>) data;
+								Map<String, Object> dataMap = (Map<String, Object>)data;
 
 								if (dataMap.containsKey("signature")) {
 									String signature = dataMap.get("signature").toString();
@@ -366,7 +365,9 @@ public class SolanaTransactionMonitorService {
 					for (JsonNode instruction : instructions) {
 						// Memo 프로그램 ID 확인 (MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr)
 						if (instruction.has("programId") &&
-							instruction.get("programId").asText().equals("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")) {
+							instruction.get("programId")
+								.asText()
+								.equals("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")) {
 
 							if (instruction.has("data")) {
 								String memoData = instruction.get("data").asText();
@@ -459,7 +460,6 @@ public class SolanaTransactionMonitorService {
 	/**
 	 * 지나치게 오래된 처리 완료된 트랜잭션 서명 정리 (메모리 관리)
 	 */
-	@Scheduled(fixedDelay = 60000) // 60초마다 실행
 	public void cleanupProcessedSignatures() {
 		try {
 			if (processedSignatures.size() > 1000) {
@@ -475,7 +475,6 @@ public class SolanaTransactionMonitorService {
 	/**
 	 * WebSocket 연결 상태 확인 및 재연결
 	 */
-	@Scheduled(fixedDelay = 300000) // 5분마다 실행
 	public void checkWebSocketConnection() {
 		try {
 			if (isRunning.get() && (webSocketClient == null || !webSocketClient.isOpen())) {
