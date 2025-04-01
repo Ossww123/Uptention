@@ -112,10 +112,9 @@ public class OrderAppServiceImpl implements OrderAppService {
 		Integer userId = securityService.getLoggedInUser().getId();
 		String latestAddress = orderService.getLatestDeliveryAddress(userId);
 		return DeliveryAddressResponseDto.builder()
-			.address(latestAddress)
+			.address(latestAddress != null ? latestAddress : "")
 			.build();
 	}
-
 
 	/**
 	 * OrderItem을 생성하고 저장하는 공통 로직
