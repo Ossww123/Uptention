@@ -1,7 +1,11 @@
 package com.otoki.uptention.solana.service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -12,11 +16,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.p2p.solanaj.rpc.RpcClient;
 import org.p2p.solanaj.ws.SubscriptionWebSocketClient;
 import org.p2p.solanaj.ws.listeners.NotificationEventListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.otoki.uptention.domain.order.entity.Order;
+import com.otoki.uptention.domain.order.enums.OrderStatus;
+import com.otoki.uptention.domain.order.service.OrderService;
+import com.otoki.uptention.domain.orderitem.entity.OrderItem;
+import com.otoki.uptention.domain.orderitem.service.OrderItemService;
+import com.otoki.uptention.global.config.RabbitMQConfig;
 import com.otoki.uptention.global.config.SolanaProperties;
+import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.solana.event.PaymentFailedEvent;
+import com.otoki.uptention.solana.event.PaymentSuccessEvent;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -32,6 +46,9 @@ public class SolanaTransactionMonitorService {
 	private final SolanaRpcService solanaRpcService;
 	private final ObjectMapper objectMapper;
 	private final PaymentProcessService paymentProcessService;
+	private final RabbitTemplate rabbitTemplate;
+	private final OrderService orderService;
+	private final OrderItemService orderItemService;
 
 	private RpcClient rpcClient;
 	private SubscriptionWebSocketClient webSocketClient;
@@ -345,13 +362,10 @@ public class SolanaTransactionMonitorService {
 				return;
 			}
 
-			// 블록 정보
-			if (result.has("slot")) {
-				log.info("블록 번호: {}", result.get("slot").asText());
-			}
-
+			// 블록 정보 로깅
+			long blockTime = 0;
 			if (result.has("blockTime")) {
-				long blockTime = result.get("blockTime").asLong();
+				blockTime = result.get("blockTime").asLong();
 				Date date = new Date(blockTime * 1000L);
 				log.info("블록 타임스탬프: {} ({})", blockTime,
 					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date));
@@ -378,71 +392,112 @@ public class SolanaTransactionMonitorService {
 									String orderId = memoData.substring(6);
 									log.info("주문 ID 감지: {}", orderId);
 
-									// 결제 처리 서비스 호출
-									boolean processed = paymentProcessService.processPaymentSuccess(orderId, signature);
-									if (processed) {
-										log.info("주문 ID({})의 결제가 성공적으로 처리되었습니다.", orderId);
-									} else {
-										log.warn("주문 ID({})의 결제 처리에 실패했습니다.", orderId);
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+									try {
+										// 1. 주문 ID 유효성 검증
+										Integer orderIdNum = Integer.parseInt(orderId);
+										Order order;
+										try {
+											order = orderService.getOrderById(orderIdNum);
+										} catch (CustomException e) {
+											// 주문이 존재하지 않음
+											log.error("주문을 찾을 수 없음: {}", orderId);
+											publishPaymentFailedEvent(orderId, "주문을 찾을 수 없음", signature);
+											continue;
+										}
 
-			// 로그 메시지
-			if (result.has("meta") && result.get("meta").has("logMessages")) {
-				JsonNode logMessages = result.get("meta").get("logMessages");
-				log.info("로그 메시지:");
-				for (JsonNode message : logMessages) {
-					log.info(" - {}", message.asText());
-				}
-			}
+										// 2. 주문 상태 검증
+										if (!OrderStatus.PAYMENT_PENDING.equals(order.getStatus())) {
+											String reason = "유효하지 않은 주문 상태: " + order.getStatus();
+											log.warn("주문 ID({})의 상태가 결제 대기 상태가 아닙니다: {}",
+												orderIdNum, order.getStatus());
+											publishPaymentFailedEvent(orderId, reason, signature);
+											continue;
+										}
 
-			// 토큰 잔액 변화
-			if (result.has("meta")) {
-				JsonNode meta = result.get("meta");
-				if (meta.has("preTokenBalances") && meta.has("postTokenBalances")) {
-					JsonNode preBalances = meta.get("preTokenBalances");
-					JsonNode postBalances = meta.get("postTokenBalances");
+										// 3. 트랜잭션 시간 검증
+										LocalDateTime orderCreatedAt = order.getCreatedAt();
+										LocalDateTime transactionTime = LocalDateTime.ofInstant(
+											Instant.ofEpochSecond(blockTime), ZoneId.systemDefault());
 
-					log.info("토큰 잔액 변화:");
-					for (int i = 0; i < preBalances.size(); i++) {
-						JsonNode pre = preBalances.get(i);
+										if (transactionTime.isBefore(orderCreatedAt)) {
+											String reason = "트랜잭션 시간이 주문 생성 시간보다 이전임";
+											log.warn("트랜잭션 시간이 주문 생성 시간보다 이전입니다: 주문 ID={}", orderIdNum);
+											publishPaymentFailedEvent(orderId, reason, signature);
+											continue;
+										}
 
-						// 같은 인덱스의 post 잔액 찾기
-						JsonNode post = null;
-						for (int j = 0; j < postBalances.size(); j++) {
-							if (postBalances.get(j).get("accountIndex").asInt() ==
-								pre.get("accountIndex").asInt()) {
-								post = postBalances.get(j);
-								break;
-							}
-						}
+										// 4. 주문 금액 계산
+										List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(orderIdNum);
+										int orderTotalAmount = orderItems.stream()
+											.mapToInt(OrderItem::getTotalPrice)
+											.sum();
 
-						if (post != null) {
-							String owner = pre.has("owner") ? pre.get("owner").asText() : "알 수 없음";
-							String mint = pre.has("mint") ? pre.get("mint").asText() : "알 수 없음";
-							String preAmount = pre.path("uiTokenAmount").path("uiAmountString").asText("0");
-							String postAmount = post.path("uiTokenAmount").path("uiAmountString").asText("0");
+										// 5. 트랜잭션 금액 확인
+										double transactionAmount = 0;
+										if (result.has("meta")) {
+											JsonNode meta = result.get("meta");
+											if (meta.has("preTokenBalances") && meta.has("postTokenBalances")) {
+												JsonNode preBalances = meta.get("preTokenBalances");
+												JsonNode postBalances = meta.get("postTokenBalances");
 
-							log.info(" - 계정: {}, 민트: {}, 이전: {}, 이후: {}",
-								owner, mint, preAmount, postAmount);
+												for (int i = 0; i < preBalances.size(); i++) {
+													JsonNode pre = preBalances.get(i);
+													if (!pre.has("owner") ||
+														!pre.get("owner").asText().equals(solanaProperties.getCompanyWallet())) {
+														continue;
+													}
 
-							// 워크 토큰인지 확인
-							if (mint.equals(solanaProperties.getWorkTokenMint())) {
-								log.info("워크 토큰 거래 감지!");
+													// 같은 인덱스의 post 잔액 찾기
+													for (int j = 0; j < postBalances.size(); j++) {
+														JsonNode post = postBalances.get(j);
+														if (post.get("accountIndex").asInt() == pre.get("accountIndex").asInt()) {
+															// 워크 토큰인지 확인
+															if (pre.has("mint") &&
+																pre.get("mint").asText().equals(solanaProperties.getWorkTokenMint())) {
+																double preAmount = Double.parseDouble(
+																	pre.path("uiTokenAmount").path("uiAmountString").asText("0"));
+																double postAmount = Double.parseDouble(
+																	post.path("uiTokenAmount").path("uiAmountString").asText("0"));
 
-								// 회사 지갑으로 토큰이 전송되었는지 확인
-								if (owner.equals(solanaProperties.getCompanyWallet())) {
-									double preBal = Double.parseDouble(preAmount);
-									double postBal = Double.parseDouble(postAmount);
+																// 잔액 증가량 계산 (회사 지갑으로 전송된 금액)
+																transactionAmount = postAmount - preAmount;
+																log.info("주문 ID({})의 결제 금액: {}", orderIdNum, transactionAmount);
+															}
+														}
+													}
+												}
+											}
+										}
 
-									if (postBal > preBal) {
-										double amount = postBal - preBal;
-										log.info("회사 지갑으로 워크 토큰 {} 수신됨", amount);
+										// 6. 금액 검증
+										if (Math.abs(transactionAmount - orderTotalAmount) > 0.001) {
+											String reason = String.format(
+												"금액이 일치하지 않음: 주문=%d, 트랜잭션=%.2f", orderTotalAmount, transactionAmount);
+											log.warn("주문 ID({})의 금액이 일치하지 않습니다: 주문={}, 트랜잭션={}",
+												orderIdNum, orderTotalAmount, transactionAmount);
+											publishPaymentFailedEvent(orderId, reason, signature);
+											continue;
+										}
+
+										// 7. 모든 검증 통과 시 결제 완료 이벤트 발행
+										PaymentSuccessEvent event = PaymentSuccessEvent.builder()
+											.orderId(orderIdNum)
+											.userId(order.getUser().getId())
+											.totalAmount(new BigDecimal(orderTotalAmount))
+											.completedAt(System.currentTimeMillis())
+											.transactionSignature(signature)
+											.build();
+
+										rabbitTemplate.convertAndSend(RabbitMQConfig.PAYMENT_EXCHANGE,
+											RabbitMQConfig.PAYMENT_COMPLETED_KEY, event);
+										log.info("주문 ID({})의 결제 완료 이벤트를 발행했습니다.", orderIdNum);
+
+									} catch (NumberFormatException e) {
+										log.error("유효하지 않은 주문 ID 형식: {}", orderId, e);
+										publishPaymentFailedEvent(orderId, "유효하지 않은 주문 ID 형식", signature);
+									} catch (Exception e) {
+										log.error("결제 처리 중 예상치 못한 오류: {}", orderId, e);
+										publishPaymentFailedEvent(orderId, "결제 처리 중 시스템 오류: " + e.getMessage(), signature);
 									}
 								}
 							}
@@ -454,6 +509,38 @@ public class SolanaTransactionMonitorService {
 			log.info("================================");
 		} catch (Exception e) {
 			log.error("트랜잭션 상세 정보 로깅 중 오류", e);
+		}
+	}
+
+	/**
+	 * 결제 실패 이벤트 발행
+	 */
+	private void publishPaymentFailedEvent(String orderId, String reason, String signature) {
+		try {
+			// 주문 조회
+			Integer orderIdNum = Integer.parseInt(orderId);
+			Order order;
+			try {
+				order = orderService.getOrderById(orderIdNum);
+			} catch (CustomException e) {
+				log.error("결제 실패 이벤트 발행 중 주문 조회 실패: {}", orderId, e);
+				return;
+			}
+
+			// 결제 실패 이벤트 생성
+			PaymentFailedEvent event = PaymentFailedEvent.builder()
+				.orderId(orderIdNum)
+				.userId(order.getUser().getId())
+				.failedAt(System.currentTimeMillis())
+				.reason(reason)
+				.transactionSignature(signature)
+				.build();
+
+			// RabbitMQ에 이벤트 발행
+			rabbitTemplate.convertAndSend(RabbitMQConfig.PAYMENT_EXCHANGE, RabbitMQConfig.PAYMENT_FAILED_KEY, event);
+			log.info("결제 실패 이벤트 발행: 주문 ID={}, 사유={}", event.getOrderId(), event.getReason());
+		} catch (Exception e) {
+			log.error("결제 실패 이벤트 발행 중 오류", e);
 		}
 	}
 
