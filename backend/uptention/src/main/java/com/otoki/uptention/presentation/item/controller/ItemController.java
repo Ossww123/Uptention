@@ -69,7 +69,7 @@ public class ItemController implements ItemApiDoc {
 	@PatchMapping("/{itemId}")
 	public ResponseEntity<String> updateItem(
 		@PathVariable Integer itemId,
-		@RequestBody ItemUpdateRequestDto updateRequest) {
+		@RequestBody @Valid ItemUpdateRequestDto updateRequest) {
 		itemAppService.updateItem(itemId, updateRequest);
 		return ResponseEntity.ok("상품 수정 완료");
 	}
