@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { get, patch, del } from "../services/api";
+import { get, post, patch, del } from "../services/api";
 
 const CartScreen = ({ navigation }) => {
   // 장바구니 상품 상태 관리
@@ -196,6 +196,68 @@ const CartScreen = ({ navigation }) => {
     fetchCartItems().finally(() => setRefreshing(false));
   };
 
+  // 상품 검증 및 결제 페이지로 이동
+  const handleCheckout = async () => {
+    const selectedItems = cartItems.filter((item) => item.selected);
+    
+    if (selectedItems.length === 0) {
+      Alert.alert("알림", "선택된 상품이 없습니다.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // 주문 검증 API 요청 데이터 준비
+      const orderVerifyData = selectedItems.map(item => ({
+        itemId: item.itemId,
+        price: item.price,
+        quantity: item.quantity
+      }));
+      
+      // 주문 검증 API 호출
+      const { data, ok, status } = await post("/orders/verify", orderVerifyData);
+      
+      if (ok) {
+        // 검증 성공 시 결제 페이지로 이동
+        const totalPrice = selectedItems.reduce(
+          (total, item) => total + item.totalPrice, 0
+        );
+        
+        navigation.navigate("CheckoutScreen", {
+          selectedItems: data, // API에서 검증된 상품 정보를 사용
+          totalPrice: totalPrice
+        });
+      } else {
+        // 에러 코드에 따른 처리
+        let errorMessage = "상품 검증 중 오류가 발생했습니다.";
+        
+        if (status === 400) {
+          errorMessage = data.message || "재고가 부족한 상품이 있습니다.";
+        } else if (status === 404) {
+          errorMessage = data.message || "존재하지 않는 상품이 있습니다.";
+        } else if (status === 409) {
+          errorMessage = data.message || "상품 가격이 변경되었습니다.";
+        }
+        
+        Alert.alert("주문 확인", errorMessage, [
+          {
+            text: "확인",
+            onPress: handleRefresh // 오류 발생 시 장바구니 새로고침
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error("주문 검증 오류:", error);
+      Alert.alert(
+        "오류",
+        "주문 검증 중 오류가 발생했습니다. 다시 시도해주세요."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 장바구니 상품 목록 렌더링
   const renderCartItems = () => {
     return cartItems.map((item) => (
@@ -334,12 +396,16 @@ const CartScreen = ({ navigation }) => {
             styles.checkoutButton,
             selectedItems.length === 0 && styles.disabledButton,
           ]}
-          onPress={() => navigation.navigate("CheckoutScreen")}
-          disabled={selectedItems.length === 0}
+          onPress={handleCheckout}
+          disabled={selectedItems.length === 0 || loading}
         >
-          <Text style={styles.checkoutButtonText}>
-            결제 {totalPrice.toLocaleString()} WORK
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text style={styles.checkoutButtonText}>
+              결제 {totalPrice.toLocaleString()} WORK
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -403,7 +469,7 @@ const CartScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {loading && !refreshing ? (
         renderLoading()
       ) : cartItems.length === 0 ? (
         renderEmptyCart()
