@@ -20,6 +20,13 @@ pipeline {
 //         // Mattermost Notification 관련 환경 변수
 //         MATTERMOST_ENDPOINT = credentials('mattermost-webhook')
 //         MATTERMOST_CHANNEL = credentials('mattermost-channel-id')
+        // 추가된 Secret 텍스트 환경변수
+        SOLANA_COMPANY_WALLET = credentials('SOLANA_COMPANY_WALLET')
+        WORK_TOKEN_MINT = credentials('WORK_TOKEN_MINT')
+        RABBITMQ_HOST = credentials('RABBITMQ_HOST')
+        RABBITMQ_PORT = credentials('RABBITMQ_PORT')
+        RABBITMQ_USERNAME = credentials('RABBITMQ_USERNAME')
+        RABBITMQ_PASSWORD = credentials('RABBITMQ_PASSWORD')
     }
 
     tools {
@@ -108,6 +115,12 @@ pipeline {
                                         -e S3_ACCESS_TOKEN="${S3_ACCESS_TOKEN}" \\
                                         -e S3_SECRET_TOKEN="${S3_SECRET_TOKEN}" \\
                                         -e JWT_SECRET_KEY="${JWT_SECRET_KEY}" \\
+                                        -e SOLANA_COMPANY_WALLET="${SOLANA_COMPANY_WALLET}" \\
+                                        -e WORK_TOKEN_MINT="${WORK_TOKEN_MINT}" \\
+                                        -e RABBITMQ_HOST="${RABBITMQ_HOST}" \\
+                                        -e RABBITMQ_PORT="${RABBITMQ_PORT}" \\
+                                        -e RABBITMQ_USERNAME="${RABBITMQ_USERNAME}" \\
+                                        -e RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD}" \\
                                         ${DOCKER_IMAGE}:latest
 
                                     echo "신규 컨테이너 헬스 체크 중..."
