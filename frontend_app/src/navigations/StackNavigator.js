@@ -6,6 +6,7 @@ import RankingScreen from '../screens/RankingScreen';
 import NotificationScreen from '../screens/NotificationScreen';
 import OrderCompleteScreen from '../screens/OrderCompleteScreen';
 import OrderHistoryScreen from '../screens/OrderHistoryScreen';
+import TestScreen from '../screens/TestScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -48,6 +49,15 @@ const StackNavigator = () => {
       <Stack.Screen 
         name="OrderHistory" 
         component={OrderHistoryScreen} 
+        options={{ 
+          headerShown: false,
+          presentation: 'card',
+          animation: 'slide_from_right'
+        }}
+      />
+      <Stack.Screen 
+        name="Test" 
+        component={TestScreen} 
         options={{ 
           headerShown: false,
           presentation: 'card',

@@ -30,31 +30,17 @@ const YOUR_TOKEN_MINT = new PublicKey('5ymZGsCFkfSzZN6AbwMWU2v4A4c5yeqmGj1vSpRWg
 
 const APP_URL_SCHEME = 'com.anonymous.uptention';
 
-// 암호화 함수
-const encryptPayload = (payload, sharedSecret) => {
-  const nonce = nacl.randomBytes(24);
-  const encryptedPayload = nacl.box.after(
-    Buffer.from(JSON.stringify(payload)),
-    nonce,
-    sharedSecret
-  );
-  return [nonce, encryptedPayload];
-};
-
 const ProfileScreen = ({ navigation }) => {
   const { 
-    publicKey, setPublicKey,
-    tokenBalance, setTokenBalance,
-    sharedSecret, setSharedSecret,
-    session, setSession,
-    solBalance, setSolBalance
+    publicKey,
+    tokenBalance,
+    solBalance,
+    handleConnectWallet,
+    handleDisconnectWallet,
+    connecting
   } = useWallet();
-  const { userId, authToken, logout } = useAuth();
   
-  const [deepLink, setDeepLink] = useState("");
-  const [dappKeyPair] = useState(nacl.box.keyPair());
-  const [connecting, setConnecting] = useState(false);
-  const [walletAddress, setWalletAddress] = useState('');
+  const { userId, authToken, logout } = useAuth();
   const [userInfo, setUserInfo] = useState(null);
   const [showDeleteButton, setShowDeleteButton] = useState(false);
 
@@ -84,26 +70,6 @@ const ProfileScreen = ({ navigation }) => {
       Alert.alert('오류', '로그아웃 중 문제가 발생했습니다.');
     }
   };
-
-  // 복호화 함수
-  const decryptPayload = useCallback((data, nonce, sharedSecret) => {
-    try {
-      const decryptedData = nacl.box.open.after(
-        bs58.decode(data),
-        bs58.decode(nonce),
-        sharedSecret
-      );
-
-      if (!decryptedData) {
-        throw new Error("Failed to decrypt payload");
-      }
-
-      return JSON.parse(Buffer.from(decryptedData).toString("utf8"));
-    } catch (error) {
-      console.error('Decryption error:', error);
-      throw error;
-    }
-  }, []);
 
   // 잔액 조회 함수
   const fetchBalances = async (walletAddress) => {
@@ -150,129 +116,8 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
-    const initializeDeepLinks = async () => {
-      const initialUrl = await Linking.getInitialURL();
-      if (initialUrl) {
-        setDeepLink(initialUrl);
-      }
-    };
-    initializeDeepLinks();
-    const listener = Linking.addEventListener("url", handleDeepLink);
-    return () => {
-      listener.remove();
-    };
-  }, []);
-
-  const handleDeepLink = ({ url }) => {
-    setDeepLink(url);
-  };
-
-  useEffect(() => {
-    if (!deepLink) return;
-
-    try {
-      const [urlWithoutParams, queryString] = deepLink.split('?');
-      const isConnectPath = urlWithoutParams.includes('onConnect');
-      const isDisconnectPath = urlWithoutParams.includes('onDisconnect');
-      const params = new URLSearchParams(queryString);
-
-      if (params.get("errorCode")) {
-        console.error('Connection error:', params.get("errorMessage"));
-        return;
-      }
-
-      if (isConnectPath) {
-        const phantom_encryption_public_key = params.get("phantom_encryption_public_key");
-        const data = params.get("data");
-        const nonce = params.get("nonce");
-
-        if (!phantom_encryption_public_key || !data || !nonce) {
-          return;
-        }
-
-        const sharedSecretDapp = nacl.box.before(
-          bs58.decode(phantom_encryption_public_key),
-          dappKeyPair.secretKey
-        );
-
-        const connectData = decryptPayload(
-          data,
-          nonce,
-          sharedSecretDapp
-        );
-
-        setSharedSecret(sharedSecretDapp);
-        setSession(connectData.session);
-        setPublicKey(connectData.public_key);
-        
-        // 지갑 연결 후 잔액 조회
-        fetchBalances(connectData.public_key);
-      }
-
-      if (isDisconnectPath) {
-        setPublicKey(null);
-        setSharedSecret(null);
-        setSession(null);
-        setSolBalance(null);
-        setTokenBalance(null);
-      }
-    } catch (error) {
-      console.error('Error processing deeplink:', error);
-    }
-  }, [deepLink, decryptPayload, dappKeyPair.secretKey]);
-
-  useEffect(() => {
     fetchUserInfo();
   }, []);
-
-  const handleConnectWallet = async () => {
-    try {
-      setConnecting(true);
-      const redirectUrl = Linking.createURL('onConnect');
-      console.log('Redirect URL:', redirectUrl); // 디버깅용
-
-      const params = new URLSearchParams({
-        dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
-        cluster: "devnet",
-        app_url: "https://phantom.app",
-        redirect_link: redirectUrl
-      });
-
-      const url = `https://phantom.app/ul/v1/connect?${params.toString()}`;
-      console.log('Connection URL:', url); // 디버깅용
-      
-      await Linking.openURL(url);
-    } catch (error) {
-      console.error('Connection error:', error);
-      Alert.alert('연결 오류', '팬텀 지갑 연결 중 오류가 발생했습니다.');
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  const handleDisconnectWallet = async () => {
-    try {
-      const redirectUrl = Linking.createURL('onDisconnect');
-      const payload = { session };
-      const [nonce, encryptedPayload] = encryptPayload(payload, sharedSecret);
-
-      const params = new URLSearchParams({
-        dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
-        nonce: bs58.encode(nonce),
-        redirect_link: redirectUrl,
-        payload: bs58.encode(encryptedPayload)
-      });
-
-      const url = Platform.OS === 'android'
-        ? `https://phantom.app/ul/v1/disconnect?${params.toString()}`
-        : `phantom://ul/v1/disconnect?${params.toString()}`;
-
-      await Linking.openURL(url);
-    } catch (error) {
-      console.error('Disconnect error:', error);
-      Alert.alert('연결 해제 오류', '팬텀 지갑 연결 해제 중 오류가 발생했습니다.');
-    }
-  };
 
   const handleImageUpload = async () => {
     if (!userId || !authToken) {
@@ -476,11 +321,11 @@ const ProfileScreen = ({ navigation }) => {
           </View>
 
           <TouchableOpacity 
-  style={styles.logoutButton}
-  onPress={handleLogout}
->
-  <Text style={styles.logoutText}>로그아웃</Text>
-</TouchableOpacity>
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Text style={styles.logoutText}>로그아웃</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

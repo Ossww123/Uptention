@@ -68,7 +68,7 @@ const CheckoutScreen = ({ navigation, route }) => {
   useEffect(() => {
     const calculatePaymentInfo = () => {
       const productTotal = totalPrice > 0 ? totalPrice : 5.8;
-      const availableWorkCoins = publicKey ? tokenBalance : 0;
+      const availableWorkCoins = publicKey && tokenBalance !== null ? Number(tokenBalance) : 0;
       const finalAmount = availableWorkCoins - productTotal;
 
       setPaymentInfo({
@@ -171,6 +171,14 @@ const CheckoutScreen = ({ navigation, route }) => {
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* 테스트 스크린 이동 버튼 */}
+        <TouchableOpacity 
+          style={styles.testButton}
+          onPress={() => navigation.navigate('Test')}
+        >
+          <Text style={styles.testButtonText}>테스트 스크린으로 이동</Text>
+        </TouchableOpacity>
+
         {/* 배송 정보 섹션 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>배송 정보</Text>
@@ -407,6 +415,19 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#CCCCCC',
+  },
+  testButton: {
+    backgroundColor: '#4A90E2',
+    padding: 15,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
