@@ -43,6 +43,22 @@ aws:
     bucket: uptention
     cloudfront-domain: ddnwvg9t77g5o.cloudfront.net
 
+solana:
+  network: devnet
+  rpc-url: https://api.devnet.solana.com
+  websocket-url: wss://api.devnet.solana.com
+  token-program-id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+  company-wallet: ${SOLANA_COMPANY_WALLET}
+  work-token-mint: ${WORK_TOKEN_MINT}
+
+logging:
+  level:
+    com:
+      otoki:
+        uptention:
+          solana:
+            service=DEBUG:
+
 management:
   endpoints:
     web:

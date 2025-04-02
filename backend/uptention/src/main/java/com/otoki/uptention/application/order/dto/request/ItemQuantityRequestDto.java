@@ -1,15 +1,14 @@
 package com.otoki.uptention.application.order.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
 @Schema(description = "상품 수량 요청 DTO")
 public class ItemQuantityRequestDto {
 

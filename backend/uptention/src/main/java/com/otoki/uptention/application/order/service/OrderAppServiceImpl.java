@@ -10,6 +10,7 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.DeliveryAddressResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
@@ -50,7 +51,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	 */
 	@Transactional
 	@Override
-	public Order createOrder(OrderRequestDto orderRequestDto) {
+	public InitiateOrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
 		User user = securityService.getLoggedInUser();
 
 		// 1. Order 생성
@@ -61,11 +62,16 @@ public class OrderAppServiceImpl implements OrderAppService {
 		Order savedOrder = orderService.saveOrder(order);
 
 		// 2. 각 상품에 대한 OrderItem 생성 및 저장
+		int totalPaymentAmount = 0;
 		for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
-			processOrderItem(order, itemRequest.getItemId(), itemRequest.getQuantity());
+			OrderItem orderItem = processOrderItem(order, itemRequest.getItemId(), itemRequest.getQuantity());
+			totalPaymentAmount += orderItem.getTotalPrice();
 		}
 
-		return savedOrder;
+		return InitiateOrderResponseDto.builder()
+			.orderId(savedOrder.getId())
+			.paymentAmount(totalPaymentAmount)
+			.build();
 	}
 
 	/**
@@ -73,7 +79,8 @@ public class OrderAppServiceImpl implements OrderAppService {
 	 */
 	@Transactional
 	@Override
-	public Order createGiftOrder(GiftRequestDto giftRequestDto) {
+	public InitiateOrderResponseDto createGiftOrder(GiftRequestDto giftRequestDto) {
+		// security 구현 후, 코드 수정 필요
 		User sender = securityService.getLoggedInUser();
 		User receiver = userService.getUserById(giftRequestDto.getReceiverId());
 
@@ -84,7 +91,8 @@ public class OrderAppServiceImpl implements OrderAppService {
 		Order savedOrder = orderService.saveOrder(order);
 
 		// 2. OrderItem 생성 및 저장 (선물은 기본적으로 수량 1개)
-		processOrderItem(order, giftRequestDto.getItemId(), 1);
+		OrderItem orderItem = processOrderItem(order, giftRequestDto.getItemId(), 1);
+		int totalPaymentAmount = orderItem.getTotalPrice();
 
 		// 3. Gift 엔티티 생성
 		Gift gift = Gift.builder()
@@ -94,7 +102,10 @@ public class OrderAppServiceImpl implements OrderAppService {
 
 		giftService.saveGift(gift);
 
-		return savedOrder;
+		return InitiateOrderResponseDto.builder()
+			.orderId(savedOrder.getId())
+			.paymentAmount(totalPaymentAmount)
+			.build();
 	}
 
 	/**
@@ -125,7 +136,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	}
 
 	/**
-	 * OrderItem을 생성하고 저장하는 공통 로직
+	 * OrderItem을 생성하고 저장하는 공통 로직 + 재고 감소 / 판매량 증가
 	 */
 	private OrderItem processOrderItem(Order order, Integer itemId, Integer quantity) {
 		Item item = itemService.getItemById(itemId);
