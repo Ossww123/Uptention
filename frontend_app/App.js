@@ -1,13 +1,20 @@
+// App.js
 import React from 'react';
-import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigations/AppNavigator';
+import { WalletProvider } from './src/contexts/WalletContext';
+import { AuthProvider } from './src/contexts/AuthContext';
 
-export default function App() {
+const App = () => {
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <AppNavigator />
-    </SafeAreaProvider>
+    <AuthProvider>
+      <WalletProvider>
+        <SafeAreaProvider>
+          <AppNavigator />
+        </SafeAreaProvider>
+      </WalletProvider>
+    </AuthProvider>
   );
-}
+};
+
+export default App;

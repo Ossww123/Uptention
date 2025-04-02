@@ -1,94 +1,57 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// src/services/api.js
+import { getToken } from './AuthService';
 
 const BASE_URL = 'https://j12d211.p.ssafy.io/api';
-const TOKEN_KEY = 'auth_token';
-
-// 토큰 가져오기
-export const getToken = async () => {
-  try {
-    return await AsyncStorage.getItem(TOKEN_KEY);
-  } catch (error) {
-    console.error('Error getting token:', error);
-    return null;
-  }
-};
-
-// 토큰 저장하기
-export const saveToken = async (token) => {
-  try {
-    await AsyncStorage.setItem(TOKEN_KEY, token);
-    return true;
-  } catch (error) {
-    console.error('Error saving token:', error);
-    return false;
-  }
-};
-
-// 토큰 삭제하기 (로그아웃)
-export const removeToken = async () => {
-  try {
-    await AsyncStorage.removeItem(TOKEN_KEY);
-    return true;
-  } catch (error) {
-    console.error('Error removing token:', error);
-    return false;
-  }
-};
 
 // API 요청 함수
 export const apiRequest = async (endpoint, options = {}) => {
-    try {
-      const token = await getToken();
-      const url = `${BASE_URL}${endpoint}`;
-      
-      // 기본 헤더
-      const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      };
-      
-      // 토큰이 있으면 Authorization 헤더 추가
-      if (token) {
-        headers['Authorization'] = `${token}`;
-      }
-      
-      const config = {
-        ...options,
-        headers,
-      };
-      
-      const response = await fetch(url, config);
-      
-      // 401 Unauthorized 상태 처리
-      if (response.status === 401) {
-        throw new Error('Unauthorized: Token may be invalid or expired');
-      }
-      
-      // JSON 응답이 아닌 경우를 위한 처리
-      const contentType = response.headers.get('content-type');
-      let data = null;
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      }
-      
-      // 헤더 정보도 반환
-      const responseHeaders = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-      
-      return { 
-        data, 
-        status: response.status, 
-        ok: response.ok,
-        headers: responseHeaders
-      };
-    } catch (error) {
-      console.error('API request error:', error);
-      throw error;
+  try {
+    const token = await getToken();
+    const url = `${BASE_URL}${endpoint}`;
+    
+    // 기본 헤더
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+    
+    // 토큰이 있으면 Authorization 헤더 추가
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
-  };
+    
+    const config = {
+      ...options,
+      headers,
+    };
+    
+    const response = await fetch(url, config);
+    
+    // JSON 응답이 아닌 경우를 위한 처리
+    const contentType = response.headers.get('content-type');
+    let data = null;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    }
+    
+    // 헤더 정보도 반환
+    const responseHeaders = {};
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
+    
+    return { 
+      data, 
+      status: response.status, 
+      ok: response.ok,
+      headers: responseHeaders
+    };
+  } catch (error) {
+    console.error('API request error:', error);
+    throw error;
+  }
+};
 
 // 편의를 위한 HTTP 메서드별 함수
 export const get = (endpoint, options = {}) => {
