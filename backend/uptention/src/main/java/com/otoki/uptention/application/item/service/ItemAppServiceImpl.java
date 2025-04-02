@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.application.item.dto.request.ItemCreateRequestDto;
+import com.otoki.uptention.application.item.dto.request.ItemUpdateRequestDto;
 import com.otoki.uptention.application.item.dto.response.ItemCursorResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
 import com.otoki.uptention.domain.category.entity.Category;
@@ -32,6 +33,9 @@ public class ItemAppServiceImpl implements ItemAppService {
 	private final CategoryService categoryService;
 	private final ImageUploadService imageUploadService;
 
+	/**
+	 * 상품 등록
+	 */
 	@Override
 	@Transactional
 	public Item createItem(ItemCreateRequestDto itemCreateRequestDto, List<MultipartFile> images) {
@@ -70,6 +74,57 @@ public class ItemAppServiceImpl implements ItemAppService {
 		// 아이템 저장 및 반환
 		return itemService.saveItem(item);
 	}
+
+	/**
+	 * 상품 삭제
+	 */
+	@Override
+	@Transactional
+	public void deleteItem(Integer itemId) {
+		Item item = itemService.getItemById(itemId);
+		item.updateStatus(false); // 상품 비활성화
+	}
+
+	/**
+	 * 상품 정보 수정
+	 */
+	@Override
+	@Transactional
+	public void updateItem(Integer itemId, ItemUpdateRequestDto itemUpdateRequestDto) {
+		// 1. 유효한 변경사항 존재 여부 확인
+		// DTO에서 @Min, @Max 등으로 값 유효성은 이미 검증됨
+		boolean isDetailPresent = itemUpdateRequestDto.getDetail() != null;
+		boolean isPricePresent = itemUpdateRequestDto.getPrice() != null;
+		boolean isQuantityPresent = itemUpdateRequestDto.getQuantity() != null;
+
+		// 빈 문자열 추가 검증 (Bean Validation으로는 빈 문자열 검증 불가)
+		if (isDetailPresent && itemUpdateRequestDto.getDetail().trim().isEmpty()) {
+			isDetailPresent = false;
+		}
+
+		boolean hasValidChanges = isPricePresent || isDetailPresent || isQuantityPresent;
+
+		if (!hasValidChanges) {
+			throw new CustomException(ErrorCode.ITEM_UPDATE_NO_CHANGES);
+		}
+
+		// 2. 상품 조회 (존재 여부와 상태 확인)
+		Item item = itemService.getItemById(itemId);
+
+		// 3. 필드별 업데이트
+		if (isPricePresent) {
+			item.updatePrice(itemUpdateRequestDto.getPrice());
+		}
+
+		if (isDetailPresent) {
+			item.updateDetail(itemUpdateRequestDto.getDetail());
+		}
+
+		if (isQuantityPresent) {
+			item.updateQuantity(itemUpdateRequestDto.getQuantity());
+		}
+	}
+
 
 	/**
 	 * 상품의 상세 정보 조회

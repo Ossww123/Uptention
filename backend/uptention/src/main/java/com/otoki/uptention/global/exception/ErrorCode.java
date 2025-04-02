@@ -29,6 +29,7 @@ public enum ErrorCode {
 	ITEM_UNAVAILABLE(HttpStatus.NOT_FOUND, "ITEM_007", "삭제된 상품 입니다."),
 	ITEM_QUANTITY_MIN_REQUIRED(HttpStatus.BAD_REQUEST, "ITEM_008", "상품 수량은 1개 이상이어야 합니다."),
 	ITEM_QUANTITY_MAX_EXCEEDED(HttpStatus.BAD_REQUEST, "ITEM_009", "상품 수량은 99개 이하여야 합니다."),
+	ITEM_UPDATE_NO_CHANGES(HttpStatus.BAD_REQUEST, "ITEM_010", "변경할 정보가 없습니다."),
 
 	// 상품 등록 관련 에러
 	ITEM_IMAGE_COUNT_INVALID(HttpStatus.BAD_REQUEST, "ITEM_010", "이미지는 1개 이상 3개 이하로 업로드해야 합니다."),
