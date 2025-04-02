@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import StoreScreen from '../screens/StoreScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import CartScreen from '../screens/CartScreen';
+import CheckoutScreen from '../screens/CheckoutScreen'; // 결제 화면 import 추가
 
 const Stack = createNativeStackNavigator();
 
@@ -39,6 +40,13 @@ const StoreStackNavigator = () => {
       <Stack.Screen 
         name="Cart" 
         component={CartScreen}
+        options={{
+          unmountOnBlur: false // 추가: 화면 유지 설정
+        }}
+      />
+      <Stack.Screen 
+        name="CheckoutScreen" 
+        component={CheckoutScreen}
         options={{
           unmountOnBlur: false // 추가: 화면 유지 설정
         }}

@@ -11,24 +11,24 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { get, patch, del } from '../services/api';
+import { get, post, patch, del } from "../services/api";
 
 const CartScreen = ({ navigation }) => {
   // 장바구니 상품 상태 관리
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // 수량 변경 디바운싱을 위한 타이머 ref
   const quantityTimersRef = useRef({});
 
   // 컴포넌트 마운트 시 장바구니 데이터 로드
   useEffect(() => {
     fetchCartItems();
-    
+
     // 컴포넌트 언마운트 시 모든 타이머 정리
     return () => {
-      Object.values(quantityTimersRef.current).forEach(timer => {
+      Object.values(quantityTimersRef.current).forEach((timer) => {
         clearTimeout(timer);
       });
     };
@@ -38,24 +38,24 @@ const CartScreen = ({ navigation }) => {
   const fetchCartItems = async () => {
     try {
       setLoading(true);
-      
-      const { data, ok } = await get('/shopping-cart');
-      
+
+      const { data, ok } = await get("/shopping-cart");
+
       if (!ok) {
-        throw new Error(data.message || '장바구니 조회에 실패했습니다.');
+        throw new Error(data.message || "장바구니 조회에 실패했습니다.");
       }
-      
+
       // API에서 받아온 데이터를 UI에 맞게 변환
-      const formattedData = data.map(item => ({
+      const formattedData = data.map((item) => ({
         ...item,
         selected: true, // 기본적으로 모든 아이템 선택 상태로 설정
-        image: { uri: item.thumbnail } // 이미지 URI 설정
+        image: { uri: item.thumbnail }, // 이미지 URI 설정
       }));
-      
+
       setCartItems(formattedData);
     } catch (error) {
-      console.error('장바구니 조회 오류:', error);
-      Alert.alert('오류', error.message || '장바구니 불러오기에 실패했습니다.');
+      console.error("장바구니 조회 오류:", error);
+      Alert.alert("오류", error.message || "장바구니 불러오기에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -67,21 +67,28 @@ const CartScreen = ({ navigation }) => {
       prevItems.map((item) => {
         if (item.cartId === cartId) {
           // 새 수량 계산 (1~99 범위 제한)
-          const newQuantity = Math.max(1, Math.min(99, item.quantity + increment));
-          
+          const newQuantity = Math.max(
+            1,
+            Math.min(99, item.quantity + increment)
+          );
+
           // 이전 타이머가 있다면 취소
           if (quantityTimersRef.current[cartId]) {
             clearTimeout(quantityTimersRef.current[cartId]);
           }
-          
+
           // 새 타이머 설정 (500ms 후 API 호출)
           quantityTimersRef.current[cartId] = setTimeout(() => {
             updateCartItemQuantity(cartId, newQuantity);
             // 타이머 참조 삭제
             delete quantityTimersRef.current[cartId];
           }, 500);
-          
-          return { ...item, quantity: newQuantity, totalPrice: newQuantity * item.price };
+
+          return {
+            ...item,
+            quantity: newQuantity,
+            totalPrice: newQuantity * item.price,
+          };
         }
         return item;
       })
@@ -91,16 +98,21 @@ const CartScreen = ({ navigation }) => {
   // 수량 변경 API 호출
   const updateCartItemQuantity = async (cartId, quantity) => {
     try {
-      const { ok, data } = await patch(`/shopping-cart/${cartId}/quantity`, { quantity });
-      
+      const { ok, data } = await patch(`/shopping-cart/${cartId}/quantity`, {
+        quantity,
+      });
+
       if (!ok) {
-        throw new Error(data.message || '수량 변경에 실패했습니다.');
+        throw new Error(data.message || "수량 변경에 실패했습니다.");
       }
-      
+
       console.log(`카트 아이템 ${cartId} 수량이 ${quantity}로 변경되었습니다.`);
     } catch (error) {
-      console.error('장바구니 수량 변경 오류:', error);
-      Alert.alert('오류', error.message || '장바구니 수량 변경에 실패했습니다.');
+      console.error("장바구니 수량 변경 오류:", error);
+      Alert.alert(
+        "오류",
+        error.message || "장바구니 수량 변경에 실패했습니다."
+      );
       // 오류 발생 시 장바구니 새로고침
       fetchCartItems();
     }
@@ -118,53 +130,55 @@ const CartScreen = ({ navigation }) => {
   // 선택 삭제 함수
   const deleteSelected = async () => {
     const selectedCartIds = cartItems
-      .filter(item => item.selected)
-      .map(item => item.cartId);
-    
+      .filter((item) => item.selected)
+      .map((item) => item.cartId);
+
     if (selectedCartIds.length === 0) {
-      Alert.alert('알림', '선택된 상품이 없습니다.');
+      Alert.alert("알림", "선택된 상품이 없습니다.");
       return;
     }
-    
+
     try {
-      const { ok, data } = await del('/shopping-cart', {
-        body: JSON.stringify(selectedCartIds)
+      const { ok, data } = await del("/shopping-cart", {
+        body: JSON.stringify(selectedCartIds),
       });
-      
+
       if (!ok) {
-        throw new Error(data.message || '삭제에 실패했습니다.');
+        throw new Error(data.message || "삭제에 실패했습니다.");
       }
-      
+
       // 성공적으로 삭제된 경우, UI에서도 해당 아이템 제거
       setCartItems((prevItems) => prevItems.filter((item) => !item.selected));
-      
+
       // 알림 표시
-      Alert.alert('알림', '선택한 상품이 장바구니에서 삭제되었습니다.');
+      Alert.alert("알림", "선택한 상품이 장바구니에서 삭제되었습니다.");
     } catch (error) {
-      console.error('장바구니 삭제 오류:', error);
-      Alert.alert('오류', error.message || '장바구니 삭제에 실패했습니다.');
+      console.error("장바구니 삭제 오류:", error);
+      Alert.alert("오류", error.message || "장바구니 삭제에 실패했습니다.");
     }
   };
 
   // 상품 개별 삭제 함수
   const deleteItem = async (cartId) => {
     try {
-      const { ok, data } = await del('/shopping-cart', {
-        body: JSON.stringify([cartId]) // 배열 형태로 전송
+      const { ok, data } = await del("/shopping-cart", {
+        body: JSON.stringify([cartId]), // 배열 형태로 전송
       });
-      
+
       if (!ok) {
-        throw new Error(data.message || '삭제에 실패했습니다.');
+        throw new Error(data.message || "삭제에 실패했습니다.");
       }
-      
+
       // 성공적으로 삭제된 경우, UI에서도 해당 아이템 제거
-      setCartItems((prevItems) => prevItems.filter((item) => item.cartId !== cartId));
-      
+      setCartItems((prevItems) =>
+        prevItems.filter((item) => item.cartId !== cartId)
+      );
+
       // 알림 표시
-      Alert.alert('알림', '상품이 장바구니에서 삭제되었습니다.');
+      Alert.alert("알림", "상품이 장바구니에서 삭제되었습니다.");
     } catch (error) {
-      console.error('장바구니 삭제 오류:', error);
-      Alert.alert('오류', error.message || '장바구니 삭제에 실패했습니다.');
+      console.error("장바구니 삭제 오류:", error);
+      Alert.alert("오류", error.message || "장바구니 삭제에 실패했습니다.");
     }
   };
 
@@ -180,6 +194,68 @@ const CartScreen = ({ navigation }) => {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchCartItems().finally(() => setRefreshing(false));
+  };
+
+  // 상품 검증 및 결제 페이지로 이동
+  const handleCheckout = async () => {
+    const selectedItems = cartItems.filter((item) => item.selected);
+    
+    if (selectedItems.length === 0) {
+      Alert.alert("알림", "선택된 상품이 없습니다.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // 주문 검증 API 요청 데이터 준비
+      const orderVerifyData = selectedItems.map(item => ({
+        itemId: item.itemId,
+        price: item.price,
+        quantity: item.quantity
+      }));
+      
+      // 주문 검증 API 호출
+      const { data, ok, status } = await post("/orders/verify", orderVerifyData);
+      
+      if (ok) {
+        // 검증 성공 시 결제 페이지로 이동
+        const totalPrice = selectedItems.reduce(
+          (total, item) => total + item.totalPrice, 0
+        );
+        
+        navigation.navigate("CheckoutScreen", {
+          selectedItems: data, // API에서 검증된 상품 정보를 사용
+          totalPrice: totalPrice
+        });
+      } else {
+        // 에러 코드에 따른 처리
+        let errorMessage = "상품 검증 중 오류가 발생했습니다.";
+        
+        if (status === 400) {
+          errorMessage = data.message || "재고가 부족한 상품이 있습니다.";
+        } else if (status === 404) {
+          errorMessage = data.message || "존재하지 않는 상품이 있습니다.";
+        } else if (status === 409) {
+          errorMessage = data.message || "상품 가격이 변경되었습니다.";
+        }
+        
+        Alert.alert("주문 확인", errorMessage, [
+          {
+            text: "확인",
+            onPress: handleRefresh // 오류 발생 시 장바구니 새로고침
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error("주문 검증 오류:", error);
+      Alert.alert(
+        "오류",
+        "주문 검증 중 오류가 발생했습니다. 다시 시도해주세요."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   // 장바구니 상품 목록 렌더링
@@ -228,10 +304,14 @@ const CartScreen = ({ navigation }) => {
                 onPress={() => updateQuantity(item.cartId, -1)}
                 disabled={item.quantity <= 1} // 1 이하로는 감소 불가
               >
-                <Text style={[
-                  styles.quantityButtonText,
-                  item.quantity <= 1 && styles.disabledButtonText
-                ]}>-</Text>
+                <Text
+                  style={[
+                    styles.quantityButtonText,
+                    item.quantity <= 1 && styles.disabledButtonText,
+                  ]}
+                >
+                  -
+                </Text>
               </TouchableOpacity>
 
               <View style={styles.quantityTextContainer}>
@@ -243,10 +323,14 @@ const CartScreen = ({ navigation }) => {
                 onPress={() => updateQuantity(item.cartId, 1)}
                 disabled={item.quantity >= 99} // 99 이상으로는 증가 불가
               >
-                <Text style={[
-                  styles.quantityButtonText,
-                  item.quantity >= 99 && styles.disabledButtonText
-                ]}>+</Text>
+                <Text
+                  style={[
+                    styles.quantityButtonText,
+                    item.quantity >= 99 && styles.disabledButtonText,
+                  ]}
+                >
+                  +
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -302,20 +386,26 @@ const CartScreen = ({ navigation }) => {
 
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>총 결제금액</Text>
-          <Text style={styles.summaryPrice}>{totalPrice.toLocaleString()} WORK</Text>
+          <Text style={styles.summaryPrice}>
+            {totalPrice.toLocaleString()} WORK
+          </Text>
         </View>
 
         <TouchableOpacity
           style={[
             styles.checkoutButton,
-            selectedItems.length === 0 && styles.disabledButton
+            selectedItems.length === 0 && styles.disabledButton,
           ]}
-          onPress={() => navigation.navigate("Checkout")}
-          disabled={selectedItems.length === 0}
+          onPress={handleCheckout}
+          disabled={selectedItems.length === 0 || loading}
         >
-          <Text style={styles.checkoutButtonText}>
-            결제 {totalPrice.toLocaleString()} WORK
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text style={styles.checkoutButtonText}>
+              결제 {totalPrice.toLocaleString()} WORK
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -379,7 +469,7 @@ const CartScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {loading && !refreshing ? (
         renderLoading()
       ) : cartItems.length === 0 ? (
         renderEmptyCart()
