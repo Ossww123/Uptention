@@ -1,34 +1,59 @@
 // src/pages/Products/ProductCreatePage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './ProductCreatePage.css';
+
+const API_BASE_URL = 'https://j12d211.p.ssafy.io';
 
 const ProductCreatePage = () => {
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
-    category: '',
-    productName: '',
-    brandName: '',
-    price: '0.0',
-    description: ''
+    categoryId: '',
+    name: '',
+    brand: '',
+    price: '',
+    detail: '',
+    quantity: ''
   });
   
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
   const [mainImage, setMainImage] = useState(null);
+  const [mainImageFile, setMainImageFile] = useState(null);
   const [subImages, setSubImages] = useState([null, null]);
+  const [subImageFiles, setSubImageFiles] = useState([null, null]);
+  
+  // 카테고리 목록
+  const categories = [
+    { id: "1", name: "가전디지털" },
+    { id: "2", name: "뷰티" },
+    { id: "3", name: "리빙/키친" },
+    { id: "4", name: "패션의류/잡화" },
+    { id: "5", name: "문화여가" },
+    { id: "6", name: "생활용품" },
+    { id: "7", name: "식품" },
+    { id: "8", name: "키즈" },
+  ];
   
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: name === 'price' || name === 'quantity' || name === 'categoryId' 
+        ? value === '' ? '' : parseInt(value, 10)
+        : value
     });
   };
   
   const handleMainImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      // 이미지 파일 저장
+      setMainImageFile(file);
+      
+      // 미리보기 URL 생성
       const reader = new FileReader();
       reader.onloadend = () => {
         setMainImage(reader.result);
@@ -40,6 +65,12 @@ const ProductCreatePage = () => {
   const handleSubImageChange = (e, index) => {
     const file = e.target.files[0];
     if (file) {
+      // 이미지 파일 저장
+      const newSubImageFiles = [...subImageFiles];
+      newSubImageFiles[index] = file;
+      setSubImageFiles(newSubImageFiles);
+      
+      // 미리보기 URL 생성
       const reader = new FileReader();
       reader.onloadend = () => {
         const newSubImages = [...subImages];
@@ -50,36 +81,131 @@ const ProductCreatePage = () => {
     }
   };
   
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    // 유효성 검사
+  const validateForm = () => {
     const newErrors = {};
-    if (!formData.category) {
-      newErrors.category = '카테고리를 선택해 주세요';
+    
+    if (!formData.categoryId) {
+      newErrors.categoryId = '카테고리를 선택해 주세요';
     }
-    if (!formData.productName) {
-      newErrors.productName = '상품명을 입력해 주세요';
+    
+    if (!formData.name || formData.name.trim() === '') {
+      newErrors.name = '상품명을 입력해 주세요';
+    } else if (formData.name.length > 30) {
+      newErrors.name = '상품명은 30자 이내로 입력해 주세요';
     }
-    if (!formData.brandName) {
-      newErrors.brandName = '브랜드명을 입력해 주세요';
+    
+    if (!formData.brand || formData.brand.trim() === '') {
+      newErrors.brand = '브랜드명을 입력해 주세요';
+    } else if (formData.brand.length > 30) {
+      newErrors.brand = '브랜드명은 30자 이내로 입력해 주세요';
     }
-    if (!mainImage) {
+    
+    if (!formData.price && formData.price !== 0) {
+      newErrors.price = '가격을 입력해 주세요';
+    } else if (isNaN(formData.price) || formData.price < 0) {
+      newErrors.price = '유효한 가격을 입력해 주세요';
+    }
+    
+    if (!formData.quantity && formData.quantity !== 0) {
+      newErrors.quantity = '재고량을 입력해 주세요';
+    } else if (isNaN(formData.quantity) || formData.quantity < 0 || !Number.isInteger(Number(formData.quantity))) {
+      newErrors.quantity = '유효한 재고량을 입력해 주세요 (양의 정수)';
+    }
+    
+    if (!formData.detail || formData.detail.trim() === '') {
+      newErrors.detail = '상품 설명을 입력해 주세요';
+    } else if (formData.detail.length > 255) {
+      newErrors.detail = '상품 설명은 255자 이내로 입력해 주세요';
+    }
+    
+    if (!mainImageFile) {
       newErrors.mainImage = '대표 이미지는 필수입니다';
     }
     
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // 유효성 검사
+    if (!validateForm()) {
       return;
     }
     
-    // 여기에 API 호출 로직 추가 (실제 구현 시)
-    console.log('제출할 데이터:', formData);
-    console.log('이미지:', { mainImage, subImages });
-    
-    // 성공 시 상품 목록 페이지로 리다이렉트
-    alert('상품이 등록되었습니다.');
-    navigate('/admin/products');
+    try {
+      setLoading(true);
+      
+      // 토큰 가져오기
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+      
+      // FormData 생성
+      const formDataToSend = new FormData();
+      
+      // 상품 정보를 JSON 문자열로 변환하여 추가
+      const itemData = {
+        categoryId: parseInt(formData.categoryId),
+        name: formData.name,
+        brand: formData.brand,
+        price: parseInt(formData.price),
+        detail: formData.detail,
+        quantity: parseInt(formData.quantity)
+      };
+      
+      // JSON 문자열을 Blob으로 변환하여 FormData에 추가
+      const itemBlob = new Blob([JSON.stringify(itemData)], { type: 'application/json' });
+      formDataToSend.append('item', itemBlob);
+      
+      // 이미지 파일 추가
+      if (mainImageFile) {
+        formDataToSend.append('images', mainImageFile);
+      }
+      
+      // 서브 이미지 추가 (존재하는 것만)
+      subImageFiles.forEach(file => {
+        if (file) {
+          formDataToSend.append('images', file);
+        }
+      });
+      
+      // API 호출
+      const response = await axios.post(`${API_BASE_URL}/api/items`, formDataToSend, {
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      console.log(response);
+      
+      // 성공 메시지 표시
+      alert('상품이 성공적으로 등록되었습니다.');
+      
+      // 상품 목록 페이지로 이동
+      navigate('/admin/products');
+    } catch (error) {
+      console.error('상품 등록 오류:', error);
+      
+      if (error.response) {
+        const { status, data } = error.response;
+        
+        if (status === 400) {
+          alert(`잘못된 요청: ${data.message || '입력 정보를 확인해주세요'}`);
+        } else if (status === 404) {
+          alert(`오류: ${data.message || '카테고리가 존재하지 않습니다'}`);
+        } else {
+          alert(`상품 등록 실패: ${data.message || '서버 오류가 발생했습니다'}`);
+        }
+      } else {
+        alert('상품 등록 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
   
   const handleCancel = () => {
@@ -104,22 +230,19 @@ const ProductCreatePage = () => {
                 </td>
                 <td className="input-cell">
                   <select 
-                    name="category" 
-                    value={formData.category}
+                    name="categoryId" 
+                    value={formData.categoryId}
                     onChange={handleChange}
                     className="form-select"
                   >
                     <option value="">선택해 주세요</option>
-                    <option value="가전디지털">가전디지털</option>
-                    <option value="뷰티">뷰티</option>
-                    <option value="리빙/키친">리빙/키친</option>
-                    <option value="패션의류/잡화">패션의류/잡화</option>
-                    <option value="문화여가">문화여가</option>
-                    <option value="생활용품">생활용품</option>
-                    <option value="식품">식품</option>
-                    <option value="키즈">키즈</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
                   </select>
-                  {errors.category && <div className="error-message">{errors.category}</div>}
+                  {errors.categoryId && <div className="error-message">{errors.categoryId}</div>}
                 </td>
               </tr>
               
@@ -130,14 +253,14 @@ const ProductCreatePage = () => {
                 <td className="input-cell">
                   <input 
                     type="text" 
-                    name="productName"
-                    value={formData.productName}
+                    name="name"
+                    value={formData.name}
                     onChange={handleChange}
                     className="form-input"
                     placeholder="상품명 입력(최대 30자)"
                     maxLength="30"
                   />
-                  {errors.productName && <div className="error-message">{errors.productName}</div>}
+                  {errors.name && <div className="error-message">{errors.name}</div>}
                 </td>
               </tr>
               
@@ -148,14 +271,14 @@ const ProductCreatePage = () => {
                 <td className="input-cell">
                   <input 
                     type="text" 
-                    name="brandName"
-                    value={formData.brandName}
+                    name="brand"
+                    value={formData.brand}
                     onChange={handleChange}
                     className="form-input"
                     placeholder="브랜드명 입력(최대 30자)"
                     maxLength="30"
                   />
-                  {errors.brandName && <div className="error-message">{errors.brandName}</div>}
+                  {errors.brand && <div className="error-message">{errors.brand}</div>}
                 </td>
               </tr>
               
@@ -170,10 +293,30 @@ const ProductCreatePage = () => {
                     value={formData.price}
                     onChange={handleChange}
                     className="form-input price-input"
-                    step="0.1"
                     min="0"
+                    placeholder="숫자만 입력"
                   />
                   <span className="price-currency">WORK</span>
+                  {errors.price && <div className="error-message">{errors.price}</div>}
+                </td>
+              </tr>
+              
+              <tr>
+                <td className="label-cell">
+                  <label>재고량<span className="required">*</span></label>
+                </td>
+                <td className="input-cell">
+                  <input 
+                    type="number" 
+                    name="quantity"
+                    value={formData.quantity}
+                    onChange={handleChange}
+                    className="form-input"
+                    min="0"
+                    step="1"
+                    placeholder="숫자만 입력 (정수)"
+                  />
+                  {errors.quantity && <div className="error-message">{errors.quantity}</div>}
                 </td>
               </tr>
               
@@ -183,14 +326,16 @@ const ProductCreatePage = () => {
                 </td>
                 <td className="input-cell">
                   <textarea 
-                    name="description"
-                    value={formData.description}
+                    name="detail"
+                    value={formData.detail}
                     onChange={handleChange}
                     className="form-textarea"
                     placeholder="상품설명 입력(최대 255자)"
                     maxLength="255"
                     rows="5"
                   />
+                  {errors.detail && <div className="error-message">{errors.detail}</div>}
+                  <div className="char-count">{formData.detail.length}/255</div>
                 </td>
               </tr>
             </tbody>
@@ -212,7 +357,10 @@ const ProductCreatePage = () => {
                           <img src={mainImage} alt="대표 이미지" />
                           <button 
                             type="button" 
-                            onClick={() => setMainImage(null)}
+                            onClick={() => {
+                              setMainImage(null);
+                              setMainImageFile(null);
+                            }}
                             className="remove-image-btn"
                           >
                             ×
@@ -263,6 +411,10 @@ const ProductCreatePage = () => {
                                   const newSubImages = [...subImages];
                                   newSubImages[index] = null;
                                   setSubImages(newSubImages);
+                                  
+                                  const newSubImageFiles = [...subImageFiles];
+                                  newSubImageFiles[index] = null;
+                                  setSubImageFiles(newSubImageFiles);
                                 }}
                                 className="remove-image-btn"
                               >
@@ -311,14 +463,16 @@ const ProductCreatePage = () => {
               type="button" 
               className="cancel-button"
               onClick={handleCancel}
+              disabled={loading}
             >
               취소
             </button>
             <button 
               type="submit" 
               className="submit-button"
+              disabled={loading}
             >
-              추가
+              {loading ? '처리 중...' : '등록'}
             </button>
           </div>
         </form>
