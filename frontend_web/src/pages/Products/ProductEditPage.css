@@ -1,0 +1,308 @@
+/* src/pages/Products/ProductEditPage.css */
+.product-edit {
+    padding: 20px;
+    background-color: #f1f1f1;
+    min-height: 100vh;
+  }
+  
+  .content-card {
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .page-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .sub-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .form-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+  }
+  
+  .form-table tr {
+    border-bottom: 1px solid #eee;
+  }
+  
+  .label-cell {
+    width: 15%;
+    min-width: 120px;
+    padding: 15px;
+    vertical-align: top;
+    background-color: #EDF2F5;
+    font-weight: 500;
+  }
+  
+  .input-cell {
+    width: 85%;
+    padding: 15px;
+    position: relative;
+  }
+  
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: #FF8C00;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.1);
+  }
+  
+  .form-textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  
+  .field-hint {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
+  }
+  
+  .form-input.disabled {
+    background-color: #f9f9f9;
+    color: #888;
+    cursor: not-allowed;
+  }
+  
+  /* 수정 불가능한 필드 스타일 */
+  .non-editable-field {
+    position: relative;
+    width: 100%;
+  }
+  
+  .non-editable-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none; /* 클릭 이벤트가 아래 요소로 전달됨 */
+    border-radius: 4px;
+  }
+  
+  .non-editable-text {
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  .error-message {
+    color: #e74c3c;
+    font-size: 12px;
+    margin-top: 5px;
+  }
+  
+  .form-error-message {
+    background-color: #fdeaea;
+    color: #e74c3c;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    border-left: 4px solid #e74c3c;
+  }
+  
+  .form-success-message {
+    background-color: #e6f7e9;
+    color: #2ecc71;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    border-left: 4px solid #2ecc71;
+  }
+  
+  .char-count {
+    color: #888;
+    font-size: 12px;
+    text-align: right;
+    margin-top: 5px;
+  }
+  
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .cancel-button {
+    padding: 10px 20px;
+    background-color: #f1f1f1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #666;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .cancel-button:hover:not(:disabled) {
+    background-color: #e5e5e5;
+  }
+  
+  .cancel-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .submit-button {
+    padding: 10px 20px;
+    background-color: #FF8C00;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .submit-button:hover:not(:disabled) {
+    background-color: #e67e00;
+  }
+  
+  .submit-button:disabled {
+    background-color: #ffbb7a;
+    cursor: not-allowed;
+  }
+  
+  .price-cell {
+    display: flex;
+    align-items: center;
+  }
+  
+  .price-input {
+    width: 120px;
+    margin-right: 10px;
+  }
+  
+  .price-currency {
+    color: #666;
+    font-weight: 500;
+  }
+  
+  /* 이미지 프리뷰 섹션 스타일 */
+  .image-preview-section {
+    margin-bottom: 30px;
+  }
+  
+  .image-preview-container {
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 20px;
+    background-color: #fafafa;
+  }
+  
+  .product-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .product-image-item {
+    width: 150px;
+    text-align: center;
+  }
+  
+  .product-image {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+  }
+  
+  .image-caption {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .no-images-message {
+    padding: 20px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+  }
+  
+  /* 로딩 스피너 스타일 */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+  }
+  
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #FF8C00;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* 반응형 디자인 */
+  @media (max-width: 768px) {
+    .label-cell, .input-cell {
+      display: block;
+      width: 100%;
+    }
+    
+    .label-cell {
+      padding: 10px 15px;
+    }
+    
+    .input-cell {
+      padding: 10px 15px 15px;
+    }
+    
+    .price-cell {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .price-input {
+      width: 100%;
+      margin-right: 0;
+      margin-bottom: 10px;
+    }
+  }
