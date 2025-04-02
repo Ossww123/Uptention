@@ -40,7 +40,7 @@ public class PaymentScheduler {
 				LocalDateTime.now()
 			).toMinutes();
 
-			if (orderAgeMinutes >= 30) {
+			if (orderAgeMinutes >= 3) {
 				log.info("주문 ID({})의 결제 시간 초과 (경과 시간: {}분)", order.getId(), orderAgeMinutes);
 
 				String orderId = String.valueOf(order.getId());
