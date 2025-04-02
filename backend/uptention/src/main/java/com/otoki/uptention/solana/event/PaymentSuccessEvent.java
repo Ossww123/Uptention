@@ -9,14 +9,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 결제 완료 이벤트
+ * 결제 성공 이벤트
  * RabbitMQ를 통해 다른 마이크로서비스에 결제 완료를 알리는 이벤트 클래스
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentCompletedEvent implements Serializable {
+public class PaymentSuccessEvent implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
