@@ -14,8 +14,8 @@ import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserResponseDto;
+import com.otoki.uptention.auth.service.AccessTokenService;
 import com.otoki.uptention.auth.service.SecurityService;
-import com.otoki.uptention.auth.service.TokenService;
 import com.otoki.uptention.domain.company.entity.Company;
 import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.User;
@@ -38,7 +38,7 @@ public class UserAppServiceImpl implements UserAppService {
 	private final SecurityService securityService;
 	private final ImageUploadService imageUploadService;
 	private final PasswordEncoder passwordEncoder;
-	private	final TokenService tokenService;
+	private final AccessTokenService accessTokenService;
 
 	// 일반 멤버 회원가입
 	@Override
@@ -215,7 +215,7 @@ public class UserAppServiceImpl implements UserAppService {
 		loggedInUser.setWallet(wallet);
 
 		// accessToken 재발급
-		tokenService.issueToken(response, userId, loggedInUser.getRole().name());
+		accessTokenService.issueToken(response, userId, loggedInUser.getRole().name());
 	}
 
 	private UserResponseDto mapToDto(User user) {
