@@ -19,7 +19,7 @@ const CheckoutScreen = ({ navigation, route }) => {
   // CartScreen에서 전달받은 선택된 상품 정보와 총 가격
   const { selectedItems = [], totalPrice = 0 } = route.params || {};
   
-  const { tokenBalance, publicKey } = useWallet();
+  const { tokenBalance, publicKey, sendSPLToken } = useWallet();
   const { authToken } = useAuth();
 
   // 더미 데이터 - 배송 정보
@@ -65,6 +65,8 @@ const CheckoutScreen = ({ navigation, route }) => {
     finalAmount: 0
   });
 
+  const SHOP_WALLET_ADDRESS = '4uDQ7uwEe1iy8R5vYtSvD6vNfcyeTLy8YKyVe44RKR92';
+
   useEffect(() => {
     const calculatePaymentInfo = () => {
       const productTotal = totalPrice > 0 ? totalPrice : 5.8;
@@ -89,6 +91,17 @@ const CheckoutScreen = ({ navigation, route }) => {
   // 결제하기
   const handlePayment = async () => {
     try {
+      // 입력값 검증
+      if (!selectedItems || selectedItems.length === 0) {
+        Alert.alert('주문 실패', '주문할 상품이 없습니다.');
+        return;
+      }
+
+      if (!shippingAddress.address || !shippingAddress.detail) {
+        Alert.alert('주문 실패', '배송 주소를 입력해주세요.');
+        return;
+      }
+
       // 주문 상품 데이터 준비
       const orderItems = selectedItems.map(item => ({
         itemId: item.itemId,
@@ -101,7 +114,8 @@ const CheckoutScreen = ({ navigation, route }) => {
         address: `${shippingAddress.address} ${shippingAddress.detail}`
       };
 
-      console.log('주문 요청 데이터:', requestData);
+      console.log('=== 주문 요청 정보 ===');
+      console.log('요청 데이터:', JSON.stringify(requestData, null, 2));
 
       // API 호출
       const response = await axios.post(
@@ -117,45 +131,87 @@ const CheckoutScreen = ({ navigation, route }) => {
 
       console.log('API 응답:', response.data);
 
-      // API 응답이 성공 메시지인 경우
-      if (response.data === '주문 처리 성공') {
-        // 주문 완료 화면으로 이동
-        navigation.navigate('OrderComplete', {
-          orderId: '주문 완료', // 임시로 표시
-          paymentAmount: paymentInfo.productTotal // 상품 총액을 결제 금액으로 사용
-        });
-      } else if (response.data && response.data.orderId) {
-        // API가 orderId와 paymentAmount를 반환하는 경우
-        navigation.navigate('OrderComplete', {
-          orderId: response.data.orderId,
-          paymentAmount: response.data.paymentAmount
-        });
+      // API 응답에서 orderId와 paymentAmount 추출
+      const { orderId, paymentAmount } = response.data;
+
+      if (orderId && paymentAmount) {
+        try {
+          // SPL 토큰 전송
+          const memo = `ORDER_${orderId}`; // 주문 번호를 메모에 포함
+          await sendSPLToken(
+            SHOP_WALLET_ADDRESS, // 고정된 상점 지갑 주소
+            paymentAmount.toString(), // API에서 받은 결제 금액
+            memo // 주문 번호를 포함한 메모
+          );
+
+          // 결제 성공 후 주문 완료 화면으로 이동
+          navigation.navigate('OrderComplete', {
+            orderId: orderId,
+            paymentAmount: paymentAmount
+          });
+        } catch (tokenError) {
+          console.error('=== 토큰 전송 오류 ===');
+          console.error('에러 내용:', tokenError);
+          
+          // 토큰 전송 실패 시 사용자에게 알림
+          Alert.alert(
+            '결제 실패',
+            '토큰 전송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+            [
+              {
+                text: '확인',
+                onPress: () => navigation.goBack() // 장바구니 화면으로 돌아가기
+              }
+            ]
+          );
+        }
       } else {
         throw new Error('주문 정보가 올바르지 않습니다.');
       }
 
     } catch (error) {
-      console.error('주문 생성 실패:', error.response?.data || error.message);
+      console.error('=== 주문 생성 실패 ===');
+      console.error('에러 응답:', error.response?.data);
+      console.error('에러 메시지:', error.message);
       
-      // 에러 메시지 처리
       let errorMessage = '주문 처리 중 오류가 발생했습니다.';
+      let errorTitle = '주문 실패';
+      let shouldGoBack = false;
+
       if (error.response?.data) {
         switch (error.response.data.code) {
           case 'ITEM_004':
-            errorMessage = '재고가 부족한 상품이 있습니다.';
+            errorMessage = '재고가 부족한 상품이 있습니다.\n장바구니를 다시 확인해주세요.';
+            shouldGoBack = true;
             break;
           case 'ITEM_001':
-            errorMessage = '상품이 존재하지 않습니다.';
+            errorMessage = '존재하지 않는 상품이 포함되어 있습니다.\n장바구니를 다시 확인해주세요.';
+            shouldGoBack = true;
             break;
           case 'X002':
-            errorMessage = '주문 정보가 올바르지 않습니다.';
+            if (error.response.data.message.includes('address')) {
+              errorMessage = '배송 주소를 입력해주세요.';
+            } else if (error.response.data.message.includes('items')) {
+              errorMessage = '주문 상품 정보가 올바르지 않습니다.';
+            } else {
+              errorMessage = '주문 정보가 올바르지 않습니다.\n입력 정보를 다시 확인해주세요.';
+            }
             break;
           default:
             errorMessage = error.response.data.message || errorMessage;
         }
       }
 
-      Alert.alert('주문 실패', errorMessage);
+      Alert.alert(
+        errorTitle,
+        errorMessage,
+        [
+          {
+            text: '확인',
+            onPress: () => shouldGoBack && navigation.goBack() // 필요한 경우에만 뒤로 가기
+          }
+        ]
+      );
     }
   };
 
