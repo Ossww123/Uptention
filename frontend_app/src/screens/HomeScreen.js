@@ -18,13 +18,13 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getToken } from '../services/api';
+import { getToken } from '../services/AuthService';
 
 const { AppBlockerModule } = NativeModules;
 
 const HomeScreen = ({ navigation }) => {
   const { tokenBalance, publicKey } = useWallet();
-  const { userId, authToken } = useAuth();
+  const { userId, authToken, loadUserData } = useAuth();
   const [userInfo, setUserInfo] = useState(null);
   const [userPoint, setUserPoint] = useState(0);
   const [dailyFocusTime, setDailyFocusTime] = useState(0);
@@ -58,39 +58,6 @@ const HomeScreen = ({ navigation }) => {
       return JSON.parse(jsonPayload);
     } catch (error) {
       console.error('JWT 파싱 오류:', error);
-      return null;
-    }
-  };
-
-  // userId와 토큰을 가져오는 함수
-  const loadUserData = async () => {
-    try {
-      const storedUserId = await AsyncStorage.getItem('userId');
-      const token = await getToken();
-      
-      if (token) {
-        setAuthToken(token);
-        
-        // userId가 저장되어 있지 않다면 토큰에서 추출
-        if (!storedUserId) {
-          const payload = parseJwt(token);
-          if (payload && payload.userId) {
-            const extractedUserId = payload.userId.toString();
-            await AsyncStorage.setItem('userId', extractedUserId);
-            setUserId(extractedUserId);
-            console.log('토큰에서 추출한 userId:', extractedUserId);
-            return { userId: extractedUserId, token };
-          }
-        } else {
-          setUserId(storedUserId);
-          console.log('저장된 userId:', storedUserId);
-          return { userId: storedUserId, token };
-        }
-      }
-      console.log('저장된 데이터 없음 - userId:', storedUserId, 'token:', token);
-      return null;
-    } catch (error) {
-      console.error('사용자 데이터 로드 오류:', error);
       return null;
     }
   };

@@ -1,3 +1,4 @@
+// src/screens/auth/LoginScreen.js
 import React, { useState } from 'react';
 import {
   View,
@@ -16,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { post } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { parseJwt } from '../../services/AuthService';
 
 const LoginScreen = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
@@ -42,13 +44,10 @@ const LoginScreen = ({ onLoginSuccess }) => {
         loginType: 'member'
       });
       
-      console.log('응답 헤더:', headers);
-      
       // 응답 처리
       if (ok) {
         // 헤더에서 토큰 추출
         const authToken = headers['authorization'] || headers['Authorization'];
-        console.log('인증 토큰:', authToken);
         
         if (authToken) {
           // "Bearer " 접두사 제거
@@ -79,22 +78,6 @@ const LoginScreen = ({ onLoginSuccess }) => {
       Alert.alert('로그인 실패', '서버 연결에 문제가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  // JWT 토큰에서 payload를 추출하는 함수
-  const parseJwt = (token) => {
-    try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      }).join(''));
-
-      return JSON.parse(jsonPayload);
-    } catch (error) {
-      console.error('JWT 파싱 오류:', error);
-      return null;
     }
   };
 
