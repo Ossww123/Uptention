@@ -90,7 +90,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 				.build();
 
 			// FcmToken 저장
-			fcmTokenService.registerFcmToekn(fcmToken);
+			fcmTokenService.registerFcmToken(fcmToken);
 		}
 
 		// AccessToken 발행

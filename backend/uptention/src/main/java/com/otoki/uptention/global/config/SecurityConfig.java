@@ -18,6 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
+import com.otoki.uptention.auth.filter.CustomLogoutFilter;
 import com.otoki.uptention.auth.filter.JWTFilter;
 import com.otoki.uptention.auth.filter.LoginFilter;
 import com.otoki.uptention.auth.service.AccessTokenService;
@@ -35,6 +36,7 @@ public class SecurityConfig {
 	private final AccessTokenService accessTokenService;
 	private final FcmTokenService fcmTokenService;
 	private final UserService userService;
+	private final CustomLogoutFilter customLogoutFilter;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -91,6 +93,9 @@ public class SecurityConfig {
 
 		http
 			.addFilterBefore(new FilterExceptionHandler(), LogoutFilter.class);
+		
+		http
+			.addFilterAfter(customLogoutFilter, LogoutFilter.class);
 
 		// 기본 logout 비활성화
 		http

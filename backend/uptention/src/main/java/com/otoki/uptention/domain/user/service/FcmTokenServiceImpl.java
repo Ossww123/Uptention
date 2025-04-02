@@ -17,7 +17,7 @@ public class FcmTokenServiceImpl implements FcmTokenService {
 
 	@Override
 	@Transactional
-	public void registerFcmToekn(FcmToken fcmToken) {
+	public void registerFcmToken(FcmToken fcmToken) {
 		fcmTokenRepository.save(fcmToken);
 	}
 
