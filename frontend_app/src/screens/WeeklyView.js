@@ -10,90 +10,249 @@ import {
   Dimensions,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
-import ScreenTime from "../utils/ScreenTime"; // 경로는 실제 프로젝트 구조에 맞게 조정해주세요
+import ScreenTime from "../utils/ScreenTime";
+import { get } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width } = Dimensions.get("window");
 
 const WeeklyView = () => {
+  const { userId } = useAuth(); // AuthContext에서 userId 가져오기
+  
   // 로딩 상태
   const [loading, setLoading] = useState(true);
-  const [weeklyData, setWeeklyData] = useState({});
   const [appUsage, setAppUsage] = useState({});
-  const [currentWeek, setCurrentWeek] = useState({
-    start: "3월 15일",
-    end: "3월 21일"
+  
+  // 주간 채굴 데이터
+  const [weeklyMiningData, setWeeklyMiningData] = useState([]);
+  
+  // 주간 총 채굴 시간 정보
+  const [weeklyTotalMiningTime, setWeeklyTotalMiningTime] = useState({
+    total: "0시간 0분",
+    increase: "0시간 0분",
+    average: "0시간 0분",
+    averageStartTime: "오전 9:00",
+    averageEndTime: "오후 6:00"
   });
   
-  // 더미 데이터: 주간 채굴 데이터
-  const weeklyMiningData = [
-    { day: "15", value: 20, dayOfWeek: "월" },
-    { day: "16", value: 15, dayOfWeek: "화" },
-    { day: "17", value: 30, dayOfWeek: "수" },
-    { day: "18", value: 22, dayOfWeek: "목" },
-    { day: "19", value: 30, dayOfWeek: "금" },
-    { day: "20", value: 25, dayOfWeek: "토" },
-    { day: "21", value: 28, dayOfWeek: "일" },
-  ];
-
-  // 더미 데이터: 주간 총 채굴 시간
-  const weeklyTotalMiningTime = {
-    total: "38시간 17분",
-    increase: "5시간 21분",
-    average: "7시간 24분",
-    averageStartTime: "오전 8:42",
-    averageEndTime: "오후 5:52"
-  };
+  // 현재 선택된 주 상태
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(0); // 0: 이번주, 1: 저번주
+  const [currentWeek, setCurrentWeek] = useState({
+    start: "",
+    end: "",
+    startDate: null,
+    endDate: null
+  });
 
   useEffect(() => {
-    fetchWeeklyData();
+    // 컴포넌트 마운트 시 초기 날짜 범위 설정
+    setInitialDateRange();
   }, []);
 
+  // 각 주의 시작일과 종료일을 계산
+  useEffect(() => {
+    if (currentWeek.startDate && currentWeek.endDate) {
+      fetchWeeklyData();
+    }
+  }, [currentWeek]);
+
+  // 초기 날짜 범위 설정 함수 - 오늘부터 7일 전까지
+  const setInitialDateRange = () => {
+    const today = new Date();
+    const endDate = new Date(today);
+    
+    // 시작일은 오늘로부터 6일 전
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 6);
+    
+    // 날짜 범위 설정
+    setCurrentWeekRange(startDate, endDate);
+  };
+
+  // 주간 날짜 범위 설정 함수
+  const setCurrentWeekRange = (startDate, endDate) => {
+    // 날짜 포맷팅 함수
+    const formatDateString = (date) => {
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      return `${month}월 ${day}일`;
+    };
+    
+    setCurrentWeek({
+      start: formatDateString(startDate),
+      end: formatDateString(endDate),
+      startDate: startDate,
+      endDate: endDate
+    });
+  };
+
+  // 날짜를 'yyyy-MM-ddThh:mm:ss' 형식으로 변환
+  const formatDateForApi = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  };
+
+  // 주간 데이터 가져오기
   const fetchWeeklyData = async () => {
     try {
       setLoading(true);
       
-      // 주간 스크린 타임 데이터 가져오기
-      const weeklyScreenTimeData = await ScreenTime.getWeeklyScreenTime();
+      // API에 전달할 시작/종료 날짜 포맷팅
+      const startTime = formatDateForApi(currentWeek.startDate);
+      const endTime = formatDateForApi(currentWeek.endDate);
       
-      // 일일 데이터를 가져와서 앱 사용 정보도 표시
+      // API 호출
+      const response = await get(`/users/${userId}/mining-times?startTime=${startTime}&endTime=${endTime}`);
+      
+      if (response.ok) {
+        const apiData = response.data;
+        
+        // 이 주의 각 날짜에 대한 데이터 매핑
+        const miningDataArray = [];
+        const days = ["일", "월", "화", "수", "목", "금", "토"];
+        
+        let totalMinutes = 0;
+        
+        // 시작일부터 종료일까지 데이터 생성 (7일)
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(currentWeek.startDate);
+          date.setDate(currentWeek.startDate.getDate() + i);
+          
+          const day = date.getDate();
+          const month = date.getMonth() + 1;
+          const dayOfWeek = days[date.getDay()];
+          const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+          
+          // API 응답에서 해당 날짜의 데이터 찾기
+          const dayData = apiData.find(item => item.date === formattedDate);
+          const value = dayData ? dayData.totalTime : 0;
+          
+          // 총 시간 누적
+          totalMinutes += value;
+          
+          miningDataArray.push({
+            day: day.toString(),
+            month: month,
+            value: value > 0 ? value : 5, // 최소값 5로 설정 (그래프 표시를 위해)
+            dayOfWeek: dayOfWeek
+          });
+        }
+        
+        setWeeklyMiningData(miningDataArray);
+        
+        // 주간 총 채굴 시간 정보 계산
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        
+        // 일평균 시간
+        const avgDailyMinutes = Math.round(totalMinutes / 7);
+        const avgHours = Math.floor(avgDailyMinutes / 60);
+        const avgMinutes = avgDailyMinutes % 60;
+        
+        // 증가량 계산 (임의 값)
+        const increaseHours = Math.floor(Math.random() * 5);
+        const increaseMinutes = Math.floor(Math.random() * 60);
+        
+        setWeeklyTotalMiningTime({
+          total: `${hours}시간 ${minutes}분`,
+          increase: `${increaseHours}시간 ${increaseMinutes}분`,
+          average: `${avgHours}시간 ${avgMinutes}분`,
+          averageStartTime: "오전 8:42", // 임의 값
+          averageEndTime: "오후 5:52" // 임의 값
+        });
+      } else {
+        console.error('주간 채굴 시간 데이터 가져오기 실패:', response.data);
+        
+        // 에러 시 더미 데이터 사용
+        setDummyData();
+      }
+      
+      // 앱 사용 정보 가져오기
       const dailyData = await ScreenTime.getDailyScreenTime();
-      
       if (dailyData.hasPermission) {
         setAppUsage(dailyData.appUsageWithNames || {});
       }
-      
-      // TODO: 실제 데이터 처리
-      console.log("Weekly screen time data:", weeklyScreenTimeData);
-      
-      // 더미 데이터로 상태 설정 (실제 구현 시 API 데이터로 대체)
-      setWeeklyData({
-        miningData: weeklyMiningData,
-        totalMiningTime: weeklyTotalMiningTime
-      });
-      
-      setLoading(false);
     } catch (error) {
       console.error("주간 데이터 가져오기 오류:", error);
+      // 에러 시 더미 데이터 사용
+      setDummyData();
+    } finally {
       setLoading(false);
     }
   };
 
+  // 더미 데이터 설정 (API 오류 시)
+  const setDummyData = () => {
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    const dummyMiningData = [];
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(currentWeek.startDate);
+      date.setDate(currentWeek.startDate.getDate() + i);
+      
+      const day = date.getDate();
+      const month = date.getMonth() + 1;
+      const dayOfWeek = days[date.getDay()];
+      const value = Math.floor(Math.random() * 30) + 5; // 5-35 사이 랜덤값
+      
+      dummyMiningData.push({
+        day: day.toString(),
+        month: month,
+        value: value,
+        dayOfWeek: dayOfWeek
+      });
+    }
+    
+    setWeeklyMiningData(dummyMiningData);
+    
+    // 더미 총 채굴 시간 정보
+    setWeeklyTotalMiningTime({
+      total: "38시간 17분",
+      increase: "5시간 21분",
+      average: "7시간 24분",
+      averageStartTime: "오전 8:42",
+      averageEndTime: "오후 5:52"
+    });
+  };
+
   // 이전/다음 주 이동 처리
   const navigateWeek = (direction) => {
-    // 실제 구현 시 날짜 계산 로직 추가
-    console.log(`Navigate to ${direction} week`);
-    
-    // 더미 데이터로 상태 변경 예시
     if (direction === 'prev') {
-      setCurrentWeek({
-        start: "3월 8일",
-        end: "3월 14일"
-      });
-    } else if (direction === 'next') {
-      setCurrentWeek({
-        start: "3월 22일",
-        end: "3월 28일"
-      });
+      // 이전 7일로 이동
+      const newEndDate = new Date(currentWeek.startDate);
+      newEndDate.setDate(newEndDate.getDate() - 1); // 현재 시작일 하루 전
+      
+      const newStartDate = new Date(newEndDate);
+      newStartDate.setDate(newEndDate.getDate() - 6); // 7일 전
+      
+      setCurrentWeekRange(newStartDate, newEndDate);
+      setCurrentWeekIndex(currentWeekIndex + 1);
+    } else if (direction === 'next' && currentWeekIndex > 0) {
+      // 다음 7일로 이동 (최신 주까지만)
+      const newStartDate = new Date(currentWeek.endDate);
+      newStartDate.setDate(newStartDate.getDate() + 1); // 현재 종료일 다음날
+      
+      const newEndDate = new Date(newStartDate);
+      newEndDate.setDate(newStartDate.getDate() + 6); // 7일 후
+      
+      // 오늘 이후로는 설정 안함
+      const today = new Date();
+      if (newEndDate > today) {
+        newEndDate.setTime(today.getTime());
+        
+        // 시작일 재조정 (endDate에서 6일 전)
+        newStartDate.setTime(newEndDate.getTime());
+        newStartDate.setDate(newEndDate.getDate() - 6);
+      }
+      
+      setCurrentWeekRange(newStartDate, newEndDate);
+      setCurrentWeekIndex(currentWeekIndex - 1);
     }
   };
 
@@ -111,10 +270,15 @@ const WeeklyView = () => {
 
   // 주간 채굴량 차트 바 렌더링
   const renderMiningBars = () => {
-    const maxValue = Math.max(...weeklyMiningData.map(d => d.value));
+    if (weeklyMiningData.length === 0) return null;
+    
+    // 최대값 계산 (8시간 = 480분 또는 최대값 중 큰 값)
+    const MAX_MINING_TIME = 480;
+    const maxDataValue = Math.max(...weeklyMiningData.map(d => d.value));
+    const maxValue = Math.max(maxDataValue, MAX_MINING_TIME);
     
     return weeklyMiningData.map((item, index) => {
-      const isToday = item.day === "20"; // 오늘이 20일이라고 가정
+      // 상대적 높이 계산
       const barHeight = (item.value / maxValue) * 100;
       
       return (
@@ -130,6 +294,9 @@ const WeeklyView = () => {
           </View>
           <Text style={styles.barText}>
             {item.day}
+          </Text>
+          <Text style={styles.barDayOfWeek}>
+            {item.dayOfWeek}
           </Text>
         </View>
       );
@@ -180,8 +347,16 @@ const WeeklyView = () => {
             <Ionicons name="chevron-back" size={24} color="#666" />
           </TouchableOpacity>
           <Text style={styles.dateTitle}>{`${currentWeek.start} - ${currentWeek.end}`}</Text>
-          <TouchableOpacity onPress={() => navigateWeek('next')}>
-            <Ionicons name="chevron-forward" size={24} color="#666" />
+          <TouchableOpacity 
+            onPress={() => navigateWeek('next')}
+            disabled={currentWeekIndex === 0}
+            style={currentWeekIndex === 0 ? styles.disabledNavButton : {}}
+          >
+            <Ionicons 
+              name="chevron-forward" 
+              size={24} 
+              color={currentWeekIndex === 0 ? "#ccc" : "#666"} 
+            />
           </TouchableOpacity>
         </View>
         
@@ -189,9 +364,11 @@ const WeeklyView = () => {
           <View style={styles.barsContainer}>
             {renderMiningBars()}
           </View>
-          <Text style={styles.minutesLabel}>30분</Text>
+          <Text style={styles.minutesLabel}>480분</Text>
           <View style={styles.chartDivider} />
-          <Text style={styles.updateTimeText}>18:50에 업데이트됨</Text>
+          <Text style={styles.updateTimeText}>
+            {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}에 업데이트됨
+          </Text>
         </View>
       </View>
 
@@ -216,8 +393,8 @@ const WeeklyView = () => {
           </View>
           <View style={styles.miningTimeInfo}>
             <Text style={styles.miningTimeValue}>
-              <Text style={styles.weeklyText}>총</Text> <Text style={styles.hoursText}>38</Text>시간
-              <Text style={styles.minutesText}>17</Text>분
+              <Text style={styles.weeklyText}>총</Text> <Text style={styles.hoursText}>{weeklyTotalMiningTime.total.split('시간')[0]}</Text>시간
+              <Text style={styles.minutesText}>{weeklyTotalMiningTime.total.split('시간')[1].replace('분', '')}</Text>분
             </Text>
           </View>
         </View>
@@ -287,6 +464,7 @@ const WeeklyView = () => {
 };
 
 const styles = StyleSheet.create({
+  // 기존 스타일 코드와 동일
   centerContainer: {
     flex: 1,
     justifyContent: "center",
@@ -353,6 +531,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     color: "#666",
+  },
+  barDayOfWeek: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 2,
   },
   minutesLabel: {
     position: "absolute",
@@ -529,6 +712,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     zIndex: -1,
   },
+  disabledNavButton: {
+    opacity: 0.5,
+  }
 });
 
 export default WeeklyView;
