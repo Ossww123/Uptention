@@ -14,15 +14,20 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { NativeModules } from 'react-native';
 import { useWallet } from '../contexts/WalletContext';
+import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken } from '../services/AuthService';
 
 const { AppBlockerModule } = NativeModules;
 
 const HomeScreen = ({ navigation }) => {
-  const { tokenBalance, publicKey, userId } = useWallet();
+  const { tokenBalance, publicKey } = useWallet();
+  const { userId, authToken, loadUserData } = useAuth();
   const [userInfo, setUserInfo] = useState(null);
   const [userPoint, setUserPoint] = useState(0);
+  const [dailyFocusTime, setDailyFocusTime] = useState(0);
 
   // 앱제한 관련 권한 상태 관리
   const [hasAccessibilityPermission, setHasAccessibilityPermission] = useState(false);
@@ -35,20 +40,39 @@ const HomeScreen = ({ navigation }) => {
   const strokeWidth = 5;
   const radius = (size - strokeWidth) / 2;
   const circum = radius * 2 * Math.PI;
-  const progress = 30;  // progress가 클수록 프로그레스바는 줄어듦
-  const svgProgress = (progress * circum) / 100;  // 이 계산식으로 하면 progress가 
-                                                 // 커질수록 프로그레스바가 줄어듦
+  const maxFocusHours = 8; // 최대 8시간
+  const maxFocusMinutes = maxFocusHours * 60; // 480분
+  const remainingMinutes = maxFocusMinutes - dailyFocusTime; // 남은 시간 계산
+  const progress = (remainingMinutes / maxFocusMinutes) * 100; // 남은 시간의 비율
+  const svgProgress = (progress * circum) / 100; // progress가 클수록 비어있는 상태
   
-  // 앱 권한 상태 확인 (컴포넌트 마운트시 실행)
+  // JWT 토큰에서 payload를 추출하는 함수
+  const parseJwt = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('JWT 파싱 오류:', error);
+      return null;
+    }
+  };
+
+  // 컴포넌트 마운트 시 사용자 데이터 로드
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  // 앱 권한 상태 확인
   useEffect(() => {
     if (Platform.OS === 'android') {
-      // AppBlockerModule이 제대로 로드됐는지 확인
-      console.log('AppBlockerModule 확인:', AppBlockerModule);
-      
       if (!AppBlockerModule) {
         console.error('AppBlockerModule이 로드되지 않았습니다.');
       } else {
-        console.log('AppBlockerModule 메서드:', Object.keys(AppBlockerModule));
         checkAppBlockerPermissions();
       }
     }
@@ -74,35 +98,19 @@ const HomeScreen = ({ navigation }) => {
   
   // 집중 모드 시작 함수
   const startFocusMode = async () => {
-    if (Platform.OS === 'android') {
-      // 필요한 권한이 모두 있는지 확인
-      if (!hasAccessibilityPermission || !hasOverlayPermission) {
-        Alert.alert(
-          '권한 필요',
-          '집중 모드에서 앱 제한 기능을 사용하려면 접근성 서비스와 화면 오버레이 권한이 필요합니다.',
-          [
-            { 
-              text: '취소', 
-              style: 'cancel'
-            },
-            { 
-              text: '권한 설정', 
-              onPress: () => requestAppBlockerPermissions()
-            }
-          ]
-        );
-        return;
-      }
+    if (!userId || !authToken) {
+      Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
+      return;
     }
 
     try {
       // 집중 모드 시작 API 호출
       const response = await axios.post(
-        `${API_BASE_URL}/api/mining-time/focus/4`,
-        null,  // 요청 본문이 필요없으므로 null로 변경
+        `${API_BASE_URL}/api/mining-time/focus/${userId}`,
+        null,
         {
           headers: {
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o',
+            'Authorization': `Bearer ${authToken}`,
             'Content-Type': 'application/json'
           }
         }
@@ -112,7 +120,6 @@ const HomeScreen = ({ navigation }) => {
         console.log('집중 모드 시작 API 호출 성공');
         
         if (Platform.OS === 'android') {
-          // 앱 차단 기능 활성화
           try {
             await AppBlockerModule.setAppBlockingEnabled(true);
             console.log('앱 차단 기능 활성화 성공');
@@ -121,7 +128,6 @@ const HomeScreen = ({ navigation }) => {
           }
         }
         
-        // 포커스 모드 화면으로 이동
         navigation.navigate('FocusMode');
       }
     } catch (error) {
@@ -211,10 +217,12 @@ const HomeScreen = ({ navigation }) => {
 
   // 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
+    if (!userId || !authToken) return;
+
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/users/4`, {
+      const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+          'Authorization': `Bearer ${authToken}`
         }
       });
       
@@ -226,31 +234,118 @@ const HomeScreen = ({ navigation }) => {
 
   // 사용자 포인트 조회 함수
   const fetchUserPoint = async () => {
+    if (!userId || !authToken) return;
+
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/users/4/point`, {
+      const response = await axios.get(`${API_BASE_URL}/api/users/${userId}/point`, {
         headers: {
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+          'Authorization': `Bearer ${authToken}`
         }
       });
-      setUserPoint(response.data.point); // point 값만 추출하여 저장
+      setUserPoint(response.data.point);
     } catch (error) {
       console.error('포인트 조회 오류:', error);
     }
   };
 
-  useEffect(() => {
-    fetchUserInfo();
-    fetchUserPoint();
-  }, []);
+  // 오늘의 집중 시간 조회 함수
+  const fetchDailyFocusTime = async () => {
+    if (!userId || !authToken) return;
 
-  // 화면이 포커스될 때마다 포인트 업데이트
+    try {
+      // 오늘 날짜의 시작과 끝 시간 설정
+      const now = new Date();
+      const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+      // 날짜를 YYYY-MM-DDTHH:mm:ss 형식으로 변환
+      const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+      };
+      
+      console.log('API 요청 파라미터:', {
+        startTime: formatDate(startTime),
+        endTime: formatDate(endTime)
+      });
+
+      // API 호출
+      const response = await axios.get(
+        `${API_BASE_URL}/api/users/${userId}/mining-times`,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          },
+          params: {
+            startTime: formatDate(startTime),
+            endTime: formatDate(endTime)
+          }
+        }
+      );
+      
+      console.log('API 응답 데이터:', response.data);
+      
+      if (response.data && Array.isArray(response.data)) {
+        // 집중 시간 세션 로그 출력
+        console.log('=== 오늘의 집중 시간 세션 ===');
+        let totalMinutes = 0;
+
+        response.data.forEach((session, index) => {
+          console.log(`세션 ${index + 1}:`);
+          console.log(`날짜: ${session.date}`);
+          console.log(`총 시간: ${session.totalTime}분`);
+          console.log('------------------------');
+          
+          // 문자열이나 숫자 모두 처리 가능하도록
+          const sessionTime = parseInt(session.totalTime || 0);
+          if (!isNaN(sessionTime)) {
+            totalMinutes += sessionTime;
+          }
+        });
+        
+        console.log(`총 집중 시간: ${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분`);
+        setDailyFocusTime(totalMinutes);
+      } else {
+        console.error('잘못된 응답 형식:', response.data);
+        setDailyFocusTime(0);
+      }
+    } catch (error) {
+      console.error('집중 시간 조회 오류:', error);
+      if (error.response) {
+        console.error('에러 상세 정보:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      }
+      setDailyFocusTime(0);
+    }
+  };
+
+  useEffect(() => {
+    if (userId && authToken) {
+      fetchUserInfo();
+      fetchUserPoint();
+      fetchDailyFocusTime();
+    }
+  }, [userId, authToken]);
+
+  // 화면이 포커스될 때마다 데이터 업데이트
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      fetchUserPoint();
+      if (userId && authToken) {
+        fetchUserPoint();
+        fetchDailyFocusTime();
+      }
     });
 
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, userId, authToken]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -303,11 +398,11 @@ const HomeScreen = ({ navigation }) => {
                     cy={size / 2}
                     r={radius}
                     strokeWidth={strokeWidth}
-                    strokeLinecap="butt"
+                    strokeLinecap="round"
                   />
                   {/* 위에 덮이는 주황색 원 */}
                   <Circle
-                    stroke="#E0E0E0"
+                    stroke="#E0E0E0" 
                     fill="none"
                     cx={size / 2}
                     cy={size / 2}
@@ -319,7 +414,6 @@ const HomeScreen = ({ navigation }) => {
                     transform={`rotate(-90, ${size / 2}, ${size / 2})`}
                   />
                 </Svg>
-                
               </View>
             </View>
           </View>
@@ -343,12 +437,18 @@ const HomeScreen = ({ navigation }) => {
               <View style={styles.headerRow}>
                 <Text style={styles.labelText}>에너지</Text>
                 <View style={styles.progressInfo}>
-                  <Text style={styles.valueText}>8.00/</Text>
+                  <Text style={styles.valueText}>{(remainingMinutes / 60).toFixed(2)}/</Text>
                   <Text style={styles.maxText}>8</Text>
                 </View>
               </View>
               <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { backgroundColor: '#00C862', width: '100%' }]} />
+                <View style={[
+                  styles.progressFill, 
+                  { 
+                    backgroundColor: '#00C862', 
+                    width: `${progress}%` 
+                  }
+                ]} />
               </View>
             </View>
           </View>
