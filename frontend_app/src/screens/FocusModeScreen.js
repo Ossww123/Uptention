@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert, AppState } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert, AppState, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTimer } from '../hooks/useTimer';
 import { useAuth } from '../contexts/AuthContext';
@@ -106,14 +106,15 @@ const FocusModeScreen = ({ navigation }) => {
     }
 
     try {
-      await AppBlockerModule.setAppBlockingEnabled(false);
       const finalSeconds = getTimeInSeconds();
       const finalPoints = Math.floor(finalSeconds / 60);
 
       // 포커스 모드 종료 API 호출
-      await axios.patch(
-        `${API_BASE_URL}/api/mining-time/focus/${userId}`,
-        null,
+      const response = await axios.patch(
+        `${API_BASE_URL}/api/mining-time/focus`,
+        {
+          totalTime: finalPoints  // 분 단위로 전송
+        },
         {
           headers: {
             'Authorization': `Bearer ${authToken}`,
@@ -121,47 +122,65 @@ const FocusModeScreen = ({ navigation }) => {
           }
         }
       );
-      console.log('포커스 모드 종료 API 호출 성공');
 
-      // 포인트 업데이트를 위해 최대 3번까지 시도
-      let updatedPoint = 0;
-      for (let i = 0; i < 3; i++) {
-        // 2초씩 대기
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // 포인트 조회 시도
-        try {
-          const pointResponse = await axios.get(`${API_BASE_URL}/api/users/${userId}/point`, {
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
-          });
-
-          console.log(`${i + 1}번째 포인트 조회 응답:`, pointResponse.data);
-          
-          // 포인트가 0보다 크면 업데이트 성공으로 간주하고 종료
-          if (pointResponse.data.point > 0) {
-            updatedPoint = pointResponse.data.point;
-            break;
-          }
-        } catch (error) {
-          console.error(`${i + 1}번째 포인트 조회 실패:`, error);
+      if (response.status === 200) {
+        console.log('포커스 모드 종료 API 호출 성공');
+        
+        // API 호출 성공 후 앱 차단 해제
+        if (Platform.OS === 'android') {
+          await AppBlockerModule.setAppBlockingEnabled(false);
         }
+
+        // 포인트 업데이트를 위해 최대 3번까지 시도
+        let updatedPoint = 0;
+        for (let i = 0; i < 3; i++) {
+          // 2초씩 대기
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          // 포인트 조회 시도
+          try {
+            const pointResponse = await axios.get(`${API_BASE_URL}/api/users/${userId}/point`, {
+              headers: {
+                'Authorization': `Bearer ${authToken}`
+              }
+            });
+
+            console.log(`${i + 1}번째 포인트 조회 응답:`, pointResponse.data);
+            
+            // 포인트가 0보다 크면 업데이트 성공으로 간주하고 종료
+            if (pointResponse.data.point > 0) {
+              updatedPoint = pointResponse.data.point;
+              break;
+            }
+          } catch (error) {
+            console.error(`${i + 1}번째 포인트 조회 실패:`, error);
+          }
+        }
+        
+        stopTimer();
+        resetTimer();
+        
+        navigation.goBack();
+        
+        console.log('포커스 모드 종료:', {
+          totalSeconds: finalSeconds,
+          earnedPoints: finalPoints,
+          updatedPoint: updatedPoint
+        });
       }
-      
-      stopTimer();
-      resetTimer();
-      
-      navigation.goBack();
-      
-      console.log('포커스 모드 종료:', {
-        totalSeconds: finalSeconds,
-        earnedPoints: finalPoints,
-        updatedPoint: updatedPoint
-      });
     } catch (error) {
       console.error('포커스 모드 종료 오류:', error);
-      Alert.alert('오류', '포커스 모드 종료 중 문제가 발생했습니다.');
+      if (error.response) {
+        console.error('에러 상세 정보:', {
+          status: error.response.status,
+          data: error.response.data
+        });
+      }
+      Alert.alert(
+        '오류',
+        '포커스 모드 종료 중 문제가 발생했습니다. 다시 시도해주세요.',
+        [{ text: '확인' }]
+      );
     }
   };
 

@@ -4,6 +4,8 @@ import BottomTabNavigator from './BottomTabNavigator';
 import FocusModeScreen from '../screens/FocusModeScreen';
 import RankingScreen from '../screens/RankingScreen';
 import NotificationScreen from '../screens/NotificationScreen';
+import OrderCompleteScreen from '../screens/OrderCompleteScreen';
+import OrderHistoryScreen from '../screens/OrderHistoryScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -29,6 +31,24 @@ const StackNavigator = () => {
         name="Notification" 
         component={NotificationScreen} 
         options={{
+          headerShown: false,
+          presentation: 'card',
+          animation: 'slide_from_right'
+        }}
+      />
+      <Stack.Screen 
+        name="OrderComplete" 
+        component={OrderCompleteScreen} 
+        options={{ 
+          headerShown: false,
+          presentation: 'card',
+          animation: 'slide_from_right'
+        }}
+      />
+      <Stack.Screen 
+        name="OrderHistory" 
+        component={OrderHistoryScreen} 
+        options={{ 
           headerShown: false,
           presentation: 'card',
           animation: 'slide_from_right'

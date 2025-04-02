@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   Dimensions, 
-  ScrollView, 
   TouchableOpacity, 
   Image,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,11 +27,111 @@ const GiftBoxScreen = () => {
   const navigation = useNavigation();
   const { authToken } = useAuth();
 
-  const fetchGifts = async (newCursor = null, refresh = false, targetTab = null) => {
-    if (loading || (!hasNextPage && !refresh)) return;
+  // refs for debouncing and request tracking
+  const onEndReachedTimeoutRef = useRef(null);
+  const isInitialLoadRef = useRef(true);
+  const currentApiCallIdRef = useRef(null);
+  const requestTimerRef = useRef(null);
+  const loadRequestedRef = useRef(false);
 
+  // 첫 마운트 시에만 실행되는 useEffect
+  useEffect(() => {
+    return () => {
+      if (onEndReachedTimeoutRef.current) {
+        clearTimeout(onEndReachedTimeoutRef.current);
+      }
+      if (requestTimerRef.current) {
+        clearTimeout(requestTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 화면에 포커스가 될 때마다 실행
+  useFocusEffect(
+    useCallback(() => {
+      console.log('useFocusEffect 실행됨', {
+        giftsLength: gifts.length,
+        isInitialLoad: isInitialLoadRef.current,
+        loadRequested: loadRequestedRef.current
+      });
+
+      // 이전에 이미 요청했는지 확인
+      if (!loadRequestedRef.current) {
+        if (isInitialLoadRef.current) {
+          console.log('최초 로드 실행');
+          loadRequestedRef.current = true;
+          fetchGifts(null, true);
+          isInitialLoadRef.current = false;
+        } else {
+          console.log('이미 로드됨, 데이터 갱신');
+          fetchGifts(null, true);
+        }
+      } else {
+        console.log('이전 포커스 이벤트에서 이미 로드 요청됨, 중복 요청 방지');
+      }
+
+      // 화면이 언마운트되면 로드 요청 플래그 초기화
+      return () => {
+        loadRequestedRef.current = false;
+      };
+    }, [activeTab]) // activeTab이 변경될 때마다 실행
+  );
+
+  // 탭 변경 시 데이터 초기화 및 로드
+  useEffect(() => {
+    if (isInitialLoadRef.current) return; // 최초 로드 시에는 실행하지 않음
+    
+    console.log('탭 변경으로 인한 데이터 로드');
+    setGifts([]);
+    setCursor(null);
+    setHasNextPage(true);
+    fetchGifts(null, true);
+  }, [activeTab]);
+
+  const fetchGifts = async (newCursor = null, refresh = false) => {
     try {
+      const callId = Date.now();
+      console.log(`fetchGifts 시작 (${callId})`, {
+        refresh,
+        loading,
+        hasNextPage,
+        currentApiCallId: currentApiCallIdRef.current,
+        requestTimer: requestTimerRef.current !== null
+      });
+
+      // 더블 요청 방지 타이머 체크
+      if (requestTimerRef.current) {
+        console.log(`더블 요청 방지 타이머 활성화, 요청 무시 (${callId})`);
+        return;
+      }
+
+      // 진행 중인 API 호출 체크
+      if (loading || currentApiCallIdRef.current) {
+        console.log(`이미 로딩 중, 요청 무시 (${callId})`);
+        return;
+      }
+
+      // 더블 요청 방지 타이머 설정 (1초)
+      requestTimerRef.current = setTimeout(() => {
+        requestTimerRef.current = null;
+      }, 1000);
+
+      // 현재 API 호출 ID 설정
+      currentApiCallIdRef.current = callId;
+
+      // 다음 페이지가 없고 리프레시가 아닐 경우 무시
+      if (!hasNextPage && !refresh) {
+        console.log(`다음 페이지 없음, 요청 무시 (${callId})`);
+        currentApiCallIdRef.current = null;
+        return;
+      }
+
       setLoading(true);
+      if (refresh) {
+        setRefreshing(true);
+        setCursor(null);
+      }
+
       const response = await axios.get(`${API_BASE_URL}/api/gifts`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -38,25 +139,24 @@ const GiftBoxScreen = () => {
         params: {
           cursor: newCursor,
           size: 10,
-          type: targetTab || activeTab
+          type: activeTab
         }
       });
 
       const { giftItems, hasNextPage: nextPage, nextCursor } = response.data;
       
-      if (targetTab) {
-        // 특정 탭의 데이터만 새로고침
-        setGifts(prev => {
-          // 현재 탭의 데이터만 필터링
-          const currentTabGifts = prev.filter(gift => 
-            (targetTab === 'PENDING' && gift.status === '수령 대기') ||
-            (targetTab === 'RECEIVED' && gift.status === '수령 완료')
-          );
-          return refresh ? giftItems : [...currentTabGifts, ...giftItems];
-        });
+      if (refresh) {
+        setGifts(giftItems);
       } else {
-        // 현재 탭의 데이터 새로고침
-        setGifts(prev => refresh ? giftItems : [...prev, ...giftItems]);
+        setGifts(prev => {
+          const newGifts = [...prev];
+          giftItems.forEach(item => {
+            if (!newGifts.some(gift => gift.id === item.id)) {
+              newGifts.push(item);
+            }
+          });
+          return newGifts;
+        });
       }
       
       setHasNextPage(nextPage);
@@ -66,26 +166,35 @@ const GiftBoxScreen = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      currentApiCallIdRef.current = null;
+      if (requestTimerRef.current) {
+        clearTimeout(requestTimerRef.current);
+        requestTimerRef.current = null;
+      }
     }
   };
-
-  // 초기 데이터 로드
-  useEffect(() => {
-    fetchGifts(null, true);
-  }, [activeTab]);
 
   // 새로고침 처리
   const onRefresh = () => {
     setRefreshing(true);
+    setGifts([]);
+    setCursor(null);
+    setHasNextPage(true);
     fetchGifts(null, true);
   };
 
-  // 스크롤 끝에서 추가 데이터 로드
-  const onEndReached = () => {
-    if (!loading && hasNextPage) {
-      fetchGifts(cursor);
+  // 무한 스크롤 처리 (디바운싱 적용)
+  const handleLoadMore = useCallback(() => {
+    if (onEndReachedTimeoutRef.current) {
+      clearTimeout(onEndReachedTimeoutRef.current);
     }
-  };
+
+    onEndReachedTimeoutRef.current = setTimeout(() => {
+      if (hasNextPage && !loading && cursor) {
+        fetchGifts(cursor);
+      }
+    }, 200);
+  }, [loading, hasNextPage, cursor]);
 
   const handleGiftPress = (item) => {
     navigation.navigate('GiftDetail', { 
@@ -94,26 +203,18 @@ const GiftBoxScreen = () => {
     });
   };
 
-  const renderGiftItems = () => {
-    if (gifts.length === 0) {
+  const renderGiftItem = ({ item, index }) => {
+    if (index % 2 === 0) {
+      const nextItem = gifts[index + 1];
       return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>받은 선물이 없습니다.</Text>
-        </View>
-      );
-    }
-
-    const rows = [];
-    for (let i = 0; i < gifts.length; i += 2) {
-      rows.push(
-        <View key={i} style={styles.row}>
+        <View style={styles.row}>
           <TouchableOpacity
             style={styles.giftItem}
-            onPress={() => handleGiftPress(gifts[i])}
+            onPress={() => handleGiftPress(item)}
           >
-            {gifts[i].imageUrl ? (
+            {item.imageUrl ? (
               <Image
-                source={{ uri: gifts[i].imageUrl }}
+                source={{ uri: item.imageUrl }}
                 style={styles.giftImage}
                 resizeMode="cover"
               />
@@ -123,27 +224,27 @@ const GiftBoxScreen = () => {
               </View>
             )}
             <View style={styles.giftInfo}>
-              <Text style={styles.giftBrand}>{gifts[i].brand}</Text>
+              <Text style={styles.giftBrand}>{item.brand}</Text>
               <Text style={styles.giftName} numberOfLines={1}>
-                {gifts[i].itemName}
+                {item.itemName}
               </Text>
               <Text style={[
                 styles.giftStatus,
-                gifts[i].status === '수령 대기' ? styles.statusPending : styles.statusReceived
+                item.status === '수령 대기' ? styles.statusPending : styles.statusReceived
               ]}>
-                {gifts[i].status}
+                {item.status}
               </Text>
             </View>
           </TouchableOpacity>
 
-          {i + 1 < gifts.length && (
+          {nextItem && (
             <TouchableOpacity
               style={styles.giftItem}
-              onPress={() => handleGiftPress(gifts[i + 1])}
+              onPress={() => handleGiftPress(nextItem)}
             >
-              {gifts[i + 1].imageUrl ? (
+              {nextItem.imageUrl ? (
                 <Image
-                  source={{ uri: gifts[i + 1].imageUrl }}
+                  source={{ uri: nextItem.imageUrl }}
                   style={styles.giftImage}
                   resizeMode="cover"
                 />
@@ -153,15 +254,15 @@ const GiftBoxScreen = () => {
                 </View>
               )}
               <View style={styles.giftInfo}>
-                <Text style={styles.giftBrand}>{gifts[i + 1].brand}</Text>
+                <Text style={styles.giftBrand}>{nextItem.brand}</Text>
                 <Text style={styles.giftName} numberOfLines={1}>
-                  {gifts[i + 1].itemName}
+                  {nextItem.itemName}
                 </Text>
                 <Text style={[
                   styles.giftStatus,
-                  gifts[i + 1].status === '수령 대기' ? styles.statusPending : styles.statusReceived
+                  nextItem.status === '수령 대기' ? styles.statusPending : styles.statusReceived
                 ]}>
-                  {gifts[i + 1].status}
+                  {nextItem.status}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -169,7 +270,24 @@ const GiftBoxScreen = () => {
         </View>
       );
     }
-    return rows;
+    return null;
+  };
+
+  const renderFooter = () => {
+    if (!loading) return null;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF8C00" />
+      </View>
+    );
+  };
+
+  const renderEmpty = () => {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>받은 선물이 없습니다.</Text>
+      </View>
+    );
   };
 
   return (
@@ -196,31 +314,26 @@ const GiftBoxScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={gifts}
+        renderItem={renderGiftItem}
+        keyExtractor={(item, index) => item.id?.toString() || index.toString()}
+        contentContainerStyle={[
+          styles.scrollContent,
+          gifts.length === 0 && styles.emptyListContent
+        ]}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.2}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
           />
         }
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const isEndReached = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
-          if (isEndReached) {
-            onEndReached();
-          }
-        }}
-        scrollEventThrottle={400}
-      >
-        {renderGiftItems()}
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FF8C00" />
-          </View>
-        )}
-      </ScrollView>
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmpty}
+        removeClippedSubviews={false}
+      />
     </SafeAreaView>
   );
 };
@@ -366,6 +479,10 @@ const styles = StyleSheet.create({
   },
   statusReceived: {
     color: '#999999',
+  },
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
 });
 

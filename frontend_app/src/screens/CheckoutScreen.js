@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,21 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useWallet } from '../contexts/WalletContext';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+import { API_BASE_URL } from '../config/config';
 
 const CheckoutScreen = ({ navigation, route }) => {
   // CartScreen에서 전달받은 선택된 상품 정보와 총 가격
   const { selectedItems = [], totalPrice = 0 } = route.params || {};
   
+  const { tokenBalance, publicKey } = useWallet();
+  const { authToken } = useAuth();
+
   // 더미 데이터 - 배송 정보
   const shippingAddress = {
     address: '경상북도 진평시 진평길 55-5',
@@ -51,13 +59,27 @@ const CheckoutScreen = ({ navigation, route }) => {
         },
       ];
 
-  // 결제 정보 (CartScreen에서 전달받은 총액 사용)
-  const paymentInfo = {
-    availableWorkCoins: 10.0, // 실제 환경에서는 API로 사용자의 보유 코인 조회
-    productTotal: totalPrice > 0 ? totalPrice : 5.8, // 전달받은 총액 사용 또는 더미 데이터
-    get finalAmount() { return this.availableWorkCoins - this.productTotal; }, // 계산값
-    paymentAmount: totalPrice > 0 ? totalPrice : 1.0, // 결제 금액
-  };
+  const [paymentInfo, setPaymentInfo] = useState({
+    availableWorkCoins: 0,
+    productTotal: 0,
+    finalAmount: 0
+  });
+
+  useEffect(() => {
+    const calculatePaymentInfo = () => {
+      const productTotal = totalPrice > 0 ? totalPrice : 5.8;
+      const availableWorkCoins = publicKey ? tokenBalance : 0;
+      const finalAmount = availableWorkCoins - productTotal;
+
+      setPaymentInfo({
+        availableWorkCoins,
+        productTotal,
+        finalAmount
+      });
+    };
+
+    calculatePaymentInfo();
+  }, [totalPrice, tokenBalance, publicKey]);
 
   // 뒤로 가기
   const handleGoBack = () => {
@@ -65,10 +87,76 @@ const CheckoutScreen = ({ navigation, route }) => {
   };
 
   // 결제하기
-  const handlePayment = () => {
-    // 결제 처리 로직
-    // 실제 환경에서는 여기서 결제 API 호출 등의 로직이 들어갈 수 있습니다
-    navigation.navigate('PaymentComplete');
+  const handlePayment = async () => {
+    try {
+      // 주문 상품 데이터 준비
+      const orderItems = selectedItems.map(item => ({
+        itemId: item.itemId,
+        quantity: item.quantity
+      }));
+
+      // API 요청 데이터 준비
+      const requestData = {
+        items: orderItems,
+        address: `${shippingAddress.address} ${shippingAddress.detail}`
+      };
+
+      console.log('주문 요청 데이터:', requestData);
+
+      // API 호출
+      const response = await axios.post(
+        `${API_BASE_URL}/api/orders/purchase`,
+        requestData,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('API 응답:', response.data);
+
+      // API 응답이 성공 메시지인 경우
+      if (response.data === '주문 처리 성공') {
+        // 주문 완료 화면으로 이동
+        navigation.navigate('OrderComplete', {
+          orderId: '주문 완료', // 임시로 표시
+          paymentAmount: paymentInfo.productTotal // 상품 총액을 결제 금액으로 사용
+        });
+      } else if (response.data && response.data.orderId) {
+        // API가 orderId와 paymentAmount를 반환하는 경우
+        navigation.navigate('OrderComplete', {
+          orderId: response.data.orderId,
+          paymentAmount: response.data.paymentAmount
+        });
+      } else {
+        throw new Error('주문 정보가 올바르지 않습니다.');
+      }
+
+    } catch (error) {
+      console.error('주문 생성 실패:', error.response?.data || error.message);
+      
+      // 에러 메시지 처리
+      let errorMessage = '주문 처리 중 오류가 발생했습니다.';
+      if (error.response?.data) {
+        switch (error.response.data.code) {
+          case 'ITEM_004':
+            errorMessage = '재고가 부족한 상품이 있습니다.';
+            break;
+          case 'ITEM_001':
+            errorMessage = '상품이 존재하지 않습니다.';
+            break;
+          case 'X002':
+            errorMessage = '주문 정보가 올바르지 않습니다.';
+            break;
+          default:
+            errorMessage = error.response.data.message || errorMessage;
+        }
+      }
+
+      Alert.alert('주문 실패', errorMessage);
+    }
   };
 
   return (
@@ -132,7 +220,9 @@ const CheckoutScreen = ({ navigation, route }) => {
           <View style={styles.paymentInfoContainer}>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>보유 WORK</Text>
-              <Text style={styles.paymentValue}>{paymentInfo.availableWorkCoins.toFixed(1)} WORK</Text>
+              <Text style={styles.paymentValue}>
+                {publicKey ? `${paymentInfo.availableWorkCoins.toFixed(1)}` : '지갑 연결 필요'} WORK
+              </Text>
             </View>
             
             <View style={styles.paymentRow}>
@@ -142,7 +232,12 @@ const CheckoutScreen = ({ navigation, route }) => {
             
             <View style={[styles.paymentRow, styles.finalPaymentRow]}>
               <Text style={styles.paymentLabel}>결제 후 WORK</Text>
-              <Text style={styles.paymentValue}>{paymentInfo.finalAmount.toFixed(1)} WORK</Text>
+              <Text style={[
+                styles.paymentValue,
+                (!publicKey || paymentInfo.finalAmount < 0) && styles.insufficientBalance
+              ]}>
+                {publicKey ? `${paymentInfo.finalAmount.toFixed(1)}` : '-'} WORK
+              </Text>
             </View>
           </View>
         </View>
@@ -151,11 +246,15 @@ const CheckoutScreen = ({ navigation, route }) => {
       {/* 결제 버튼 */}
       <View style={styles.paymentButtonContainer}>
         <TouchableOpacity 
-          style={styles.paymentButton}
+          style={[
+            styles.paymentButton,
+            (!publicKey || paymentInfo.finalAmount < 0) && styles.disabledButton
+          ]}
           onPress={handlePayment}
+          disabled={!publicKey || paymentInfo.finalAmount < 0}
         >
           <Text style={styles.paymentButtonText}>
-            결제 {paymentInfo.paymentAmount.toFixed(1)} WORK
+            {!publicKey ? '지갑 연결 필요' : paymentInfo.finalAmount < 0 ? 'WORK 부족' : '결제하기'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -302,6 +401,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  insufficientBalance: {
+    color: '#FF3B30',
+  },
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
   },
 });
 
