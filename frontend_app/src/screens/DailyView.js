@@ -13,10 +13,13 @@ import {
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import ScreenTime from "../utils/ScreenTime";
+import { get } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const { width } = Dimensions.get("window");
 
 const DailyView = () => {
+  const { userId } = useAuth(); // AuthContext에서 userId 가져오기
   const [dailyScreenTime, setDailyScreenTime] = useState(0);
   const [appUsage, setAppUsage] = useState({});
   const [loading, setLoading] = useState(true);
@@ -30,8 +33,128 @@ const DailyView = () => {
   // 그래프 스크롤 참조
   const graphScrollRef = useRef(null);
 
-  // 더미 데이터: 지난 14일간의 채굴 데이터
-  const generateMiningData = () => {
+  // 채굴 데이터 상태
+  const [miningData, setMiningData] = useState([]);
+
+  useEffect(() => {
+    fetchMiningData();
+    fetchScreenTimeData();
+  }, []);
+
+  // API에서 채굴 데이터 가져오기
+  const fetchMiningData = async () => {
+    try {
+      setLoading(true);
+      
+      // 날짜 범위 계산 (오늘 포함 지난 14일)
+const endDate = new Date();
+const startDate = new Date();
+startDate.setDate(endDate.getDate() - 14);
+
+// 날짜를 'yyyy-MM-ddThh:mm:ss' 형식으로 변환
+const formatDate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
+// 형식화된 날짜 문자열로 변환
+const startTime = formatDate(startDate);
+const endTime = formatDate(endDate);
+      
+      // API 호출
+      const response = await get(`/users/${userId}/mining-times?startTime=${startTime}&endTime=${endTime}`);
+      
+      if (response.ok) {
+        const apiData = response.data;
+        
+        // 날짜 범위에 대한 전체 데이터 배열 생성 (데이터가 없는 날짜는 0으로 설정)
+        const miningDataArray = [];
+        const days = ["일", "월", "화", "수", "목", "금", "토"];
+        
+        for (let i = 14; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(endDate.getDate() - i);
+          
+          const day = date.getDate();
+          const month = date.getMonth() + 1;
+          const dayOfWeek = days[date.getDay()];
+          const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+          
+          // API 응답에서 해당 날짜의 데이터 찾기
+          const dayData = apiData.find(item => item.date === formattedDate);
+          const totalTime = dayData ? dayData.totalTime : 0; // 데이터가 없으면 0
+          
+          // 시간과 분 계산
+          const hours = Math.floor(totalTime / 60);
+          const minutes = totalTime % 60;
+          
+          // 표시용 시작/종료 시간 (실제 값은 서버에서 제공하지 않으므로 임의로 생성)
+          const startHour = 9; // 예: 오전 9시 시작으로 가정
+          const startMinute = 0;
+          
+          // 종료 시간 계산
+          const endTime = new Date();
+          endTime.setHours(startHour);
+          endTime.setMinutes(startMinute);
+          endTime.setHours(endTime.getHours() + hours);
+          endTime.setMinutes(endTime.getMinutes() + minutes);
+          
+          const endHour = endTime.getHours();
+          const endMinute = endTime.getMinutes();
+          
+          miningDataArray.push({
+            id: `${month}-${day}`,
+            day: day,
+            month: month,
+            value: totalTime > 0 ? totalTime : 5, // 데이터가 0이면 최소값 5로 설정
+            dayOfWeek: dayOfWeek,
+            isToday: i === 0,
+            miningTime: {
+              hours: hours,
+              minutes: minutes,
+              startTime: `오전 ${startHour}:${startMinute.toString().padStart(2, '0')}`,
+              endTime: `오${endHour >= 12 ? '후' : '전'} ${endHour > 12 ? endHour - 12 : endHour}:${endMinute.toString().padStart(2, '0')}`
+            }
+          });
+        }
+        
+        setMiningData(miningDataArray);
+        
+        // 오늘 데이터를 기본 선택으로 설정
+        const todayData = miningDataArray.find(item => item.isToday);
+        setSelectedDayData(todayData);
+      } else {
+        console.error('채굴 시간 데이터 가져오기 실패:', response.data);
+        
+        // API 오류 시 기본 더미 데이터 생성 (개발 중 테스트용)
+        const dummyData = generateDummyMiningData();
+        setMiningData(dummyData);
+        
+        const todayData = dummyData.find(item => item.isToday);
+        setSelectedDayData(todayData);
+      }
+    } catch (error) {
+      console.error('채굴 시간 데이터 가져오기 오류:', error);
+      
+      // 오류 발생 시 기본 더미 데이터 생성
+      const dummyData = generateDummyMiningData();
+      setMiningData(dummyData);
+      
+      const todayData = dummyData.find(item => item.isToday);
+      setSelectedDayData(todayData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 백업용 더미 데이터 생성 함수 (API 오류 시 사용)
+  const generateDummyMiningData = () => {
     const today = new Date();
     const data = [];
     
@@ -84,16 +207,6 @@ const DailyView = () => {
     
     return data;
   };
-  
-  const [miningData, setMiningData] = useState(generateMiningData());
-
-  useEffect(() => {
-    fetchScreenTimeData();
-    // 초기 선택은 오늘 날짜 데이터
-    const todayData = miningData.find(item => item.isToday);
-    setSelectedDayData(todayData);
-    setLoading(false);
-  }, []);
 
   const fetchScreenTimeData = async () => {
     try {
@@ -111,28 +224,28 @@ const DailyView = () => {
   };
 
   // 특정 날짜 선택 처리
-const handleSelectDay = async (item) => {
-  setSelectedDayData(item);
-  
-  // 선택한 날짜 객체 생성
-  const selectedDateObj = new Date(2025, item.month - 1, item.day);
-  setSelectedDate(selectedDateObj);
-  
-  try {
-    // 선택한 날짜의 스크린타임 데이터 가져오기
-    const screenTimeData = await ScreenTime.getScreenTimeByDate(selectedDateObj);
+  const handleSelectDay = async (item) => {
+    setSelectedDayData(item);
     
-    if (screenTimeData.hasPermission) {
-      setDailyScreenTime(screenTimeData.totalScreenTimeMinutes);
-      // 앱 이름과 아이콘이 포함된 appUsageWithNames 사용
-      setAppUsage(screenTimeData.appUsageWithNames || {});
+    // 선택한 날짜 객체 생성
+    const selectedDateObj = new Date(2025, item.month - 1, item.day);
+    setSelectedDate(selectedDateObj);
+    
+    try {
+      // 선택한 날짜의 스크린타임 데이터 가져오기
+      const screenTimeData = await ScreenTime.getScreenTimeByDate(selectedDateObj);
+      
+      if (screenTimeData.hasPermission) {
+        setDailyScreenTime(screenTimeData.totalScreenTimeMinutes);
+        // 앱 이름과 아이콘이 포함된 appUsageWithNames 사용
+        setAppUsage(screenTimeData.appUsageWithNames || {});
+      }
+    } catch (error) {
+      console.error(`${item.month}월 ${item.day}일 데이터 가져오기 오류:`, error);
+      // 오류 발생 시 빈 데이터 설정
+      setAppUsage({});
     }
-  } catch (error) {
-    console.error(`${item.month}월 ${item.day}일 데이터 가져오기 오류:`, error);
-    // 오류 발생 시 빈 데이터 설정
-    setAppUsage({});
-  }
-};
+  };
 
   // 앱 사용 시간 바 너비 계산
   const getBarWidth = (usageTime) => {
@@ -171,7 +284,11 @@ const handleSelectDay = async (item) => {
 
   // 날짜 막대 그래프 렌더링
   const renderMiningBar = ({ item }) => {
-    const maxValue = Math.max(...miningData.map(d => d.value));
+    // 최대 채굴 시간 계산 (8시간 = 480분)
+    const MAX_MINING_TIME = 480;
+    // 모든 데이터 중 최대값 확인 (API 데이터 기준)
+    const maxValue = Math.max(...miningData.map(d => d.value), MAX_MINING_TIME);
+    // 상대적 높이 계산 (8시간 초과 시에도 표현 가능하도록)
     const barHeight = (item.value / maxValue) * 100;
     const isSelected = selectedDayData && selectedDayData.id === item.id;
     
@@ -251,9 +368,11 @@ const handleSelectDay = async (item) => {
               });
             }}
           />
-          <Text style={styles.minutesLabel}>30분</Text>
+          <Text style={styles.minutesLabel}>480분</Text>
           <View style={styles.chartDivider} />
-          <Text style={styles.updateTimeText}>18:50에 업데이트됨</Text>
+          <Text style={styles.updateTimeText}>
+            {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}에 업데이트됨
+          </Text>
         </View>
       </View>
 
