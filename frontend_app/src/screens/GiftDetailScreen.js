@@ -17,8 +17,10 @@ import { useAuth } from '../contexts/AuthContext';
 
 const GiftDetailScreen = ({ route, navigation }) => {
   const { item } = route.params;
+  const [giftData, setGiftData] = useState(item);
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const { authToken } = useAuth();
+
 
   // 디버깅을 위한 콘솔 출력 추가
   console.log('선물 상세 정보:', {
@@ -32,13 +34,18 @@ const GiftDetailScreen = ({ route, navigation }) => {
     setIsBottomSheetVisible(true);
   };
 
+  const handleDeliverySuccess = () => {
+    // 선물함 화면으로 이동 (새로 렌더링)
+    navigation.replace('GiftBox');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         {/* 상품 이미지 */}
-        {item.imageUrl ? (
+        {giftData.imageUrl ? (
           <Image
-            source={{ uri: item.imageUrl }}
+            source={{ uri: giftData.imageUrl }}
             style={styles.image}
             resizeMode="cover"
           />
@@ -50,18 +57,18 @@ const GiftDetailScreen = ({ route, navigation }) => {
 
         {/* 상품 정보 */}
         <View style={styles.infoContainer}>
-          <Text style={styles.brand}>{item.brand}</Text>
-          <Text style={styles.itemName}>{item.itemName}</Text>
+          <Text style={styles.brand}>{giftData.brand}</Text>
+          <Text style={styles.itemName}>{giftData.itemName}</Text>
           
           <View style={styles.senderInfo}>
             <Text style={styles.senderLabel}>보낸 사람</Text>
-            <Text style={styles.senderName}>{item.senderName}</Text>
+            <Text style={styles.senderName}>{giftData.senderName}</Text>
           </View>
 
           <View style={styles.dateInfo}>
             <Text style={styles.dateLabel}>수령 예정일</Text>
             <Text style={styles.date}>
-              {new Date(item.receivedDate).toLocaleDateString('ko-KR')}
+              {new Date(giftData.receivedDate).toLocaleDateString('ko-KR')}
             </Text>
           </View>
 
@@ -70,24 +77,24 @@ const GiftDetailScreen = ({ route, navigation }) => {
             <Text style={styles.statusLabel}>선물 상태</Text>
             <Text style={[
               styles.statusText,
-              item.status === '수령 대기' ? styles.statusPending : styles.statusReceived
+              giftData.status === '수령 대기' ? styles.statusPending : styles.statusReceived
             ]}>
-              {item.status}
+              {giftData.status}
             </Text>
           </View>
 
           {/* 배송 주소 - 수령 완료 상태일 때만 표시 */}
-          {item.status === '수령 완료' && item.address && (
+          {giftData.status === '수령 완료' && giftData.address && (
             <View style={styles.addressInfo}>
               <Text style={styles.addressLabel}>배송 주소</Text>
-              <Text style={styles.addressText}>{item.address}</Text>
+              <Text style={styles.addressText}>{giftData.address}</Text>
             </View>
           )}
         </View>
       </ScrollView>
 
       {/* 수령하기 버튼 - 수령 대기 상태일 때만 표시 */}
-      {item.status === '수령 대기' && (
+      {giftData.status === '수령 대기' && (
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.receiveButton}
@@ -101,11 +108,9 @@ const GiftDetailScreen = ({ route, navigation }) => {
       {/* 배송지 입력 바텀시트 */}
       <DeliveryAddressBottomSheet
         visible={isBottomSheetVisible}
-        onClose={() => {
-          setIsBottomSheetVisible(false);
-          navigation.goBack(); // 바텀시트가 닫힐 때 이전 화면으로 이동
-        }}
-        orderId={item.orderId}
+        onClose={() => setIsBottomSheetVisible(false)}
+        orderId={giftData.orderId}
+        onSuccess={handleDeliverySuccess}
       />
     </SafeAreaView>
   );

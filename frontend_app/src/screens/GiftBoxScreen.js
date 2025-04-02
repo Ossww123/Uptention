@@ -26,7 +26,7 @@ const GiftBoxScreen = () => {
   const navigation = useNavigation();
   const { authToken } = useAuth();
 
-  const fetchGifts = async (newCursor = null, refresh = false) => {
+  const fetchGifts = async (newCursor = null, refresh = false, targetTab = null) => {
     if (loading || (!hasNextPage && !refresh)) return;
 
     try {
@@ -38,13 +38,27 @@ const GiftBoxScreen = () => {
         params: {
           cursor: newCursor,
           size: 10,
-          type: activeTab
+          type: targetTab || activeTab
         }
       });
 
       const { giftItems, hasNextPage: nextPage, nextCursor } = response.data;
       
-      setGifts(prev => refresh ? giftItems : [...prev, ...giftItems]);
+      if (targetTab) {
+        // 특정 탭의 데이터만 새로고침
+        setGifts(prev => {
+          // 현재 탭의 데이터만 필터링
+          const currentTabGifts = prev.filter(gift => 
+            (targetTab === 'PENDING' && gift.status === '수령 대기') ||
+            (targetTab === 'RECEIVED' && gift.status === '수령 완료')
+          );
+          return refresh ? giftItems : [...currentTabGifts, ...giftItems];
+        });
+      } else {
+        // 현재 탭의 데이터 새로고침
+        setGifts(prev => refresh ? giftItems : [...prev, ...giftItems]);
+      }
+      
       setHasNextPage(nextPage);
       setCursor(nextCursor);
     } catch (error) {
@@ -74,17 +88,25 @@ const GiftBoxScreen = () => {
   };
 
   const handleGiftPress = (item) => {
-    navigation.navigate('GiftDetail', {
+    navigation.navigate('GiftDetail', { 
       item,
-      onRefresh: fetchGifts,
+      refreshKey: Date.now()
     });
   };
 
   const renderGiftItems = () => {
+    if (gifts.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>받은 선물이 없습니다.</Text>
+        </View>
+      );
+    }
+
     const rows = [];
     for (let i = 0; i < gifts.length; i += 2) {
-      const row = (
-        <View key={`row-${i}`} style={styles.row}>
+      rows.push(
+        <View key={i} style={styles.row}>
           <TouchableOpacity
             style={styles.giftItem}
             onPress={() => handleGiftPress(gifts[i])}
@@ -93,24 +115,27 @@ const GiftBoxScreen = () => {
               <Image
                 source={{ uri: gifts[i].imageUrl }}
                 style={styles.giftImage}
-                onError={(error) => console.log('이미지 로딩 실패:', error)}
+                resizeMode="cover"
               />
             ) : (
               <View style={[styles.giftImage, styles.defaultImageContainer]}>
                 <Text style={styles.defaultImageText}>선물 이미지</Text>
               </View>
             )}
-            <View style={styles.itemInfo}>
-              <Text style={styles.storeName}>{gifts[i].brand}</Text>
-              <Text style={styles.itemName}>{gifts[i].itemName}</Text>
-              <View style={styles.bottomInfo}>
-                <Text style={styles.sender}>보낸이 : {gifts[i].senderName}</Text>
-                <Text style={styles.date}>
-                  {new Date(gifts[i].receivedDate).toLocaleDateString('ko-KR')}
-                </Text>
-              </View>
+            <View style={styles.giftInfo}>
+              <Text style={styles.giftBrand}>{gifts[i].brand}</Text>
+              <Text style={styles.giftName} numberOfLines={1}>
+                {gifts[i].itemName}
+              </Text>
+              <Text style={[
+                styles.giftStatus,
+                gifts[i].status === '수령 대기' ? styles.statusPending : styles.statusReceived
+              ]}>
+                {gifts[i].status}
+              </Text>
             </View>
           </TouchableOpacity>
+
           {i + 1 < gifts.length && (
             <TouchableOpacity
               style={styles.giftItem}
@@ -120,28 +145,29 @@ const GiftBoxScreen = () => {
                 <Image
                   source={{ uri: gifts[i + 1].imageUrl }}
                   style={styles.giftImage}
-                  onError={(error) => console.log('이미지 로딩 실패:', error)}
+                  resizeMode="cover"
                 />
               ) : (
                 <View style={[styles.giftImage, styles.defaultImageContainer]}>
                   <Text style={styles.defaultImageText}>선물 이미지</Text>
                 </View>
               )}
-              <View style={styles.itemInfo}>
-                <Text style={styles.storeName}>{gifts[i + 1].brand}</Text>
-                <Text style={styles.itemName}>{gifts[i + 1].itemName}</Text>
-                <View style={styles.bottomInfo}>
-                  <Text style={styles.sender}>보낸이 : {gifts[i + 1].senderName}</Text>
-                  <Text style={styles.date}>
-                    {new Date(gifts[i + 1].receivedDate).toLocaleDateString('ko-KR')}
-                  </Text>
-                </View>
+              <View style={styles.giftInfo}>
+                <Text style={styles.giftBrand}>{gifts[i + 1].brand}</Text>
+                <Text style={styles.giftName} numberOfLines={1}>
+                  {gifts[i + 1].itemName}
+                </Text>
+                <Text style={[
+                  styles.giftStatus,
+                  gifts[i + 1].status === '수령 대기' ? styles.statusPending : styles.statusReceived
+                ]}>
+                  {gifts[i + 1].status}
+                </Text>
               </View>
             </TouchableOpacity>
           )}
         </View>
       );
-      rows.push(row);
     }
     return rows;
   };
@@ -308,7 +334,39 @@ const styles = StyleSheet.create({
   loadingContainer: {
     padding: 20,
     alignItems: 'center'
-  }
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#999999',
+    fontSize: 14,
+  },
+  giftInfo: {
+    padding: 10,
+  },
+  giftBrand: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: 4,
+  },
+  giftName: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  giftStatus: {
+    fontSize: 12,
+    color: '#999999',
+  },
+  statusPending: {
+    color: '#FF8C00',
+  },
+  statusReceived: {
+    color: '#999999',
+  },
 });
 
 export default GiftBoxScreen; 

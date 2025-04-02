@@ -17,7 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const { height } = Dimensions.get('window');
 
-const DeliveryAddressBottomSheet = ({ visible, onClose, orderId }) => {
+const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess }) => {
   const slideAnim = useRef(new Animated.Value(height)).current;
   const [address, setAddress] = useState('');
   const [detailAddress, setDetailAddress] = useState('');
@@ -66,7 +66,10 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId }) => {
       Alert.alert('알림', '배송지가 등록되었습니다.', [
         {
           text: '확인',
-          onPress: onClose
+          onPress: () => {
+            onSuccess && onSuccess();
+            onClose();
+          }
         }
       ]);
     } catch (error) {
