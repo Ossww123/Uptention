@@ -20,7 +20,9 @@ import org.springframework.web.cors.CorsConfiguration;
 
 import com.otoki.uptention.auth.filter.JWTFilter;
 import com.otoki.uptention.auth.filter.LoginFilter;
-import com.otoki.uptention.auth.service.TokenService;
+import com.otoki.uptention.auth.service.AccessTokenService;
+import com.otoki.uptention.domain.user.service.FcmTokenService;
+import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.FilterExceptionHandler;
 
 import lombok.RequiredArgsConstructor;
@@ -30,7 +32,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 	private final JWTFilter jwtFilter;
-	private final TokenService tokenService;
+	private final AccessTokenService accessTokenService;
+	private final FcmTokenService fcmTokenService;
+	private final UserService userService;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -45,7 +49,8 @@ public class SecurityConfig {
 
 	@Bean
 	public LoginFilter loginFilter(AuthenticationManager authenticationManager) {
-		LoginFilter loginFilter = new LoginFilter(authenticationManager, tokenService);
+		LoginFilter loginFilter = new LoginFilter(authenticationManager, accessTokenService, fcmTokenService,
+			userService);
 		loginFilter.setFilterProcessesUrl("/api/login");
 		return loginFilter;
 	}
@@ -67,7 +72,7 @@ public class SecurityConfig {
 
 				// 클라이언트에서 읽을 수 있도록 응답 헤더에 Authorization과 FCM-Token 추가
 				configuration.setExposedHeaders(Arrays.asList("Authorization", "FCM-Token"));
-				
+
 				return configuration;
 			})));
 
