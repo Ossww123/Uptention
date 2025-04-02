@@ -65,8 +65,9 @@ public class SecurityConfig {
 				configuration.setAllowedHeaders(Collections.singletonList("*"));
 				configuration.setMaxAge(3600L);
 
-				configuration.setExposedHeaders(Collections.singletonList("Authorization"));
-
+				// 클라이언트에서 읽을 수 있도록 응답 헤더에 Authorization과 FCM-Token 추가
+				configuration.setExposedHeaders(Arrays.asList("Authorization", "FCM-Token"));
+				
 				return configuration;
 			})));
 
