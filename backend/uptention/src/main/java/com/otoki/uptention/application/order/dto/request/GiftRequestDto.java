@@ -2,15 +2,14 @@ package com.otoki.uptention.application.order.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
 @Schema(description = "선물 요청 DTO")
 public class GiftRequestDto {
 	@NotNull(message = "주문 상품 id는 필수입니다.")

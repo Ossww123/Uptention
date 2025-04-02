@@ -11,6 +11,7 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
+import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.DeliveryAddressResponseDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
@@ -42,10 +43,7 @@ public interface OrderApiDoc {
 			responseCode = "200",
 			description = "주문 성공",
 			content = @Content(
-				schema = @Schema(implementation = String.class),
-				examples = {
-					@ExampleObject(value = "주문 처리 성공")
-				}
+				schema = @Schema(implementation = InitiateOrderResponseDto.class)
 			)
 		),
 		@ApiResponse(
@@ -83,7 +81,7 @@ public interface OrderApiDoc {
 			)
 		)
 	})
-	ResponseEntity<String> purchaseOrder(
+	ResponseEntity<InitiateOrderResponseDto> purchaseOrder(
 		@Parameter(description = "주문 정보", required = true)
 		@Valid @RequestBody OrderRequestDto orderRequestDto);
 
@@ -93,10 +91,7 @@ public interface OrderApiDoc {
 			responseCode = "200",
 			description = "선물 주문 성공",
 			content = @Content(
-				schema = @Schema(implementation = String.class),
-				examples = {
-					@ExampleObject(value = "선물 처리 성공")
-				}
+				schema = @Schema(implementation = InitiateOrderResponseDto.class)
 			)
 		),
 		@ApiResponse(
@@ -138,7 +133,7 @@ public interface OrderApiDoc {
 			)
 		)
 	})
-	ResponseEntity<String> giftOrder(
+	ResponseEntity<InitiateOrderResponseDto> giftOrder(
 		@Parameter(description = "선물 정보", required = true)
 		@Valid @RequestBody GiftRequestDto giftRequestDto);
 

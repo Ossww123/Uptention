@@ -1,15 +1,16 @@
 package com.otoki.uptention.application.order.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Schema(description = "검증된 구매 상품 응답 DTO")
 public class ItemVerificationResponseDto {
 	@Schema(description = "상품 ID", example = "1")

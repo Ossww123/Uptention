@@ -5,13 +5,16 @@ import java.util.List;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-@AllArgsConstructor
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Schema(description = "상품 목록 조회 응답 DTO")
 public class ItemCursorResponseDto {
 	@Schema(description = "상품 목록")

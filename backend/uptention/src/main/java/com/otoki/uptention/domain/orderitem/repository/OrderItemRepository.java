@@ -23,4 +23,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
 		"WHERE oi.order.id IN :orderIds " +
 		"ORDER BY oi.order.createdAt DESC, oi.order.id DESC")
 	List<OrderItem> findAllByOrderIdInWithItemJoin(@Param("orderIds") List<Integer> orderIds);
+
+	List<OrderItem> findByOrderId(Integer orderId);
 }
