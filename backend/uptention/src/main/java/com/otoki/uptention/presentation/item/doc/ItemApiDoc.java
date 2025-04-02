@@ -1,9 +1,15 @@
 package com.otoki.uptention.presentation.item.doc;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.otoki.uptention.application.item.dto.request.ItemCreateRequestDto;
+import com.otoki.uptention.application.item.dto.request.ItemUpdateRequestDto;
 import com.otoki.uptention.application.item.dto.response.ItemCursorResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
 import com.otoki.uptention.domain.item.enums.SortType;
@@ -17,15 +23,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 /**
  * 상품 API 문서화를 위한 인터페이스
  * 실제 구현체는 없으며, Swagger 문서화 목적으로만 사용됩니다.
  */
-@Tag(name = "마켓 상품 API", description = "상품 관리, 조회를 담당하는 컨트롤러")
+@Tag(name = "상품 관리/조회 API", description = "상품 관리, 조회를 담당하는 컨트롤러")
 public interface ItemApiDoc {
 
-	@Operation(summary = "상품 상세 정보", description = "목록에서 선택한 상품의 상세 정보 조회")
+	@Operation(summary = "상품 상세 조회", description = "목록에서 선택한 상품의 상세 정보 조회")
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "상품 상세 정보 조회 성공",
 			content = @Content(schema = @Schema(implementation = ItemResponseDto.class))),
@@ -45,7 +52,7 @@ public interface ItemApiDoc {
 		@Parameter(description = "상품 ID", example = "1")
 		@PathVariable Integer itemId);
 
-	@Operation(summary = "상품 목록 정보", description = "마켓 플레이스에 등록된 모든 상품 목록 조회")
+	@Operation(summary = "상품 목록 조회", description = "마켓 플레이스에 등록된 모든 상품 목록 조회")
 	@ApiResponses(value = {
 		@ApiResponse(responseCode = "200", description = "상품 목록 조회 성공",
 			content = @Content(schema = @Schema(implementation = ItemCursorResponseDto.class))),
@@ -108,4 +115,225 @@ public interface ItemApiDoc {
 
 		@Parameter(description = "정렬 방식")
 		@RequestParam(defaultValue = "SALES") SortType sort);
+
+	@Operation(summary = "상품 등록", description = "관리자는 새로운 상품을 마켓에 등록할 수 있다. <br><br>📌 요청 시 Content-Type 지정이 필수입니다. <br>- 상품 정보(item): <b>application/json</b> <br>- 이미지(images): <b>multipart/form-data</b>")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "상품 등록 성공",
+			content = @Content(
+				mediaType = "application/json",
+				schema = @Schema(type = "string", example = "상품 등록 완료")
+			)),
+		@ApiResponse(responseCode = "400", description = "올바르지 않은 요청 데이터",
+			content = @Content(
+				mediaType = "application/json",
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "유효성 검증 실패",
+						summary = "입력 데이터 유효성 검증 실패",
+						value = "{\"code\":\"INVALID_PARAMETER\",\"message\":\"잘못된 파라미터가 전달되었습니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "이미지 개수 제한",
+						summary = "허용되지 않은 이미지 개수",
+						value = "{\"code\":\"ITEM_010\",\"message\":\"이미지는 1개 이상 3개 이하로 업로드해야 합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "카테고리 ID 필수",
+						summary = "카테고리 ID가 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[categoryId] 카테고리 ID는 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "상품명 필수",
+						summary = "상품명이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[name] 상품명은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "브랜드명 필수",
+						summary = "브랜드명이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[brand] 브랜드명은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "가격 필수",
+						summary = "가격이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[price] 가격은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "상품 설명 필수",
+						summary = "상품 설명이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[detail] 상품 설명은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "수량 필수",
+						summary = "수량이 누락됨",
+						value = "{\"code\":\"X002\",\"message\":\"[quantity] 수량은 필수입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "상품명 길이 초과",
+						summary = "상품명이 최대 길이를 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[name] 상품명은 최대 30자까지 입력 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "브랜드명 길이 초과",
+						summary = "브랜드명이 최대 길이를 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[brand] 브랜드명은 최대 30자까지 입력 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "상품 설명 길이 초과",
+						summary = "상품 설명이 최대 길이를 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[detail] 상품 설명은 최대 255자까지 입력 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "가격 범위 초과",
+						summary = "상품 가격이 허용 범위를 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[price] 가격은 최대 5000원까지 설정 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "가격 최소값 미달",
+						summary = "상품 가격이 최소값 미만임",
+						value = "{\"code\":\"X002\",\"message\":\"[price] 가격은 1원 이상이어야 합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "수량 최소값 미달",
+						summary = "상품 수량이 최소값 미만임",
+						value = "{\"code\":\"X002\",\"message\":\"[quantity] 수량은 1개 이상이어야 합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "수량 최대값 초과",
+						summary = "상품 수량이 최대값을 초과함",
+						value = "{\"code\":\"X002\",\"message\":\"[quantity] 수량은 최대 99개까지 설정 가능합니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "파일이 비어있습니다.",
+						value = "{\"code\":\"FILE_001\",\"message\":\"파일이 비어있습니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "파일 크기가 너무 큽니다.",
+						value = "{\"code\":\"FILE_002\",\"message\":\"파일 크기가 너무 큽니다. 최대 허용 크기는 5MB 바이트 입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "유효하지 않은 파일 이름입니다.",
+						value = "{\"code\":\"FILE_003\",\"message\":\"유효하지 않은 파일 이름입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "허용되지 않은 파일 확장자입니다.",
+						value = "{\"code\":\"FILE_004\",\"message\":\"허용되지 않은 파일 확장자입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "허용되지 않은 MIME 타입입니다.",
+						value = "{\"code\":\"FILE_005\",\"message\":\"허용되지 않은 MIME 타입입니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "파일 헤더 정보를 읽어오지 못했습니다.",
+						value = "{\"code\":\"FILE_006\",\"message\":\"파일 헤더 정보를 읽어오지 못했습니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "파일의 매직 넘버 불일치",
+						value = "{\"code\":\"FILE_007\",\"message\":\"파일의 매직 넘버가 확장자와 일치하지 않습니다.\",\"path\":\"/api/items\"}"
+					)
+				}
+			)),
+		@ApiResponse(responseCode = "404", description = "존재하지 않는 카테고리",
+			content = @Content(
+				mediaType = "application/json",
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "카테고리 존재하지 않음",
+						summary = "요청한 카테고리 ID가 존재하지 않음",
+						value = "{\"code\":\"ITEM_003\",\"message\":\"카테고리가 존재하지 않습니다.\",\"path\":\"/api/items\"}"
+					)
+				}
+			)),
+		@ApiResponse(responseCode = "500", description = "서버 오류",
+			content = @Content(
+				mediaType = "application/json",
+				schema = @Schema(implementation = ErrorResponse.class),
+				examples = {
+					@ExampleObject(
+						name = "파일 업로드 오류",
+						summary = "파일 업로드 처리 중 서버 오류",
+						value = "{\"code\":\"FILE_009\",\"message\":\"파일 업로드 중 오류가 발생했습니다.\",\"path\":\"/api/items\"}"
+					),
+					@ExampleObject(
+						name = "서버 내부 오류",
+						summary = "서버 내부 처리 오류",
+						value = "{\"code\":\"INTERNAL_SERVER_ERROR\",\"message\":\"서버 에러가 발생했습니다.\",\"path\":\"/api/items\"}"
+					)
+				}
+			))
+	})
+	ResponseEntity<String> registerItem(
+		@Parameter(
+			description = "상품 정보",
+			required = true,
+			content = @Content(schema = @Schema(implementation = ItemCreateRequestDto.class))
+		)
+		@Valid @RequestPart("item") ItemCreateRequestDto itemCreateRequestDto,
+
+		@Parameter(
+			description = "상품 이미지 파일들 (1개 이상 3개 이하)",
+			required = true,
+			content = @Content(mediaType = "multipart/form-data")
+		)
+		@RequestPart("images") List<MultipartFile> images);
+
+	@Operation(summary = "상품 수정", description = "관리자는 상품 정보를 수정할 수 있다.")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "상품 수정 성공",
+			content = @Content(mediaType = "application/json", schema = @Schema(type = "string", example = "상품 수정 완료"))),
+		@ApiResponse(responseCode = "400", description = "잘못된 요청 데이터",
+			content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class), examples = {
+				@ExampleObject(
+					name = "변경할 정보 없음",
+					value = "{\"code\":\"ITEM_010\",\"message\":\"변경할 정보가 없습니다.\",\"path\":\"/api/items/1\"}"
+				),
+				@ExampleObject(
+					name = "가격 범위 초과",
+					value = "{\"code\":\"X002\",\"message\":\"[price] 가격은 최대 5000원까지 설정 가능합니다.\",\"path\":\"/api/items/1\"}"
+				),
+				@ExampleObject(
+					name = "상품 설명 길이 초과",
+					value = "{\"code\":\"X002\",\"message\":\"[detail] 상품 설명은 최대 255자까지 입력 가능합니다.\",\"path\":\"/api/items/1\"}"
+				),
+				@ExampleObject(
+					name = "수량 범위 초과",
+					value = "{\"code\":\"X002\",\"message\":\"[quantity] 수량은 최대 99개까지 설정 가능합니다.\",\"path\":\"/api/items/1\"}"
+				)
+			}))
+	})
+	ResponseEntity<String> updateItem(
+		@Parameter(description = "상품 ID", example = "1") @PathVariable Integer itemId,
+		@Valid @io.swagger.v3.oas.annotations.parameters.RequestBody(
+			description = "수정할 상품 정보 (가격, 상세 정보, 수량 중 선택)",
+			content = @Content(schema = @Schema(implementation = ItemUpdateRequestDto.class), examples = {
+				@ExampleObject(
+					name = "수정 정보 예시",
+					value = "{\"price\": 15000, \"detail\": \"수정된 상품 설명\", \"quantity\": 13}"
+				),
+				@ExampleObject(
+					name = "모든 필드 null",
+					value = "{\"price\": null, \"detail\": null, \"quantity\": null}"
+				)
+			})
+		) ItemUpdateRequestDto updateRequest
+	);
+
+	@Operation(summary = "상품 삭제", description = "관리자는 상품을 삭제할 수 있다.")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "상품 삭제 성공",
+			content = @Content(mediaType = "application/json", schema = @Schema(type = "string", example = "상품 삭제 완료"))),
+		@ApiResponse(responseCode = "404", description = "상품을 찾을 수 없음",
+			content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class), examples = {
+				@ExampleObject(
+					name = "삭제된 상품",
+					value = "{\"code\":\"ITEM_007\",\"message\":\"삭제된 상품 입니다.\",\"path\":\"/api/items/1\"}"
+				),
+				@ExampleObject(
+					name = "존재하지 않는 상품",
+					value = "{\"code\":\"ITEM_001\",\"message\":\"상품이 존재하지 않습니다.\",\"path\":\"/api/items/1234\"}"
+				)
+			}))
+	})
+	ResponseEntity<String> deleteItem(@Parameter(description = "상품 ID", example = "1") @PathVariable Integer itemId);
 }

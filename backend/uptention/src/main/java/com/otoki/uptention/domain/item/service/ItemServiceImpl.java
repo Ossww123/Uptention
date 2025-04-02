@@ -22,9 +22,22 @@ public class ItemServiceImpl implements ItemService {
 	private final ItemRepository itemRepository;
 
 	@Override
+	public Item saveItem(Item item) {
+		return itemRepository.save(item);
+	}
+
+	@Override
 	public Item getItemById(Integer id) {
-		return itemRepository.findActiveByIdWithImages(id)
-			.orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND));
+		// 먼저 ID만으로 조회 (status 상관없이)
+		Item item = itemRepository.findById(id)
+			.orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND)); // "상품이 존재하지 않습니다"
+
+		// 그 다음 status 확인
+		if (!item.getStatus()) {
+			throw new CustomException(ErrorCode.ITEM_UNAVAILABLE); // "삭제된 상품입니다"
+		}
+
+		return item;
 	}
 
 	@Override

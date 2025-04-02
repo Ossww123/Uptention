@@ -4,17 +4,23 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.otoki.uptention.application.item.dto.request.ItemCreateRequestDto;
+import com.otoki.uptention.application.item.dto.request.ItemUpdateRequestDto;
 import com.otoki.uptention.application.item.dto.response.ItemCursorResponseDto;
 import com.otoki.uptention.application.item.dto.response.ItemResponseDto;
+import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.category.service.CategoryService;
 import com.otoki.uptention.domain.common.CursorDto;
+import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.enums.SortType;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
+import com.otoki.uptention.global.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +31,100 @@ public class ItemAppServiceImpl implements ItemAppService {
 
 	private final ItemService itemService;
 	private final CategoryService categoryService;
+	private final ImageUploadService imageUploadService;
+
+	/**
+	 * 상품 등록
+	 */
+	@Override
+	@Transactional
+	public Item createItem(ItemCreateRequestDto itemCreateRequestDto, List<MultipartFile> images) {
+		// 이미지 개수 검증 (1~3개)
+		if (images.isEmpty() || images.size() > 3) {
+			throw new CustomException(ErrorCode.ITEM_IMAGE_COUNT_INVALID);
+		}
+
+		// 카테고리 검증
+		Category category = categoryService.getCategoryById(itemCreateRequestDto.getCategoryId());
+
+		// Item 객체 생성
+		Item item = Item.builder()
+			.name(itemCreateRequestDto.getName())
+			.detail(itemCreateRequestDto.getDetail())
+			.price(itemCreateRequestDto.getPrice())
+			.brand(itemCreateRequestDto.getBrand())
+			.quantity(itemCreateRequestDto.getQuantity())
+			.category(category)
+			.build();
+
+		// 이미지 업로드와 Image 객체 생성을 한 번의 순회로 처리
+		List<Image> imageEntities = images.stream()
+			.map(file -> {
+				String imageKey = imageUploadService.uploadImage(file);
+				return Image.builder()
+					.url(imageKey)
+					.item(item)
+					.build();
+			})
+			.toList();
+
+		// 이미지 목록 설정
+		item.getImages().addAll(imageEntities);
+
+		// 아이템 저장 및 반환
+		return itemService.saveItem(item);
+	}
+
+	/**
+	 * 상품 삭제
+	 */
+	@Override
+	@Transactional
+	public void deleteItem(Integer itemId) {
+		Item item = itemService.getItemById(itemId);
+		item.updateStatus(false); // 상품 비활성화
+	}
+
+	/**
+	 * 상품 정보 수정
+	 */
+	@Override
+	@Transactional
+	public void updateItem(Integer itemId, ItemUpdateRequestDto itemUpdateRequestDto) {
+		// 1. 유효한 변경사항 존재 여부 확인
+		// DTO에서 @Min, @Max 등으로 값 유효성은 이미 검증됨
+		boolean isDetailPresent = itemUpdateRequestDto.getDetail() != null;
+		boolean isPricePresent = itemUpdateRequestDto.getPrice() != null;
+		boolean isQuantityPresent = itemUpdateRequestDto.getQuantity() != null;
+
+		// 빈 문자열 추가 검증 (Bean Validation으로는 빈 문자열 검증 불가)
+		if (isDetailPresent && itemUpdateRequestDto.getDetail().trim().isEmpty()) {
+			isDetailPresent = false;
+		}
+
+		boolean hasValidChanges = isPricePresent || isDetailPresent || isQuantityPresent;
+
+		if (!hasValidChanges) {
+			throw new CustomException(ErrorCode.ITEM_UPDATE_NO_CHANGES);
+		}
+
+		// 2. 상품 조회 (존재 여부와 상태 확인)
+		Item item = itemService.getItemById(itemId);
+
+		// 3. 필드별 업데이트
+		if (isPricePresent) {
+			item.updatePrice(itemUpdateRequestDto.getPrice());
+		}
+
+		if (isDetailPresent) {
+			item.updateDetail(itemUpdateRequestDto.getDetail());
+		}
+
+		if (isQuantityPresent) {
+			item.updateQuantity(itemUpdateRequestDto.getQuantity());
+		}
+	}
+
 
 	/**
 	 * 상품의 상세 정보 조회

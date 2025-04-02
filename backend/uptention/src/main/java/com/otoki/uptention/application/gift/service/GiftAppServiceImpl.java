@@ -97,6 +97,7 @@ public class GiftAppServiceImpl implements GiftAppService {
 				.imageUrl(item.getImageUrl())
 				.senderId(item.getSenderId())
 				.senderName(item.getSenderName())
+				.address(item.getAddress())
 				.build())
 			.collect(Collectors.toList());
 	}

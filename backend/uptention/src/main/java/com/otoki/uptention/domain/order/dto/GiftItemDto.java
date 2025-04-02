@@ -20,4 +20,5 @@ public class GiftItemDto {
 	private String imageUrl;
 	private Integer senderId;
 	private String senderName;
+	private String address;
 }

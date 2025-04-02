@@ -49,8 +49,9 @@ public class Item extends TimeStampEntity {
 	@Column(name = "brand", length = 31)
 	private String brand;
 
+	@Builder.Default
 	@Column(name = "status")
-	private Boolean status;
+	private Boolean status = true;
 
 	@Column(name = "quantity")
 	private Integer quantity;
@@ -93,5 +94,25 @@ public class Item extends TimeStampEntity {
 	// 재고 확인 메서드
 	public boolean hasStock(int quantity) {
 		return this.quantity >= quantity;
+	}
+
+	// 상품 상태 업데이트 메서드
+	public void updateStatus(Boolean status) {
+		this.status = status;
+	}
+
+	// 가격 업데이트 메서드
+	public void updatePrice(Integer price) {
+		this.price = price;
+	}
+
+	// 상품 설명 업데이트 메서드
+	public void updateDetail(String detail) {
+		this.detail = detail;
+	}
+
+	// 수량 업데이트 메서드 (기존 증가/감소 메서드와 별개)
+	public void updateQuantity(Integer quantity) {
+		this.quantity = quantity;
 	}
 }

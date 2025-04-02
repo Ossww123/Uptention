@@ -20,8 +20,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.otoki.uptention.application.mining.service.dto.request.FocusModeOnRequestDto;
 import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
+import com.otoki.uptention.domain.company.entity.Company;
 import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
 import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.domain.mining.service.MiningTimeService;
@@ -41,11 +43,25 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 	@Transactional
 	@Override
-	public void focusModeOn(Integer userId) {
+	public void focusModeOn(FocusModeOnRequestDto focusModeOnRequestDto) {
 		User loggedInUser = securityService.getLoggedInUser();
+		Company company = loggedInUser.getCompany();
 
-		if (!loggedInUser.getId().equals(userId)) {
-			throw new CustomException(ErrorCode.FORBIDDEN_USER);
+		Float companyLatitude = company.getLatitude();
+		Float companyLongitude = company.getLongitude();
+
+		float userLatitude = focusModeOnRequestDto.getLatitude();
+		float userLongitude = focusModeOnRequestDto.getLongitude();
+
+		boolean isWithin500m = isWithinRadius(companyLatitude, companyLongitude, userLatitude, userLongitude, 500.0);
+
+		if (!isWithin500m) {
+			throw new CustomException(ErrorCode.FOCUS_MODE_INVALID_RANGE);
+		}
+
+		MiningTime findMiningTime = miningTimeService.findMiningTime(loggedInUser);
+		if (findMiningTime.getEndTime() == null) {
+			throw new CustomException(ErrorCode.FOCUS_MODE_ON_FAILED);
 		}
 
 		// 1. 채굴시간 생성
@@ -61,15 +77,15 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 	@Transactional
 	@Override
-	public void focusModeOff(Integer userId) {
+	public void focusModeOff() {
 		User loggedInUser = securityService.getLoggedInUser();
-
-		if (!loggedInUser.getId().equals(userId)) {
-			throw new CustomException(ErrorCode.FORBIDDEN_USER);
-		}
 
 		// 1. 채굴 시간 조회
 		MiningTime findMiningTime = miningTimeService.findMiningTime(loggedInUser);
+
+		if (findMiningTime.getEndTime() != null) {
+			throw new CustomException(ErrorCode.FOCUS_MODE_OFF_FAILED);
+		}
 
 		// 2. 현재 시간 및 기준 시간 지정
 		LocalDateTime now = LocalDateTime.now();
@@ -127,13 +143,25 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		LocalDateTime startUtc = startKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
 		LocalDateTime endUtc = endKst.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
 
-		return miningTimeService.findMiningTimesByUserIdAndTimeRange(userId, startUtc, endUtc)
-			.stream()
-			.map(miningTime -> MiningTimeResponseDto.builder()
-				.startTime(miningTime.getStartTime())
-				.endTime(miningTime.getEndTime())
-				.totalTime(Duration.between(miningTime.getStartTime(), miningTime.getEndTime()).toMinutes())
-				.build())
+		List<MiningTime> miningTimeList = miningTimeService.findMiningTimesByUserIdAndTimeRange(userId,
+			startUtc, endUtc);
+
+		return miningTimeList.stream()
+			// 각 MiningTime을 KST 날짜와 해당 시간(분)을 계산한 결과로 매핑한 후 그룹화
+			.collect(Collectors.groupingBy(
+				miningTime -> miningTime.getStartTime().plusHours(9).toLocalDate(),
+				Collectors.summingLong(miningTime ->
+					Duration.between(miningTime.getStartTime(), miningTime.getEndTime()).toMinutes()
+				)
+			))
+			// 그룹화된 Map의 엔트리를 MiningTimeResponseDto로 변환
+			.entrySet().stream()
+			.map(entry -> MiningTimeResponseDto.builder()
+				.date(entry.getKey())
+				.totalTime(Math.toIntExact(entry.getValue()))
+				.build()
+			)
+			// 최종 결과를 List로 수집
 			.collect(Collectors.toList());
 	}
 
@@ -192,4 +220,21 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		}
 		return result;
 	}
+
+	private static final double EARTH_RADIUS = 6371000;
+
+	private static boolean isWithinRadius(float lat1, float lon1, float lat2, float lon2, double radiusInMeters) {
+		double dLat = Math.toRadians(lat2 - lat1);
+		double dLon = Math.toRadians(lon2 - lon1);
+
+		double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+			+ Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+			* Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+		double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+		double distance = EARTH_RADIUS * c;
+
+		return distance <= radiusInMeters;
+	}
+
 }

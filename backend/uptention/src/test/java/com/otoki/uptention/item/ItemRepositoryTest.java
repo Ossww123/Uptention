@@ -31,6 +31,26 @@ public class ItemRepositoryTest extends RepositoryTestSupport {
 	@Autowired
 	private ImageRepository imageRepository;
 
+	@DisplayName("상품 ID로 기본 조회 시 상품의 활성화 상태와 관계없이 조회된다")
+	@Test
+	void findById_ReturnsItemRegardlessOfStatus() {
+		// given
+		Category category = createCategory("테스트 카테고리");
+		Item activeItem = createItem("활성화 상품", 10000, 10, true, category);
+		Item inactiveItem = createItem("비활성화 상품", 10000, 10, false, category);
+
+		// when
+		Optional<Item> foundActiveItem = itemRepository.findById(activeItem.getId());
+		Optional<Item> foundInactiveItem = itemRepository.findById(inactiveItem.getId());
+
+		// then
+		assertThat(foundActiveItem).isPresent();
+		assertThat(foundActiveItem.get().getStatus()).isTrue();
+
+		assertThat(foundInactiveItem).isPresent();
+		assertThat(foundInactiveItem.get().getStatus()).isFalse();
+	}
+
 	@DisplayName("상품 ID로 조회할 때 활성화된 상품은 모든 이미지와 함께 조회된다")
 	@Test
 	void findActiveByIdWithImages_Success() {
