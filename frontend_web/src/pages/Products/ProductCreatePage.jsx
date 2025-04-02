@@ -20,10 +20,20 @@ const ProductCreatePage = () => {
   
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  
+  // 이미지 관련 상태
   const [mainImage, setMainImage] = useState(null);
   const [mainImageFile, setMainImageFile] = useState(null);
+  const [mainImageInfo, setMainImageInfo] = useState(null);
   const [subImages, setSubImages] = useState([null, null]);
   const [subImageFiles, setSubImageFiles] = useState([null, null]);
+  const [subImagesInfo, setSubImagesInfo] = useState([null, null]);
+  const [showPreviewDetails, setShowPreviewDetails] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null); // 선택된 이미지 인덱스 (-1: 메인, 0,1: 서브)
+  
+  // 이미지 처리 관련 상수
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+  const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png'];
   
   // 카테고리 목록
   const categories = [
@@ -45,18 +55,120 @@ const ProductCreatePage = () => {
         ? value === '' ? '' : parseInt(value, 10)
         : value
     });
+    
+    // 에러 메시지 초기화
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
+    }
+  };
+  
+  // 이미지 파일 유효성 검사
+  const validateImageFile = (file) => {
+    // 파일 크기 검사
+    if (file.size > MAX_FILE_SIZE) {
+      setErrors(prev => ({
+        ...prev,
+        imageSize: `이미지 크기는 2MB 이하여야 합니다. 현재 크기: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+      }));
+      return false;
+    }
+    
+    // MIME 타입 검사
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      setErrors(prev => ({
+        ...prev,
+        imageType: '지원하는 이미지 형식은 JPG, JPEG, PNG 입니다.'
+      }));
+      return false;
+    }
+    
+    // 에러 메시지 초기화
+    setErrors(prev => ({
+      ...prev,
+      imageSize: '',
+      imageType: ''
+    }));
+    
+    return true;
+  };
+  
+  // 이미지 중앙 크롭 미리보기 생성
+  const createCenteredCropPreview = (imageUrl, callback) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    
+    img.onload = () => {
+      // 원본 이미지 비율 계산
+      const size = Math.min(img.width, img.height);
+      const xOffset = Math.floor((img.width - size) / 2);
+      const yOffset = Math.floor((img.height - size) / 2);
+      
+      // 캔버스 생성 및 설정
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      // 중앙 크롭 그리기
+      ctx.drawImage(
+        img, 
+        xOffset, yOffset, size, size,  // 소스 이미지의 중앙 부분
+        0, 0, size, size               // 캔버스에 그릴 위치와 크기
+      );
+      
+      // 원본 이미지 정보
+      const originalInfo = {
+        width: img.width,
+        height: img.height,
+        cropInfo: {
+          x: xOffset,
+          y: yOffset,
+          size: size
+        }
+      };
+      
+      // 결과 이미지 URL 생성 및 콜백 호출
+      const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.8);
+      callback(croppedImageUrl, originalInfo);
+    };
+    
+    img.onerror = () => {
+      setErrors(prev => ({
+        ...prev,
+        imageFormat: '지원하지 않는 이미지 형식이거나 손상된 이미지입니다.'
+      }));
+      callback(null);
+    };
+    
+    img.src = imageUrl;
   };
   
   const handleMainImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // 이미지 파일 저장
+      // 이미지 파일 유효성 검사
+      if (!validateImageFile(file)) {
+        return;
+      }
+      
+      // 원본 파일 저장
       setMainImageFile(file);
       
-      // 미리보기 URL 생성
+      // 파일 읽기
       const reader = new FileReader();
       reader.onloadend = () => {
-        setMainImage(reader.result);
+        // 중앙 크롭된 미리보기 생성
+        createCenteredCropPreview(reader.result, (croppedImageUrl, originalInfo) => {
+          if (croppedImageUrl) {
+            setMainImage(croppedImageUrl);
+            setMainImageInfo(originalInfo);
+          } else {
+            setMainImageFile(null);
+          }
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -65,17 +177,35 @@ const ProductCreatePage = () => {
   const handleSubImageChange = (e, index) => {
     const file = e.target.files[0];
     if (file) {
-      // 이미지 파일 저장
+      // 이미지 파일 유효성 검사
+      if (!validateImageFile(file)) {
+        return;
+      }
+      
+      // 원본 파일 저장
       const newSubImageFiles = [...subImageFiles];
       newSubImageFiles[index] = file;
       setSubImageFiles(newSubImageFiles);
       
-      // 미리보기 URL 생성
+      // 파일 읽기
       const reader = new FileReader();
       reader.onloadend = () => {
-        const newSubImages = [...subImages];
-        newSubImages[index] = reader.result;
-        setSubImages(newSubImages);
+        // 중앙 크롭된 미리보기 생성
+        createCenteredCropPreview(reader.result, (croppedImageUrl, originalInfo) => {
+          if (croppedImageUrl) {
+            const newSubImages = [...subImages];
+            newSubImages[index] = croppedImageUrl;
+            setSubImages(newSubImages);
+            
+            const newSubImagesInfo = [...subImagesInfo];
+            newSubImagesInfo[index] = originalInfo;
+            setSubImagesInfo(newSubImagesInfo);
+          } else {
+            const newSubImageFiles = [...subImageFiles];
+            newSubImageFiles[index] = null;
+            setSubImageFiles(newSubImageFiles);
+          }
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -110,6 +240,8 @@ const ProductCreatePage = () => {
       newErrors.quantity = '재고량을 입력해 주세요';
     } else if (isNaN(formData.quantity) || formData.quantity < 0 || !Number.isInteger(Number(formData.quantity))) {
       newErrors.quantity = '유효한 재고량을 입력해 주세요 (양의 정수)';
+    } else if (Number(formData.quantity) > 99) {
+      newErrors.quantity = '재고량은 최대 99개까지 입력 가능합니다';
     }
     
     if (!formData.detail || formData.detail.trim() === '') {
@@ -131,6 +263,8 @@ const ProductCreatePage = () => {
     
     // 유효성 검사
     if (!validateForm()) {
+      // 에러 발생 시 페이지 상단으로 스크롤
+      window.scrollTo(0, 0);
       return;
     }
     
@@ -179,8 +313,6 @@ const ProductCreatePage = () => {
           'Content-Type': 'multipart/form-data'
         }
       });
-
-      console.log(response);
       
       // 성공 메시지 표시
       alert('상품이 성공적으로 등록되었습니다.');
@@ -194,15 +326,30 @@ const ProductCreatePage = () => {
         const { status, data } = error.response;
         
         if (status === 400) {
-          alert(`잘못된 요청: ${data.message || '입력 정보를 확인해주세요'}`);
+          setErrors(prev => ({
+            ...prev,
+            form: `잘못된 요청: ${data.message || '입력 정보를 확인해주세요'}`
+          }));
         } else if (status === 404) {
-          alert(`오류: ${data.message || '카테고리가 존재하지 않습니다'}`);
+          setErrors(prev => ({
+            ...prev,
+            form: `오류: ${data.message || '카테고리가 존재하지 않습니다'}`
+          }));
         } else {
-          alert(`상품 등록 실패: ${data.message || '서버 오류가 발생했습니다'}`);
+          setErrors(prev => ({
+            ...prev,
+            form: `상품 등록 실패: ${data.message || '서버 오류가 발생했습니다'}`
+          }));
         }
       } else {
-        alert('상품 등록 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
+        setErrors(prev => ({
+          ...prev,
+          form: '상품 등록 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.'
+        }));
       }
+      
+      // 에러 발생 시 페이지 상단으로 스크롤
+      window.scrollTo(0, 0);
     } finally {
       setLoading(false);
     }
@@ -214,10 +361,48 @@ const ProductCreatePage = () => {
     }
   };
   
+  // 이미지 정보 모달 표시
+  const handleShowImageInfo = (index) => {
+    setSelectedImageIndex(index);
+    setShowPreviewDetails(true);
+  };
+  
+  // 현재 선택된 이미지의 정보 반환
+  const getSelectedImageInfo = () => {
+    if (selectedImageIndex === -1) {
+      return {
+        title: '대표 이미지',
+        info: mainImageInfo
+      };
+    } else if (selectedImageIndex >= 0 && selectedImageIndex < subImagesInfo.length) {
+      return {
+        title: `서브 이미지 ${selectedImageIndex + 1}`,
+        info: subImagesInfo[selectedImageIndex]
+      };
+    }
+    return null;
+  };
+  
   return (
     <div className="product-create">
       <div className="content-card">
         <h1 className="page-title">상품 등록</h1>
+        
+        {/* 폼 전체 에러 메시지 */}
+        {errors.form && (
+          <div className="form-error-message">
+            {errors.form}
+          </div>
+        )}
+        
+        {/* 이미지 관련 에러 메시지 */}
+        {(errors.imageSize || errors.imageType || errors.imageFormat) && (
+          <div className="form-error-message">
+            {errors.imageSize && <p>{errors.imageSize}</p>}
+            {errors.imageType && <p>{errors.imageType}</p>}
+            {errors.imageFormat && <p>{errors.imageFormat}</p>}
+          </div>
+        )}
         
         <div className="sub-title">상품 정보</div>
         
@@ -313,8 +498,9 @@ const ProductCreatePage = () => {
                     onChange={handleChange}
                     className="form-input"
                     min="0"
+                    max="99"
                     step="1"
-                    placeholder="숫자만 입력 (정수)"
+                    placeholder="숫자만 입력 (최대 99개)"
                   />
                   {errors.quantity && <div className="error-message">{errors.quantity}</div>}
                 </td>
@@ -355,15 +541,26 @@ const ProductCreatePage = () => {
                       {mainImage ? (
                         <div className="image-preview">
                           <img src={mainImage} alt="대표 이미지" />
+                          <div className="image-overlay">
+                            <span className="preview-label">미리보기</span>
+                          </div>
                           <button 
                             type="button" 
                             onClick={() => {
                               setMainImage(null);
                               setMainImageFile(null);
+                              setMainImageInfo(null);
                             }}
                             className="remove-image-btn"
                           >
                             ×
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleShowImageInfo(-1)}
+                            className="info-image-btn"
+                          >
+                            <span>i</span>
                           </button>
                         </div>
                       ) : (
@@ -380,6 +577,10 @@ const ProductCreatePage = () => {
                               <svg width="24" height="24" viewBox="0 0 24 24" fill="#FF6B6B">
                                 <path d="M9,3L7.17,5H4C2.9,5 2,5.9 2,7V19C2,20.1 2.9,21 4,21H20C21.1,21 22,20.1 22,19V7C22,5.9 21.1,5 20,5H16.83L15,3H9M12,18C9.24,18 7,15.76 7,13C7,10.24 9.24,8 12,8C14.76,8 17,10.24 17,13C17,15.76 14.76,18 12,18M12,17C14.08,17 15.8,15.28 15.8,13.2C15.8,11.12 14.08,9.4 12,9.4C9.92,9.4 8.2,11.12 8.2,13.2C8.2,15.28 9.92,17 12,17Z" />
                               </svg>
+                            </div>
+                            <div className="upload-text">
+                              <span>클릭하여 이미지 추가</span>
+                              <small>권장: 360x360 (1:1 비율)</small>
                             </div>
                           </label>
                         </>
@@ -405,6 +606,9 @@ const ProductCreatePage = () => {
                           {img ? (
                             <div className="image-preview">
                               <img src={img} alt={`서브 이미지 ${index + 1}`} />
+                              <div className="image-overlay">
+                                <span className="preview-label">미리보기</span>
+                              </div>
                               <button 
                                 type="button" 
                                 onClick={() => {
@@ -415,10 +619,21 @@ const ProductCreatePage = () => {
                                   const newSubImageFiles = [...subImageFiles];
                                   newSubImageFiles[index] = null;
                                   setSubImageFiles(newSubImageFiles);
+                                  
+                                  const newSubImagesInfo = [...subImagesInfo];
+                                  newSubImagesInfo[index] = null;
+                                  setSubImagesInfo(newSubImagesInfo);
                                 }}
                                 className="remove-image-btn"
                               >
                                 ×
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleShowImageInfo(index)}
+                                className="info-image-btn"
+                              >
+                                <span>i</span>
                               </button>
                             </div>
                           ) : (
@@ -436,6 +651,9 @@ const ProductCreatePage = () => {
                                     <path d="M9,3L7.17,5H4C2.9,5 2,5.9 2,7V19C2,20.1 2.9,21 4,21H20C21.1,21 22,20.1 22,19V7C22,5.9 21.1,5 20,5H16.83L15,3H9M12,18C9.24,18 7,15.76 7,13C7,10.24 9.24,8 12,8C14.76,8 17,10.24 17,13C17,15.76 14.76,18 12,18M12,17C14.08,17 15.8,15.28 15.8,13.2C15.8,11.12 14.08,9.4 12,9.4C9.92,9.4 8.2,11.12 8.2,13.2C8.2,15.28 9.92,17 12,17Z" />
                                   </svg>
                                 </div>
+                                <div className="upload-text">
+                                  <small>추가 이미지 {index + 1}</small>
+                                </div>
                               </label>
                             </>
                           )}
@@ -452,6 +670,7 @@ const ProductCreatePage = () => {
                   <ul>
                     <li>정사각형 이미지 사용 (360 X 360 권장)</li>
                     <li>JPG, JPEG, PNG 형식 파일 등록</li>
+                    <li>파일 크기는 2MB 이하여야 합니다</li>
                   </ul>
                 </td>
               </tr>
@@ -476,6 +695,59 @@ const ProductCreatePage = () => {
             </button>
           </div>
         </form>
+        
+        {/* 이미지 크롭 정보 표시 모달 */}
+        {showPreviewDetails && (
+          <div className="preview-details-modal">
+            <div className="preview-details-content">
+              <h3>이미지 크롭 미리보기 정보</h3>
+              
+              {(() => {
+                const selectedImg = getSelectedImageInfo();
+                if (selectedImg && selectedImg.info) {
+                  return (
+                    <div className="details-section">
+                      <h4>{selectedImg.title}</h4>
+                      <div className="image-details">
+                        <p>원본 크기: {selectedImg.info.width} x {selectedImg.info.height}px</p>
+                        <p>크롭 영역: {selectedImg.info.cropInfo.size} x {selectedImg.info.cropInfo.size}px</p>
+                        <p>시작 위치: X={selectedImg.info.cropInfo.x}, Y={selectedImg.info.cropInfo.y}</p>
+                        
+                        {selectedImageIndex === -1 && (
+                          <div className="crop-visualization">
+                            <div 
+                              className="crop-area" 
+                              style={{
+                                left: `${(selectedImg.info.cropInfo.x / selectedImg.info.width) * 100}%`,
+                                top: `${(selectedImg.info.cropInfo.y / selectedImg.info.height) * 100}%`,
+                                width: `${(selectedImg.info.cropInfo.size / selectedImg.info.width) * 100}%`,
+                                height: `${(selectedImg.info.cropInfo.size / selectedImg.info.height) * 100}%`
+                              }}
+                            ></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return <p>이미지 정보가 없습니다.</p>;
+                }
+              })()}
+              
+              <div className="modal-footer">
+                <button 
+                  className="close-modal-btn"
+                  onClick={() => {
+                    setShowPreviewDetails(false);
+                    setSelectedImageIndex(null);
+                  }}
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
