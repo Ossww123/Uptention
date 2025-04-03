@@ -17,6 +17,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { get, post } from '../services/api';
+import PaymentBottomSheet from '../components/PaymentBottomSheet';
+import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 
@@ -29,6 +31,13 @@ const ProductDetailScreen = ({ route, navigation }) => {
   const [showCartMessage, setShowCartMessage] = useState(false);
   const [cartItemCount, setCartItemCount] = useState(0);
   const fadeAnim = useState(new Animated.Value(0))[0]; // useState로 래핑하여 재생성 방지
+  const [showPaymentSheet, setShowPaymentSheet] = useState(false);
+
+  // 더미 배송 정보 (실제로는 사용자 정보에서 가져와야 함)
+  const deliveryInfo = {
+    address: '경상북도 진평시 진평길 55-5',
+    detail: '최강아파트 211호'
+  };
 
   useEffect(() => {
     fetchProductDetails();
@@ -166,9 +175,9 @@ const ProductDetailScreen = ({ route, navigation }) => {
     }
   };
 
-  // 바로 구매 기능
+  // 바로 구매 함수 수정
   const buyNow = () => {
-    Alert.alert('알림', '구매 페이지로 이동합니다.');
+    setShowPaymentSheet(true);
   };
 
   // 선물하기 기능
@@ -378,6 +387,15 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={styles.buttonFilledText}>선물하기</Text>
         </TouchableOpacity>
       </View>
+
+      {/* 결제 바텀시트 수정 */}
+      <PaymentBottomSheet
+        visible={showPaymentSheet}
+        onClose={() => setShowPaymentSheet(false)}
+        deliveryInfo={deliveryInfo}
+        product={product}
+        navigation={navigation}
+      />
     </SafeAreaView>
   );
 };

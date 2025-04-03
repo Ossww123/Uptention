@@ -12,7 +12,8 @@ import {
   getAssociatedTokenAddress, 
   TOKEN_PROGRAM_ID, 
   ASSOCIATED_TOKEN_PROGRAM_ID, 
-  createAssociatedTokenAccountInstruction 
+  createAssociatedTokenAccountInstruction,
+  createTransferCheckedInstruction
 } from '@solana/spl-token';
 
 
@@ -335,7 +336,20 @@ export const WalletProvider = ({ children }) => {
       const transaction = new Transaction();
       
       const senderPubKey = new PublicKey(publicKey);
-      const recipientPubKey = new PublicKey(recipientAddress.trim());
+      let recipientPubKey;
+      
+      try {
+        if (!recipientAddress.match(/^[1-9A-HJ-NP-Za-km-z]+$/)) {
+          throw new Error('올바른 Solana 주소 형식이 아닙니다.');
+        }
+        recipientPubKey = new PublicKey(recipientAddress.trim());
+        
+        if (!PublicKey.isOnCurve(recipientPubKey.toBytes())) {
+          throw new Error('유효하지 않은 Solana 주소입니다.');
+        }
+      } catch (error) {
+        throw new Error('주소 오류: ' + error.message);
+      }
 
       const parsedAmount = parseFloat(tokenAmount);
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
@@ -347,14 +361,21 @@ export const WalletProvider = ({ children }) => {
         YOUR_TOKEN_MINT,
         senderPubKey
       );
+      console.log('보내는 사람 토큰 계정:', senderTokenAccount.toString());
+
       const recipientTokenAccount = await getAssociatedTokenAddress(
         YOUR_TOKEN_MINT,
         recipientPubKey
       );
+      console.log('받는 사람 토큰 계정:', recipientTokenAccount.toString());
+
+      // 받는 사람의 토큰 계정이 있는지 확인
+      const recipientTokenAccountInfo = await DEVNET_CONNECTION.getAccountInfo(recipientTokenAccount);
+      console.log('받는 사람 토큰 계정 정보:', recipientTokenAccountInfo ? '존재함' : '존재하지 않음');
 
       // 받는 사람의 토큰 계정이 없다면 생성
-      const recipientTokenAccountInfo = await DEVNET_CONNECTION.getAccountInfo(recipientTokenAccount);
       if (!recipientTokenAccountInfo) {
+        console.log('받는 사람의 토큰 계정 생성 중...');
         const createAtaInstruction = createAssociatedTokenAccountInstruction(
           senderPubKey,
           recipientTokenAccount,
@@ -369,21 +390,27 @@ export const WalletProvider = ({ children }) => {
       // 토큰 데시멀 정보 가져오기
       const tokenInfo = await DEVNET_CONNECTION.getParsedAccountInfo(YOUR_TOKEN_MINT);
       const decimals = tokenInfo.value?.data.parsed.info.decimals || 0;
-      const actualAmount = Math.floor(parsedAmount * Math.pow(10, decimals));
+      console.log('토큰 데시멀:', decimals);
 
-      // 전송 명령어 생성
-      const transferInstruction = createTransferInstruction(
+      // 전송할 실제 토큰 수량 계산 (데시멀 적용)
+      const actualAmount = Math.floor(parsedAmount * Math.pow(10, decimals));
+      console.log('전송할 토큰 수량:', actualAmount, '(원래 수량:', parsedAmount, ')');
+
+      // TransferChecked 인스트럭션 생성
+      const transferInstruction = createTransferCheckedInstruction(
         senderTokenAccount,
+        YOUR_TOKEN_MINT,
         recipientTokenAccount,
         senderPubKey,
         actualAmount,
-        [],
-        TOKEN_PROGRAM_ID
+        decimals,
+        []
       );
       transaction.add(transferInstruction);
 
-      // 메모 추가
+      // 메모가 있는 경우 메모 명령어 추가
       if (memo?.trim()) {
+        console.log('메모 추가:', memo.trim());
         const memoInstruction = new TransactionInstruction({
           keys: [],
           programId: MEMO_PROGRAM_ID,
@@ -397,7 +424,7 @@ export const WalletProvider = ({ children }) => {
       const { blockhash } = await DEVNET_CONNECTION.getLatestBlockhash('confirmed');
       transaction.recentBlockhash = blockhash;
 
-      // 트랜잭션 직렬화 및 전송
+      // 트랜잭션 직렬화
       const serializedTransaction = transaction.serialize({
         requireAllSignatures: false
       });
@@ -421,7 +448,7 @@ export const WalletProvider = ({ children }) => {
         : 'phantom://ul/v1/signAndSendTransaction';
       
       const url = `${baseUrl}?${params.toString()}`;
-
+      
       console.log('생성된 URL:', {
         baseUrl,
         redirectLink: Linking.createURL("onSignAndSendTransaction"),
