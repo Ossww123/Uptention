@@ -342,6 +342,8 @@ const ProductCreatePage = () => {
         }
       );
 
+      console.log(response);
+
       // 성공 메시지 표시
       alert("상품이 성공적으로 등록되었습니다.");
 

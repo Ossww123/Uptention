@@ -204,7 +204,9 @@ const ProductEditPage = () => {
           }
         }
       );
-      
+
+      console.log(response)
+
       // 성공 처리
       setSuccessMessage("상품이 성공적으로 수정되었습니다.");
       
