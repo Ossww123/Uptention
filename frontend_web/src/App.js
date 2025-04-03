@@ -7,6 +7,7 @@ import UserManagementPage from './pages/Users/UserManagementPage';
 import UserCreatePage from './pages/Users/UserCreatePage';
 import ProductManagementPage from './pages/Products/ProductManagementPage';
 import ProductCreatePage from './pages/Products/ProductCreatePage';
+import ProductEditPage from './pages/Products/ProductEditPage'; // 추가된 부분
 import AppManagementPage from './pages/Apps/AppManagementPage';
 import AdminLayout from './components/layout/AdminLayout/AdminLayout';
 
@@ -74,6 +75,18 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <ProductCreatePage />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* 상품 수정 라우트 추가 */}
+        <Route 
+          path="/admin/products/edit/:itemId" 
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <ProductEditPage />
               </AdminLayout>
             </ProtectedRoute>
           } 
