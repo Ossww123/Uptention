@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,16 +17,13 @@ const CheckoutScreen = ({ navigation, route }) => {
 
   // 라우트 파라미터에서 주소 정보 받아오기
   useEffect(() => {
+    console.log('Checkout Route Params:', route.params);
+    
     if (route.params?.address) {
+      console.log('받은 주소:', route.params.address);
       setAddress(route.params.address);
     }
   }, [route.params]);
-
-  // 더미 데이터 - 배송 정보
-  const shippingAddress = {
-    address: "경상북도 진평시 진평길 55-5",
-    detail: "최강아파트 211호",
-  };
 
   // 주문 상품 (CartScreen에서 전달받은 데이터가 있으면 사용, 없으면 더미 데이터 사용)
   const orderItems =
@@ -78,7 +75,7 @@ const CheckoutScreen = ({ navigation, route }) => {
   // 결제하기
   const handlePayment = () => {
     if (!address || !address.detailAddress) {
-      Alert.alert('배송지 정보', '배송지 주소를 입력해주세요.');
+      Alert.alert("배송지 정보", "배송지 주소를 입력해주세요.");
       return;
     }
     // 결제 처리 로직
