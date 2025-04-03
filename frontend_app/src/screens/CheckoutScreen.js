@@ -13,6 +13,14 @@ import { Ionicons } from '@expo/vector-icons';
 const CheckoutScreen = ({ navigation, route }) => {
   // CartScreen에서 전달받은 선택된 상품 정보와 총 가격
   const { selectedItems = [], totalPrice = 0 } = route.params || {};
+  const [address, setAddress] = useState(null);
+
+  // 라우트 파라미터에서 주소 정보 받아오기
+useEffect(() => {
+  if (route.params?.address) {
+    setAddress(route.params.address);
+  }
+}, [route.params]);
   
   // 더미 데이터 - 배송 정보
   const shippingAddress = {
@@ -84,23 +92,32 @@ const CheckoutScreen = ({ navigation, route }) => {
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* 배송 정보 섹션 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>배송 정보</Text>
-          
-          <View style={styles.addressContainer}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="location-outline" size={24} color="#666" />
-            </View>
-            <View style={styles.addressTextContainer}>
-              <Text style={styles.addressLabel}>배송 주소</Text>
-              <Text style={styles.addressText}>{shippingAddress.address}</Text>
-              <Text style={styles.addressDetail}>{shippingAddress.detail}</Text>
-            </View>
-            <TouchableOpacity style={styles.editButton}>
-              <Ionicons name="chevron-forward" size={24} color="#888" />
-            </TouchableOpacity>
-          </View>
-        </View>
+<View style={styles.section}>
+  <Text style={styles.sectionTitle}>배송 정보</Text>
+  
+  <View style={styles.addressContainer}>
+    <View style={styles.iconContainer}>
+      <Ionicons name="location-outline" size={24} color="#666" />
+    </View>
+    <View style={styles.addressTextContainer}>
+      <Text style={styles.addressLabel}>배송 주소</Text>
+      {address ? (
+        <>
+          <Text style={styles.addressText}>{`[${address.zonecode}] ${address.roadAddress}`}</Text>
+          <Text style={styles.addressDetail}>{address.detailAddress}</Text>
+        </>
+      ) : (
+        <Text style={styles.addressText}>배송지를 입력해주세요</Text>
+      )}
+    </View>
+    <TouchableOpacity 
+      style={styles.editButton}
+      onPress={() => navigation.navigate('AddressSearch')}
+    >
+      <Ionicons name="chevron-forward" size={24} color="#888" />
+    </TouchableOpacity>
+  </View>
+</View>
 
         {/* 주문 상품 섹션 */}
         <View style={styles.section}>
