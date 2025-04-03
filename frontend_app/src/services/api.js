@@ -62,8 +62,18 @@ export const apiRequest = async (endpoint, options = {}) => {
 };
 
 // 편의를 위한 HTTP 메서드별 함수
-export const get = (endpoint, options = {}) => {
-  return apiRequest(endpoint, { ...options, method: 'GET' });
+export const get = async (endpoint, options = {}) => {
+  const fullUrl = `${BASE_URL}${endpoint}`;
+  console.log('GET 요청 URL:', fullUrl);
+  
+  try {
+    const response = await apiRequest(endpoint, { ...options, method: 'GET' });
+    console.log('GET 응답:', response);
+    return response;
+  } catch (error) {
+    console.error('GET 요청 오류:', error, '엔드포인트:', endpoint);
+    throw error;
+  }
 };
 
 export const post = (endpoint, data, options = {}) => {
