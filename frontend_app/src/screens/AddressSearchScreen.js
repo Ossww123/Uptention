@@ -26,7 +26,7 @@ const AddressSearchScreen = ({ navigation, route }) => {
     };
 
     // Checkout 화면으로 이동하면서 주소 전달
-    navigation.navigate('CheckoutScreen', { 
+    navigation.navigate('AddressDetail', { 
       address: completeAddress 
     });
   };

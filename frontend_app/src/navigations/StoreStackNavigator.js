@@ -5,7 +5,8 @@ import StoreScreen from "../screens/StoreScreen";
 import ProductDetailScreen from "../screens/ProductDetailScreen";
 import CartScreen from "../screens/CartScreen";
 import CheckoutScreen from "../screens/CheckoutScreen";
-import AddressSearchScreen from "../screens/AddressSearchScreen"; // 주소 검색 화면 import 추가
+import AddressSearchScreen from "../screens/AddressSearchScreen";
+import AddressDetailScreen from "../screens/AddressDetailScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -55,6 +56,13 @@ const StoreStackNavigator = () => {
         options={{
           presentation: "modal",
           gestureEnabled: true,
+        }}
+      />
+      <Stack.Screen
+        name="AddressDetail"
+        component={AddressDetailScreen}
+        options={{
+          unmountOnBlur: false,
         }}
       />
     </Stack.Navigator>
