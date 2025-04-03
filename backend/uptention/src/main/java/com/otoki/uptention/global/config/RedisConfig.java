@@ -1,18 +1,16 @@
 package com.otoki.uptention.global.config;
 
-import java.time.Duration;
-
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.connection.lettuce.LettucePoolingClientConfiguration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.springframework.integration.redis.util.RedisLockRegistry;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,41 +22,30 @@ public class RedisConfig {
 
 	@Bean
 	public RedisConnectionFactory redisConnectionFactory() {
-		// Redis 서버 설정
-		RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration();
-		redisStandaloneConfiguration.setHostName(redisProperties.getHost());
-		redisStandaloneConfiguration.setPort(redisProperties.getPort());
-
-		// Lettuce 풀 설정
-		LettucePoolingClientConfiguration poolingClientConfig = LettucePoolingClientConfiguration.builder()
-			.commandTimeout(Duration.ofMillis(redisProperties.getTimeout()))
-			.poolConfig(poolConfig())
-			.build();
-
-		return new LettuceConnectionFactory(redisStandaloneConfiguration, poolingClientConfig);
+		RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration(redisProperties.getHost(),
+			redisProperties.getPort());
+		return new LettuceConnectionFactory(redisConfig);
 	}
 
 	@Bean
-	public GenericObjectPoolConfig<?> poolConfig() {
-		GenericObjectPoolConfig<?> config = new GenericObjectPoolConfig<>();
-		config.setMaxTotal(redisProperties.getLettuce().getPool().getMaxActive());
-		config.setMaxIdle(redisProperties.getLettuce().getPool().getMaxIdle());
-		config.setMinIdle(redisProperties.getLettuce().getPool().getMinIdle());
-		config.setMaxWait(Duration.ofMillis(redisProperties.getLettuce().getPool().getMaxWait()));
-		return config;
+	public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+		RedisTemplate<String, Object> template = new RedisTemplate<>();
+		template.setConnectionFactory(connectionFactory);
+		template.setKeySerializer(new StringRedisSerializer());
+		template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+		template.setHashKeySerializer(new StringRedisSerializer());
+		template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+		return template;
 	}
 
 	@Bean
-	public RedisTemplate<String, Object> redisTemplate() {
-		RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-		redisTemplate.setConnectionFactory(redisConnectionFactory());
-		redisTemplate.setKeySerializer(new StringRedisSerializer());
-		redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
-		return redisTemplate;
-	}
-
-	@Bean
-	public RedisLockRegistry redisLockRegistry(RedisConnectionFactory redisConnectionFactory) {
-		return new RedisLockRegistry(redisConnectionFactory, "item-inventory-locks", 30000);
+	public RedissonClient redissonClient() {
+		Config config = new Config();
+		config.useSingleServer()
+			.setAddress("redis://" + redisProperties.getHost() + ":" + redisProperties.getPort())
+			.setConnectionPoolSize(64)
+			.setConnectionMinimumIdleSize(24)
+			.setSubscriptionConnectionPoolSize(50);
+		return Redisson.create(config);
 	}
 }
