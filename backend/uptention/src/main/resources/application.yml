@@ -2,6 +2,13 @@ spring:
   application:
     name: uptention
 
+  # 캐시 설정
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000   # 캐시 TTL (밀리초): 1시간
+      cache-null-values: false
+
   jpa:
     properties:
       hibernate:
