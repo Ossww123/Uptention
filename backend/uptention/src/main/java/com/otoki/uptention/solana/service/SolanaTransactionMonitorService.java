@@ -337,146 +337,130 @@ public class SolanaTransactionMonitorService {
 					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date));
 			}
 
-			// 메모 필드 확인 (주문 ID 확인을 위해)
-			if (result.has("transaction") && result.get("transaction").has("message")) {
-				JsonNode message = result.get("transaction").get("message");
-				if (message.has("instructions")) {
-					JsonNode instructions = message.get("instructions");
-					for (JsonNode instruction : instructions) {
-						// Memo 프로그램 ID 확인 (MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr)
-						if (instruction.has("programId") &&
-							instruction.get("programId")
+			// logMessages에서 주문 ID 추출
+			if (result.has("meta") && result.get("meta").has("logMessages")) {
+				JsonNode logMessages = result.get("meta").get("logMessages");
+				String orderId = null;
+
+				for (JsonNode logMessage : logMessages) {
+					String message = logMessage.asText();
+					log.info("로그 메시지: {}", message);
+
+					// Memo 프로그램 로그에서 주문 ID 추출
+					if (message.contains("Memo") && message.contains("ORDER_")) {
+						// "Program log: Memo (len 9): \"ORDER_155\"" 형식에서 추출
+						int startIdx = message.indexOf("ORDER_");
+						if (startIdx != -1) {
+							int endIdx = message.lastIndexOf("\"");
+							if (endIdx > startIdx) {
+								orderId = message.substring(startIdx, endIdx);
+							} else {
+								orderId = message.substring(startIdx);
+							}
+							log.info("주문 ID 감지: {}", orderId);
+							break;
+						}
+					}
+				}
+
+				// 주문 ID가 추출된 경우에만 처리 진행
+				if (orderId != null && orderId.startsWith("ORDER_")) {
+					String orderIdOnly = orderId.substring(6); // "ORDER_" 제거
+					processOrder(orderIdOnly, blockTime, result, signature);
+				} else {
+					log.info("주문 ID를 찾을 수 없습니다");
+				}
+			} else {
+				log.info("로그 메시지를 찾을 수 없습니다");
+			}
+
+			log.info("================================");
+		} catch (Exception e) {
+			log.error("트랜잭션 상세 정보 로깅 중 오류", e);
+			e.printStackTrace(); // 스택 트레이스 출력
+		}
+	}
+
+	// 주문 처리 로직을 별도 메소드로 분리
+	private void processOrder(String orderId, long blockTime, JsonNode result, String signature) {
+		try {
+			// 1. 주문 ID 유효성 검증
+			Integer orderIdNum = Integer.parseInt(orderId);
+			Order order;
+			try {
+				order = orderService.getOrderById(orderIdNum);
+			} catch (CustomException e) {
+				log.error("주문을 찾을 수 없음: {}", orderId);
+				publishPaymentFailedEvent(orderId, "주문을 찾을 수 없음", signature);
+				return;
+			}
+
+			// 2. 주문 상태 검증
+			if (!OrderStatus.PAYMENT_PENDING.equals(order.getStatus())) {
+				String reason = "유효하지 않은 주문 상태: " + order.getStatus();
+				log.warn("주문 ID({})의 상태가 결제 대기 상태가 아닙니다: {}", orderIdNum, order.getStatus());
+				publishPaymentFailedEvent(orderId, reason, signature);
+				return;
+			}
+
+			// 3. 트랜잭션 시간 검증
+			LocalDateTime orderCreatedAt = order.getCreatedAt();
+			LocalDateTime transactionTime = LocalDateTime.ofInstant(
+				Instant.ofEpochSecond(blockTime), ZoneId.systemDefault());
+
+			if (transactionTime.isBefore(orderCreatedAt)) {
+				String reason = "트랜잭션 시간이 주문 생성 시간보다 이전임";
+				log.warn("트랜잭션 시간이 주문 생성 시간보다 이전입니다: 주문 ID={}", orderIdNum);
+				publishPaymentFailedEvent(orderId, reason, signature);
+				return;
+			}
+
+			// 4. 주문 금액 계산
+			List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(orderIdNum);
+			int orderTotalAmount = orderItems.stream()
+				.mapToInt(OrderItem::getTotalPrice)
+				.sum();
+
+			// 5. 트랜잭션 금액 확인
+			double transactionAmount = 0;
+			if (result.has("meta")) {
+				JsonNode meta = result.get("meta");
+				if (meta.has("preTokenBalances") && meta.has("postTokenBalances")) {
+					JsonNode preBalances = meta.get("preTokenBalances");
+					JsonNode postBalances = meta.get("postTokenBalances");
+
+					for (int i = 0; i < preBalances.size(); i++) {
+						JsonNode pre = preBalances.get(i);
+						if (!pre.has("owner") ||
+							!pre.get("owner")
 								.asText()
-								.equals("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")) {
+								.equals(solanaProperties.getCompanyWallet())) {
+							continue;
+						}
 
-							if (instruction.has("data")) {
-								String memoData = instruction.get("data").asText();
-								log.info("트랜잭션 메모: {}", memoData);
+						// 같은 인덱스의 post 잔액 찾기
+						for (int j = 0; j < postBalances.size(); j++) {
+							JsonNode post = postBalances.get(j);
+							if (post.get("accountIndex").asInt() == pre.get("accountIndex")
+								.asInt()) {
+								// 워크 토큰인지 확인
+								if (pre.has("mint") &&
+									pre.get("mint")
+										.asText()
+										.equals(solanaProperties.getWorkTokenMint())) {
+									double preAmount = Double.parseDouble(
+										pre.path("uiTokenAmount")
+											.path("uiAmountString")
+											.asText("0"));
+									double postAmount = Double.parseDouble(
+										post.path("uiTokenAmount")
+											.path("uiAmountString")
+											.asText("0"));
 
-								// 메모에서 주문 ID 추출 (ORDER_123 형식 예상)
-								if (memoData.startsWith("ORDER_")) {
-									String orderId = memoData.substring(6);
-									log.info("주문 ID 감지: {}", orderId);
-
-									try {
-										// 1. 주문 ID 유효성 검증
-										Integer orderIdNum = Integer.parseInt(orderId);
-										Order order;
-										try {
-											order = orderService.getOrderById(orderIdNum);
-										} catch (CustomException e) {
-											// 주문이 존재하지 않음
-											log.error("주문을 찾을 수 없음: {}", orderId);
-											publishPaymentFailedEvent(orderId, "주문을 찾을 수 없음", signature);
-											continue;
-										}
-
-										// 2. 주문 상태 검증
-										if (!OrderStatus.PAYMENT_PENDING.equals(order.getStatus())) {
-											String reason = "유효하지 않은 주문 상태: " + order.getStatus();
-											log.warn("주문 ID({})의 상태가 결제 대기 상태가 아닙니다: {}",
-												orderIdNum, order.getStatus());
-											publishPaymentFailedEvent(orderId, reason, signature);
-											continue;
-										}
-
-										// 3. 트랜잭션 시간 검증
-										LocalDateTime orderCreatedAt = order.getCreatedAt();
-										LocalDateTime transactionTime = LocalDateTime.ofInstant(
-											Instant.ofEpochSecond(blockTime), ZoneId.systemDefault());
-
-										if (transactionTime.isBefore(orderCreatedAt)) {
-											String reason = "트랜잭션 시간이 주문 생성 시간보다 이전임";
-											log.warn("트랜잭션 시간이 주문 생성 시간보다 이전입니다: 주문 ID={}", orderIdNum);
-											publishPaymentFailedEvent(orderId, reason, signature);
-											continue;
-										}
-
-										// 4. 주문 금액 계산
-										List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(
-											orderIdNum);
-										int orderTotalAmount = orderItems.stream()
-											.mapToInt(OrderItem::getTotalPrice)
-											.sum();
-
-										// 5. 트랜잭션 금액 확인
-										double transactionAmount = 0;
-										if (result.has("meta")) {
-											JsonNode meta = result.get("meta");
-											if (meta.has("preTokenBalances") && meta.has("postTokenBalances")) {
-												JsonNode preBalances = meta.get("preTokenBalances");
-												JsonNode postBalances = meta.get("postTokenBalances");
-
-												for (int i = 0; i < preBalances.size(); i++) {
-													JsonNode pre = preBalances.get(i);
-													if (!pre.has("owner") ||
-														!pre.get("owner")
-															.asText()
-															.equals(solanaProperties.getCompanyWallet())) {
-														continue;
-													}
-
-													// 같은 인덱스의 post 잔액 찾기
-													for (int j = 0; j < postBalances.size(); j++) {
-														JsonNode post = postBalances.get(j);
-														if (post.get("accountIndex").asInt() == pre.get("accountIndex")
-															.asInt()) {
-															// 워크 토큰인지 확인
-															if (pre.has("mint") &&
-																pre.get("mint")
-																	.asText()
-																	.equals(solanaProperties.getWorkTokenMint())) {
-																double preAmount = Double.parseDouble(
-																	pre.path("uiTokenAmount")
-																		.path("uiAmountString")
-																		.asText("0"));
-																double postAmount = Double.parseDouble(
-																	post.path("uiTokenAmount")
-																		.path("uiAmountString")
-																		.asText("0"));
-
-																// 잔액 증가량 계산 (회사 지갑으로 전송된 금액)
-																transactionAmount = postAmount - preAmount;
-																log.info("주문 ID({})의 결제 금액: {}", orderIdNum,
-																	transactionAmount);
-															}
-														}
-													}
-												}
-											}
-										}
-
-										// 6. 금액 검증
-										if (Math.abs(transactionAmount - orderTotalAmount) > 0.001) {
-											String reason = String.format(
-												"금액이 일치하지 않음: 주문=%d, 트랜잭션=%.2f", orderTotalAmount, transactionAmount);
-											log.warn("주문 ID({})의 금액이 일치하지 않습니다: 주문={}, 트랜잭션={}",
-												orderIdNum, orderTotalAmount, transactionAmount);
-											publishPaymentFailedEvent(orderId, reason, signature);
-											continue;
-										}
-
-										// 7. 모든 검증 통과 시 결제 완료 이벤트 발행
-										PaymentSuccessEvent event = PaymentSuccessEvent.builder()
-											.orderId(orderIdNum)
-											.userId(order.getUser().getId())
-											.totalAmount(new BigDecimal(orderTotalAmount))
-											.completedAt(System.currentTimeMillis())
-											.transactionSignature(signature)
-											.build();
-
-										rabbitTemplate.convertAndSend(RabbitMQConfig.PAYMENT_EXCHANGE,
-											RabbitMQConfig.PAYMENT_COMPLETED_KEY, event);
-										log.info("주문 ID({})의 결제 완료 이벤트를 발행했습니다.", orderIdNum);
-
-									} catch (NumberFormatException e) {
-										log.error("유효하지 않은 주문 ID 형식: {}", orderId, e);
-										publishPaymentFailedEvent(orderId, "유효하지 않은 주문 ID 형식", signature);
-									} catch (Exception e) {
-										log.error("결제 처리 중 예상치 못한 오류: {}", orderId, e);
-										publishPaymentFailedEvent(orderId, "결제 처리 중 시스템 오류: " + e.getMessage(),
-											signature);
-									}
+									// 잔액 증가량 계산 (회사 지갑으로 전송된 금액)
+									transactionAmount = postAmount - preAmount;
+									log.info("주문 ID({})의 결제 금액: {}", orderIdNum,
+										transactionAmount);
 								}
 							}
 						}
@@ -484,9 +468,35 @@ public class SolanaTransactionMonitorService {
 				}
 			}
 
-			log.info("================================");
+			// 6. 금액 검증
+			if (Math.abs(transactionAmount - orderTotalAmount) > 0.001) {
+				String reason = String.format(
+					"금액이 일치하지 않음: 주문=%d, 트랜잭션=%.2f", orderTotalAmount, transactionAmount);
+				log.warn("주문 ID({})의 금액이 일치하지 않습니다: 주문={}, 트랜잭션={}",
+					orderIdNum, orderTotalAmount, transactionAmount);
+				publishPaymentFailedEvent(orderId, reason, signature);
+				return;
+			}
+
+			// 7. 모든 검증 통과 시 결제 완료 이벤트 발행
+			PaymentSuccessEvent event = PaymentSuccessEvent.builder()
+				.orderId(orderIdNum)
+				.userId(order.getUser().getId())
+				.totalAmount(new BigDecimal(orderTotalAmount))
+				.completedAt(System.currentTimeMillis())
+				.transactionSignature(signature)
+				.build();
+
+			rabbitTemplate.convertAndSend(RabbitMQConfig.PAYMENT_EXCHANGE,
+				RabbitMQConfig.PAYMENT_COMPLETED_KEY, event);
+			log.info("주문 ID({})의 결제 완료 이벤트를 발행했습니다.", orderIdNum);
+
+		} catch (NumberFormatException e) {
+			log.error("유효하지 않은 주문 ID 형식: {}", orderId, e);
+			publishPaymentFailedEvent(orderId, "유효하지 않은 주문 ID 형식", signature);
 		} catch (Exception e) {
-			log.error("트랜잭션 상세 정보 로깅 중 오류", e);
+			log.error("결제 처리 중 예상치 못한 오류: {}", orderId, e);
+			publishPaymentFailedEvent(orderId, "결제 처리 중 시스템 오류: " + e.getMessage(), signature);
 		}
 	}
 
