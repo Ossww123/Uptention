@@ -204,19 +204,19 @@ public class SolanaTransactionMonitorService {
 	}
 
 	/**
-	 * 로그 구독 방식으로 회사 지갑 관련 로그 구독
+	 * 로그 구독 방식으로 워크토큰 로그 구독
 	 */
 	private void subscribeToLogs() {
 		try {
 			if (webSocketClient != null && webSocketClient.isOpen()) {
-				log.info("회사 지갑 주소 관련 로그 구독 요청 전송: {}", solanaProperties.getCompanyWallet());
+				log.info("워크토큰 민트 주소 로그 구독 요청 전송: {}", solanaProperties.getCompanyWallet());
 
-				// 회사 지갑 주소를 언급하는 모든 로그 구독
-				webSocketClient.logsSubscribe(solanaProperties.getCompanyWallet(), new NotificationEventListener() {
+				// 토큰 민트 주소 로그 구독
+				webSocketClient.logsSubscribe(solanaProperties.getWorkTokenMint(), new NotificationEventListener() {
 					@Override
 					public void onNotificationEvent(Object data) {
 						try {
-							log.info("로그 알림 수신: {}", objectMapper.writeValueAsString(data));
+							log.info("워크토큰 민트 관련 로그 알림 수신: {}", objectMapper.writeValueAsString(data));
 
 							// 로그 데이터에서 트랜잭션 서명 추출
 							@SuppressWarnings("unchecked")
@@ -224,7 +224,7 @@ public class SolanaTransactionMonitorService {
 
 							if (dataMap.containsKey("signature")) {
 								String signature = dataMap.get("signature").toString();
-								log.info("트랜잭션 감지: {}", signature);
+								log.info("워크 토큰 트랜잭션 감지: {}", signature);
 
 								// 이미 처리된 트랜잭션 제외
 								if (processedSignatures.contains(signature)) {
@@ -240,50 +240,12 @@ public class SolanaTransactionMonitorService {
 								}
 							}
 						} catch (Exception e) {
-							log.error("로그 알림 처리 실패", e);
+							log.error("워크 토큰 로그 알림 처리 실패", e);
 						}
 					}
 				});
 
-				log.info("회사 지갑 주소 로그 구독 완료");
-
-				// 토큰 민트 주소가 있는 경우 해당 민트 관련 로그도 구독
-				// if (solanaProperties.getWorkTokenMint() != null && !solanaProperties.getWorkTokenMint().isEmpty()) {
-				// 	webSocketClient.logsSubscribe(solanaProperties.getWorkTokenMint(), new NotificationEventListener() {
-				// 		@Override
-				// 		public void onNotificationEvent(Object data) {
-				// 			try {
-				// 				log.info("워크 토큰 민트 관련 로그 알림 수신: {}", objectMapper.writeValueAsString(data));
-				//
-				// 				// 로그 데이터에서 트랜잭션 서명 추출
-				// 				@SuppressWarnings("unchecked")
-				// 				Map<String, Object> dataMap = (Map<String, Object>)data;
-				//
-				// 				if (dataMap.containsKey("signature")) {
-				// 					String signature = dataMap.get("signature").toString();
-				// 					log.info("워크 토큰 트랜잭션 감지: {}", signature);
-				//
-				// 					// 이미 처리된 트랜잭션 제외
-				// 					if (processedSignatures.contains(signature)) {
-				// 						log.info("이미 처리된 트랜잭션: {}", signature);
-				// 						return;
-				// 					}
-				//
-				// 					// 트랜잭션 세부 정보 조회 및 로깅
-				// 					JsonNode transactionData = fetchTransactionDetails(signature);
-				// 					if (transactionData != null) {
-				// 						logTransactionDetails(transactionData, signature);
-				// 						processedSignatures.add(signature);
-				// 					}
-				// 				}
-				// 			} catch (Exception e) {
-				// 				log.error("워크 토큰 로그 알림 처리 실패", e);
-				// 			}
-				// 		}
-				// 	});
-				//
-				// 	log.info("워크 토큰 민트 로그 구독 완료");
-				// }
+				log.info("워크 토큰 민트 로그 구독 완료");
 			} else {
 				log.warn("WebSocket 연결이 되어있지 않아 구독 요청을 보낼 수 없습니다");
 			}
