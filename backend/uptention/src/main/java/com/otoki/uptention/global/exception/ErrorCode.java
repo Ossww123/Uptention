@@ -81,7 +81,10 @@ public enum ErrorCode {
 	INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "DASHBOARD_001", "종료 시간이 시작 시간보다 이전입니다."),
 
 	// 우수사원 관련 에러
-	TOP_VARIABLE_ERROR(HttpStatus.BAD_REQUEST, "RANK_001", "top 변수가 올바르지 않습니다.");
+	TOP_VARIABLE_ERROR(HttpStatus.BAD_REQUEST, "RANK_001", "top 변수가 올바르지 않습니다."),
+
+	// 스케줄러 관련 에러
+	POINT_SCHEDULER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SCHEDULER_001", "토큰 전송 프로그램을 호출하지 못했습니다.");
 
 	// http 상태 코드
 	private final HttpStatus status;
