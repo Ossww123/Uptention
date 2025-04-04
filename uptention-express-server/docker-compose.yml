@@ -1,0 +1,19 @@
+version: '3.8' # Docker Compose 파일 버전 지정
+
+services:
+  uptention_express_server:
+    build: .
+    # 컨테이너 이름
+    container_name: uptention_express_server
+    ports:
+      # 호스트의 3000번 포트를 컨테이너의 3000번 포트로 매핑
+      - "3000:3000"
+    volumes:
+      # 현재 디렉토리의 소스 코드를 컨테이너의 작업 디렉토리로 마운트
+      - .:/usr/src/app
+
+      # 컨테이너 빌드 시 설치된 node_modules를 유지
+      - /usr/src/app/node_modules
+
+      # 관리자 지갑 연결
+      - ./my-keypair.json:/usr/src/app/my-keypair.json:ro
