@@ -1,5 +1,5 @@
 // src/components/PaymentBottomSheet.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,16 +26,82 @@ const SHOP_WALLET_ADDRESS = '4uDQ7uwEe1iy8R5vYtSvD6vNfcyeTLy8YKyVe44RKR92';
 const PaymentBottomSheet = ({ 
   visible, 
   onClose, 
-  deliveryInfo,
   product,
   navigation
 }) => {
   const [loading, setLoading] = useState(false);
+  const [address, setAddress] = useState(null);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const { tokenBalance, publicKey, sendSPLToken } = useWallet();
   const { authToken } = useAuth();
 
+  // 최근 배송지 조회
+  const fetchRecentAddress = async () => {
+    try {
+      setIsLoadingAddress(true);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/orders/delivery-info`,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.address) {
+        // 주소 문자열을 파싱하여 주소 객체 형식으로 변환
+        const addressParts = response.data.address.split(' ');
+        const zonecode = addressParts[0].replace('[', '').replace(']', '');
+        const roadAddress = addressParts.slice(1, -1).join(' ');
+        const detailAddress = addressParts[addressParts.length - 1];
+
+        setAddress({
+          zonecode,
+          roadAddress,
+          detailAddress,
+          buildingName: ''
+        });
+      }
+    } catch (error) {
+      console.error('최근 배송지 조회 실패:', error);
+    } finally {
+      setIsLoadingAddress(false);
+    }
+  };
+
+  // 컴포넌트 마운트 시 최근 배송지 조회
+  useEffect(() => {
+    // 주소 검색에서 돌아온 경우가 아닐 때만 최근 배송지 조회
+    if (visible && !navigation.getState().routes.some(route => 
+      route.name === 'AddressSearch' || route.name === 'AddressDetail'
+    )) {
+      fetchRecentAddress();
+    }
+  }, [visible]);
+
+  // 라우트 파라미터에서 주소 정보 받아오기
+  useEffect(() => {
+    if (visible) {
+      const currentRoute = navigation.getState().routes[navigation.getState().routes.length - 1];
+      console.log('Current Route Params:', currentRoute.params);
+      
+      // 주소 정보가 있을 때만 주소를 업데이트
+      if (currentRoute.params?.address) {
+        console.log('받은 주소:', currentRoute.params.address);
+        setAddress(currentRoute.params.address);
+        setIsLoadingAddress(false);
+      }
+    }
+  }, [visible, navigation.getState()]);
+
   const handlePayment = async () => {
     try {
+      if (!address) {
+        Alert.alert('주문 실패', '배송 주소를 입력해주세요.');
+        return;
+      }
+
       setLoading(true);
       
       // 1. 주문 검증 API 요청 데이터 준비
@@ -63,7 +129,7 @@ const PaymentBottomSheet = ({
             itemId: product.itemId,
             quantity: 1
           }],
-          address: `${deliveryInfo.address} ${deliveryInfo.detail}`
+          address: `${address.roadAddress} ${address.detailAddress}`
         };
 
         console.log('결제 요청 데이터:', JSON.stringify(purchaseData, null, 2));
@@ -150,6 +216,14 @@ const PaymentBottomSheet = ({
     }
   };
 
+  // 주소 검색 화면으로 이동
+  const handleAddressSearch = () => {
+    navigation.navigate("AddressSearch", {
+      prevScreen: 'PaymentBottomSheet',
+      product: product
+    });
+  };
+
   return (
     <Modal
       transparent
@@ -176,10 +250,25 @@ const PaymentBottomSheet = ({
                 </View>
                 <View style={styles.addressTextContainer}>
                   <Text style={styles.addressLabel}>배송 주소</Text>
-                  <Text style={styles.addressText}>{deliveryInfo.address}</Text>
-                  <Text style={styles.addressDetail}>{deliveryInfo.detail}</Text>
+                  {isLoadingAddress ? (
+                    <Text style={styles.addressText}>배송지 정보를 불러오는 중...</Text>
+                  ) : address ? (
+                    <>
+                      <Text style={styles.addressText}>
+                        [{address.zonecode}] {address.roadAddress}
+                      </Text>
+                      <Text style={styles.addressDetail}>
+                        {address.detailAddress}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.addressText}>배송지를 입력해주세요</Text>
+                  )}
                 </View>
-                <TouchableOpacity style={styles.editButton}>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={handleAddressSearch}
+                >
                   <Ionicons name="chevron-forward" size={24} color="#888" />
                 </TouchableOpacity>
               </View>
@@ -202,7 +291,9 @@ const PaymentBottomSheet = ({
               <View style={styles.paymentInfoContainer}>
                 <View style={styles.paymentRow}>
                   <Text style={styles.paymentLabel}>보유 WORK</Text>
-                  <Text style={styles.paymentValue}>7899.9 WORK</Text>
+                  <Text style={styles.paymentValue}>
+                    {publicKey ? `${tokenBalance} WORK` : '지갑 연결 필요'}
+                  </Text>
                 </View>
                 <View style={styles.paymentRow}>
                   <Text style={styles.paymentLabel}>상품 WORK</Text>
@@ -210,8 +301,11 @@ const PaymentBottomSheet = ({
                 </View>
                 <View style={[styles.paymentRow, styles.finalPaymentRow]}>
                   <Text style={styles.paymentLabel}>결제 후 WORK</Text>
-                  <Text style={styles.paymentValue}>
-                    {(7899.9 - product.price).toFixed(1)} WORK
+                  <Text style={[
+                    styles.paymentValue,
+                    (!publicKey || (tokenBalance - product.price) < 0) && styles.insufficientBalance
+                  ]}>
+                    {publicKey ? `${(tokenBalance - product.price).toFixed(1)} WORK` : '-'}
                   </Text>
                 </View>
               </View>
@@ -221,14 +315,22 @@ const PaymentBottomSheet = ({
           {/* 결제 버튼 */}
           <View style={styles.paymentButtonContainer}>
             <TouchableOpacity 
-              style={styles.paymentButton}
+              style={[
+                styles.paymentButton,
+                (!publicKey || (tokenBalance - product.price) < 0 || !address) && styles.disabledButton
+              ]}
               onPress={handlePayment}
-              disabled={loading}
+              disabled={loading || !publicKey || (tokenBalance - product.price) < 0 || !address}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.paymentButtonText}>결제하기</Text>
+                <Text style={styles.paymentButtonText}>
+                  {!publicKey ? '지갑 연결 필요' : 
+                   !address ? '배송지 입력 필요' :
+                   (tokenBalance - product.price) < 0 ? 'WORK 부족' : 
+                   '결제하기'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -371,6 +473,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  insufficientBalance: {
+    color: '#FF3B30',
+  },
+  disabledButton: {
+    backgroundColor: '#CCCCCC',
   },
 });
 

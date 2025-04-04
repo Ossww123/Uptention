@@ -51,9 +51,18 @@ const ProductDetailScreen = ({ route, navigation }) => {
     // 컴포넌트 언마운트 시 정리
     return () => {
       backHandler.remove();
-      fadeAnim.stopAnimation(); // 애니메이션 중단
+      fadeAnim.stopAnimation();
     };
   }, [productId]);
+
+  // 주소 선택 후 돌아왔을 때 PaymentBottomSheet 표시를 위한 별도의 useEffect
+  useEffect(() => {
+    if (route.params?.showPaymentSheet) {
+      setShowPaymentSheet(true);
+      // showPaymentSheet 파라미터 초기화
+      navigation.setParams({ showPaymentSheet: undefined });
+    }
+  }, [route.params?.showPaymentSheet]);
 
   // 화면에 포커스가 될 때마다 장바구니 개수 업데이트
   useFocusEffect(
@@ -65,6 +74,8 @@ const ProductDetailScreen = ({ route, navigation }) => {
         if (showCartMessage) {
           setShowCartMessage(false);
         }
+        // 포커스 해제 시 바텀시트 닫기
+        setShowPaymentSheet(false);
       };
     }, [])
   );
