@@ -26,6 +26,13 @@ export const apiRequest = async (endpoint, options = {}) => {
       const fcmToken = await FCMUtils.getFCMToken();
       if (fcmToken) {
         headers['FCM-Token'] = fcmToken;
+        
+        // 로그인/로그아웃 요청의 헤더를 콘솔에 출력
+        console.log(`=== ${endpoint} 요청 헤더 ===`);
+        console.log('Authorization:', headers['Authorization'] || '없음');
+        console.log('FCM-Token:', headers['FCM-Token']);
+        console.log('Content-Type:', headers['Content-Type']);
+        console.log('기타 헤더:', JSON.stringify(headers));
       }
     }
     
@@ -33,6 +40,23 @@ export const apiRequest = async (endpoint, options = {}) => {
       ...options,
       headers,
     };
+
+    // 요청 상세 정보 로깅 (로그인/로그아웃인 경우)
+    if (endpoint === '/login' || endpoint === '/logout') {
+      console.log(`요청 URL: ${url}`);
+      console.log(`요청 메서드: ${options.method || 'GET'}`);
+      
+      // 보안을 위해 비밀번호는 로그에서 가림
+      if (endpoint === '/login' && options.body) {
+        const bodyObj = JSON.parse(options.body);
+        console.log('요청 데이터:', {
+          ...bodyObj,
+          password: bodyObj.password ? '********' : undefined
+        });
+      } else if (options.body) {
+        console.log('요청 데이터:', options.body);
+      }
+    }
     
     const response = await fetch(url, config);
     
