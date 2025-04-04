@@ -54,13 +54,13 @@
     <activity android:name=".SystemAppsActivity" android:exported="false" android:label="@string/system_apps_management"/>
 
     <!-- FCM 메시지 수신 서비스 -->
-        <service
+        <!-- <service
             android:name=".java.com.google.firebase.messaging.FirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
-        </service>
+        </service> -->
 
         <!-- <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
