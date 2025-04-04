@@ -212,21 +212,6 @@ const ProfileScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          {/* 상단 지갑 아이콘 */}
-          <View style={styles.headerSection}>
-            <TouchableOpacity 
-              style={styles.walletIconContainer}
-              onPress={publicKey ? handleDisconnectWallet : handleConnectWallet}
-            >
-              <Ionicons 
-                name={publicKey ? "wallet" : "wallet-outline"} 
-                size={25} 
-                color={publicKey ? "#4CAF50" : "black"} 
-              />
-              {publicKey && <View style={styles.connectedDot} />}
-            </TouchableOpacity>
-          </View>
-
           {/* 프로필 섹션 */}
           <View style={styles.profileSection}>
             <TouchableOpacity 
@@ -500,24 +485,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     height: '100%',
     alignItems: 'flex-end',
-  },
-  headerSection: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 20,
-  },
-  walletIconContainer: {
-    padding: 8,
-  },
-  connectedDot: {
-    position: 'absolute',
-    right: -2,
-    top: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4CAF50',
   },
   deleteButton: {
     position: 'absolute',
