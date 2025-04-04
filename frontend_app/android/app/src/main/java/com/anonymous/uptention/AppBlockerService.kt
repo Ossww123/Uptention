@@ -106,7 +106,7 @@ class AppBlockerService : AccessibilityService() {
         
         val dialog = AlertDialog.Builder(this)
             .setTitle("앱 사용 제한")
-            .setMessage("${appName}은(는) 허용되지 않은 앱입니다.")
+            .setMessage("집중모드에선 허용되지 않은 앱입니다.")
             .setPositiveButton("확인") { _, _ ->
                 // 확인 버튼 클릭 시 홈 화면으로 이동
                 val homeIntent = Intent(Intent.ACTION_MAIN)

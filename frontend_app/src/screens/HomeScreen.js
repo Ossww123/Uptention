@@ -256,25 +256,25 @@ const HomeScreen = ({ navigation }) => {
     if (!userId || !authToken) return;
 
     try {
-      // 오늘 날짜의 시작과 끝 시간 설정
+      // UTC 기준으로 오늘 날짜의 시작과 끝 시간 설정
       const now = new Date();
-      const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      const koreaTimezoneOffset = 9 * 60; // 한국 시간대 오프셋 (9시간)
+      const todayStart = new Date(now);
+      todayStart.setUTCHours(0 - 9, 0, 0, 0); // KST 00:00:00을 UTC로 변환
+      
+      const todayEnd = new Date(now);
+      todayEnd.setUTCHours(23 - 9, 59, 59, 999); // KST 23:59:59를 UTC로 변환
 
-      // 날짜를 YYYY-MM-DDTHH:mm:ss 형식으로 변환
+      // UTC 날짜를 YYYY-MM-DDTHH:mm:ss 형식으로 변환
       const formatDate = (date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
-        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+        return date.toISOString().split('.')[0];
       };
       
       console.log('API 요청 파라미터:', {
-        startTime: formatDate(startTime),
-        endTime: formatDate(endTime)
+        startTime: formatDate(todayStart),
+        endTime: formatDate(todayEnd),
+        localTime: new Date().toLocaleString('ko-KR'),
+        utcTime: new Date().toISOString()
       });
 
       // API 호출
@@ -285,8 +285,8 @@ const HomeScreen = ({ navigation }) => {
             'Authorization': `Bearer ${authToken}`
           },
           params: {
-            startTime: formatDate(startTime),
-            endTime: formatDate(endTime)
+            startTime: formatDate(todayStart),
+            endTime: formatDate(todayEnd)
           }
         }
       );

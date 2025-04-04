@@ -12,6 +12,7 @@ const FocusModeScreen = ({ navigation }) => {
   const { time, isActive, startTimer, stopTimer, resetTimer, getTimeInSeconds } = useTimer();
   const [points, setPoints] = useState(0);
   const [appState, setAppState] = useState(AppState.currentState);
+  const [isExiting, setIsExiting] = useState(false);
   const totalSecondsRef = useRef(0);
   const { userId, authToken } = useAuth();
 
@@ -105,6 +106,9 @@ const FocusModeScreen = ({ navigation }) => {
       return;
     }
 
+    setIsExiting(true);
+    stopTimer();  // 타이머 즉시 중지
+
     try {
       const finalSeconds = getTimeInSeconds();
       const finalPoints = Math.floor(finalSeconds / 60);
@@ -181,6 +185,8 @@ const FocusModeScreen = ({ navigation }) => {
         '포커스 모드 종료 중 문제가 발생했습니다. 다시 시도해주세요.',
         [{ text: '확인' }]
       );
+    } finally {
+      setIsExiting(false);
     }
   };
 
@@ -204,10 +210,17 @@ const FocusModeScreen = ({ navigation }) => {
           {/* 종료하기 버튼 */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={[styles.button, styles.exitButton]} 
+              style={[
+                styles.button, 
+                styles.exitButton,
+                isExiting && styles.disabledButton
+              ]} 
               onPress={handleExit}
+              disabled={isExiting}
             >
-              <Text style={styles.buttonText}>종료하기</Text>
+              <Text style={styles.buttonText}>
+                {isExiting ? '종료 중...' : '종료하기'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -271,6 +284,9 @@ const styles = StyleSheet.create({
   },
   exitButton: {
     backgroundColor: '#FF8C00',
+  },
+  disabledButton: {
+    backgroundColor: '#555555',
   },
 });
 

@@ -230,7 +230,7 @@ const ProfileScreen = ({ navigation }) => {
                 {userInfo?.profileImage ? (
                   <>
                     <Image 
-                      source={{ uri: userInfo.profileImage }} 
+                      source={{ uri: `${userInfo.profileImage}?w=100&h=100&t=cover&f=webp` }} 
                       style={styles.profileImage}
                     />
                     {showDeleteButton && (
