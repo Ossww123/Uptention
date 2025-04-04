@@ -11,7 +11,6 @@ import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.order.entity.Order;
 import com.otoki.uptention.domain.order.enums.OrderStatus;
 import com.otoki.uptention.domain.order.service.OrderService;
-import com.otoki.uptention.domain.orderitem.entity.OrderItem;
 import com.otoki.uptention.domain.orderitem.service.OrderItemService;
 import com.otoki.uptention.solana.service.PaymentProcessService;
 
@@ -50,24 +49,6 @@ public class PaymentScheduler {
 			// 30분(설정된 타임아웃) 초과 시 처리
 			if (orderAgeMinutes >= PAYMENT_TIMEOUT_MINUTES) {
 				log.info("주문 ID({})의 결제 시간 초과 (경과 시간: {}분)", order.getId(), orderAgeMinutes);
-
-				// 주문 항목 조회 및 재고 예약 취소 로직 추가
-				List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(order.getId());
-				for (OrderItem orderItem : orderItems) {
-					try {
-						// Redis에서 재고 예약 취소
-						boolean canceled = inventoryService.cancelReservation(
-							orderItem.getItem().getId(), orderItem.getQuantity());
-
-						if (!canceled) {
-							log.warn("주문 ID({})의 상품 ID({}) 재고 예약 취소에 실패했습니다.",
-								order.getId(), orderItem.getItem().getId());
-						}
-					} catch (Exception e) {
-						log.error("재고 예약 취소 중 오류 발생: 주문 ID={}, 상품 ID={}",
-							order.getId(), orderItem.getItem().getId(), e);
-					}
-				}
 				// 결제 실패 처리
 				String orderId = String.valueOf(order.getId());
 				boolean success = paymentProcessService.processPaymentFailure(orderId,
