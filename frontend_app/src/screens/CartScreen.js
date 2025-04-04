@@ -224,8 +224,14 @@ const CartScreen = ({ navigation }) => {
           (total, item) => total + item.totalPrice, 0
         );
         
+        // cartId를 포함한 선택된 아이템 정보 전달
+        const itemsWithCartId = selectedItems.map(item => ({
+          ...data.find(verifiedItem => verifiedItem.itemId === item.itemId),
+          cartId: item.cartId
+        }));
+        
         navigation.navigate("CheckoutScreen", {
-          selectedItems: data, // API에서 검증된 상품 정보를 사용
+          selectedItems: itemsWithCartId,
           totalPrice: totalPrice
         });
       } else {
