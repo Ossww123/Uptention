@@ -18,47 +18,112 @@ import { post } from '../services/api';
 
 const CheckoutScreen = ({ navigation, route }) => {
   // CartScreen에서 전달받은 선택된 상품 정보와 총 가격
-  const { selectedItems = [], totalPrice = 0 } = route.params || {};
+  const { selectedItems: initialItems = [], totalPrice: initialPrice = 0 } = route.params || {};
+  const [selectedItems, setSelectedItems] = useState(initialItems);
+  const [totalPrice, setTotalPrice] = useState(initialPrice);
+  const [address, setAddress] = useState(null);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   
   const { tokenBalance, publicKey, sendSPLToken } = useWallet();
   const { authToken } = useAuth();
 
-  // 더미 데이터 - 배송 정보
-  const shippingAddress = {
-    address: '경상북도 진평시 진평길 55-5',
-    detail: '최강아파트 211호',
+  // 최근 배송지 조회
+  const fetchRecentAddress = async () => {
+    try {
+      setIsLoadingAddress(true);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/orders/delivery-info`,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.address) {
+        // 주소 문자열을 파싱하여 주소 객체 형식으로 변환
+        const addressParts = response.data.address.split(' ');
+        const zonecode = addressParts[0].replace('[', '').replace(']', '');
+        const roadAddress = addressParts.slice(1, -1).join(' ');
+        const detailAddress = addressParts[addressParts.length - 1];
+
+        setAddress({
+          zonecode,
+          roadAddress,
+          detailAddress,
+          buildingName: ''
+        });
+      }
+    } catch (error) {
+      console.error('최근 배송지 조회 실패:', error);
+    } finally {
+      setIsLoadingAddress(false);
+    }
   };
 
+  // 컴포넌트 마운트 시 최근 배송지 조회
+  useEffect(() => {
+    // 주소 검색에서 돌아온 경우가 아닐 때만 최근 배송지 조회
+    if (!route.params?.address) {
+      fetchRecentAddress();
+    }
+  }, []);
+
+  // 라우트 파라미터에서 주소 정보 받아오기
+  useEffect(() => {
+    console.log('Checkout Route Params:', route.params);
+    
+    // 주소 정보가 있을 때만 주소를 업데이트
+    if (route.params?.address) {
+      console.log('받은 주소:', route.params.address);
+      setAddress(route.params.address);
+      setIsLoadingAddress(false);  // 주소 검색에서 돌아왔을 때 로딩 상태 해제
+      
+      // 주소 검색에서 돌아올 때 이전 상품 정보 복원
+      if (route.params.selectedItems) {
+        setSelectedItems(route.params.selectedItems);
+        setTotalPrice(route.params.totalPrice);
+      }
+    }
+    // 처음 화면 진입 시 상품 정보 설정
+    else if (route.params?.selectedItems) {
+      setSelectedItems(route.params.selectedItems);
+      setTotalPrice(route.params.totalPrice);
+    }
+  }, [route.params]);
+
   // 주문 상품 (CartScreen에서 전달받은 데이터가 있으면 사용, 없으면 더미 데이터 사용)
-  const orderItems = selectedItems.length > 0
-    ? selectedItems.map(item => ({
-        id: item.cartId || item.itemId,
-        brand: item.brand,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        image: item.thumbnail 
-          ? { uri: item.thumbnail } 
-          : require('../../assets/product-placeholder.png'),
-      }))
-    : [
-        {
-          id: '1',
-          brand: '브랜드',
-          name: '상품 이름',
-          price: 2.9,
-          quantity: 1,
-          image: require('../../assets/product-placeholder.png'),
-        },
-        {
-          id: '2',
-          brand: '브랜드',
-          name: '상품 이름',
-          price: 2.9,
-          quantity: 1,
-          image: require('../../assets/product-placeholder.png'),
-        },
-      ];
+  const orderItems =
+    selectedItems.length > 0
+      ? selectedItems.map((item) => ({
+          id: item.cartId || item.itemId,
+          brand: item.brand,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.thumbnail
+            ? { uri: item.thumbnail }
+            : require("../../assets/product-placeholder.png"),
+        }))
+      : [
+          {
+            id: "1",
+            brand: "브랜드",
+            name: "상품 이름",
+            price: 2.9,
+            quantity: 1,
+            image: require("../../assets/product-placeholder.png"),
+          },
+          {
+            id: "2",
+            brand: "브랜드",
+            name: "상품 이름",
+            price: 2.9,
+            quantity: 1,
+            image: require("../../assets/product-placeholder.png"),
+          },
+        ];
 
   const [paymentInfo, setPaymentInfo] = useState({
     availableWorkCoins: 0,
@@ -98,7 +163,7 @@ const CheckoutScreen = ({ navigation, route }) => {
         return;
       }
 
-      if (!shippingAddress.address || !shippingAddress.detail) {
+      if (!address) {
         Alert.alert('주문 실패', '배송 주소를 입력해주세요.');
         return;
       }
@@ -129,7 +194,7 @@ const CheckoutScreen = ({ navigation, route }) => {
               itemId: item.itemId,
               quantity: item.quantity
             })),
-            address: `${shippingAddress.address} ${shippingAddress.detail}`
+            address: `${address.roadAddress} ${address.detailAddress}`
           };
 
           console.log('주문 요청 데이터:', JSON.stringify(requestData, null, 2));
@@ -270,6 +335,14 @@ const CheckoutScreen = ({ navigation, route }) => {
     }
   };
 
+  // 주소 검색 화면으로 이동
+  const handleAddressSearch = () => {
+    navigation.navigate("AddressSearch", {
+      prevItems: selectedItems,
+      prevTotalPrice: totalPrice
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 헤더 */}
@@ -293,17 +366,32 @@ const CheckoutScreen = ({ navigation, route }) => {
         {/* 배송 정보 섹션 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>배송 정보</Text>
-          
+
           <View style={styles.addressContainer}>
             <View style={styles.iconContainer}>
               <Ionicons name="location-outline" size={24} color="#666" />
             </View>
             <View style={styles.addressTextContainer}>
               <Text style={styles.addressLabel}>배송 주소</Text>
-              <Text style={styles.addressText}>{shippingAddress.address}</Text>
-              <Text style={styles.addressDetail}>{shippingAddress.detail}</Text>
+              {isLoadingAddress ? (
+                <Text style={styles.addressText}>배송지 정보를 불러오는 중...</Text>
+              ) : address ? (
+                <>
+                  <Text style={styles.addressText}>
+                    [{address.zonecode}] {address.roadAddress}
+                  </Text>
+                  <Text style={styles.addressDetail}>
+                    {address.detailAddress}
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.addressText}>배송지를 입력해주세요</Text>
+              )}
             </View>
-            <TouchableOpacity style={styles.editButton}>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={handleAddressSearch}
+            >
               <Ionicons name="chevron-forward" size={24} color="#888" />
             </TouchableOpacity>
           </View>
@@ -312,13 +400,13 @@ const CheckoutScreen = ({ navigation, route }) => {
         {/* 주문 상품 섹션 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>주문 상품</Text>
-          
+
           {orderItems.map((item, index) => (
-            <View 
-              key={item.id} 
+            <View
+              key={item.id}
               style={[
-                styles.productItem, 
-                index < orderItems.length - 1 && styles.productItemWithBorder
+                styles.productItem,
+                index < orderItems.length - 1 && styles.productItemWithBorder,
               ]}
             >
               <Image source={item.image} style={styles.productImage} />
@@ -335,7 +423,7 @@ const CheckoutScreen = ({ navigation, route }) => {
         {/* 결제 금액 섹션 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>결제 금액</Text>
-          
+
           <View style={styles.paymentInfoContainer}>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>보유 WORK</Text>
@@ -343,12 +431,14 @@ const CheckoutScreen = ({ navigation, route }) => {
                 {publicKey ? `${paymentInfo.availableWorkCoins.toFixed(1)}` : '지갑 연결 필요'} WORK
               </Text>
             </View>
-            
+
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>상품 WORK</Text>
-              <Text style={styles.paymentValue}>{paymentInfo.productTotal.toFixed(1)} WORK</Text>
+              <Text style={styles.paymentValue}>
+                {paymentInfo.productTotal.toFixed(1)} WORK
+              </Text>
             </View>
-            
+
             <View style={[styles.paymentRow, styles.finalPaymentRow]}>
               <Text style={styles.paymentLabel}>결제 후 WORK</Text>
               <Text style={[
@@ -384,12 +474,12 @@ const CheckoutScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 15,
     paddingVertical: 10,
   },
@@ -398,7 +488,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   placeholder: {
     width: 30,
@@ -413,12 +503,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 15,
   },
   addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   iconContainer: {
     marginRight: 10,
@@ -429,97 +519,97 @@ const styles = StyleSheet.create({
   },
   addressLabel: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 5,
   },
   addressText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 3,
   },
   addressDetail: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   editButton: {
     padding: 5,
   },
   productItem: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: 15,
   },
   productItemWithBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   productImage: {
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: "#F5F5F5",
     marginRight: 15,
   },
   productInfo: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   productBrand: {
     fontSize: 14,
-    color: '#888',
+    color: "#888",
   },
   productName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginVertical: 4,
   },
   productQuantity: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 4,
   },
   productPrice: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   paymentInfoContainer: {
-    backgroundColor: '#F8F8F8',
+    backgroundColor: "#F8F8F8",
     borderRadius: 12,
     padding: 15,
   },
   paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 10,
   },
   finalPaymentRow: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: "#E5E5E5",
     marginTop: 10,
     paddingTop: 15,
   },
   paymentLabel: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   paymentValue: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   paymentButtonContainer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: "#F0F0F0",
   },
   paymentButton: {
-    backgroundColor: '#FF8C00',
+    backgroundColor: "#FF8C00",
     borderRadius: 50,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   paymentButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   insufficientBalance: {
     color: '#FF3B30',

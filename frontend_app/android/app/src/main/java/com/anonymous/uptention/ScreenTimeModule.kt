@@ -158,28 +158,128 @@ fun getMultipleAppIcons(packageNames: ReadableArray, promise: Promise) {
 }
 
     @ReactMethod
-    fun getDailyScreenTime(promise: Promise) {
-        val context = reactApplicationContext
-        try {
-            if (!hasUsageStatsPermissionInternal()) {
-                val map = Arguments.createMap()
-                map.putBoolean("hasPermission", false)
-                promise.resolve(map)
-                return
+fun getDailyScreenTime(dateOffset: Int = 0, promise: Promise) {
+    val context = reactApplicationContext
+    try {
+        if (!hasUsageStatsPermissionInternal()) {
+            val map = Arguments.createMap()
+            map.putBoolean("hasPermission", false)
+            promise.resolve(map)
+            return
+        }
+
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val calendar = Calendar.getInstance()
+        
+        // 기준 날짜 설정 (오늘부터 dateOffset일 전)
+        if (dateOffset > 0) {
+            calendar.add(Calendar.DAY_OF_YEAR, -dateOffset)
+        }
+        
+        // 해당 날짜의 끝 시간 설정 (23:59:59)
+        val endTime = calendar.apply {
+            set(Calendar.HOUR_OF_DAY, 23)
+            set(Calendar.MINUTE, 59)
+            set(Calendar.SECOND, 59)
+            set(Calendar.MILLISECOND, 999)
+        }.timeInMillis
+        
+        // 해당 날짜의 시작 시간 설정 (00:00:00)
+        val startTime = calendar.apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        val appUsageMap = HashMap<String, Long>()
+        var totalScreenTime = 0L
+
+        val usageEvents = usageStatsManager.queryEvents(startTime, endTime)
+        val event = UsageEvents.Event()
+        val eventMap = HashMap<String, Long>()
+
+        while (usageEvents.hasNextEvent()) {
+            usageEvents.getNextEvent(event)
+            val packageName = event.packageName
+            
+            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
+                eventMap[packageName] = event.timeStamp
+            } else if (event.eventType == UsageEvents.Event.ACTIVITY_PAUSED) {
+                if (eventMap.containsKey(packageName)) {
+                    val startTimeStamp = eventMap[packageName] ?: 0
+                    val timeUsed = event.timeStamp - startTimeStamp
+                    
+                    if (timeUsed > 0) {
+                        appUsageMap[packageName] = (appUsageMap[packageName] ?: 0) + timeUsed
+                        totalScreenTime += timeUsed
+                    }
+                    eventMap.remove(packageName)
+                }
             }
+        }
 
-            val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            val calendar = Calendar.getInstance()
-            val endTime = calendar.timeInMillis
-            calendar.add(Calendar.DAY_OF_YEAR, -1) // 하루 전
-            val startTime = calendar.timeInMillis
+        // 분 단위로 변환 (밀리초를 60000으로 나눔)
+        val totalScreenTimeMinutes = totalScreenTime / 60000
 
-            val appUsageMap = HashMap<String, Long>()
-            var totalScreenTime = 0L
+        val result = Arguments.createMap()
+        result.putBoolean("hasPermission", true)
+        result.putDouble("totalScreenTimeMinutes", totalScreenTimeMinutes.toDouble())
+        result.putInt("dateOffset", dateOffset) // 요청한 날짜 오프셋 정보 추가
+        
+        // 앱별 사용 시간 추가
+        val appUsage = Arguments.createMap()
+        for ((packageName, timeUsed) in appUsageMap) {
+            appUsage.putDouble(packageName, (timeUsed / 60000).toDouble())
+        }
+        result.putMap("appUsage", appUsage)
 
-            val usageEvents = usageStatsManager.queryEvents(startTime, endTime)
+        promise.resolve(result)
+    } catch (e: Exception) {
+        promise.reject("ERROR", e.message)
+    }
+}
+
+@ReactMethod
+fun getWeeklyScreenTime(daysToFetch: Int = 14, promise: Promise) {
+    val context = reactApplicationContext
+    try {
+        if (!hasUsageStatsPermissionInternal()) {
+            val map = Arguments.createMap()
+            map.putBoolean("hasPermission", false)
+            promise.resolve(map)
+            return
+        }
+
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val calendar = Calendar.getInstance()
+        val endTime = calendar.timeInMillis
+        calendar.add(Calendar.DAY_OF_YEAR, -daysToFetch) // daysToFetch일 전 (기본값 14일)
+        val startTime = calendar.timeInMillis
+
+        // 일별 데이터를 저장할 맵
+        val dailyScreenTime = Arguments.createMap()
+        
+        // 설정된 일수만큼 데이터 계산
+        for (day in 0 until daysToFetch) {
+            calendar.timeInMillis = endTime
+            calendar.add(Calendar.DAY_OF_YEAR, -day)
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            val dayStart = calendar.timeInMillis
+            
+            calendar.set(Calendar.HOUR_OF_DAY, 23)
+            calendar.set(Calendar.MINUTE, 59)
+            calendar.set(Calendar.SECOND, 59)
+            calendar.set(Calendar.MILLISECOND, 999)
+            val dayEnd = calendar.timeInMillis
+            
+            val usageEvents = usageStatsManager.queryEvents(dayStart, dayEnd)
             val event = UsageEvents.Event()
             val eventMap = HashMap<String, Long>()
+            var dayTotalTime = 0L
 
             while (usageEvents.hasNextEvent()) {
                 usageEvents.getNextEvent(event)
@@ -193,109 +293,29 @@ fun getMultipleAppIcons(packageNames: ReadableArray, promise: Promise) {
                         val timeUsed = event.timeStamp - startTimeStamp
                         
                         if (timeUsed > 0) {
-                            appUsageMap[packageName] = (appUsageMap[packageName] ?: 0) + timeUsed
-                            totalScreenTime += timeUsed
+                            dayTotalTime += timeUsed
                         }
                         eventMap.remove(packageName)
                     }
                 }
             }
 
-            // 분 단위로 변환 (밀리초를 60000으로 나눔)
-            val totalScreenTimeMinutes = totalScreenTime / 60000
-
-            val result = Arguments.createMap()
-            result.putBoolean("hasPermission", true)
-            result.putDouble("totalScreenTimeMinutes", totalScreenTimeMinutes.toDouble())
-            
-            // 앱별 사용 시간 추가
-            val appUsage = Arguments.createMap()
-            for ((packageName, timeUsed) in appUsageMap) {
-                appUsage.putDouble(packageName, (timeUsed / 60000).toDouble())
-            }
-            result.putMap("appUsage", appUsage)
-
-            promise.resolve(result)
-        } catch (e: Exception) {
-            promise.reject("ERROR", e.message)
+            // 해당 날짜에 대한 총 스크린타임 (분 단위)
+            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val dateString = dateFormat.format(Date(dayStart))
+            dailyScreenTime.putDouble(dateString, (dayTotalTime / 60000).toDouble())
         }
+
+        val result = Arguments.createMap()
+        result.putBoolean("hasPermission", true)
+        result.putMap("dailyScreenTime", dailyScreenTime)
+        result.putInt("daysToFetch", daysToFetch) // 요청한 일수 정보 추가
+        
+        promise.resolve(result)
+    } catch (e: Exception) {
+        promise.reject("ERROR", e.message)
     }
-
-    @ReactMethod
-    fun getWeeklyScreenTime(promise: Promise) {
-        val context = reactApplicationContext
-        try {
-            if (!hasUsageStatsPermissionInternal()) {
-                val map = Arguments.createMap()
-                map.putBoolean("hasPermission", false)
-                promise.resolve(map)
-                return
-            }
-
-            val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            val calendar = Calendar.getInstance()
-            val endTime = calendar.timeInMillis
-            calendar.add(Calendar.DAY_OF_YEAR, -7) // 일주일 전
-            val startTime = calendar.timeInMillis
-
-            // 일별 데이터를 저장할 맵
-            val dailyScreenTime = Arguments.createMap()
-            
-            // 일주일치 데이터 계산
-            for (day in 0 until 7) {
-                calendar.timeInMillis = endTime
-                calendar.add(Calendar.DAY_OF_YEAR, -day)
-                calendar.set(Calendar.HOUR_OF_DAY, 0)
-                calendar.set(Calendar.MINUTE, 0)
-                calendar.set(Calendar.SECOND, 0)
-                calendar.set(Calendar.MILLISECOND, 0)
-                val dayStart = calendar.timeInMillis
-                
-                calendar.set(Calendar.HOUR_OF_DAY, 23)
-                calendar.set(Calendar.MINUTE, 59)
-                calendar.set(Calendar.SECOND, 59)
-                calendar.set(Calendar.MILLISECOND, 999)
-                val dayEnd = calendar.timeInMillis
-                
-                val usageEvents = usageStatsManager.queryEvents(dayStart, dayEnd)
-                val event = UsageEvents.Event()
-                val eventMap = HashMap<String, Long>()
-                var dayTotalTime = 0L
-
-                while (usageEvents.hasNextEvent()) {
-                    usageEvents.getNextEvent(event)
-                    val packageName = event.packageName
-                    
-                    if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
-                        eventMap[packageName] = event.timeStamp
-                    } else if (event.eventType == UsageEvents.Event.ACTIVITY_PAUSED) {
-                        if (eventMap.containsKey(packageName)) {
-                            val startTimeStamp = eventMap[packageName] ?: 0
-                            val timeUsed = event.timeStamp - startTimeStamp
-                            
-                            if (timeUsed > 0) {
-                                dayTotalTime += timeUsed
-                            }
-                            eventMap.remove(packageName)
-                        }
-                    }
-                }
-
-                // 해당 날짜에 대한 총 스크린타임 (분 단위)
-                val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val dateString = dateFormat.format(Date(dayStart))
-                dailyScreenTime.putDouble(dateString, (dayTotalTime / 60000).toDouble())
-            }
-
-            val result = Arguments.createMap()
-            result.putBoolean("hasPermission", true)
-            result.putMap("dailyScreenTime", dailyScreenTime)
-            
-            promise.resolve(result)
-        } catch (e: Exception) {
-            promise.reject("ERROR", e.message)
-        }
-    }
+}
 
     private fun hasUsageStatsPermissionInternal(): Boolean {
         val context = reactApplicationContext

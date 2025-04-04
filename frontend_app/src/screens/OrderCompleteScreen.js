@@ -47,8 +47,11 @@ const OrderCompleteScreen = ({ navigation, route }) => {
               {
                 name: 'Profile',
                 state: {
-                  routes: [{ name: 'OrderHistory' }],
-                  index: 0,
+                  routes: [
+                    { name: 'ProfileMain' },
+                    { name: 'OrderHistory' }
+                  ],
+                  index: 1,
                 }
               }
             ],
