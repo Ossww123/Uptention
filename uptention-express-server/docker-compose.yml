@@ -9,3 +9,5 @@ services:
     ports:
       # 호스트의 3000번 포트를 컨테이너의 3000번 포트로 매핑
       - "4444:3000"
+    volumes:
+      - ./my-keypair.json:/usr/src/app/my-keypair.json:ro
