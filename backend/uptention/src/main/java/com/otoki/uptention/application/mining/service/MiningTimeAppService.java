@@ -16,4 +16,5 @@ public interface MiningTimeAppService {
 	int bulkUpdateUserPoints();
 	List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime);
 	Map<String, List<MiningTimeRankResponseDto>> findMiningRank(Integer top);
+	void bulkSendToken();
 }

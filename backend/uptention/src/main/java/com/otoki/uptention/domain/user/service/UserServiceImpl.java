@@ -64,4 +64,9 @@ public class UserServiceImpl implements UserService {
 		UserCursorDto<String> cursor, UserSortType sortType, int size) {
 		return userRepository.findUsersByCursor(company, userRole, keyword, cursor, sortType, size);
 	}
+
+	@Override
+	public List<User> getUsersByRole() {
+		return userRepository.findAllByRoleAndPointIsAfter(UserRole.ROLE_MEMBER, 0);
+	}
 }
