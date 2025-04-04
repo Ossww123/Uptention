@@ -26,7 +26,7 @@ public class PaymentScheduler {
 	/**
 	 * 결제 대기 주문 타임아웃 확인 (스케줄러)
 	 */
-	@Scheduled(fixedRate = 300000) // 5분마다 실행
+	@Scheduled(fixedRate = 60000) // 1분마다 실행
 	public void checkPendingPayments() {
 		log.info("결제 대기 주문 타임아웃 확인 시작");
 
@@ -40,11 +40,11 @@ public class PaymentScheduler {
 				LocalDateTime.now()
 			).toMinutes();
 
-			if (orderAgeMinutes >= 3) {
+			if (orderAgeMinutes >= 2) {
 				log.info("주문 ID({})의 결제 시간 초과 (경과 시간: {}분)", order.getId(), orderAgeMinutes);
 
 				String orderId = String.valueOf(order.getId());
-				boolean success = paymentProcessService.processPaymentFailure(orderId, "결제 시간 초과 (30분)");
+				boolean success = paymentProcessService.processPaymentFailure(orderId, "결제 시간 초과 (2분)");
 
 				if (success) {
 					log.info("주문 ID({})의 결제 실패 처리가 완료되었습니다.", orderId);
