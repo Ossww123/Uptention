@@ -92,7 +92,7 @@ function App() {
           } 
         />
         
-        {/* 앱 관리 라우트 */}
+        앱 관리 라우트
         <Route 
           path="/admin/apps" 
           element={
