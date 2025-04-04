@@ -14,6 +14,7 @@ import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.category.service.CategoryService;
 import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.image.entity.Image;
+import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.enums.SortType;
@@ -23,15 +24,18 @@ import com.otoki.uptention.global.exception.ErrorCode;
 import com.otoki.uptention.global.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ItemAppServiceImpl implements ItemAppService {
 
 	private final ItemService itemService;
 	private final CategoryService categoryService;
 	private final ImageUploadService imageUploadService;
+	private final InventoryService inventoryService;
 
 	/**
 	 * 상품 등록
@@ -71,8 +75,13 @@ public class ItemAppServiceImpl implements ItemAppService {
 		// 이미지 목록 설정
 		item.getImages().addAll(imageEntities);
 
-		// 아이템 저장 및 반환
-		return itemService.saveItem(item);
+		// 아이템 저장
+		Item savedItem = itemService.saveItem(item);
+
+		// Redis 재고 초기화
+		inventoryService.initializeInventory(savedItem.getId(), savedItem.getQuantity());
+
+		return savedItem;
 	}
 
 	/**
@@ -83,6 +92,14 @@ public class ItemAppServiceImpl implements ItemAppService {
 	public void deleteItem(Integer itemId) {
 		Item item = itemService.getItemById(itemId);
 		item.updateStatus(false); // 상품 비활성화
+
+		// Redis 재고 업데이트 (비활성화된 상품은 재고를 0으로 설정)
+		try {
+			inventoryService.updateInventory(itemId, 0);
+		} catch (Exception e) {
+			log.error("Failed to update Redis inventory for deleted item {}", itemId, e);
+			// 메인 기능(삭제)은 성공했으므로 Redis 실패는 로깅만 하고 넘어감
+		}
 	}
 
 	/**
@@ -122,9 +139,15 @@ public class ItemAppServiceImpl implements ItemAppService {
 
 		if (isQuantityPresent) {
 			item.updateQuantity(itemUpdateRequestDto.getQuantity());
+
+			try {
+				inventoryService.updateInventory(itemId, itemUpdateRequestDto.getQuantity());
+			} catch (Exception e) {
+				log.error("Failed to update Redis inventory for item {}", itemId, e);
+				// 메인 기능(수정)은 성공했으므로 Redis 실패는 로깅만 하고 넘어감
+			}
 		}
 	}
-
 
 	/**
 	 * 상품의 상세 정보 조회
