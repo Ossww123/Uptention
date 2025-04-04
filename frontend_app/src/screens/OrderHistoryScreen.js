@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,11 +26,111 @@ const OrderHistoryScreen = () => {
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const { authToken } = useAuth();
 
-  const fetchOrders = async (newCursor = null, refresh = false) => {
-    if (loading || (!hasNextPage && !refresh)) return;
+  // refs for debouncing and request tracking
+  const onEndReachedTimeoutRef = useRef(null);
+  const isInitialLoadRef = useRef(true);
+  const currentApiCallIdRef = useRef(null);
+  const requestTimerRef = useRef(null);
+  const loadRequestedRef = useRef(false);
 
+  // 첫 마운트 시에만 실행되는 useEffect
+  useEffect(() => {
+    return () => {
+      if (onEndReachedTimeoutRef.current) {
+        clearTimeout(onEndReachedTimeoutRef.current);
+      }
+      if (requestTimerRef.current) {
+        clearTimeout(requestTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 화면에 포커스가 될 때마다 실행
+  useFocusEffect(
+    useCallback(() => {
+      console.log('useFocusEffect 실행됨', {
+        productsLength: orders.length,
+        isInitialLoad: isInitialLoadRef.current,
+        loadRequested: loadRequestedRef.current
+      });
+
+      // 이전에 이미 요청했는지 확인
+      if (!loadRequestedRef.current) {
+        if (isInitialLoadRef.current) {
+          console.log('최초 로드 실행');
+          loadRequestedRef.current = true;
+          fetchOrders(null, true);
+          isInitialLoadRef.current = false;
+        } else {
+          console.log('이미 로드됨, 데이터 갱신');
+          fetchOrders(null, true);
+        }
+      } else {
+        console.log('이전 포커스 이벤트에서 이미 로드 요청됨, 중복 요청 방지');
+      }
+
+      // 화면이 언마운트되면 로드 요청 플래그 초기화
+      return () => {
+        loadRequestedRef.current = false;
+      };
+    }, [activeTab]) // activeTab이 변경될 때마다 실행
+  );
+
+  // 탭 변경 시 데이터 초기화 및 로드
+  useEffect(() => {
+    if (isInitialLoadRef.current) return; // 최초 로드 시에는 실행하지 않음
+    
+    console.log('탭 변경으로 인한 데이터 로드');
+    setOrders([]);
+    setCursor(null);
+    setHasNextPage(true);
+    fetchOrders(null, true);
+  }, [activeTab]);
+
+  const fetchOrders = async (newCursor = null, refresh = false) => {
     try {
+      const callId = Date.now();
+      console.log(`fetchOrders 시작 (${callId})`, {
+        refresh,
+        loading,
+        hasNextPage,
+        currentApiCallId: currentApiCallIdRef.current,
+        requestTimer: requestTimerRef.current !== null
+      });
+
+      // 더블 요청 방지 타이머 체크
+      if (requestTimerRef.current) {
+        console.log(`더블 요청 방지 타이머 활성화, 요청 무시 (${callId})`);
+        return;
+      }
+
+      // 진행 중인 API 호출 체크
+      if (loading || currentApiCallIdRef.current) {
+        console.log(`이미 로딩 중, 요청 무시 (${callId})`);
+        return;
+      }
+
+      // 더블 요청 방지 타이머 설정 (1초)
+      requestTimerRef.current = setTimeout(() => {
+        requestTimerRef.current = null;
+      }, 1000);
+
+      // 현재 API 호출 ID 설정
+      currentApiCallIdRef.current = callId;
+
+      // 다음 페이지가 없고 리프레시가 아닐 경우 무시
+      if (!hasNextPage && !refresh) {
+        console.log(`다음 페이지 없음, 요청 무시 (${callId})`);
+        currentApiCallIdRef.current = null;
+        return;
+      }
+
       setLoading(true);
+      if (refresh) {
+        setRefreshing(true);
+        setCursor(null);
+      }
+
       const response = await axios.get(`${API_BASE_URL}/api/orders`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -45,7 +146,20 @@ const OrderHistoryScreen = () => {
 
       const { orderItems, hasNextPage: nextPage, nextCursor } = response.data;
       
-      setOrders(prev => refresh ? orderItems : [...prev, ...orderItems]);
+      if (refresh) {
+        setOrders(orderItems);
+      } else {
+        setOrders(prev => {
+          const newOrders = [...prev];
+          orderItems.forEach(item => {
+            if (!newOrders.some(order => order.orderItemId === item.orderItemId)) {
+              newOrders.push(item);
+            }
+          });
+          return newOrders;
+        });
+      }
+      
       setHasNextPage(nextPage);
       setCursor(nextCursor);
     } catch (error) {
@@ -53,26 +167,42 @@ const OrderHistoryScreen = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      currentApiCallIdRef.current = null;
+      if (requestTimerRef.current) {
+        clearTimeout(requestTimerRef.current);
+        requestTimerRef.current = null;
+      }
     }
   };
 
-  useEffect(() => {
-    fetchOrders(null, true);
-  }, [activeTab]);
-
   const onRefresh = () => {
     setRefreshing(true);
+    setOrders([]);
+    setCursor(null);
+    setHasNextPage(true);
     fetchOrders(null, true);
   };
+
+  // 무한 스크롤 처리 (디바운싱 적용)
+  const handleLoadMore = useCallback(() => {
+    if (onEndReachedTimeoutRef.current) {
+      clearTimeout(onEndReachedTimeoutRef.current);
+    }
+
+    onEndReachedTimeoutRef.current = setTimeout(() => {
+      if (hasNextPage && !loading && cursor) {
+        fetchOrders(cursor);
+      }
+    }, 200);
+  }, [loading, hasNextPage, cursor]);
 
   const handleOrderPress = (order) => {
     setSelectedOrder(order);
     setIsBottomSheetVisible(true);
   };
 
-  const renderOrderItem = (item) => (
+  const renderOrderItem = ({ item }) => (
     <TouchableOpacity 
-      key={item.orderItemId.toString()}
       style={styles.orderItem}
       onPress={() => handleOrderPress(item)}
     >
@@ -94,6 +224,24 @@ const OrderHistoryScreen = () => {
       </View>
     </TouchableOpacity>
   );
+
+  const renderFooter = () => {
+    if (!loading) return null;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF8C00" />
+      </View>
+    );
+  };
+
+  const renderEmpty = () => {
+    if (loading) return null;
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>주문 내역이 없습니다.</Text>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -118,38 +266,23 @@ const OrderHistoryScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        style={styles.orderList}
+      <FlatList
+        data={orders}
+        renderItem={renderOrderItem}
+        keyExtractor={item => item.orderItemId.toString()}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.2}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
           />
         }
-        onScroll={({ nativeEvent }) => {
-          const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const isEndReached = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
-          if (isEndReached && hasNextPage && !loading) {
-            fetchOrders(cursor);
-          }
-        }}
-        scrollEventThrottle={400}
-      >
-        {orders.length === 0 && !loading ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>주문 내역이 없습니다.</Text>
-          </View>
-        ) : (
-          <>
-            {orders.map(item => renderOrderItem(item))}
-            {loading && (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF8C00" />
-              </View>
-            )}
-          </>
-        )}
-      </ScrollView>
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={renderEmpty}
+        removeClippedSubviews={false}
+        contentContainerStyle={orders.length === 0 ? styles.emptyListContent : null}
+      />
 
       <OrderDetailBottomSheet
         visible={isBottomSheetVisible}
@@ -188,9 +321,6 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#FF8C00',
     fontWeight: '600',
-  },
-  orderList: {
-    flex: 1,
   },
   orderItem: {
     flexDirection: 'row',
@@ -242,6 +372,10 @@ const styles = StyleSheet.create({
   loadingContainer: {
     padding: 20,
     alignItems: 'center',
+  },
+  emptyListContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
 });
 

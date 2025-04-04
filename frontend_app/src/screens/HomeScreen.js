@@ -106,8 +106,11 @@ const HomeScreen = ({ navigation }) => {
     try {
       // 집중 모드 시작 API 호출
       const response = await axios.post(
-        `${API_BASE_URL}/api/mining-time/focus/${userId}`,
-        null,
+        `${API_BASE_URL}/api/mining-time/focus`,
+        {
+          latitude: 36.1071,  // 위도 정보
+          longitude: 128.416 // 경도 정보
+        },
         {
           headers: {
             'Authorization': `Bearer ${authToken}`,

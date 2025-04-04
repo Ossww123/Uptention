@@ -25,10 +25,20 @@ const AddressSearchScreen = ({ navigation, route }) => {
       detailAddress: '' // 상세 주소는 나중에 입력
     };
 
-    // Checkout 화면으로 이동하면서 주소 전달
-    navigation.navigate('AddressDetail', { 
-      address: completeAddress 
-    });
+    // prevScreen이 PaymentBottomSheet인 경우와 아닌 경우를 구분
+    if (route.params?.prevScreen === 'PaymentBottomSheet') {
+      navigation.navigate('AddressDetail', { 
+        address: completeAddress,
+        prevScreen: 'PaymentBottomSheet',
+        product: route.params?.product
+      });
+    } else {
+      navigation.navigate('AddressDetail', { 
+        address: completeAddress,
+        prevItems: route.params?.prevItems,
+        prevTotalPrice: route.params?.prevTotalPrice
+      });
+    }
   };
 
   return (

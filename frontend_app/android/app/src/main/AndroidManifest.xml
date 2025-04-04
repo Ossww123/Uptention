@@ -1,31 +1,17 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+  <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" tools:ignore="ProtectedPermissions"/>
+  <uses-permission android:name="android.permission.CAMERA"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
   <uses-permission android:name="android.permission.INTERNET"/>
+  <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions"/>
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
+  <uses-permission android:name="android.permission.WAKE_LOCK"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-  <uses-permission android:name="android.permission.CAMERA" />
-  
-  <!-- 백그라운드 타이머 권한 -->
-  <uses-permission android:name="android.permission.WAKE_LOCK" />
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-  
-  <!-- 접근성 서비스 권한 -->
-  <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"
-      tools:ignore="ProtectedPermissions"/>
-  
-  <!-- 오버레이 권한 -->
-  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-  
-  <!-- 스크린타임 접근을 위한 권한 -->
-  <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
-      tools:ignore="ProtectedPermissions"/>
-      
-  <!-- Android 13 이상에서 필요한 알림 권한 -->
-  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW"/>
@@ -37,6 +23,12 @@
     <meta-data android:name="expo.modules.updates.ENABLED" android:value="false"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
+    <service android:name=".AppBlockerService" android:enabled="true" android:exported="true" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+      <intent-filter>
+        <action android:name="android.accessibilityservice.AccessibilityService"/>
+      </intent-filter>
+      <meta-data android:name="android.accessibilityservice" android:resource="@xml/app_blocker_service_config"/>
+    </service>
     <activity android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.App.SplashScreen" android:exported="true" android:screenOrientation="portrait">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
@@ -47,25 +39,16 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="com.anonymous.uptention"/>
+        <data android:scheme="com.anonymous.uptention"/>
+        <data android:scheme="exp+uptention"/>
+      </intent-filter>
+      <intent-filter data-generated="true">
+        <action android:name="android.intent.action.VIEW"/>
+        <data android:scheme="com.anonymous.uptention"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <category android:name="android.intent.category.DEFAULT"/>
       </intent-filter>
     </activity>
-    <service
-    android:name=".AppBlockerService"
-    android:enabled="true"
-    android:exported="true"
-    android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-    <intent-filter>
-        <action android:name="android.accessibilityservice.AccessibilityService" />
-    </intent-filter>
-    <meta-data
-        android:name="android.accessibilityservice"
-        android:resource="@xml/app_blocker_service_config" />
-</service>
-
-<activity
-    android:name=".SystemAppsActivity"
-    android:exported="false"
-    android:label="@string/system_apps_management" />
-    
+    <activity android:name=".SystemAppsActivity" android:exported="false" android:label="@string/system_apps_management"/>
   </application>
 </manifest>

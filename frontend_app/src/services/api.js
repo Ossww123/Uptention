@@ -58,7 +58,6 @@ export const apiRequest = async (endpoint, options = {}) => {
       console.error('API request error:', error);
       throw error;
     }
-    
 };
 
 // 편의를 위한 HTTP 메서드별 함수
