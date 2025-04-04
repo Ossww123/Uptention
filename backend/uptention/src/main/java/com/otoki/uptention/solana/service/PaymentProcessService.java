@@ -55,6 +55,9 @@ public class PaymentProcessService {
 
 			// 각 주문 항목의 재고 확정 처리
 			for (OrderItem orderItem : orderItems) {
+				Item item = orderItem.getItem();
+				int quantity = orderItem.getQuantity();
+
 				boolean confirmed = inventoryService.confirmInventory(
 					orderItem.getItem().getId(), orderItem.getQuantity());
 
@@ -63,6 +66,10 @@ public class PaymentProcessService {
 						orderId, orderItem.getItem().getId());
 					return false;
 				}
+
+				// 결제 성공 시 MySQL DB 업데이트
+				item.decreaseQuantity(quantity);  // 재고 감소
+				item.increaseSalesCount(quantity); // 판매량 증가
 			}
 
 			// 주문 상태 업데이트
@@ -117,10 +124,6 @@ public class PaymentProcessService {
 
 				// 재고 예약 취소
 				inventoryService.cancelReservation(item.getId(), quantity);
-				// 재고 복구
-				item.increaseQuantity(quantity);
-				// 판매량 감소
-				item.decreaseSalesCount(quantity);
 
 				log.info("상품(ID={})의 재고 및 판매량 복구: 수량={}", item.getId(), quantity);
 			}

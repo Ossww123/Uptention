@@ -183,17 +183,11 @@ public class OrderAppServiceImpl implements OrderAppService {
 	}
 
 	/**
-	 * OrderItem을 생성하고 저장하는 공통 로직 + 재고 감소 / 판매량 증가
+	 * OrderItem을 생성하고 저장하는 공통 로직 + 재고 감소
 	 * 참고: Redis 재고 예약은 이미 이루어진 상태
 	 */
 	private OrderItem processOrderItem(Order order, Integer itemId, Integer quantity) {
 		Item item = itemService.getItemById(itemId);
-
-		// // 재고 부족하면 예외 발생
-		// if (!item.hasStock(quantity)) {
-		// 	throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
-		// }
-		// item.decreaseQuantity(quantity);
 
 		OrderItem orderItem = OrderItem.builder()
 			.order(order)
@@ -203,9 +197,6 @@ public class OrderAppServiceImpl implements OrderAppService {
 			.build();
 
 		orderItemService.saveOrderItem(orderItem);
-
-		// 판매량 증가 - 실제 재고 차감은 결제 성공 시 이루어짐
-		item.increaseSalesCount(quantity);
 
 		return orderItem;
 	}
