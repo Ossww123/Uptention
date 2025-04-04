@@ -454,6 +454,13 @@ public class SolanaTransactionMonitorService {
 
 			// 2. 주문 상태 검증
 			if (!OrderStatus.PAYMENT_PENDING.equals(order.getStatus())) {
+				// 이미 완료된 상태면 오류로 처리하지 않고 정상 종료
+				if (OrderStatus.PAYMENT_COMPLETED.equals(order.getStatus())) {
+					log.info("주문 ID({})는 이미 결제 완료 상태입니다.", orderIdNum);
+					return;
+				}
+
+				// 유효하지 않은 상태일 경우에만 실패 처리
 				String reason = "유효하지 않은 주문 상태: " + order.getStatus();
 				log.warn("주문 ID({})의 상태가 결제 대기 상태가 아닙니다: {}", orderIdNum, order.getStatus());
 				publishPaymentFailedEvent(orderId, reason, signature);
