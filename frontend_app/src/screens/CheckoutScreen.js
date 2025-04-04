@@ -14,7 +14,7 @@ import { useWallet } from '../contexts/WalletContext';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
-import { post } from '../services/api';
+import { post, del } from '../services/api';
 
 const CheckoutScreen = ({ navigation, route }) => {
   // CartScreen에서 전달받은 선택된 상품 정보와 총 가격
@@ -228,6 +228,22 @@ const CheckoutScreen = ({ navigation, route }) => {
 
             console.log('=== 토큰 전송 완료 ===');
 
+            // 장바구니에서 주문한 상품 삭제
+            const cartIds = selectedItems.map(item => item.cartId).filter(Boolean);
+            if (cartIds.length > 0) {
+              try {
+                const { ok: deleteOk, data: deleteData } = await del("/shopping-cart", {
+                  body: JSON.stringify(cartIds)
+                });
+                
+                if (!deleteOk) {
+                  console.log('장바구니 아이템 삭제 실패:', deleteData);
+                }
+              } catch (error) {
+                console.error('장바구니 아이템 삭제 중 오류:', error);
+              }
+            }
+
             // 3. 주문 완료 화면으로 이동
             navigation.replace('OrderComplete', {
               orderId: orderId,
@@ -355,14 +371,6 @@ const CheckoutScreen = ({ navigation, route }) => {
       </View>
 
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* 테스트 스크린 이동 버튼 */}
-        <TouchableOpacity 
-          style={styles.testButton}
-          onPress={() => navigation.navigate('Test')}
-        >
-          <Text style={styles.testButtonText}>테스트 스크린으로 이동</Text>
-        </TouchableOpacity>
-
         {/* 배송 정보 섹션 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>배송 정보</Text>
@@ -616,19 +624,6 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#CCCCCC',
-  },
-  testButton: {
-    backgroundColor: '#4A90E2',
-    padding: 15,
-    borderRadius: 8,
-    marginHorizontal: 20,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  testButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
 

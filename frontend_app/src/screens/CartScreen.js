@@ -224,8 +224,14 @@ const CartScreen = ({ navigation }) => {
           (total, item) => total + item.totalPrice, 0
         );
         
+        // cartId를 포함한 선택된 아이템 정보 전달
+        const itemsWithCartId = selectedItems.map(item => ({
+          ...data.find(verifiedItem => verifiedItem.itemId === item.itemId),
+          cartId: item.cartId
+        }));
+        
         navigation.navigate("CheckoutScreen", {
-          selectedItems: data, // API에서 검증된 상품 정보를 사용
+          selectedItems: itemsWithCartId,
           totalPrice: totalPrice
         });
       } else {
@@ -263,83 +269,49 @@ const CartScreen = ({ navigation }) => {
     return cartItems.map((item) => (
       <View key={item.cartId} style={styles.cartItem}>
         <TouchableOpacity
-          style={styles.selectButton}
+          style={styles.checkbox}
           onPress={() => toggleSelection(item.cartId)}
         >
-          <View
-            style={[
-              styles.checkbox,
-              item.selected
-                ? styles.checkboxSelected
-                : styles.checkboxUnselected,
-            ]}
-          >
-            {item.selected && (
-              <Ionicons name="checkmark" size={18} color="#FFFFFF" />
-            )}
-          </View>
+          <Ionicons
+            name={item.selected ? "checkbox" : "square-outline"}
+            size={24}
+            color={item.selected ? "#FF8C00" : "#999"}
+          />
         </TouchableOpacity>
 
-        <View style={styles.deleteButtonContainer}>
-          <TouchableOpacity onPress={() => deleteItem(item.cartId)}>
-            <Text style={styles.deleteText}>삭제</Text>
-          </TouchableOpacity>
-        </View>
+        <Image source={item.image} style={styles.itemImage} />
 
-        <Image source={item.image} style={styles.productImage} />
-
-        <View style={styles.productInfo}>
-          <Text style={styles.brandText}>{item.brand}</Text>
-          <Text style={styles.productName}>{item.name}</Text>
-          <Text style={styles.priceText}>
-            {item.price.toLocaleString()} WORK
-          </Text>
-
-          {item.stockQuantity === 0 ? (
-            <Text style={styles.soldOutText}>품절</Text>
-          ) : (
-            <View style={styles.quantityContainer}>
-              <TouchableOpacity
-                style={styles.quantityButton}
-                onPress={() => updateQuantity(item.cartId, -1)}
-                disabled={item.quantity <= 1} // 1 이하로는 감소 불가
-              >
-                <Text
-                  style={[
-                    styles.quantityButtonText,
-                    item.quantity <= 1 && styles.disabledButtonText,
-                  ]}
-                >
-                  -
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.quantityTextContainer}>
-                <Text style={styles.quantityText}>{item.quantity}</Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.quantityButton}
-                onPress={() => updateQuantity(item.cartId, 1)}
-                disabled={item.quantity >= 99} // 99 이상으로는 증가 불가
-              >
-                <Text
-                  style={[
-                    styles.quantityButtonText,
-                    item.quantity >= 99 && styles.disabledButtonText,
-                  ]}
-                >
-                  +
-                </Text>
-              </TouchableOpacity>
+        <View style={styles.itemInfo}>
+          <View style={styles.itemHeader}>
+            <View style={styles.itemTitleContainer}>
+              <Text style={styles.itemBrand}>{item.brand}</Text>
+              <Text style={styles.itemName}>{item.name}</Text>
             </View>
-          )}
-        </View>
+            <TouchableOpacity
+              onPress={() => deleteItem(item.cartId)}
+              style={styles.deleteButton}
+            >
+              <Ionicons name="close" size={24} color="#999" />
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.totalPriceContainer}>
-          <Text style={styles.totalPriceText}>
-            총 {item.totalPrice.toLocaleString()} WORK
-          </Text>
+          <Text style={styles.itemPrice}>{item.price} WORK</Text>
+
+          <View style={styles.quantityContainer}>
+            <TouchableOpacity
+              onPress={() => updateQuantity(item.cartId, -1)}
+              style={styles.quantityButton}
+            >
+              <Text style={styles.quantityButtonText}>-</Text>
+            </TouchableOpacity>
+            <Text style={styles.quantity}>{item.quantity}</Text>
+            <TouchableOpacity
+              onPress={() => updateQuantity(item.cartId, 1)}
+              style={styles.quantityButton}
+            >
+              <Text style={styles.quantityButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     ));
@@ -576,50 +548,43 @@ const styles = StyleSheet.create({
     borderBottomColor: "#EEEEEE",
     position: "relative",
   },
-  selectButton: {
-    marginRight: 10,
-    alignSelf: "center",
-  },
-  deleteButtonContainer: {
-    position: "absolute",
-    right: 15,
-    top: 15,
-  },
-  deleteText: {
-    fontSize: 14,
-    color: "#888888",
-  },
-  productImage: {
+  itemImage: {
     width: 80,
     height: 80,
     borderRadius: 8,
     marginRight: 15,
     backgroundColor: "#f5f5f5",
   },
-  productInfo: {
+  itemInfo: {
     flex: 1,
     justifyContent: "space-between",
   },
-  brandText: {
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    width: '100%',
+  },
+  itemTitleContainer: {
+    flex: 1,
+  },
+  deleteButton: {
+    padding: 5,
+  },
+  itemBrand: {
     fontSize: 14,
     color: "#888888",
     marginBottom: 4,
   },
-  productName: {
+  itemName: {
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 4,
   },
-  priceText: {
+  itemPrice: {
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
-  },
-  soldOutText: {
-    fontSize: 14,
-    color: "#ff3b30",
-    fontWeight: "bold",
-    marginTop: 5,
   },
   quantityContainer: {
     flexDirection: "row",
@@ -639,27 +604,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  disabledButtonText: {
-    color: "#CCCCCC",
-  },
-  quantityTextContainer: {
-    minWidth: 40,
-    padding: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  quantityText: {
+  quantity: {
     fontSize: 16,
     fontWeight: "500",
-  },
-  totalPriceContainer: {
-    position: "absolute",
-    right: 15,
-    bottom: 15,
-  },
-  totalPriceText: {
-    fontSize: 16,
-    fontWeight: "bold",
   },
   summaryContainer: {
     borderTopWidth: 1,
