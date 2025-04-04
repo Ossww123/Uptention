@@ -1,6 +1,8 @@
 package com.otoki.uptention.application.item.service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +16,7 @@ import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.category.service.CategoryService;
 import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.image.entity.Image;
+import com.otoki.uptention.domain.inventory.dto.InventoryDto;
 import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
@@ -154,8 +157,35 @@ public class ItemAppServiceImpl implements ItemAppService {
 	 */
 	@Override
 	public ItemResponseDto getItemDetails(Integer itemId) {
+		// 1. MySQL에서 상품 기본 정보 조회
 		Item item = itemService.getItemById(itemId);
-		return ItemResponseDto.from(item, item.getImages());
+
+		// 2. Redis에서 최신 재고 정보 조회 시도
+		try {
+			// Redis에서 재고 정보 가져오기
+			InventoryDto inventory = inventoryService.getInventory(itemId);
+
+			// 최신 재고 정보를 반영한 임시 Item 객체 생성
+			Item updatedItem = Item.builder()
+				.id(item.getId())
+				.name(item.getName())
+				.detail(item.getDetail())
+				.price(item.getPrice())
+				.brand(item.getBrand())
+				.status(item.getStatus())
+				.quantity(inventory.getAvailableQuantity()) // 실시간 가용 재고 정보 제공
+				.salesCount(item.getSalesCount())
+				.category(item.getCategory())
+				.images(item.getImages())
+				.build();
+
+			return ItemResponseDto.from(updatedItem, item.getImages());
+		} catch (Exception e) {
+			// Redis 조회 실패 시 MySQL 데이터만으로 응답
+			log.warn("Failed to get inventory from Redis for item {}, using database value: {}",
+				itemId, e.getMessage());
+			return ItemResponseDto.from(item, item.getImages());
+		}
 	}
 
 	/**
@@ -182,6 +212,9 @@ public class ItemAppServiceImpl implements ItemAppService {
 		// 요청한 size만큼만 반환
 		List<ItemDto> resultItems = hasNextPage ? items.subList(0, size) : items;
 
+		// Redis에서 실시간 재고 정보 조회하여 업데이트
+		updateItemsWithRealTimeInventory(resultItems);
+
 		// 다음 커서 생성
 		String nextCursor = hasNextPage && !resultItems.isEmpty()
 			? createNextCursor(resultItems.get(resultItems.size() - 1), sortType)
@@ -205,5 +238,36 @@ public class ItemAppServiceImpl implements ItemAppService {
 		}
 
 		return new CursorDto(value, lastItem.getItemId()).encode();
+	}
+
+	/**
+	 * 아이템 목록의 재고 정보를 Redis의 실시간 정보로 업데이트
+	 */
+	private void updateItemsWithRealTimeInventory(List<ItemDto> items) {
+		if (items.isEmpty()) {
+			return;
+		}
+
+		// 모든 아이템 ID 추출
+		List<Integer> itemIds = items.stream()
+			.map(ItemDto::getItemId)
+			.collect(Collectors.toList());
+
+		try {
+			// Redis에서 재고 정보 일괄 조회
+			Map<Integer, InventoryDto> inventories = inventoryService.getInventories(itemIds);
+
+			// 각 아이템에 실시간 재고 정보 반영
+			for (ItemDto item : items) {
+				InventoryDto inventory = inventories.get(item.getItemId());
+				if (inventory != null) {
+					// 가용 재고로 업데이트 (실제 구매 가능 수량)
+					item.setQuantity(inventory.getAvailableQuantity());
+				}
+			}
+		} catch (Exception e) {
+			// Redis 조회 실패 시 DB 재고 정보 유지
+			log.warn("Failed to update items with real-time inventory: {}", e.getMessage());
+		}
 	}
 }
