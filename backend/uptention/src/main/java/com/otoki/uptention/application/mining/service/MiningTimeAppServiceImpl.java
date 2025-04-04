@@ -234,16 +234,22 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		for (User user : users) {
 			log.info("포인트 계산 스케줄러 시작: 토큰 전송 시도...");
 			try {
-				// transferToken이 반환하는 Mono<String>에 대해 .block() 호출하여 실행
-				String response = expressApiServiceWebClient.transferToken(
+				expressApiServiceWebClient.transferToken(
 					user.getWallet(),
 					Integer.toString(user.getPoint() / 10)
-				).block();
-
-				log.info("토큰 전송 API 호출 완료. 응답: {}", response);
-
+				).subscribe(
+					response -> {
+						log.info("토큰 전송 요청 성공");
+						log.info("포인트 전송 지갑 주소={}, 수량={}", user.getWallet(), user.getPoint() / 10);
+					},
+					error -> {
+						log.error("비동기 토큰 전송 API 호출 중 오류 발생 (User ID {}): {}", user.getId(), error.getMessage());
+					},
+					() -> {
+						log.info("토큰 전송 완료.");
+					}
+				);
 				user.setPoint(0);
-
 			} catch (Exception e) {
 				throw new CustomException(ErrorCode.POINT_SCHEDULER_ERROR);
 			}
