@@ -17,6 +17,9 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+//    all {
+//        exclude group: 'org.slf4j', module: 'slf4j-simple'
+//    }
 }
 
 repositories {
@@ -82,9 +85,17 @@ dependencies {
     // Redis 관련 의존성 추가
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.redisson:redisson-spring-boot-starter:3.24.1'
+    implementation 'io.projectreactor:reactor-core:3.7.3'
 
     // 캐시 관련 의존성
     implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+//    // 테스트용 임베디드 Redis 서버
+//    testImplementation 'com.github.codemonstur:embedded-redis:1.4.3'
+
+    // 테스트에서도 Lombok을 사용하기 위한 설정
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
