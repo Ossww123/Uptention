@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.order.entity.Order;
 import com.otoki.uptention.domain.order.enums.OrderStatus;
@@ -26,6 +27,7 @@ public class PaymentProcessService {
 
 	private final OrderService orderService;
 	private final OrderItemService orderItemService;
+	private final InventoryService inventoryService;
 
 	/**
 	 * 결제 완료 처리
@@ -46,6 +48,21 @@ public class PaymentProcessService {
 			if (OrderStatus.PAYMENT_COMPLETED.equals(order.getStatus())) {
 				log.info("주문 ID({})는 이미 결제 완료되었습니다.", orderId);
 				return true;
+			}
+
+			// 주문 항목 조회
+			List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(order.getId());
+
+			// 각 주문 항목의 재고 확정 처리
+			for (OrderItem orderItem : orderItems) {
+				boolean confirmed = inventoryService.confirmInventory(
+					orderItem.getItem().getId(), orderItem.getQuantity());
+
+				if (!confirmed) {
+					log.error("주문 ID({})의 상품 ID({}) 재고 확정에 실패했습니다.",
+						orderId, orderItem.getItem().getId());
+					return false;
+				}
 			}
 
 			// 주문 상태 업데이트
@@ -98,6 +115,8 @@ public class PaymentProcessService {
 				Item item = orderItem.getItem();
 				int quantity = orderItem.getQuantity();
 
+				// 재고 예약 취소
+				inventoryService.cancelReservation(item.getId(), quantity);
 				// 재고 복구
 				item.increaseQuantity(quantity);
 				// 판매량 감소
