@@ -232,11 +232,21 @@ public class SolanaTransactionMonitorService {
 									return;
 								}
 
-								// 트랜잭션 세부 정보 조회 및 로깅
-								JsonNode transactionData = fetchTransactionDetails(signature);
-								if (transactionData != null) {
-									logTransactionDetails(transactionData, signature);
+								// WebSocket에서 받은 로그 정보 사용
+								if (dataMap.containsKey("logs") && dataMap.get("logs") != null) {
+									@SuppressWarnings("unchecked")
+									List<String> logs = (List<String>)dataMap.get("logs");
+
+									// WebSocket 알림에서 받은 로그 정보로 처리
+									processTransactionWithLogs(signature, logs);
 									processedSignatures.add(signature);
+								} else {
+									// 로그 정보가 없는 경우 RPC 호출
+									JsonNode transactionData = fetchTransactionDetails(signature);
+									if (transactionData != null) {
+										logTransactionDetails(transactionData, signature);
+										processedSignatures.add(signature);
+									}
 								}
 							}
 						} catch (Exception e) {
@@ -252,6 +262,53 @@ public class SolanaTransactionMonitorService {
 		} catch (Exception e) {
 			log.error("로그 구독 요청 실패", e);
 		}
+	}
+
+	/**
+	 * WebSocket에서 받은 로그로 트랜잭션 처리
+	 */
+	private void processTransactionWithLogs(String signature, List<String> logs) {
+		log.info("======== 트랜잭션 상세 정보 (WebSocket) ========");
+		log.info("트랜잭션 서명: {}", signature);
+
+		if (logs == null || logs.isEmpty()) {
+			log.info("로그 메시지를 찾을 수 없습니다");
+			return;
+		}
+
+		// 로그 출력 및 주문 ID 찾기
+		String orderId = null;
+		for (String logMessage : logs) {
+			log.info("로그 메시지: {}", logMessage);
+
+			// Memo 프로그램 로그에서 주문 ID 추출
+			if (logMessage.contains("Memo") && logMessage.contains("ORDER_")) {
+				int startIdx = logMessage.indexOf("ORDER_");
+				if (startIdx != -1) {
+					int endIdx = logMessage.lastIndexOf("\"");
+					if (endIdx > startIdx) {
+						orderId = logMessage.substring(startIdx, endIdx);
+					} else {
+						orderId = logMessage.substring(startIdx);
+					}
+					log.info("주문 ID 감지: {}", orderId);
+					break;
+				}
+			}
+		}
+
+		// 주문 ID가 추출된 경우 처리
+		if (orderId != null && orderId.startsWith("ORDER_")) {
+			String orderIdOnly = orderId.substring(6); // "ORDER_" 제거
+
+			// 주문 처리를 위한 시간 정보는 현재 시간으로 대체 (블록 시간 정보가 없으므로)
+			long currentBlockTime = Instant.now().getEpochSecond();
+
+			// 주문 처리 로직 호출
+			processOrder(orderIdOnly, currentBlockTime, null, signature);
+		}
+
+		log.info("================================");
 	}
 
 	/**
@@ -397,22 +454,31 @@ public class SolanaTransactionMonitorService {
 
 			// 2. 주문 상태 검증
 			if (!OrderStatus.PAYMENT_PENDING.equals(order.getStatus())) {
+				// 이미 완료된 상태면 오류로 처리하지 않고 정상 종료
+				if (OrderStatus.PAYMENT_COMPLETED.equals(order.getStatus())) {
+					log.info("주문 ID({})는 이미 결제 완료 상태입니다.", orderIdNum);
+					return;
+				}
+
+				// 유효하지 않은 상태일 경우에만 실패 처리
 				String reason = "유효하지 않은 주문 상태: " + order.getStatus();
 				log.warn("주문 ID({})의 상태가 결제 대기 상태가 아닙니다: {}", orderIdNum, order.getStatus());
 				publishPaymentFailedEvent(orderId, reason, signature);
 				return;
 			}
 
-			// 3. 트랜잭션 시간 검증
-			LocalDateTime orderCreatedAt = order.getCreatedAt();
-			LocalDateTime transactionTime = LocalDateTime.ofInstant(
-				Instant.ofEpochSecond(blockTime), ZoneId.systemDefault());
+			// 3. 트랜잭션 시간 검증 (blockTime이 유효한 경우에만)
+			if (blockTime > 0) {
+				LocalDateTime orderCreatedAt = order.getCreatedAt();
+				LocalDateTime transactionTime = LocalDateTime.ofInstant(
+					Instant.ofEpochSecond(blockTime), ZoneId.systemDefault());
 
-			if (transactionTime.isBefore(orderCreatedAt)) {
-				String reason = "트랜잭션 시간이 주문 생성 시간보다 이전임";
-				log.warn("트랜잭션 시간이 주문 생성 시간보다 이전입니다: 주문 ID={}", orderIdNum);
-				publishPaymentFailedEvent(orderId, reason, signature);
-				return;
+				if (transactionTime.isBefore(orderCreatedAt)) {
+					String reason = "트랜잭션 시간이 주문 생성 시간보다 이전임";
+					log.warn("트랜잭션 시간이 주문 생성 시간보다 이전입니다: 주문 ID={}", orderIdNum);
+					publishPaymentFailedEvent(orderId, reason, signature);
+					return;
+				}
 			}
 
 			// 4. 주문 금액 계산
@@ -421,9 +487,10 @@ public class SolanaTransactionMonitorService {
 				.mapToInt(OrderItem::getTotalPrice)
 				.sum();
 
-			// 5. 트랜잭션 금액 확인
-			double transactionAmount = 0;
-			if (result.has("meta")) {
+			// 5. 트랜잭션 금액 확인 (result가 있는 경우에만)
+			double transactionAmount = orderTotalAmount; // 기본값으로 주문 금액 사용
+
+			if (result != null && result.has("meta")) {
 				JsonNode meta = result.get("meta");
 				if (meta.has("preTokenBalances") && meta.has("postTokenBalances")) {
 					JsonNode preBalances = meta.get("preTokenBalances");
@@ -466,10 +533,12 @@ public class SolanaTransactionMonitorService {
 						}
 					}
 				}
+			} else {
+				log.info("주문 ID({})의 결제 금액: {} (기본값 사용)", orderIdNum, transactionAmount);
 			}
 
-			// 6. 금액 검증
-			if (Math.abs(transactionAmount - orderTotalAmount) > 0.001) {
+			// 6. 금액 검증 (RPC 결과가 있는 경우에만)
+			if (result != null && Math.abs(transactionAmount - orderTotalAmount) > 0.001) {
 				String reason = String.format(
 					"금액이 일치하지 않음: 주문=%d, 트랜잭션=%.2f", orderTotalAmount, transactionAmount);
 				log.warn("주문 ID({})의 금액이 일치하지 않습니다: 주문={}, 트랜잭션={}",
