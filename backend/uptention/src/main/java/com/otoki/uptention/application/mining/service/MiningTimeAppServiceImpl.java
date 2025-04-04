@@ -28,18 +28,24 @@ import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
 import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.domain.mining.service.MiningTimeService;
 import com.otoki.uptention.domain.user.entity.User;
+import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
+import com.otoki.uptention.solana.service.ExpressApiServiceWebClient;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
 public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
+	private final UserService userService;
 	private final MiningTimeService miningTimeService;
 	private final SecurityService securityService;
+	private final ExpressApiServiceWebClient expressApiServiceWebClient;
 
 	@Transactional
 	@Override
@@ -121,7 +127,6 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		LocalDateTime inspectionDate = LocalDate.now().atTime(14, 30);
 		return miningTimeService.calculatePoint(inspectionDate);
 	}
-
 
 	// 채굴 시간 조회
 	@Override
@@ -219,6 +224,31 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 			result.put(String.valueOf(entry.getKey()), entry.getValue());
 		}
 		return result;
+	}
+
+	@Transactional
+	@Override
+	public void bulkSendToken() {
+		List<User> users = userService.getUsersByRole();
+
+		for (User user : users) {
+			log.info("포인트 계산 스케줄러 시작: 토큰 전송 시도...");
+			try {
+				// transferToken이 반환하는 Mono<String>에 대해 .block() 호출하여 실행
+				String response = expressApiServiceWebClient.transferToken(
+					user.getWallet(),
+					Integer.toString(user.getPoint() / 10)
+				).block();
+
+				log.info("토큰 전송 API 호출 완료. 응답: {}", response);
+
+				user.setPoint(0);
+
+			} catch (Exception e) {
+				throw new CustomException(ErrorCode.POINT_SCHEDULER_ERROR);
+			}
+		}
+		log.info("포인트 계산 스케줄러 종료.");
 	}
 
 	private static final double EARTH_RADIUS = 6371000;
