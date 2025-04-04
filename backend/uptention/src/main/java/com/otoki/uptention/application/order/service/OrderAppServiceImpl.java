@@ -1,5 +1,7 @@
 package com.otoki.uptention.application.order.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -59,21 +61,25 @@ public class OrderAppServiceImpl implements OrderAppService {
 	public InitiateOrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
 		User user = securityService.getLoggedInUser();
 
-		// 1. 먼저 재고 예약
-		Map<Integer, Integer> itemQuantities = orderRequestDto.getItems().stream()
-			.collect(Collectors.toMap(ItemQuantityRequestDto::getItemId, ItemQuantityRequestDto::getQuantity));
-
-		// 재고 예약 시도
-		for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
-			boolean reserved = inventoryService.reserveInventory(itemRequest.getItemId(), itemRequest.getQuantity());
-			if (!reserved) {
-				// 예약 실패 시 이전 예약 취소
-				rollbackReservations(itemQuantities);
-				throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
-			}
-		}
+		// 성공적으로 예약된 상품 ID와 수량을 추적
+		Map<Integer, Integer> reservedItems = new HashMap<>();
 
 		try {
+			// 1. 먼저 재고 예약
+			for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
+				boolean reserved = inventoryService.reserveInventory(
+					itemRequest.getItemId(), itemRequest.getQuantity());
+
+				if (!reserved) {
+					// 예약 실패 시 이전에 성공한 예약 취소
+					rollbackReservations(reservedItems);
+					throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
+				}
+
+				// 예약 성공 시 추적 맵에 추가
+				reservedItems.put(itemRequest.getItemId(), itemRequest.getQuantity());
+			}
+
 			// 2. Order 생성
 			Order order = Order.builder()
 				.user(user)
@@ -94,19 +100,40 @@ public class OrderAppServiceImpl implements OrderAppService {
 				.build();
 		} catch (Exception e) {
 			// 예외 발생 시 재고 예약 롤백
-			rollbackReservations(itemQuantities);
+			rollbackReservations(reservedItems);
 			throw e;
 		}
 	}
 
-	// 재고 예약 롤백 메서드 추가
+	// 개선된 재고 예약 롤백 메서드
 	private void rollbackReservations(Map<Integer, Integer> itemQuantities) {
+		if (itemQuantities.isEmpty()) {
+			return;
+		}
+
+		log.info("롤백 시작: {} 개 상품의 재고 예약 취소", itemQuantities.size());
+		List<Integer> rollbackFailedItems = new ArrayList<>();
+
 		for (Map.Entry<Integer, Integer> entry : itemQuantities.entrySet()) {
 			try {
-				inventoryService.cancelReservation(entry.getKey(), entry.getValue());
+				Integer itemId = entry.getKey();
+				Integer quantity = entry.getValue();
+
+				boolean canceled = inventoryService.cancelReservation(itemId, quantity);
+				if (!canceled) {
+					rollbackFailedItems.add(itemId);
+					log.error("상품 ID({})의 재고 예약 취소 실패", itemId);
+				}
 			} catch (Exception e) {
-				log.error("Failed to rollback reservation for item {}", entry.getKey(), e);
+				rollbackFailedItems.add(entry.getKey());
+				log.error("상품 ID({})의 재고 예약 취소 중 오류 발생", entry.getKey(), e);
 			}
+		}
+
+		// 롤백 실패 항목 기록 (향후 수동 개입이나 보상 트랜잭션을 위해)
+		if (!rollbackFailedItems.isEmpty()) {
+			log.error("일부 상품의 재고 예약 취소 실패: {}", rollbackFailedItems);
+			// 필요시 알림 서비스나 보상 큐에 메시지 발송 로직 추가
 		}
 	}
 
