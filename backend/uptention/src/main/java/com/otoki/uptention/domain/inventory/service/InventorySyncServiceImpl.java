@@ -36,20 +36,8 @@ public class InventorySyncServiceImpl implements InventorySyncService {
 	}
 
 	@Transactional
+	@Scheduled(fixedDelay = 300000)
 	@Override
-	public void syncInventoryToDatabase(Integer itemId) {
-		InventoryDto inventory = inventoryService.getInventory(itemId);
-		Item item = itemService.getItemById(itemId);
-
-		// Redis의 현재 재고 수량으로 업데이트
-		item.updateQuantity(inventory.getQuantity());
-		itemService.saveItem(item);
-
-		log.info("Synchronized inventory for item {} to database: quantity={}", itemId, inventory.getQuantity());
-	}
-
-	@Transactional
-	@Scheduled(fixedDelay = 300000) // 5분마다 실행
 	public void syncAllInventoriesToDatabase() {
 		log.info("Starting synchronization of all inventories to database");
 
@@ -67,14 +55,5 @@ public class InventorySyncServiceImpl implements InventorySyncService {
 		}
 
 		log.info("Completed synchronization of all inventories to database");
-	}
-
-	@Transactional
-	@Override
-	public void syncInventoryFromDatabase(Integer itemId) {
-		Item item = itemService.getItemById(itemId);
-		inventoryService.updateInventory(itemId, item.getQuantity());
-
-		log.info("Synchronized inventory for item {} from database: quantity={}", itemId, item.getQuantity());
 	}
 }

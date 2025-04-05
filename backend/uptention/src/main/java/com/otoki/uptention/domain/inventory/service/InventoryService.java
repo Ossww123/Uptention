@@ -25,7 +25,7 @@ public interface InventoryService {
 	// 재고 예약 (분산락 적용)
 	boolean reserveInventory(Integer itemId, Integer quantity);
 
-	// 예약된 재고를 실제 차감 (결제 성공 시)
+	// 개별 예약 확정
 	boolean confirmInventory(Integer itemId, Integer quantity);
 
 	// 예약 취소 (결제 실패 시)
@@ -42,4 +42,10 @@ public interface InventoryService {
 
 	// 재고 존재 확인
 	boolean hasStock(Integer itemId, Integer quantity);
+
+	boolean confirmInventories(Map<Integer, Integer> itemQuantities);
+
+	boolean reserveInventories(Map<Integer, Integer> itemQuantities);
+
+	boolean cancelReservations(Map<Integer, Integer> itemQuantities);
 }
