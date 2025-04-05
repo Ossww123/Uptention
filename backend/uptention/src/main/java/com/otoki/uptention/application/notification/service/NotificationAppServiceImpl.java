@@ -23,8 +23,8 @@ public class NotificationAppServiceImpl implements NotificationAppService {
 	private final NotificationService notificationService;
 	private final SecurityService securityService;
 
+	// 알림 커서 조회
 	@Override
-	@Transactional
 	public NotificationCursorResponseDto getNotifications(Boolean read, String keyword, String cursorStr, int size) {
 		User loggedInUser = securityService.getLoggedInUser();
 
@@ -48,14 +48,19 @@ public class NotificationAppServiceImpl implements NotificationAppService {
 			? createNextCursor(resultNotifications.get(resultNotifications.size() - 1))
 			: null;
 
-		// 사용자의 모든 알림을 읽음 처리
-		notificationService.markAllAsRead(loggedInUser);
-
 		return NotificationCursorResponseDto.builder()
 			.notifications(notificationResponseDtos)
 			.hasNextPage(hasNextPage)
 			.nextCursor(nextCursor)
 			.build();
+	}
+
+	// 사용자의 모든 알림을 읽음 처리
+	@Override
+	@Transactional
+	public void markAllAsRead() {
+		User loggedInUser = securityService.getLoggedInUser();
+		notificationService.markAllAsRead(loggedInUser);
 	}
 
 	// Entity를 DTO로 변환
