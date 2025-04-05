@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -19,6 +19,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken } from '../services/AuthService';
+import messaging from '@react-native-firebase/messaging';
 
 const { AppBlockerModule } = NativeModules;
 
@@ -32,7 +33,8 @@ const HomeScreen = ({ navigation }) => {
   // 앱제한 관련 권한 상태 관리
   const [hasAccessibilityPermission, setHasAccessibilityPermission] = useState(false);
   const [hasOverlayPermission, setHasOverlayPermission] = useState(false);
-  // 읽지 않은 알림 개수 상태 (더미 데이터)
+  
+  // 읽지 않은 알림 개수 상태 (FCM 푸시 알림으로 업데이트)
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   
   // 프로그레스바 관련 계산
@@ -45,6 +47,25 @@ const HomeScreen = ({ navigation }) => {
   const remainingMinutes = maxFocusMinutes - dailyFocusTime; // 남은 시간 계산
   const progress = (remainingMinutes / maxFocusMinutes) * 100; // 남은 시간의 비율
   const svgProgress = (progress * circum) / 100; // progress가 클수록 비어있는 상태
+
+  // FCM 메시지 리스너 설정
+  useEffect(() => {
+    // 포그라운드 메시지 리스너
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      console.log('HomeScreen - 포그라운드 메시지 수신:', remoteMessage);
+      
+      // 읽지 않은 알림 개수 증가 (현재 값 + 1)
+      setUnreadNotifications(prev => prev + 1);
+      
+      // 알림 내용 확인 (옵션)
+      const notificationTitle = remoteMessage.notification?.title || '새 알림';
+      const notificationBody = remoteMessage.notification?.body || '새 알림이 도착했습니다';
+      
+      console.log(`알림 내용: ${notificationTitle} - ${notificationBody}`);
+    });
+    
+    return unsubscribe;
+  }, []);
   
   // JWT 토큰에서 payload를 추출하는 함수
   const parseJwt = (token) => {

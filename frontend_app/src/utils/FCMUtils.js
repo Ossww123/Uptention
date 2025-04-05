@@ -1,4 +1,5 @@
 // src/utils/FCMUtils.js
+import { Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -62,7 +63,7 @@ export const FCMUtils = {
     //   console.error('FCM 권한 요청 오류:', error);
     //   return false;
     // }
-    
+
     // 안드로이드 환경에서는 권한 요청이 기본적으로 필요 없음
     if (Platform.OS === 'ios') {
         // iOS 코드는 그대로 유지
