@@ -17,6 +17,7 @@ public class FcmSendServiceImpl implements FcmSendService {
 	 * @return 전송 요청 후, Firebase에서 반환하는 메시지 ID
 	 * @throws Exception 전송 실패 시 예외 발생
 	 */
+	@Override
 	public String sendNotification(String fcmToken, String title, String body) throws Exception {
 		// 전송할 메시지 생성: 알림(Notification) 구성 및 대상(Firebase Token) 지정
 		Message message = Message.builder()
