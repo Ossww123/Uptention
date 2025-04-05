@@ -134,6 +134,8 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 		} else if (sortType == SortType.HIGH_PRICE) {
 			return item.price.lt(cursor.getValue())
 				.or(item.price.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
+		} else if (sortType == SortType.ID_ASC) {
+			return item.id.gt(cursor.getId());
 		} else {
 			// SALES 또는 기본값
 			return item.salesCount.lt(cursor.getValue())
@@ -154,6 +156,10 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 			return new com.querydsl.core.types.OrderSpecifier<?>[] {
 				item.price.desc(),
 				item.id.desc()
+			};
+		} else if (sortType == SortType.ID_ASC) {
+			return new com.querydsl.core.types.OrderSpecifier<?>[] {
+				item.id.asc()
 			};
 		} else {
 			// SALES 또는 기본값

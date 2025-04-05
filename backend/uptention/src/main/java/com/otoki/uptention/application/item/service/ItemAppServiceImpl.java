@@ -237,6 +237,8 @@ public class ItemAppServiceImpl implements ItemAppService {
 			value = lastItem.getSalesCount();
 		} else if (sortType == SortType.HIGH_PRICE || sortType == SortType.LOW_PRICE) {
 			value = lastItem.getPrice();
+		} else if (sortType == SortType.ID_ASC) {
+			value = lastItem.getItemId();
 		} else {
 			throw new CustomException(ErrorCode.ITEM_INVALID_SORT_TYPE);
 		}
