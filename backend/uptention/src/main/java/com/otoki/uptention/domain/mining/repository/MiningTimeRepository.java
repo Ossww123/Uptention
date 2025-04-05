@@ -41,7 +41,7 @@ public interface MiningTimeRepository extends JpaRepository<MiningTime, Integer>
 		@Param("endTime") LocalDateTime endTime
 	);
 
-	@Query(value = "SELECT u.name, " +
+	@Query(value = "SELECT u.id, u.name, " +
 		"       CAST(SUM(TIMESTAMPDIFF(MINUTE, m.start_time, m.end_time)) AS SIGNED) AS totalMinutes " +
 		"FROM mining_time m " +
 		"JOIN user u ON m.user_id = u.id " +
