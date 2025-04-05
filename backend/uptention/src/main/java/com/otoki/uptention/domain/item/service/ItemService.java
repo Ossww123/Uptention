@@ -17,4 +17,5 @@ public interface ItemService {
 
 	List<ItemDto> getItemsByIds(List<Integer> itemIds);
 
+	List<Item> getAllItems();
 }

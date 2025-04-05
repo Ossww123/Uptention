@@ -5,7 +5,9 @@ import static org.mockito.Mockito.*;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,18 +18,23 @@ import com.otoki.uptention.ServiceTestSupport;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.service.OrderVerifyAppService;
+import com.otoki.uptention.domain.inventory.dto.InventoryDto;
+import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
-public class OrderVerifyServiceTest extends ServiceTestSupport {
+public class OrderVerifyAppServiceTest extends ServiceTestSupport {
 
 	@Autowired
 	private OrderVerifyAppService orderVerifyAppService;
 
 	@MockBean
 	private ItemService itemService;
+
+	@MockBean
+	private InventoryService inventoryService;
 
 	@Test
 	@DisplayName("상품 검증을 성공적으로 수행하고 검증된 상품 정보를 반환한다")
@@ -45,7 +52,13 @@ public class OrderVerifyServiceTest extends ServiceTestSupport {
 			createItemDto(2, "테스트 상품 2", 20000, 20, true)
 		);
 
+		// Redis 재고 정보 준비
+		Map<Integer, InventoryDto> inventories = new HashMap<>();
+		inventories.put(1, createInventoryDto(1, 10, 0, 10)); // 상품 1: 재고 10개
+		inventories.put(2, createInventoryDto(2, 20, 0, 20)); // 상품 2: 재고 20개
+
 		when(itemService.getItemsByIds(Arrays.asList(1, 2))).thenReturn(itemDtos);
+		when(inventoryService.getInventories(Arrays.asList(1, 2))).thenReturn(inventories);
 
 		// when
 		List<ItemVerificationResponseDto> response = orderVerifyAppService.verifyOrderItem(itemVerificationDtos);
@@ -74,7 +87,12 @@ public class OrderVerifyServiceTest extends ServiceTestSupport {
 			createItemDto(1, "테스트 상품 1", 10000, 10, true)
 		);
 
+		// Redis 재고 정보 준비 (item1만 있음)
+		Map<Integer, InventoryDto> inventories = new HashMap<>();
+		inventories.put(1, createInventoryDto(1, 10, 0, 10));
+
 		when(itemService.getItemsByIds(Arrays.asList(1, 2))).thenReturn(itemDtos);
+		when(inventoryService.getInventories(Arrays.asList(1, 2))).thenReturn(inventories);
 
 		// when & then
 		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(itemVerificationDtos))
@@ -100,7 +118,12 @@ public class OrderVerifyServiceTest extends ServiceTestSupport {
 			createItemDto(1, "비활성 상품", 10000, 10, false)
 		);
 
+		// Redis 재고 정보 준비
+		Map<Integer, InventoryDto> inventories = new HashMap<>();
+		inventories.put(1, createInventoryDto(1, 10, 0, 10));
+
 		when(itemService.getItemsByIds(Collections.singletonList(1))).thenReturn(itemDtos);
+		when(inventoryService.getInventories(Collections.singletonList(1))).thenReturn(inventories);
 
 		// when & then
 		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(itemVerificationDtos))
@@ -124,7 +147,12 @@ public class OrderVerifyServiceTest extends ServiceTestSupport {
 			createItemDto(1, "테스트 상품", 10000, 10, true)
 		);
 
+		// Redis 재고 정보 준비
+		Map<Integer, InventoryDto> inventories = new HashMap<>();
+		inventories.put(1, createInventoryDto(1, 10, 0, 10));
+
 		when(itemService.getItemsByIds(Collections.singletonList(1))).thenReturn(itemDtos);
+		when(inventoryService.getInventories(Collections.singletonList(1))).thenReturn(inventories);
 
 		// when & then
 		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(itemVerificationDtos))
@@ -136,7 +164,7 @@ public class OrderVerifyServiceTest extends ServiceTestSupport {
 	}
 
 	@Test
-	@DisplayName("재고가 부족할 경우 예외가 발생한다")
+	@DisplayName("Redis의 가용 재고가 부족할 경우 예외가 발생한다")
 	void verifyOrderItem_ThrowsException_WhenInsufficientStock() {
 		// given
 		List<ItemVerificationDto> itemVerificationDtos = Collections.singletonList(
@@ -148,7 +176,12 @@ public class OrderVerifyServiceTest extends ServiceTestSupport {
 			createItemDto(1, "테스트 상품", 10000, 10, true)
 		);
 
+		// Redis 재고 정보 준비 - 가용 재고가 8개 (이미 2개가 예약됨)
+		Map<Integer, InventoryDto> inventories = new HashMap<>();
+		inventories.put(1, createInventoryDto(1, 10, 2, 8));
+
 		when(itemService.getItemsByIds(Collections.singletonList(1))).thenReturn(itemDtos);
+		when(inventoryService.getInventories(Collections.singletonList(1))).thenReturn(inventories);
 
 		// when & then
 		assertThatThrownBy(() -> orderVerifyAppService.verifyOrderItem(itemVerificationDtos))
@@ -180,5 +213,18 @@ public class OrderVerifyServiceTest extends ServiceTestSupport {
 	 */
 	private ItemVerificationDto createItemVerificationDto(Integer itemId, Integer price, Integer quantity) {
 		return new ItemVerificationDto(itemId, price, quantity);
+	}
+
+	/**
+	 * InventoryDto 객체 생성 헬퍼 메서드
+	 */
+	private InventoryDto createInventoryDto(Integer itemId, Integer quantity, Integer reservedQuantity,
+		Integer availableQuantity) {
+		return InventoryDto.builder()
+			.itemId(itemId)
+			.quantity(quantity)
+			.reservedQuantity(reservedQuantity)
+			.availableQuantity(availableQuantity)
+			.build();
 	}
 }

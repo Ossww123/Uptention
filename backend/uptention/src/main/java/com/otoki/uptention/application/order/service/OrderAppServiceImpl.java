@@ -1,6 +1,8 @@
 package com.otoki.uptention.application.order.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -10,13 +12,14 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemQuantityRequestDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
-import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.DeliveryAddressResponseDto;
+import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderItemResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.common.CursorDto;
+import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
@@ -33,10 +36,12 @@ import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Transactional(readOnly = true)
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderAppServiceImpl implements OrderAppService {
 
 	private final OrderService orderService;
@@ -45,6 +50,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	private final UserService userService;
 	private final GiftService giftService;
 	private final SecurityService securityService;
+	private final InventoryService inventoryService;
 
 	/**
 	 * 일반 주문 생성
@@ -54,24 +60,42 @@ public class OrderAppServiceImpl implements OrderAppService {
 	public InitiateOrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
 		User user = securityService.getLoggedInUser();
 
-		// 1. Order 생성
-		Order order = Order.builder()
-			.user(user)
-			.address(orderRequestDto.getAddress())
-			.build();
-		Order savedOrder = orderService.saveOrder(order);
-
-		// 2. 각 상품에 대한 OrderItem 생성 및 저장
-		int totalPaymentAmount = 0;
+		// 1. 모든 상품에 대한 재고 예약 정보 구성
+		Map<Integer, Integer> itemQuantities = new HashMap<>();
 		for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
-			OrderItem orderItem = processOrderItem(order, itemRequest.getItemId(), itemRequest.getQuantity());
-			totalPaymentAmount += orderItem.getTotalPrice();
+			itemQuantities.put(itemRequest.getItemId(), itemRequest.getQuantity());
 		}
 
-		return InitiateOrderResponseDto.builder()
-			.orderId(savedOrder.getId())
-			.paymentAmount(totalPaymentAmount)
-			.build();
+		// 2. 한 번에 모든 상품의 재고 예약 (MultiLock 사용)
+		boolean reserved = inventoryService.reserveInventories(itemQuantities);
+		if (!reserved) {
+			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
+		}
+
+		try {
+			// 3. Order 생성
+			Order order = Order.builder()
+				.user(user)
+				.address(orderRequestDto.getAddress())
+				.build();
+			Order savedOrder = orderService.saveOrder(order);
+
+			// 4. 각 상품에 대한 OrderItem 생성 및 저장
+			int totalPaymentAmount = 0;
+			for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
+				OrderItem orderItem = processOrderItem(order, itemRequest.getItemId(), itemRequest.getQuantity());
+				totalPaymentAmount += orderItem.getTotalPrice();
+			}
+
+			return InitiateOrderResponseDto.builder()
+				.orderId(savedOrder.getId())
+				.paymentAmount(totalPaymentAmount)
+				.build();
+		} catch (Exception e) {
+			// 예약이 성공한 후 주문 생성 과정에서 에러가 발생하면 예약 롤백
+			inventoryService.cancelReservations(itemQuantities);
+			throw e;
+		}
 	}
 
 	/**
@@ -80,32 +104,47 @@ public class OrderAppServiceImpl implements OrderAppService {
 	@Transactional
 	@Override
 	public InitiateOrderResponseDto createGiftOrder(GiftRequestDto giftRequestDto) {
-		// security 구현 후, 코드 수정 필요
 		User sender = securityService.getLoggedInUser();
 		User receiver = userService.getUserById(giftRequestDto.getReceiverId());
 
-		// 1. Order 생성 - 선물의 경우 주소 X
-		Order order = Order.builder()
-			.user(sender) // 선물을 보내는 사람(구매자)
-			.build();
-		Order savedOrder = orderService.saveOrder(order);
+		// 단일 상품이지만 일관성을 위해 배치 메서드 사용
+		Map<Integer, Integer> itemQuantity = new HashMap<>();
+		itemQuantity.put(giftRequestDto.getItemId(), 1);
 
-		// 2. OrderItem 생성 및 저장 (선물은 기본적으로 수량 1개)
-		OrderItem orderItem = processOrderItem(order, giftRequestDto.getItemId(), 1);
-		int totalPaymentAmount = orderItem.getTotalPrice();
+		// 재고 예약 시도
+		boolean reserved = inventoryService.reserveInventories(itemQuantity);
+		if (!reserved) {
+			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
+		}
 
-		// 3. Gift 엔티티 생성
-		Gift gift = Gift.builder()
-			.order(order)
-			.receiver(receiver)
-			.build();
+		try {
+			// 1. Order 생성 - 선물의 경우 주소 X
+			Order order = Order.builder()
+				.user(sender) // 선물을 보내는 사람(구매자)
+				.build();
+			Order savedOrder = orderService.saveOrder(order);
 
-		giftService.saveGift(gift);
+			// 2. OrderItem 생성 및 저장 (선물은 기본적으로 수량 1개)
+			OrderItem orderItem = processOrderItem(order, giftRequestDto.getItemId(), 1);
+			int totalPaymentAmount = orderItem.getTotalPrice();
 
-		return InitiateOrderResponseDto.builder()
-			.orderId(savedOrder.getId())
-			.paymentAmount(totalPaymentAmount)
-			.build();
+			// 3. Gift 엔티티 생성
+			Gift gift = Gift.builder()
+				.order(order)
+				.receiver(receiver)
+				.build();
+
+			giftService.saveGift(gift);
+
+			return InitiateOrderResponseDto.builder()
+				.orderId(savedOrder.getId())
+				.paymentAmount(totalPaymentAmount)
+				.build();
+		} catch (Exception e) {
+			// 예외 발생 시 재고 예약 롤백 (MultiLock 사용)
+			inventoryService.cancelReservations(itemQuantity);
+			throw e;
+		}
 	}
 
 	/**
@@ -136,16 +175,11 @@ public class OrderAppServiceImpl implements OrderAppService {
 	}
 
 	/**
-	 * OrderItem을 생성하고 저장하는 공통 로직 + 재고 감소 / 판매량 증가
+	 * OrderItem을 생성하고 저장하는 공통 로직 + 재고 감소
+	 * 참고: Redis 재고 예약은 이미 이루어진 상태
 	 */
 	private OrderItem processOrderItem(Order order, Integer itemId, Integer quantity) {
 		Item item = itemService.getItemById(itemId);
-
-		// 재고 부족하면 예외 발생
-		if (!item.hasStock(quantity)) {
-			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
-		}
-		item.decreaseQuantity(quantity);
 
 		OrderItem orderItem = OrderItem.builder()
 			.order(order)
@@ -155,9 +189,6 @@ public class OrderAppServiceImpl implements OrderAppService {
 			.build();
 
 		orderItemService.saveOrderItem(orderItem);
-
-		// 판매량 증가
-		item.increaseSalesCount(quantity);
 
 		return orderItem;
 	}

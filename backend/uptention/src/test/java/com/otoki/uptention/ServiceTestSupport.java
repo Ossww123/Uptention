@@ -1,7 +1,13 @@
 package com.otoki.uptention;
 
+import org.redisson.api.RedissonClient;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.otoki.uptention.solana.service.SolanaRpcService;
@@ -16,6 +22,10 @@ import com.otoki.uptention.solana.service.SolanaTransactionMonitorService;
  */
 @ActiveProfiles("test")
 @SpringBootTest
+@ImportAutoConfiguration(exclude = {
+	RedisAutoConfiguration.class,
+	RedisRepositoriesAutoConfiguration.class
+})
 public abstract class ServiceTestSupport {
 
 	@MockBean
@@ -23,4 +33,13 @@ public abstract class ServiceTestSupport {
 
 	@MockBean
 	private SolanaRpcService solanaRpcService;
+
+	@MockBean
+	protected RedisTemplate<String, Object> redisTemplate;
+
+	@MockBean
+	protected RedissonClient redissonClient;
+
+	@MockBean
+	private RedisConnectionFactory redisConnectionFactory;
 }

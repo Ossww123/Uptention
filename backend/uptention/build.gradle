@@ -57,9 +57,6 @@ dependencies {
     // Spring WebSocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
-    // Spring Webflux
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'
-
     // Swagger 추가
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
 
@@ -81,6 +78,17 @@ dependencies {
     // Solana 라이브러리 추가
     implementation 'com.mmorrell:solanaj:1.19.2'
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
+
+    // Redis 관련 의존성 추가
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.redisson:redisson-spring-boot-starter:3.24.1'
+
+    // 캐시 관련 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+    // 테스트에서도 Lombok을 사용하기 위한 설정
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'

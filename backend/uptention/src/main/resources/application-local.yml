@@ -12,9 +12,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
   rabbitmq:
     host: rabbitmq
     port: 5672
     username: local
     password: local
 
+  redis:
+    host: redis # Redis 컨테이너 서비스명을 호스트로 설정
+    port: 6379
+    timeout: 60000

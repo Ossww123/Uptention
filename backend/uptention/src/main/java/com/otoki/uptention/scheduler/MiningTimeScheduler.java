@@ -24,7 +24,6 @@ public class MiningTimeScheduler {
 		log.info("Updating user point for scheduler");
 		miningTimeAppService.bulkUpdateUserPoints();
 		log.info("Send Token for scheduler");
-		miningTimeAppService.bulkSendToken();
+		// miningTimeAppService.bulkSendToken();
 	}
-
 }
