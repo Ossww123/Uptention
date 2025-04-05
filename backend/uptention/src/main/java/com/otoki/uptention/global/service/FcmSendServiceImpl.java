@@ -6,7 +6,10 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class FcmSendServiceImpl implements FcmSendService {
 	/**
 	 * 특정 사용자에게 푸시 알림을 전송합니다.
@@ -29,8 +32,7 @@ public class FcmSendServiceImpl implements FcmSendService {
 			.build();
 
 		// FirebaseMessaging 인스턴스를 사용하여 메시지 전송
-		String response = FirebaseMessaging.getInstance().send(message);
-		System.out.println("Successfully sent message: " + response);
-		return response;
+		log.info("Sending notification to FCM - Title: {}, Body: {}", title, body);
+		return FirebaseMessaging.getInstance().send(message);
 	}
 }
