@@ -11,15 +11,12 @@ import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
 public interface MiningTimeAppService {
 
 	void focusModeOn(FocusModeOnRequestDto focusModeOnRequestDto);
-
 	void focusModeOff();
-
 	int bulkUpdateMiningTime();
-
 	int bulkUpdateUserPoints();
-
 	List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime);
-
 	Map<String, List<MiningTimeRankResponseDto>> findMiningRank(Integer top);
-	// void bulkSendToken();
+	void bulkSendToken();
+	List<MiningTimeAppServiceImpl.MintAddressResponse> bulkCreateNFT();
+	void bulkSendNFT(List<MiningTimeAppServiceImpl.MintAddressResponse> mintAddresses);
 }
