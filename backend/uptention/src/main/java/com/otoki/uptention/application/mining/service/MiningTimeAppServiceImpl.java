@@ -375,9 +375,6 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		});
 
 		log.info("NFT 전송 종료");
-		for (MintAddressResponse mintAddress : mintAddresses) {
-			expressApiService.transferNft(mintAddress.getWallet(), mintAddress.getAddress());
-		}
 	}
 
 	private static final double EARTH_RADIUS = 6371000;
