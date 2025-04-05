@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { get } from '../services/api';
 import messaging from '@react-native-firebase/messaging';
+import { useFocusEffect } from '@react-navigation/native';
 
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
@@ -153,6 +154,17 @@ const NotificationScreen = ({ navigation }) => {
       setRefreshing(false);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      // 화면이 포커스될 때마다 알림 목록 조회 API 호출
+      fetchNotifications();
+      
+      return () => {
+        // 클린업 코드 (필요시)
+      };
+    }, [])
+  );
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString) => {

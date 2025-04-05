@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -20,6 +20,7 @@ import { API_BASE_URL } from '../config/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken } from '../services/AuthService';
 import messaging from '@react-native-firebase/messaging';
+import { useFocusEffect} from '@react-navigation/native';
 
 const { AppBlockerModule } = NativeModules;
 
@@ -66,6 +67,29 @@ const HomeScreen = ({ navigation }) => {
     
     return unsubscribe;
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      // 화면이 포커스될 때마다 알림 카운트 조회 API 호출
+      const fetchUnreadNotificationCount = async () => {
+        try {
+          // API 호출 코드 (백엔드 완성 후 추가)
+          // const { data, ok } = await get('/notifications/unread/count');
+          // if (ok) {
+          //   setUnreadNotifications(data.count);
+          // }
+        } catch (error) {
+          console.error('알림 개수 조회 오류:', error);
+        }
+      };
+  
+      fetchUnreadNotificationCount();
+      
+      return () => {
+        // 클린업 코드 (필요시)
+      };
+    }, [])
+  );
   
   // JWT 토큰에서 payload를 추출하는 함수
   const parseJwt = (token) => {
