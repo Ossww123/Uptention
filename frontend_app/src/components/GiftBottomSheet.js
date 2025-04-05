@@ -36,7 +36,7 @@ const GiftBottomSheet = ({
   const [showUserList, setShowUserList] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const { tokenBalance, publicKey, sendSPLToken } = useWallet();
-  const { authToken } = useAuth();
+  const { authToken, userId } = useAuth();
 
   // 사용자 목록 조회
   const fetchUsers = async (cursor = null) => {
@@ -46,7 +46,8 @@ const GiftBottomSheet = ({
       const params = {
         userRole: 'ROLE_MEMBER',
         sort: 'NAMES_ASC',
-        size: 20
+        size: 20,
+        excludeUserId: userId
       };
 
       if (cursor) {
@@ -69,14 +70,19 @@ const GiftBottomSheet = ({
       console.log('API 응답 데이터:', response.data);
 
       if (response.status === 200) {
-        const newUsers = response.data.users.map(user => ({
-          id: user.userId,
-          name: user.name,
-          employeeNumber: user.employeeNumber,
-          wallet: user.wallet
-        }));
+        const newUsers = response.data.users
+          .filter(user => {
+            console.log('필터링 중인 사용자:', user.userId, '현재 사용자:', userId);
+            return user.userId !== userId && user.userId !== Number(userId);
+          })
+          .map(user => ({
+            id: user.userId,
+            name: user.name,
+            employeeNumber: user.employeeNumber,
+            wallet: user.wallet
+          }));
 
-        console.log('변환된 사용자 데이터:', newUsers);
+        console.log('필터링 후 사용자 데이터:', newUsers);
 
         if (cursor) {
           setUsers(prev => [...prev, ...newUsers]);

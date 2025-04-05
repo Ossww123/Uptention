@@ -20,6 +20,7 @@ class AppBlockerManager(private val context: Context) {
             "com.android.launcher3",                     // 기본 홈 런처
             "com.anonymous.uptention",                   // 현재 앱
             "com.android.settings",                      // 설정
+            "com.samsung.android.settings",              // 삼성 설정
             "com.android.systemui",                      // 시스템 UI
             "com.google.android.apps.nexuslauncher",    // Pixel 런처
             "com.google.android.packageinstaller",       // 패키지 설치 관리자
@@ -30,6 +31,10 @@ class AppBlockerManager(private val context: Context) {
             "android",                                   // 안드로이드 시스템
             "com.android.launcher2",                     // 레거시 런처
             "com.lge.launcher3",                         // LG 홈 (LG 런처)
+            
+            // 개발 및 지갑 앱
+            "com.expo.development",                     // Expo Go
+            "com.phantom.mobile.wallet",                // Phantom 지갑
             
             // 핵심 통신 기능
             "com.android.dialer",                        // 안드로이드 전화
@@ -83,7 +88,12 @@ class AppBlockerManager(private val context: Context) {
             "com.samsung.android.lool",                  // 디바이스 케어
             "com.lge.smartdoctor",                       // 스마트 닥터
             "com.google.android.apps.wellbeing",         // 디지털 웰빙
-            "com.google.android.apps.restore"            // 기기 복원
+            "com.google.android.apps.restore",            // 기기 복원
+            
+            // 시스템 설정
+            "com.samsung.android.settings",              // 삼성 설정
+            "com.samsung.accessibility",                 // 삼성 접근성 설정
+            "com.samsung.android.accessibility.settings", // 삼성 접근성 설정 (대체 패키지)
         )
     }
 

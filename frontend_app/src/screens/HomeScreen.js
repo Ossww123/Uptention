@@ -256,28 +256,30 @@ const HomeScreen = ({ navigation }) => {
     if (!userId || !authToken) return;
 
     try {
-      // UTC 기준으로 오늘 날짜의 시작과 끝 시간 설정
+      // 현재 한국 시간 기준으로 오늘 날짜의 시작과 끝 시간 설정
       const now = new Date();
-      const koreaTimezoneOffset = 9 * 60; // 한국 시간대 오프셋 (9시간)
       const todayStart = new Date(now);
-      todayStart.setUTCHours(0 - 9, 0, 0, 0); // KST 00:00:00을 UTC로 변환
+      todayStart.setHours(0, 0, 0, 0);  // 한국 시간 기준 오늘 00:00:00
       
       const todayEnd = new Date(now);
-      todayEnd.setUTCHours(23 - 9, 59, 59, 999); // KST 23:59:59를 UTC로 변환
+      todayEnd.setHours(23, 59, 59, 999);  // 한국 시간 기준 오늘 23:59:59
 
-      // UTC 날짜를 YYYY-MM-DDTHH:mm:ss 형식으로 변환
+      // UTC로 변환
+      const startTimeUTC = new Date(todayStart.getTime() - (9 * 60 * 60 * 1000));  // KST -> UTC
+      const endTimeUTC = new Date(todayEnd.getTime() - (9 * 60 * 60 * 1000));  // KST -> UTC
+
+      // UTC 날짜를 ISO 문자열로 변환
       const formatDate = (date) => {
         return date.toISOString().split('.')[0];
       };
-      
+
       console.log('API 요청 파라미터:', {
-        startTime: formatDate(todayStart),
-        endTime: formatDate(todayEnd),
-        localTime: new Date().toLocaleString('ko-KR'),
-        utcTime: new Date().toISOString()
+        startTime: formatDate(startTimeUTC),
+        endTime: formatDate(endTimeUTC),
+        localTime: todayStart.toLocaleString('ko-KR'),
+        utcTime: startTimeUTC.toISOString()
       });
 
-      // API 호출
       const response = await axios.get(
         `${API_BASE_URL}/api/users/${userId}/mining-times`,
         {
@@ -285,8 +287,8 @@ const HomeScreen = ({ navigation }) => {
             'Authorization': `Bearer ${authToken}`
           },
           params: {
-            startTime: formatDate(todayStart),
-            endTime: formatDate(todayEnd)
+            startTime: formatDate(startTimeUTC),
+            endTime: formatDate(endTimeUTC)
           }
         }
       );
@@ -349,6 +351,22 @@ const HomeScreen = ({ navigation }) => {
 
     return unsubscribe;
   }, [navigation, userId, authToken]);
+
+  useEffect(() => {
+    // 현재 시간과 다음 자정까지의 시간 계산
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setHours(24, 0, 0, 0);
+    const timeUntilMidnight = tomorrow - now;
+
+    // 자정에 데이터 초기화하는 타이머 설정
+    const timer = setTimeout(() => {
+      fetchDailyFocusTime();
+      fetchUserPoint();
+    }, timeUntilMidnight);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

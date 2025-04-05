@@ -141,6 +141,13 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
           </TouchableOpacity>
         )}
 
+        <TouchableOpacity
+          style={styles.skipButton}
+          onPress={() => navigation.navigate('MainApp')}
+        >
+          <Text style={styles.skipButtonText}>건너뛰기</Text>
+        </TouchableOpacity>
+
         <View style={styles.benefitsContainer}>
           <Text style={styles.benefitsTitle}>지갑 연동 시 혜택</Text>
 
@@ -303,6 +310,14 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 30,
     fontStyle: "italic",
+  },
+  skipButton: {
+    marginTop: 15,
+    padding: 10,
+  },
+  skipButtonText: {
+    color: '#888888',
+    fontSize: 16,
   },
 });
 
