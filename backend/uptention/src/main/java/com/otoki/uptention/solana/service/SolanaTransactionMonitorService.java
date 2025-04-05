@@ -104,6 +104,10 @@ public class SolanaTransactionMonitorService {
 		disconnectWebSocket();
 	}
 
+	public boolean isWebSocketConnected() {
+		return webSocketClient != null && webSocketClient.isOpen();
+	}
+
 	/**
 	 * 회사 지갑이 소유한 토큰 계정 조회
 	 */
@@ -200,19 +204,19 @@ public class SolanaTransactionMonitorService {
 	}
 
 	/**
-	 * 로그 구독 방식으로 회사 지갑 관련 로그 구독
+	 * 로그 구독 방식으로 워크토큰 로그 구독
 	 */
 	private void subscribeToLogs() {
 		try {
 			if (webSocketClient != null && webSocketClient.isOpen()) {
-				log.info("회사 지갑 주소 관련 로그 구독 요청 전송: {}", solanaProperties.getCompanyWallet());
+				log.info("워크토큰 민트 주소 로그 구독 요청 전송: {}", solanaProperties.getCompanyWallet());
 
-				// 회사 지갑 주소를 언급하는 모든 로그 구독
-				webSocketClient.logsSubscribe(solanaProperties.getCompanyWallet(), new NotificationEventListener() {
+				// 토큰 민트 주소 로그 구독
+				webSocketClient.logsSubscribe(solanaProperties.getWorkTokenMint(), new NotificationEventListener() {
 					@Override
 					public void onNotificationEvent(Object data) {
 						try {
-							log.info("로그 알림 수신: {}", objectMapper.writeValueAsString(data));
+							log.info("워크토큰 민트 관련 로그 알림 수신: {}", objectMapper.writeValueAsString(data));
 
 							// 로그 데이터에서 트랜잭션 서명 추출
 							@SuppressWarnings("unchecked")
@@ -220,7 +224,7 @@ public class SolanaTransactionMonitorService {
 
 							if (dataMap.containsKey("signature")) {
 								String signature = dataMap.get("signature").toString();
-								log.info("트랜잭션 감지: {}", signature);
+								log.info("워크 토큰 트랜잭션 감지: {}", signature);
 
 								// 이미 처리된 트랜잭션 제외
 								if (processedSignatures.contains(signature)) {
@@ -228,64 +232,83 @@ public class SolanaTransactionMonitorService {
 									return;
 								}
 
-								// 트랜잭션 세부 정보 조회 및 로깅
-								JsonNode transactionData = fetchTransactionDetails(signature);
-								if (transactionData != null) {
-									logTransactionDetails(transactionData, signature);
+								// WebSocket에서 받은 로그 정보 사용
+								if (dataMap.containsKey("logs") && dataMap.get("logs") != null) {
+									@SuppressWarnings("unchecked")
+									List<String> logs = (List<String>)dataMap.get("logs");
+
+									// WebSocket 알림에서 받은 로그 정보로 처리
+									processTransactionWithLogs(signature, logs);
 									processedSignatures.add(signature);
-								}
-							}
-						} catch (Exception e) {
-							log.error("로그 알림 처리 실패", e);
-						}
-					}
-				});
-
-				log.info("로그 구독 완료");
-
-				// 토큰 민트 주소가 있는 경우 해당 민트 관련 로그도 구독
-				if (solanaProperties.getWorkTokenMint() != null && !solanaProperties.getWorkTokenMint().isEmpty()) {
-					webSocketClient.logsSubscribe(solanaProperties.getWorkTokenMint(), new NotificationEventListener() {
-						@Override
-						public void onNotificationEvent(Object data) {
-							try {
-								log.info("워크 토큰 민트 관련 로그 알림 수신: {}", objectMapper.writeValueAsString(data));
-
-								// 로그 데이터에서 트랜잭션 서명 추출
-								@SuppressWarnings("unchecked")
-								Map<String, Object> dataMap = (Map<String, Object>)data;
-
-								if (dataMap.containsKey("signature")) {
-									String signature = dataMap.get("signature").toString();
-									log.info("워크 토큰 트랜잭션 감지: {}", signature);
-
-									// 이미 처리된 트랜잭션 제외
-									if (processedSignatures.contains(signature)) {
-										log.info("이미 처리된 트랜잭션: {}", signature);
-										return;
-									}
-
-									// 트랜잭션 세부 정보 조회 및 로깅
+								} else {
+									// 로그 정보가 없는 경우 RPC 호출
 									JsonNode transactionData = fetchTransactionDetails(signature);
 									if (transactionData != null) {
 										logTransactionDetails(transactionData, signature);
 										processedSignatures.add(signature);
 									}
 								}
-							} catch (Exception e) {
-								log.error("워크 토큰 로그 알림 처리 실패", e);
 							}
+						} catch (Exception e) {
+							log.error("워크 토큰 로그 알림 처리 실패", e);
 						}
-					});
+					}
+				});
 
-					log.info("워크 토큰 민트 로그 구독 완료");
-				}
+				log.info("워크 토큰 민트 로그 구독 완료");
 			} else {
 				log.warn("WebSocket 연결이 되어있지 않아 구독 요청을 보낼 수 없습니다");
 			}
 		} catch (Exception e) {
 			log.error("로그 구독 요청 실패", e);
 		}
+	}
+
+	/**
+	 * WebSocket에서 받은 로그로 트랜잭션 처리
+	 */
+	private void processTransactionWithLogs(String signature, List<String> logs) {
+		log.info("======== 트랜잭션 상세 정보 (WebSocket) ========");
+		log.info("트랜잭션 서명: {}", signature);
+
+		if (logs == null || logs.isEmpty()) {
+			log.info("로그 메시지를 찾을 수 없습니다");
+			return;
+		}
+
+		// 로그 출력 및 주문 ID 찾기
+		String orderId = null;
+		for (String logMessage : logs) {
+			log.info("로그 메시지: {}", logMessage);
+
+			// Memo 프로그램 로그에서 주문 ID 추출
+			if (logMessage.contains("Memo") && logMessage.contains("ORDER_")) {
+				int startIdx = logMessage.indexOf("ORDER_");
+				if (startIdx != -1) {
+					int endIdx = logMessage.lastIndexOf("\"");
+					if (endIdx > startIdx) {
+						orderId = logMessage.substring(startIdx, endIdx);
+					} else {
+						orderId = logMessage.substring(startIdx);
+					}
+					log.info("주문 ID 감지: {}", orderId);
+					break;
+				}
+			}
+		}
+
+		// 주문 ID가 추출된 경우 처리
+		if (orderId != null && orderId.startsWith("ORDER_")) {
+			String orderIdOnly = orderId.substring(6); // "ORDER_" 제거
+
+			// 주문 처리를 위한 시간 정보는 현재 시간으로 대체 (블록 시간 정보가 없으므로)
+			long currentBlockTime = Instant.now().getEpochSecond();
+
+			// 주문 처리 로직 호출
+			processOrder(orderIdOnly, currentBlockTime, null, signature);
+		}
+
+		log.info("================================");
 	}
 
 	/**
@@ -371,144 +394,178 @@ public class SolanaTransactionMonitorService {
 					new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date));
 			}
 
-			// 메모 필드 확인 (주문 ID 확인을 위해)
-			if (result.has("transaction") && result.get("transaction").has("message")) {
-				JsonNode message = result.get("transaction").get("message");
-				if (message.has("instructions")) {
-					JsonNode instructions = message.get("instructions");
-					for (JsonNode instruction : instructions) {
-						// Memo 프로그램 ID 확인 (MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr)
-						if (instruction.has("programId") &&
-							instruction.get("programId")
-								.asText()
-								.equals("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")) {
+			// logMessages에서 주문 ID 추출
+			if (result.has("meta") && result.get("meta").has("logMessages")) {
+				JsonNode logMessages = result.get("meta").get("logMessages");
+				String orderId = null;
 
-							if (instruction.has("data")) {
-								String memoData = instruction.get("data").asText();
-								log.info("트랜잭션 메모: {}", memoData);
+				for (JsonNode logMessage : logMessages) {
+					String message = logMessage.asText();
+					log.info("로그 메시지: {}", message);
 
-								// 메모에서 주문 ID 추출 (ORDER_123 형식 예상)
-								if (memoData.startsWith("ORDER_")) {
-									String orderId = memoData.substring(6);
-									log.info("주문 ID 감지: {}", orderId);
-
-									try {
-										// 1. 주문 ID 유효성 검증
-										Integer orderIdNum = Integer.parseInt(orderId);
-										Order order;
-										try {
-											order = orderService.getOrderById(orderIdNum);
-										} catch (CustomException e) {
-											// 주문이 존재하지 않음
-											log.error("주문을 찾을 수 없음: {}", orderId);
-											publishPaymentFailedEvent(orderId, "주문을 찾을 수 없음", signature);
-											continue;
-										}
-
-										// 2. 주문 상태 검증
-										if (!OrderStatus.PAYMENT_PENDING.equals(order.getStatus())) {
-											String reason = "유효하지 않은 주문 상태: " + order.getStatus();
-											log.warn("주문 ID({})의 상태가 결제 대기 상태가 아닙니다: {}",
-												orderIdNum, order.getStatus());
-											publishPaymentFailedEvent(orderId, reason, signature);
-											continue;
-										}
-
-										// 3. 트랜잭션 시간 검증
-										LocalDateTime orderCreatedAt = order.getCreatedAt();
-										LocalDateTime transactionTime = LocalDateTime.ofInstant(
-											Instant.ofEpochSecond(blockTime), ZoneId.systemDefault());
-
-										if (transactionTime.isBefore(orderCreatedAt)) {
-											String reason = "트랜잭션 시간이 주문 생성 시간보다 이전임";
-											log.warn("트랜잭션 시간이 주문 생성 시간보다 이전입니다: 주문 ID={}", orderIdNum);
-											publishPaymentFailedEvent(orderId, reason, signature);
-											continue;
-										}
-
-										// 4. 주문 금액 계산
-										List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(orderIdNum);
-										int orderTotalAmount = orderItems.stream()
-											.mapToInt(OrderItem::getTotalPrice)
-											.sum();
-
-										// 5. 트랜잭션 금액 확인
-										double transactionAmount = 0;
-										if (result.has("meta")) {
-											JsonNode meta = result.get("meta");
-											if (meta.has("preTokenBalances") && meta.has("postTokenBalances")) {
-												JsonNode preBalances = meta.get("preTokenBalances");
-												JsonNode postBalances = meta.get("postTokenBalances");
-
-												for (int i = 0; i < preBalances.size(); i++) {
-													JsonNode pre = preBalances.get(i);
-													if (!pre.has("owner") ||
-														!pre.get("owner").asText().equals(solanaProperties.getCompanyWallet())) {
-														continue;
-													}
-
-													// 같은 인덱스의 post 잔액 찾기
-													for (int j = 0; j < postBalances.size(); j++) {
-														JsonNode post = postBalances.get(j);
-														if (post.get("accountIndex").asInt() == pre.get("accountIndex").asInt()) {
-															// 워크 토큰인지 확인
-															if (pre.has("mint") &&
-																pre.get("mint").asText().equals(solanaProperties.getWorkTokenMint())) {
-																double preAmount = Double.parseDouble(
-																	pre.path("uiTokenAmount").path("uiAmountString").asText("0"));
-																double postAmount = Double.parseDouble(
-																	post.path("uiTokenAmount").path("uiAmountString").asText("0"));
-
-																// 잔액 증가량 계산 (회사 지갑으로 전송된 금액)
-																transactionAmount = postAmount - preAmount;
-																log.info("주문 ID({})의 결제 금액: {}", orderIdNum, transactionAmount);
-															}
-														}
-													}
-												}
-											}
-										}
-
-										// 6. 금액 검증
-										if (Math.abs(transactionAmount - orderTotalAmount) > 0.001) {
-											String reason = String.format(
-												"금액이 일치하지 않음: 주문=%d, 트랜잭션=%.2f", orderTotalAmount, transactionAmount);
-											log.warn("주문 ID({})의 금액이 일치하지 않습니다: 주문={}, 트랜잭션={}",
-												orderIdNum, orderTotalAmount, transactionAmount);
-											publishPaymentFailedEvent(orderId, reason, signature);
-											continue;
-										}
-
-										// 7. 모든 검증 통과 시 결제 완료 이벤트 발행
-										PaymentSuccessEvent event = PaymentSuccessEvent.builder()
-											.orderId(orderIdNum)
-											.userId(order.getUser().getId())
-											.totalAmount(new BigDecimal(orderTotalAmount))
-											.completedAt(System.currentTimeMillis())
-											.transactionSignature(signature)
-											.build();
-
-										rabbitTemplate.convertAndSend(RabbitMQConfig.PAYMENT_EXCHANGE,
-											RabbitMQConfig.PAYMENT_COMPLETED_KEY, event);
-										log.info("주문 ID({})의 결제 완료 이벤트를 발행했습니다.", orderIdNum);
-
-									} catch (NumberFormatException e) {
-										log.error("유효하지 않은 주문 ID 형식: {}", orderId, e);
-										publishPaymentFailedEvent(orderId, "유효하지 않은 주문 ID 형식", signature);
-									} catch (Exception e) {
-										log.error("결제 처리 중 예상치 못한 오류: {}", orderId, e);
-										publishPaymentFailedEvent(orderId, "결제 처리 중 시스템 오류: " + e.getMessage(), signature);
-									}
-								}
+					// Memo 프로그램 로그에서 주문 ID 추출
+					if (message.contains("Memo") && message.contains("ORDER_")) {
+						// "Program log: Memo (len 9): \"ORDER_155\"" 형식에서 추출
+						int startIdx = message.indexOf("ORDER_");
+						if (startIdx != -1) {
+							int endIdx = message.lastIndexOf("\"");
+							if (endIdx > startIdx) {
+								orderId = message.substring(startIdx, endIdx);
+							} else {
+								orderId = message.substring(startIdx);
 							}
+							log.info("주문 ID 감지: {}", orderId);
+							break;
 						}
 					}
 				}
+
+				// 주문 ID가 추출된 경우에만 처리 진행
+				if (orderId != null && orderId.startsWith("ORDER_")) {
+					String orderIdOnly = orderId.substring(6); // "ORDER_" 제거
+					processOrder(orderIdOnly, blockTime, result, signature);
+				} else {
+					log.info("주문 ID를 찾을 수 없습니다");
+				}
+			} else {
+				log.info("로그 메시지를 찾을 수 없습니다");
 			}
 
 			log.info("================================");
 		} catch (Exception e) {
 			log.error("트랜잭션 상세 정보 로깅 중 오류", e);
+			e.printStackTrace(); // 스택 트레이스 출력
+		}
+	}
+
+	// 주문 처리 로직을 별도 메소드로 분리
+	private void processOrder(String orderId, long blockTime, JsonNode result, String signature) {
+		try {
+			// 1. 주문 ID 유효성 검증
+			Integer orderIdNum = Integer.parseInt(orderId);
+			Order order;
+			try {
+				order = orderService.getOrderById(orderIdNum);
+			} catch (CustomException e) {
+				log.error("주문을 찾을 수 없음: {}", orderId);
+				publishPaymentFailedEvent(orderId, "주문을 찾을 수 없음", signature);
+				return;
+			}
+
+			// 2. 주문 상태 검증
+			if (!OrderStatus.PAYMENT_PENDING.equals(order.getStatus())) {
+				// 이미 완료된 상태면 오류로 처리하지 않고 정상 종료
+				if (OrderStatus.PAYMENT_COMPLETED.equals(order.getStatus())) {
+					log.info("주문 ID({})는 이미 결제 완료 상태입니다.", orderIdNum);
+					return;
+				}
+
+				// 유효하지 않은 상태일 경우에만 실패 처리
+				String reason = "유효하지 않은 주문 상태: " + order.getStatus();
+				log.warn("주문 ID({})의 상태가 결제 대기 상태가 아닙니다: {}", orderIdNum, order.getStatus());
+				publishPaymentFailedEvent(orderId, reason, signature);
+				return;
+			}
+
+			// 3. 트랜잭션 시간 검증 (blockTime이 유효한 경우에만)
+			if (blockTime > 0) {
+				LocalDateTime orderCreatedAt = order.getCreatedAt();
+				LocalDateTime transactionTime = LocalDateTime.ofInstant(
+					Instant.ofEpochSecond(blockTime), ZoneId.systemDefault());
+
+				if (transactionTime.isBefore(orderCreatedAt)) {
+					String reason = "트랜잭션 시간이 주문 생성 시간보다 이전임";
+					log.warn("트랜잭션 시간이 주문 생성 시간보다 이전입니다: 주문 ID={}", orderIdNum);
+					publishPaymentFailedEvent(orderId, reason, signature);
+					return;
+				}
+			}
+
+			// 4. 주문 금액 계산
+			List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(orderIdNum);
+			int orderTotalAmount = orderItems.stream()
+				.mapToInt(OrderItem::getTotalPrice)
+				.sum();
+
+			// 5. 트랜잭션 금액 확인 (result가 있는 경우에만)
+			double transactionAmount = orderTotalAmount; // 기본값으로 주문 금액 사용
+
+			if (result != null && result.has("meta")) {
+				JsonNode meta = result.get("meta");
+				if (meta.has("preTokenBalances") && meta.has("postTokenBalances")) {
+					JsonNode preBalances = meta.get("preTokenBalances");
+					JsonNode postBalances = meta.get("postTokenBalances");
+
+					for (int i = 0; i < preBalances.size(); i++) {
+						JsonNode pre = preBalances.get(i);
+						if (!pre.has("owner") ||
+							!pre.get("owner")
+								.asText()
+								.equals(solanaProperties.getCompanyWallet())) {
+							continue;
+						}
+
+						// 같은 인덱스의 post 잔액 찾기
+						for (int j = 0; j < postBalances.size(); j++) {
+							JsonNode post = postBalances.get(j);
+							if (post.get("accountIndex").asInt() == pre.get("accountIndex")
+								.asInt()) {
+								// 워크 토큰인지 확인
+								if (pre.has("mint") &&
+									pre.get("mint")
+										.asText()
+										.equals(solanaProperties.getWorkTokenMint())) {
+									double preAmount = Double.parseDouble(
+										pre.path("uiTokenAmount")
+											.path("uiAmountString")
+											.asText("0"));
+									double postAmount = Double.parseDouble(
+										post.path("uiTokenAmount")
+											.path("uiAmountString")
+											.asText("0"));
+
+									// 잔액 증가량 계산 (회사 지갑으로 전송된 금액)
+									transactionAmount = postAmount - preAmount;
+									log.info("주문 ID({})의 결제 금액: {}", orderIdNum,
+										transactionAmount);
+								}
+							}
+						}
+					}
+				}
+			} else {
+				log.info("주문 ID({})의 결제 금액: {} (기본값 사용)", orderIdNum, transactionAmount);
+			}
+
+			// 6. 금액 검증 (RPC 결과가 있는 경우에만)
+			if (result != null && Math.abs(transactionAmount - orderTotalAmount) > 0.001) {
+				String reason = String.format(
+					"금액이 일치하지 않음: 주문=%d, 트랜잭션=%.2f", orderTotalAmount, transactionAmount);
+				log.warn("주문 ID({})의 금액이 일치하지 않습니다: 주문={}, 트랜잭션={}",
+					orderIdNum, orderTotalAmount, transactionAmount);
+				publishPaymentFailedEvent(orderId, reason, signature);
+				return;
+			}
+
+			// 7. 모든 검증 통과 시 결제 완료 이벤트 발행
+			PaymentSuccessEvent event = PaymentSuccessEvent.builder()
+				.orderId(orderIdNum)
+				.userId(order.getUser().getId())
+				.totalAmount(new BigDecimal(orderTotalAmount))
+				.completedAt(System.currentTimeMillis())
+				.transactionSignature(signature)
+				.build();
+
+			rabbitTemplate.convertAndSend(RabbitMQConfig.PAYMENT_EXCHANGE,
+				RabbitMQConfig.PAYMENT_COMPLETED_KEY, event);
+			log.info("주문 ID({})의 결제 완료 이벤트를 발행했습니다.", orderIdNum);
+
+		} catch (NumberFormatException e) {
+			log.error("유효하지 않은 주문 ID 형식: {}", orderId, e);
+			publishPaymentFailedEvent(orderId, "유효하지 않은 주문 ID 형식", signature);
+		} catch (Exception e) {
+			log.error("결제 처리 중 예상치 못한 오류: {}", orderId, e);
+			publishPaymentFailedEvent(orderId, "결제 처리 중 시스템 오류: " + e.getMessage(), signature);
 		}
 	}
 

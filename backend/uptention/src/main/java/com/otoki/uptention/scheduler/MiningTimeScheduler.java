@@ -17,11 +17,13 @@ public class MiningTimeScheduler {
 	private final MiningTimeAppService miningTimeAppService;
 
 	@Transactional
-	@Scheduled(cron = "0 30 14 * * *", zone = "UTC")
+	@Scheduled(cron = "00 30 23 * * *", zone = "Asia/Seoul")
 	public void updateNullEndTime() {
 		log.info("Updating null end time for scheduler");
 		miningTimeAppService.bulkUpdateMiningTime();
-		log.info("Updating user point  for scheduler");
+		log.info("Updating user point for scheduler");
 		miningTimeAppService.bulkUpdateUserPoints();
+		log.info("Send Token for scheduler");
+		// miningTimeAppService.bulkSendToken();
 	}
 }

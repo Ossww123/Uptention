@@ -185,7 +185,8 @@ public interface CartApiDoc {
 		)
 	})
 	ResponseEntity<String> removeCartItem(
-		@Parameter(description = "삭제할 장바구니 항목 ID 목록", required = true)
+		@Parameter(description = "삭제할 장바구니 항목 ID 목록", required = true,
+			schema = @Schema(type = "array", example = "[1, 2, 3]"))
 		@RequestBody List<Integer> cartIds);
 
 	@Operation(summary = "장바구니 상품 개수 조회", description = "사용자의 장바구니에 담긴 상품 종류의 개수를 조회합니다.")

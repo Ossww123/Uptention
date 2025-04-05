@@ -59,4 +59,12 @@ public class ItemServiceImpl implements ItemService {
 		return itemRepository.findItemsWithThumbnailByIds(itemIds);
 	}
 
+	/**
+	 * 모든 상품 조회
+	 * 활성 상태(status=true)인 상품만 조회
+	 */
+	@Override
+	public List<Item> getAllItems() {
+		return itemRepository.findByStatusTrue();
+	}
 }

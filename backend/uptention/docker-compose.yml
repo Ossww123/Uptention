@@ -50,6 +50,16 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
+  redis:
+    image: redis:7.4.2
+    restart: always
+    ports:
+      - "6379:6379"  # Redis 포트
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes # 데이터 영속성 활성화
+
 volumes:
   uptention-mysql:  # MySQL 데이터 저장소
   rabbitmq-data:    # RabbitMQ 데이터 저장소
+  redis-data:       # Redis 데이터 저장소

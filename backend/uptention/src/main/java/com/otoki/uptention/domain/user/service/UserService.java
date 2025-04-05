@@ -25,4 +25,6 @@ public interface UserService {
 
 	List<User> getUsersByCursor(Company company, UserRole userRole, String keyword,
 		UserCursorDto<String> cursor, UserSortType sortType, int size);
+
+	List<User> getUsersByRole();
 }

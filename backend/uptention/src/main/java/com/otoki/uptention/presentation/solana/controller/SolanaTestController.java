@@ -120,6 +120,32 @@ public class SolanaTestController {
 		}
 	}
 
+	@GetMapping("/check-connection")
+	public ResponseEntity<Map<String, Object>> checkConnection() {
+		boolean isConnected = false;
+		try {
+			isConnected = monitorService.isWebSocketConnected();
+			Map<String, Object> response = new HashMap<>();
+			response.put("webSocketConnected", isConnected);
+			response.put("timestamp", System.currentTimeMillis());
+
+			// 추가적인 진단 정보
+			try {
+				List<String> recentTxs = solanaRpcService.getRecentTransactions(5);
+				response.put("recentTransactions", recentTxs);
+			} catch (Exception e) {
+				response.put("recentTransactionsError", e.getMessage());
+			}
+
+			return ResponseEntity.ok(response);
+		} catch (Exception e) {
+			Map<String, Object> response = new HashMap<>();
+			response.put("webSocketConnected", false);
+			response.put("error", e.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+		}
+	}
+
 	// @PostMapping("/refresh-orders")
 	// public ResponseEntity<?> refreshPendingOrders() {
 	// 	try {
