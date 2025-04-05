@@ -1,5 +1,5 @@
-// src/screens/auth/LoginScreen.js
-import React, { useState } from 'react';
+// src/screens/auth/LoginScreen.js - 수정 버전
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { post } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { parseJwt } from '../../services/AuthService';
+import FCMUtils from '../../utils/FCMUtils';
 
 const LoginScreen = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
@@ -25,6 +26,11 @@ const LoginScreen = ({ onLoginSuccess }) => {
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+
+  // 컴포넌트 마운트 시 FCM 토큰 초기화
+  useEffect(() => {
+    FCMUtils.initializeFCM();
+  }, []);
 
   // 로그인 처리 함수
   const handleLogin = async () => {
@@ -36,6 +42,9 @@ const LoginScreen = ({ onLoginSuccess }) => {
   
     try {
       setLoading(true);
+      
+      // FCM 토큰 가져오기 (이미 api.js에서 자동으로 헤더에 추가됨)
+      await FCMUtils.getFCMToken();
   
       // API 호출
       const { data, ok, headers } = await post('/login', { 

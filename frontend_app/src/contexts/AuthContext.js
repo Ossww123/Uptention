@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.js
+// src/contexts/AuthContext.js - 수정 버전
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   getToken, 
@@ -8,6 +8,8 @@ import {
   clearAuthData,
   parseJwt
 } from '../services/AuthService';
+import FCMUtils from '../utils/FCMUtils';
+import { post } from '../services/api'; // api 함수 추가
 
 const AuthContext = createContext();
 
@@ -20,6 +22,12 @@ export const AuthProvider = ({ children }) => {
   const [authToken, setAuthToken] = useState(null); // 토큰 상태 추가
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // FCM 초기화
+  useEffect(() => {
+    // 앱 시작 시 FCM 초기화
+    FCMUtils.initializeFCM();
+  }, []);
 
   // 사용자 데이터 로드 함수
   const loadUserData = async () => {
@@ -85,10 +93,29 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 로그아웃 함수
+  // 로그아웃 함수 - 수정
   const logout = async () => {
     try {
+      // 서버에 로그아웃 요청 먼저 수행
+      const token = await getToken();
+      if (token) {
+        try {
+          // /logout API 호출 - FCM 토큰은 api.js에서 자동으로 헤더에 추가됨
+          await post('/logout', {});
+        } catch (error) {
+          console.error('로그아웃 API 호출 오류:', error);
+          // API 호출이 실패해도 로컬 로그아웃은 진행
+        }
+      }
+
+      // 로컬 데이터 삭제
       await clearAuthData();
+      
+      // FCM 토큰 삭제 (선택적)
+      // 주석 해제 시 기기에서 푸시 알림을 받지 않게 됨
+      // await FCMUtils.clearFCMToken();
+      
+      // 상태 초기화
       setUserId(null);
       setAuthToken(null);
       setIsAuthenticated(false);
