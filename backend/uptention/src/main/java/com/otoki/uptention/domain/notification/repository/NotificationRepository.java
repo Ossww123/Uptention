@@ -15,4 +15,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
 	@Modifying
 	@Query("UPDATE Notification n SET n.read = true WHERE n.user = :user AND n.read = false")
 	void markAllAsReadByUser(@Param("user") User user);
+
+	// 사용자와 읽음 상태별 알림 개수 조회
+	int countByUserAndRead(User user, Boolean read);
 }

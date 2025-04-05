@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.otoki.uptention.application.notification.dto.response.NotificationCountResponseDto;
 import com.otoki.uptention.application.notification.dto.response.NotificationCursorResponseDto;
 import com.otoki.uptention.application.notification.dto.response.NotificationResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
@@ -61,6 +62,16 @@ public class NotificationAppServiceImpl implements NotificationAppService {
 	public void markAllAsRead() {
 		User loggedInUser = securityService.getLoggedInUser();
 		notificationService.markAllAsRead(loggedInUser);
+	}
+
+	@Override
+	public NotificationCountResponseDto getNotificationCount(Boolean read) {
+		User loggedInUser = securityService.getLoggedInUser();
+		int count = notificationService.countByUserAndRead(loggedInUser, read);
+
+		return NotificationCountResponseDto.builder()
+			.count(count)
+			.build();
 	}
 
 	// Entity를 DTO로 변환

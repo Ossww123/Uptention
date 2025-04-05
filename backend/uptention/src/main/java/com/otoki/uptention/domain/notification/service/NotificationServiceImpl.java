@@ -31,4 +31,9 @@ public class NotificationServiceImpl implements NotificationService {
 		UserCursorDto<String> cursor, int size) {
 		return notificationRepository.findNotificationsByCursor(user, read, keyword, cursor, size);
 	}
+
+	@Override
+	public int countByUserAndRead(User user, Boolean read) {
+		return notificationRepository.countByUserAndRead(user, read);
+	}
 }
