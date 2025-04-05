@@ -522,6 +522,7 @@ const StoreScreen = ({ navigation }) => {
           selectedCategory={selectedCategory}
           currentSort={currentSort}
           searchText={searchText}
+          imageWidth={Math.round((width) / 2)}
         />
       </View>
     </SafeAreaView>
