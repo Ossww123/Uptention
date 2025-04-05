@@ -1,0 +1,19 @@
+package com.otoki.uptention.domain.notification.service;
+
+import java.util.List;
+
+import com.otoki.uptention.domain.notification.entity.Notification;
+import com.otoki.uptention.domain.user.dto.UserCursorDto;
+import com.otoki.uptention.domain.user.entity.User;
+
+public interface NotificationService {
+	// 알림 저장
+	Notification saveNotification(Notification notification);
+
+	// 유저의 모든 알림 읽음 처리
+	void markAllAsRead(User user);
+
+	// 커서 기반 알림 조회
+	List<Notification> getNotificationsByCursor(User user, Boolean read, String keyword,
+		UserCursorDto<String> cursor, int size);
+}
