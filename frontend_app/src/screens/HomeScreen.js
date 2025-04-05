@@ -50,34 +50,42 @@ const HomeScreen = ({ navigation }) => {
   const svgProgress = (progress * circum) / 100; // progress가 클수록 비어있는 상태
 
   // FCM 메시지 리스너 설정
-  useEffect(() => {
-    // 포그라운드 메시지 리스너
-    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
-      console.log('HomeScreen - 포그라운드 메시지 수신:', remoteMessage);
-      
-      // 읽지 않은 알림 개수 증가 (현재 값 + 1)
-      setUnreadNotifications(prev => prev + 1);
-      
-      // 알림 내용 확인 (옵션)
-      const notificationTitle = remoteMessage.notification?.title || '새 알림';
-      const notificationBody = remoteMessage.notification?.body || '새 알림이 도착했습니다';
-      
-      console.log(`알림 내용: ${notificationTitle} - ${notificationBody}`);
-    });
+useEffect(() => {
+  // 포그라운드 메시지 리스너
+  const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+    console.log('HomeScreen - 포그라운드 메시지 수신:', remoteMessage);
     
-    return unsubscribe;
-  }, []);
+    // 알림 받은 후 최신 알림 개수 조회
+    try {
+      const { data, ok } = await get('/notifications/unread/count');
+      if (ok) {
+        setUnreadNotifications(data.count);
+      }
+    } catch (error) {
+      console.error('알림 개수 조회 오류:', error);
+      // API 호출 실패 시 기존 방식으로 알림 개수 증가
+      setUnreadNotifications(prev => prev + 1);
+    }
+    
+    // 알림 내용 확인 (옵션)
+    const notificationTitle = remoteMessage.notification?.title || '새 알림';
+    const notificationBody = remoteMessage.notification?.body || '새 알림이 도착했습니다';
+    
+    console.log(`알림 내용: ${notificationTitle} - ${notificationBody}`);
+  });
+  
+  return unsubscribe;
+}, []);
 
   useFocusEffect(
     useCallback(() => {
       // 화면이 포커스될 때마다 알림 카운트 조회 API 호출
       const fetchUnreadNotificationCount = async () => {
         try {
-          // API 호출 코드 (백엔드 완성 후 추가)
-          // const { data, ok } = await get('/notifications/unread/count');
-          // if (ok) {
-          //   setUnreadNotifications(data.count);
-          // }
+          const { data, ok } = await get('/notifications/unread/count');
+          if (ok) {
+            setUnreadNotifications(data.count);
+          }
         } catch (error) {
           console.error('알림 개수 조회 오류:', error);
         }
