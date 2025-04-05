@@ -205,7 +205,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 		}
 
 		// 커서 디코딩
-		CursorDto cursor = CursorDto.decode(cursorStr);
+		CursorDto<Integer> cursor = CursorDto.decode(cursorStr, Integer.class);
 
 		// 아이템 조회 (size + 1개를 조회하여 다음 페이지 여부 확인)
 		List<ItemDto> items = itemService.getItemsByCursor(categoryId, keyword, cursor, sortType, size + 1);
@@ -243,7 +243,7 @@ public class ItemAppServiceImpl implements ItemAppService {
 			throw new CustomException(ErrorCode.ITEM_INVALID_SORT_TYPE);
 		}
 
-		return new CursorDto(value, lastItem.getItemId()).encode();
+		return new CursorDto<>(value, lastItem.getItemId()).encode();
 	}
 
 	/**
