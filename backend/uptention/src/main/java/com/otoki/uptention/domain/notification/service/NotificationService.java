@@ -8,7 +8,7 @@ import com.otoki.uptention.domain.user.entity.User;
 
 public interface NotificationService {
 	// 알림 저장
-	Notification saveNotification(Notification notification);
+	void saveNotification(Notification notification);
 
 	// 유저의 모든 알림 읽음 처리
 	void markAllAsRead(User user);

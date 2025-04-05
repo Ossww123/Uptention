@@ -17,8 +17,8 @@ public class NotificationServiceImpl implements NotificationService {
 	private final NotificationRepository notificationRepository;
 
 	@Override
-	public Notification saveNotification(Notification notification) {
-		return notificationRepository.save(notification);
+	public void saveNotification(Notification notification) {
+		notificationRepository.save(notification);
 	}
 
 	@Override
