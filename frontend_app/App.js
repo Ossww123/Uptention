@@ -25,6 +25,23 @@ const App = () => {
   const [notification, setNotification] = useState(null);
   // 네비게이션 참조 생성
   const navigationRef = React.useRef(null);
+
+  // requestNotificationPermission를 컴포넌트 내부로 이동
+  const requestNotificationPermission = async () => {
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+    if (enabled) {
+      console.log('Authorization status:', authStatus);
+    }
+  };
+
+  // FCM 권한 요청 useEffect
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
   
   // FCM 설정 및 포그라운드 메시지 처리
   useEffect(() => {
