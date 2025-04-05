@@ -52,6 +52,8 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 					item.quantity,
 					item.salesCount,
 					item.status,
+					item.category.id.as("categoryId"),
+					item.category.name.as("categoryName"),
 					ExpressionUtils.as(thumbnailSubquery, "thumbnail")
 				)
 			)
@@ -93,6 +95,9 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 				item.brand,
 				item.quantity,
 				item.salesCount,
+				item.status,
+				item.category.id.as("categoryId"),
+				item.category.name.as("categoryName"),
 				ExpressionUtils.as(thumbnailSubquery, "thumbnail")
 			))
 			.from(item)
