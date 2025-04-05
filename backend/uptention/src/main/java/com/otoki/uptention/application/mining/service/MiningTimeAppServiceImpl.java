@@ -20,8 +20,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.otoki.uptention.application.mining.service.dto.request.FocusModeOnRequestDto;
-import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
+import com.otoki.uptention.application.mining.dto.request.FocusModeOnRequestDto;
+import com.otoki.uptention.application.mining.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.company.entity.Company;
 import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
