@@ -44,29 +44,59 @@ const ProfileScreen = ({ navigation }) => {
   const [userInfo, setUserInfo] = useState(null);
   const [showDeleteButton, setShowDeleteButton] = useState(false);
 
-  // 로그아웃 함수를 컴포넌트 내부로 이동
+  // 로그아웃 함수 수정
   const handleLogout = async () => {
     try {
-      await logout();
-      // 로그아웃 후 앱 초기 화면(로그인 화면)으로 이동
+      // FCM 토큰 가져오기
+      const fcmToken = await FCMUtils.getFCMToken();
+      
+      // 확인 대화상자 표시
       Alert.alert(
         "로그아웃",
-        "로그아웃 되었습니다.",
+        "정말 로그아웃 하시겠습니까?",
         [
           {
-            text: "확인",
-            onPress: () => {
-              // 앱을 처음부터 다시 실행하도록 앱 상태 재설정
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
+            text: "취소",
+            style: "cancel"
+          },
+          {
+            text: "로그아웃",
+            onPress: async () => {
+              try {
+                // 서버에 로그아웃 요청 (FCM 토큰은 api.js에서 자동으로 헤더에 추가)
+                await post('/logout', {});
+                console.log('로그아웃 API 요청 성공');
+                
+                // Context를 통한 로그아웃 처리
+                await logout();
+                
+                // 알림 표시
+                Alert.alert(
+                  "로그아웃",
+                  "로그아웃 되었습니다.",
+                  [
+                    {
+                      text: "확인",
+                      onPress: () => {
+                        // 앱을 처음부터 다시 실행하도록 앱 상태 재설정
+                        navigation.reset({
+                          index: 0,
+                          routes: [{ name: 'Login' }],
+                        });
+                      }
+                    }
+                  ]
+                );
+              } catch (error) {
+                console.error('로그아웃 처리 오류:', error);
+                Alert.alert('오류', '로그아웃 중 문제가 발생했습니다.');
+              }
             }
           }
         ]
       );
     } catch (error) {
-      console.error('로그아웃 오류:', error);
+      console.error('로그아웃 처리 오류:', error);
       Alert.alert('오류', '로그아웃 중 문제가 발생했습니다.');
     }
   };
