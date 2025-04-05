@@ -21,6 +21,8 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import com.otoki.uptention.domain.inventory.dto.InventoryDto;
 import com.otoki.uptention.domain.inventory.service.InventoryServiceImpl;
+import com.otoki.uptention.domain.item.entity.Item;
+import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
@@ -38,6 +40,9 @@ public class InventoryServiceTest {
 
 	@Mock
 	private RLock lock;
+
+	@Mock
+	private ItemService itemService;
 
 	@InjectMocks
 	private InventoryServiceImpl inventoryService;
@@ -110,19 +115,67 @@ public class InventoryServiceTest {
 	}
 
 	@Test
-	@DisplayName("재고가 Redis에 없을 경우 예외가 발생한다")
-	void getInventory_NotFound() {
+	@DisplayName("재고가 Redis에 없을 경우 DB에서 초기화를 시도한다")
+	void getInventory_InitializeFromDB() {
+		// given
+		Integer itemId = 999;
+		String key = "inventory:999";
+
+		Item item = Item.builder()
+			.id(itemId)
+			.quantity(20)
+			.build();
+
+		InventoryDto expectedDto = InventoryDto.builder()
+			.itemId(itemId)
+			.quantity(20)
+			.reservedQuantity(0)
+			.availableQuantity(20)
+			.build();
+
+		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+		// 첫 호출에서 null, 두 번째 호출에서 데이터 반환
+		when(valueOperations.get(key)).thenReturn(null).thenReturn(expectedDto);
+		when(itemService.getItemById(itemId)).thenReturn(item);
+
+		// 초기화 시 set 메소드 호출을 모킹
+		doAnswer(invocation -> null).when(valueOperations).set(eq(key), any(InventoryDto.class));
+
+		// when
+		InventoryDto result = inventoryService.getInventory(itemId);
+
+		// then
+		assertThat(result).isNotNull();
+		assertThat(result.getItemId()).isEqualTo(itemId);
+		assertThat(result.getQuantity()).isEqualTo(20);
+
+		// DB에서 초기화 시도 확인
+		verify(itemService, times(1)).getItemById(itemId);
+		// 초기화 시 값을 설정하는 부분 확인
+		verify(valueOperations, times(1)).set(eq(key), any(InventoryDto.class));
+		// 두 번 호출 (초기 조회 + 초기화 후 재조회)
+		verify(valueOperations, times(2)).get(key);
+	}
+
+	@Test
+	@DisplayName("Redis와 DB 모두에 재고가 없는 경우 예외가 발생한다")
+	void getInventory_NotFoundInBoth() {
 		// given
 		Integer itemId = 999;
 		String key = "inventory:999";
 
 		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 		when(valueOperations.get(key)).thenReturn(null);
+		when(itemService.getItemById(itemId)).thenThrow(new CustomException(ErrorCode.ITEM_NOT_FOUND));
 
 		// when & then
 		assertThatThrownBy(() -> inventoryService.getInventory(itemId))
 			.isInstanceOf(CustomException.class)
 			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.ITEM_NOT_FOUND);
+
+		verify(redisTemplate, times(1)).opsForValue();
+		verify(valueOperations, times(1)).get(key);
+		verify(itemService, times(1)).getItemById(itemId);
 	}
 
 	@Test
@@ -359,7 +412,7 @@ public class InventoryServiceTest {
 	void updateInventory_Success() throws InterruptedException {
 		// given
 		Integer itemId = 1;
-		Integer newQuantity = 20;
+		Integer newAvailableQuantity = 20; // 가용 재고 20으로 변경
 		String key = "inventory:1";
 		String lockKey = "inventory:lock:1";
 
@@ -377,13 +430,22 @@ public class InventoryServiceTest {
 
 		// lock.isHeldByCurrentThread()가 true를 반환하도록 설정
 		when(lock.isHeldByCurrentThread()).thenReturn(true);
+
+		// set 메소드 호출 시 inventoryDto 객체를 업데이트하도록 모킹
+		doAnswer(invocation -> {
+			InventoryDto dto = invocation.getArgument(1);
+			// dto 값 확인
+			return null;
+		}).when(valueOperations).set(eq(key), any(InventoryDto.class));
+
 		// when
-		inventoryService.updateInventory(itemId, newQuantity);
+		inventoryService.updateInventory(itemId, newAvailableQuantity);
 
 		// then
-		assertThat(inventoryDto.getQuantity()).isEqualTo(20);
+		// 변경: 새로운 가용 재고 + 예약 재고 = 새로운 총 재고
+		assertThat(inventoryDto.getQuantity()).isEqualTo(22); // 20 + 2 = 22
 		assertThat(inventoryDto.getReservedQuantity()).isEqualTo(2); // 변경 없음
-		assertThat(inventoryDto.getAvailableQuantity()).isEqualTo(18); // 20 - 2 = 18
+		assertThat(inventoryDto.getAvailableQuantity()).isEqualTo(20); // 설정된 값으로 변경
 
 		verify(redissonClient, times(1)).getLock(lockKey);
 		verify(lock, times(1)).tryLock(anyLong(), anyLong(), any(TimeUnit.class));
@@ -494,6 +556,7 @@ public class InventoryServiceTest {
 		when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
 		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 		when(valueOperations.get(key)).thenReturn(inventoryDto);
+		when(lock.isHeldByCurrentThread()).thenReturn(true);
 
 		// when & then
 		assertThatThrownBy(() -> inventoryService.decreaseInventory(itemId, decreaseQuantity))

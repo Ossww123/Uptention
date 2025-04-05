@@ -48,8 +48,12 @@ public class PaymentProcessServiceTest {
 			.status(OrderStatus.PAYMENT_PENDING)
 			.build();
 
-		Item item1 = Item.builder().id(1).build();
-		Item item2 = Item.builder().id(2).build();
+		// Item을 mock으로 생성
+		Item item1 = mock(Item.class);
+		when(item1.getId()).thenReturn(1);
+
+		Item item2 = mock(Item.class);
+		when(item2.getId()).thenReturn(2);
 
 		OrderItem orderItem1 = OrderItem.builder()
 			.id(1)
@@ -70,9 +74,12 @@ public class PaymentProcessServiceTest {
 		when(orderService.getOrderById(1)).thenReturn(order);
 		when(orderItemService.findOrderItemsByOrderId(1)).thenReturn(orderItems);
 
-		// Redis 재고 확정 성공 설정
-		when(inventoryService.confirmInventory(1, 2)).thenReturn(true);
-		when(inventoryService.confirmInventory(2, 3)).thenReturn(true);
+		// Redis 재고 확정을 bulk 방식으로 성공하도록 설정
+		when(inventoryService.confirmInventories(argThat(map ->
+			map.size() == 2 &&
+				map.get(1) == 2 &&
+				map.get(2) == 3
+		))).thenReturn(true);
 
 		// when
 		boolean result = paymentProcessService.processPaymentSuccess(orderId);
@@ -84,9 +91,20 @@ public class PaymentProcessServiceTest {
 		verify(orderService, times(1)).getOrderById(1);
 		verify(orderItemService, times(1)).findOrderItemsByOrderId(1);
 
-		// Redis 재고 확정 호출 확인
-		verify(inventoryService, times(1)).confirmInventory(1, 2);
-		verify(inventoryService, times(1)).confirmInventory(2, 3);
+		// bulk 재고 확정 호출 검증
+		verify(inventoryService, times(1)).confirmInventories(argThat(map ->
+			map.size() == 2 &&
+				map.get(1) == 2 &&
+				map.get(2) == 3
+		));
+
+		// 판매량 업데이트 호출 검증
+		verify(item1, times(1)).increaseSalesCount(2);
+		verify(item2, times(1)).increaseSalesCount(3);
+
+		// MySQL 재고 차감은 호출되지 않음
+		verify(item1, never()).decreaseQuantity(anyInt());
+		verify(item2, never()).decreaseQuantity(anyInt());
 	}
 
 	@Test
@@ -122,8 +140,12 @@ public class PaymentProcessServiceTest {
 			.status(OrderStatus.PAYMENT_PENDING)
 			.build();
 
-		Item item1 = Item.builder().id(1).build();
-		Item item2 = Item.builder().id(2).build();
+		// Item을 mock으로 생성
+		Item item1 = mock(Item.class);
+		when(item1.getId()).thenReturn(1);
+
+		Item item2 = mock(Item.class);
+		when(item2.getId()).thenReturn(2);
 
 		OrderItem orderItem1 = OrderItem.builder()
 			.id(1)
@@ -144,21 +166,32 @@ public class PaymentProcessServiceTest {
 		when(orderService.getOrderById(1)).thenReturn(order);
 		when(orderItemService.findOrderItemsByOrderId(1)).thenReturn(orderItems);
 
-		// item1 확정 성공, item2 확정 실패
-		when(inventoryService.confirmInventory(1, 2)).thenReturn(true);
-		when(inventoryService.confirmInventory(2, 3)).thenReturn(false);
+		// bulk 재고 확정 실패 설정
+		when(inventoryService.confirmInventories(argThat(map ->
+			map.size() == 2 &&
+				map.get(1) == 2 &&
+				map.get(2) == 3
+		))).thenReturn(false);
 
 		// when
 		boolean result = paymentProcessService.processPaymentSuccess(orderId);
 
 		// then
 		assertThat(result).isFalse();
-		assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING); // 상태 변경 안됨
+		assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_PENDING);
 
 		verify(orderService, times(1)).getOrderById(1);
 		verify(orderItemService, times(1)).findOrderItemsByOrderId(1);
-		verify(inventoryService, times(1)).confirmInventory(1, 2);
-		verify(inventoryService, times(1)).confirmInventory(2, 3);
+		verify(inventoryService, times(1)).confirmInventories(argThat(map ->
+			map.size() == 2 &&
+				map.get(1) == 2 &&
+				map.get(2) == 3
+		));
+
+		// 첫 번째 아이템은 확정 성공했을 경우 increaseSalesCount가 호출되어야 하는지,
+		// 실패 시에는 호출되지 않도록 로직에 따라 검증 (여기서는 모두 실패하므로 increaseSalesCount가 호출되지 않아야 함)
+		verify(item1, never()).increaseSalesCount(anyInt());
+		verify(item2, never()).increaseSalesCount(anyInt());
 	}
 
 	@Test
@@ -173,8 +206,12 @@ public class PaymentProcessServiceTest {
 			.status(OrderStatus.PAYMENT_PENDING)
 			.build();
 
-		Item item1 = Item.builder().id(1).salesCount(2).quantity(8).build();
-		Item item2 = Item.builder().id(2).salesCount(3).quantity(7).build();
+		// Item을 mock으로 생성
+		Item item1 = mock(Item.class);
+		when(item1.getId()).thenReturn(1);
+
+		Item item2 = mock(Item.class);
+		when(item2.getId()).thenReturn(2);
 
 		OrderItem orderItem1 = OrderItem.builder()
 			.id(1)
@@ -195,9 +232,12 @@ public class PaymentProcessServiceTest {
 		when(orderService.getOrderById(1)).thenReturn(order);
 		when(orderItemService.findOrderItemsByOrderId(1)).thenReturn(orderItems);
 
-		// Redis 재고 예약 취소 성공 설정
-		when(inventoryService.cancelReservation(1, 2)).thenReturn(true);
-		when(inventoryService.cancelReservation(2, 3)).thenReturn(true);
+		// bulk 재고 예약 취소 성공 설정
+		when(inventoryService.cancelReservations(argThat(map ->
+			map.size() == 2 &&
+				map.get(1) == 2 &&
+				map.get(2) == 3
+		))).thenReturn(true);
 
 		// when
 		boolean result = paymentProcessService.processPaymentFailure(orderId, reason);
@@ -206,16 +246,17 @@ public class PaymentProcessServiceTest {
 		assertThat(result).isTrue();
 		assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_FAILED);
 
-		// 판매량 감소 확인
-		assertThat(item1.getSalesCount()).isEqualTo(0); // 2 - 2 = 0
-		assertThat(item2.getSalesCount()).isEqualTo(0); // 3 - 3 = 0
-
 		verify(orderService, times(1)).getOrderById(1);
 		verify(orderItemService, times(1)).findOrderItemsByOrderId(1);
+		verify(inventoryService, times(1)).cancelReservations(argThat(map ->
+			map.size() == 2 &&
+				map.get(1) == 2 &&
+				map.get(2) == 3
+		));
 
-		// Redis 재고 예약 취소 호출 확인
-		verify(inventoryService, times(1)).cancelReservation(1, 2);
-		verify(inventoryService, times(1)).cancelReservation(2, 3);
+		// 판매량 감소는 호출되지 않음
+		verify(item1, never()).decreaseSalesCount(anyInt());
+		verify(item2, never()).decreaseSalesCount(anyInt());
 	}
 
 	@Test

@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -93,10 +95,17 @@ public class OrderAppServiceTest extends ServiceTestSupport {
 		when(itemService.getItemById(3)).thenReturn(item3);
 		when(orderService.saveOrder(any(Order.class))).thenReturn(savedOrder);
 
-		// Redis 재고 예약 성공 설정
-		when(inventoryService.reserveInventory(eq(1), eq(2))).thenReturn(true);
-		when(inventoryService.reserveInventory(eq(2), eq(1))).thenReturn(true);
-		when(inventoryService.reserveInventory(eq(3), eq(3))).thenReturn(true);
+		// 변경: 개별 재고 예약 대신 일괄 재고 예약 모킹
+		Map<Integer, Integer> expectedItemQuantities = new HashMap<>();
+		expectedItemQuantities.put(1, 2);
+		expectedItemQuantities.put(2, 1);
+		expectedItemQuantities.put(3, 3);
+		when(inventoryService.reserveInventories(argThat(map ->
+			map.size() == 3 &&
+				map.get(1) == 2 &&
+				map.get(2) == 1 &&
+				map.get(3) == 3
+		))).thenReturn(true);
 
 		// OrderItem 생성 시 반환값 설정
 		when(orderItemService.saveOrderItem(any(OrderItem.class)))
@@ -111,18 +120,16 @@ public class OrderAppServiceTest extends ServiceTestSupport {
 		assertThat(result.getOrderId()).isEqualTo(1);
 		assertThat(result.getPaymentAmount()).isEqualTo(expectedTotalAmount);
 
-		// Redis 재고 예약 확인
-		verify(inventoryService, times(1)).reserveInventory(1, 2);
-		verify(inventoryService, times(1)).reserveInventory(2, 1);
-		verify(inventoryService, times(1)).reserveInventory(3, 3);
+		// 변경: 일괄 재고 예약 호출 확인
+		verify(inventoryService, times(1)).reserveInventories(argThat(map ->
+			map.size() == 3 &&
+				map.get(1) == 2 &&
+				map.get(2) == 1 &&
+				map.get(3) == 3
+		));
 
 		verify(orderService, times(1)).saveOrder(any(Order.class));
 		verify(orderItemService, times(3)).saveOrderItem(any(OrderItem.class));
-
-		// 판매량 증가 확인
-		assertThat(item1.getSalesCount()).isEqualTo(2);
-		assertThat(item2.getSalesCount()).isEqualTo(1);
-		assertThat(item3.getSalesCount()).isEqualTo(3);
 	}
 
 	@Test
@@ -147,8 +154,10 @@ public class OrderAppServiceTest extends ServiceTestSupport {
 		when(orderService.saveOrder(any(Order.class))).thenReturn(savedOrder);
 		when(orderItemService.saveOrderItem(any(OrderItem.class))).thenReturn(orderItem);
 
-		// Redis 재고 예약 성공 설정
-		when(inventoryService.reserveInventory(eq(3), eq(1))).thenReturn(true);
+		// 변경: 일괄 재고 예약 모킹
+		when(inventoryService.reserveInventories(argThat(map ->
+			map.size() == 1 && map.get(3) == 1
+		))).thenReturn(true);
 
 		InitiateOrderResponseDto result = orderAppService.createGiftOrder(giftRequestDto);
 
@@ -157,15 +166,14 @@ public class OrderAppServiceTest extends ServiceTestSupport {
 		assertThat(result.getOrderId()).isEqualTo(1);
 		assertThat(result.getPaymentAmount()).isEqualTo(15000); // 선물 상품 1개 가격
 
-		// Redis 재고 예약 확인
-		verify(inventoryService, times(1)).reserveInventory(3, 1);
+		// 변경: 일괄 재고 예약 호출 확인
+		verify(inventoryService, times(1)).reserveInventories(argThat(map ->
+			map.size() == 1 && map.get(3) == 1
+		));
 
 		verify(orderService, times(1)).saveOrder(any(Order.class));
 		verify(orderItemService, times(1)).saveOrderItem(any(OrderItem.class));
 		verify(giftService, times(1)).saveGift(any(Gift.class));
-
-		// 판매량 증가 확인 (선물은 수량 1개)
-		assertThat(item.getSalesCount()).isEqualTo(1);
 	}
 
 	@Test
@@ -186,9 +194,11 @@ public class OrderAppServiceTest extends ServiceTestSupport {
 
 		when(securityService.getLoggedInUser()).thenReturn(user);
 
-		// item1은 예약 성공, item2는 예약 실패
-		when(inventoryService.reserveInventory(eq(1), eq(2))).thenReturn(true);
-		when(inventoryService.reserveInventory(eq(2), eq(1))).thenReturn(false);
+		// 변경: 일괄 재고 예약 실패 설정
+		when(inventoryService.reserveInventories(any())).thenReturn(false);
+
+		// 변경: 일괄 재고 취소 성공 설정
+		when(inventoryService.cancelReservations(any())).thenReturn(true);
 
 		// when & then
 		assertThatThrownBy(() -> orderAppService.createOrder(orderRequestDto))
@@ -198,26 +208,28 @@ public class OrderAppServiceTest extends ServiceTestSupport {
 				assertThat(customException.getErrorCode()).isEqualTo(ErrorCode.ITEM_INSUFFICIENT_STOCK);
 			});
 
-		// item1의 예약은 성공했지만 rollback되어야 함
-		verify(inventoryService, times(1)).cancelReservation(1, 2);
+		// 예약 취소는 호출되지 않음 (예약 자체가 실패했으므로)
+		verify(inventoryService, never()).cancelReservations(any());
 	}
 
 	@Test
 	@DisplayName("선물 주문 시 Redis 재고 예약에 실패하면 주문 생성에 실패한다")
 	void createGiftOrder_ThrowsException_WhenReservationFails() {
 		// given
+		Integer itemId = 1;
 		User sender = createUser(2);
 		User receiver = createUser(3);
-		Item item = createItem(3, "선물 상품", 15000, 10);
+		Item item = createItem(itemId, "재고 부족 선물", 10000, 0);
 
-		GiftRequestDto giftRequestDto = createGiftRequestDto(3, 3);
-
+		// when
 		when(securityService.getLoggedInUser()).thenReturn(sender);
 		when(userService.getUserById(3)).thenReturn(receiver);
-		when(itemService.getItemById(3)).thenReturn(item);
+		when(itemService.getItemById(itemId)).thenReturn(item);
 
-		// Redis 재고 예약 실패 설정
-		when(inventoryService.reserveInventory(eq(3), eq(1))).thenReturn(false);
+		// 변경: 일괄 재고 예약 실패 설정
+		when(inventoryService.reserveInventories(any())).thenReturn(false);
+
+		GiftRequestDto giftRequestDto = createGiftRequestDto(itemId, 3);
 
 		// when & then
 		assertThatThrownBy(() -> orderAppService.createGiftOrder(giftRequestDto))
@@ -228,7 +240,7 @@ public class OrderAppServiceTest extends ServiceTestSupport {
 			});
 	}
 
-	// 헬퍼 메서드
+	// 헬퍼 메서드 (변경 없음)
 	private User createUser(Integer id) {
 		return User.builder()
 			.id(id)
