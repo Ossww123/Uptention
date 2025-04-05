@@ -20,7 +20,7 @@ public class MiningTimeScheduler {
 	private final MiningTimeAppService miningTimeAppService;
 
 	@Transactional
-	@Scheduled(cron = "00 30 11 * * *", zone = "Asia/Seoul")
+	@Scheduled(cron = "00 30 23 * * *", zone = "Asia/Seoul")
 	public void updateNullEndTime() {
 		log.info("Updating null end time for scheduler");
 		miningTimeAppService.bulkUpdateMiningTime();
@@ -31,7 +31,7 @@ public class MiningTimeScheduler {
 	}
 
 	@Transactional
-	@Scheduled(cron = "00 45 11 * * *", zone = "Asia/Seoul")
+	@Scheduled(cron = "00 45 23 * * *", zone = "Asia/Seoul")
 	public void sendNft() {
 		log.info("Create NFT for scheduler");
 		List<MiningTimeAppServiceImpl.MintAddressResponse> mintAddressResponses = miningTimeAppService.bulkCreateNFT();
