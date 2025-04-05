@@ -11,6 +11,9 @@ import lombok.Getter;
 @Schema(description = "우수 사원 랭킹 조회 응답 DTO")
 public class MiningTimeRankResponseDto {
 
+	@Schema(description = "유저 아이디", example = "1")
+	private Integer id;
+
 	@Schema(description = "사원명", example = "홍길동")
 	private String username;
 
