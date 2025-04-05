@@ -49,6 +49,8 @@ public enum ErrorCode {
 	INVENTORY_SYNC_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "INVENTORY_002", "재고 동기화에 실패했습니다."),
 	INVENTORY_INSUFFICIENT(HttpStatus.BAD_REQUEST, "INVENTORY_003", "실시간 재고가 부족합니다."),
 	INVENTORY_RESERVED_FAILED(HttpStatus.BAD_REQUEST, "INVENTORY_004", "재고 예약에 실패했습니다."),
+	INVENTORY_INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "INVENTORY_005", "재고 변경 수량이 올바르지 않습니다."),
+	INVENTORY_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "INVENTORY_006", "재고 업데이트에 실패했습니다."),
 
 	// 커서 관련 에러
 	CURSOR_ENCODING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CURSOR_001", "커서 인코딩에 실패했습니다."),
