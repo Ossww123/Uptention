@@ -1,4 +1,4 @@
-// App.js 최종 수정 버전
+// App.js
 import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, StatusBar } from 'react-native';
@@ -9,12 +9,16 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import messaging from '@react-native-firebase/messaging';
 import FCMUtils from './src/utils/FCMUtils';
 import InAppNotification from './src/components/InAppNotification';
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
+
 
 // 백그라운드 메시지 핸들러 등록
 messaging().setBackgroundMessageHandler(async (remoteMessage) => {
   console.log('백그라운드 메시지 수신:', remoteMessage);
-  // 백그라운드에서는 시스템이 자동으로 알림을 표시해주므로,
-  // 추가적인 처리가 필요 없음
+   // 필요한 경우 AsyncStorage에 알림 데이터 저장
+   if (remoteMessage.data) {
+    await AsyncStorage.setItem('lastNotification', JSON.stringify(remoteMessage.data));
+  }
 });
 
 const App = () => {
@@ -54,36 +58,44 @@ const App = () => {
     };
   }, []);
 
-  // 알림 클릭 처리
-  useEffect(() => {
-    // 앱이 종료된 상태에서 알림을 클릭하여 열리는 경우
-    messaging()
-      .getInitialNotification()
-      .then(remoteMessage => {
-        if (remoteMessage) {
-          console.log('종료된 상태에서 알림을 통해 앱 열림:', remoteMessage);
-          
-          // 인증 상태 확인 후 네비게이션 처리 (약간 지연 필요)
-          setTimeout(() => {
-            if (navigationRef.current) {
-              navigationRef.current.navigate('Notification');
-            }
-          }, 1500); // 인증 처리 시간 고려하여 지연
-        }
-      });
-
-    // 백그라운드 상태에서 알림을 클릭하는 경우
-    const unsubscribe = messaging().onNotificationOpenedApp(remoteMessage => {
-      console.log('백그라운드에서 알림 클릭으로 앱 열림:', remoteMessage);
-      
-      // NotificationScreen으로 이동
-      if (navigationRef.current) {
-        navigationRef.current.navigate('Notification');
+  // 알림 클릭 처리 useEffect 수정
+useEffect(() => {
+  // 앱이 종료된 상태에서 알림을 클릭하여 열리는 경우
+  messaging()
+    .getInitialNotification()
+    .then(async (remoteMessage) => {
+      if (remoteMessage) {
+        console.log('종료된 상태에서 알림을 통해 앱 열림:', remoteMessage);
+        
+        // AsyncStorage에서 알림 데이터 확인
+        const storedNotification = await AsyncStorage.getItem('lastNotification');
+        
+        setTimeout(() => {
+          if (navigationRef.current) {
+            navigationRef.current.navigate('Notification', {
+              notificationData: storedNotification ? JSON.parse(storedNotification) : null
+            });
+          }
+        }, 1500);
       }
     });
 
-    return unsubscribe;
-  }, []);
+  // 백그라운드 상태에서 알림을 클릭하는 경우
+  const unsubscribe = messaging().onNotificationOpenedApp(async (remoteMessage) => {
+    console.log('백그라운드에서 알림 클릭으로 앱 열림:', remoteMessage);
+    
+    // AsyncStorage에서 알림 데이터 확인
+    const storedNotification = await AsyncStorage.getItem('lastNotification');
+    
+    if (navigationRef.current) {
+      navigationRef.current.navigate('Notification', {
+        notificationData: storedNotification ? JSON.parse(storedNotification) : null
+      });
+    }
+  });
+
+  return unsubscribe;
+}, []);
   
   // 알림 클릭 시 화면 이동 처리
   const handleNotificationPress = () => {

@@ -1,5 +1,6 @@
 // src/navigations/AppNavigator.js
 import React, { useEffect, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from '../contexts/AuthContext';
@@ -32,9 +33,16 @@ clearStorage();
 // 네비게이션 스택 생성
 const Stack = createNativeStackNavigator();
 
-const AppNavigator = () => {
+const AppNavigator = forwardRef((props, ref) => {
   const { isAuthenticated, isLoading, refreshAuth } = useAuth();
-  
+  const navigationRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    navigate: (screen, params) => {
+      navigationRef.current?.navigate(screen, params);
+    }
+  }));
+
   // 권한 관련 상태 (예시)
   const [hasScreenTimePermission, setHasScreenTimePermission] = useState(false);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
@@ -60,7 +68,7 @@ const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
           // 로그인 화면
@@ -99,6 +107,6 @@ const AppNavigator = () => {
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
+});
 
 export default AppNavigator;
