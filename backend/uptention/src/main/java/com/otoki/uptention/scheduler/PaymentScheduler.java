@@ -46,7 +46,7 @@ public class PaymentScheduler {
 				LocalDateTime.now()
 			).toMinutes();
 
-			// 30분(설정된 타임아웃) 초과 시 처리
+			// 2분 (설정된 타임아웃) 초과 시 처리
 			if (orderAgeMinutes >= PAYMENT_TIMEOUT_MINUTES) {
 				log.info("주문 ID({})의 결제 시간 초과 (경과 시간: {}분)", order.getId(), orderAgeMinutes);
 				// 결제 실패 처리
