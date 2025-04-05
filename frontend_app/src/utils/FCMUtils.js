@@ -45,23 +45,33 @@ export const FCMUtils = {
    * FCM 권한 요청 (iOS 필수)
    */
   async requestPermission() {
-    try {
-      const authStatus = await messaging().requestPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+    // try {
+    //   const authStatus = await messaging().requestPermission();
+    //   const enabled =
+    //     authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+    //     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
         
-      if (enabled) {
-        console.log('FCM 권한 허용됨');
-      } else {
-        console.log('FCM 권한 거부됨');
-      }
+    //   if (enabled) {
+    //     console.log('FCM 권한 허용됨');
+    //   } else {
+    //     console.log('FCM 권한 거부됨');
+    //   }
       
-      return enabled;
-    } catch (error) {
-      console.error('FCM 권한 요청 오류:', error);
-      return false;
+    //   return enabled;
+    // } catch (error) {
+    //   console.error('FCM 권한 요청 오류:', error);
+    //   return false;
+    // }
+    
+    // 안드로이드 환경에서는 권한 요청이 기본적으로 필요 없음
+    if (Platform.OS === 'ios') {
+        // iOS 코드는 그대로 유지
+        const authStatus = await messaging().requestPermission();
+        const enabled = authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+                    authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        return enabled;
     }
+    return true; // 안드로이드는 항상 true 반환
   },
   
   /**
