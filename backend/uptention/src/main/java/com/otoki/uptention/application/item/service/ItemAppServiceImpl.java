@@ -141,13 +141,17 @@ public class ItemAppServiceImpl implements ItemAppService {
 		}
 
 		if (isQuantityPresent) {
-			item.updateQuantity(itemUpdateRequestDto.getQuantity());
-
 			try {
+				// Redis 재고 업데이트
 				inventoryService.updateInventory(itemId, itemUpdateRequestDto.getQuantity());
+				item.updateQuantity(itemUpdateRequestDto.getQuantity());
+				log.info("Successfully updated inventory for item {} to quantity {}",
+					itemId, itemUpdateRequestDto.getQuantity());
+
 			} catch (Exception e) {
 				log.error("Failed to update Redis inventory for item {}", itemId, e);
-				// 메인 기능(수정)은 성공했으므로 Redis 실패는 로깅만 하고 넘어감
+				// Redis 업데이트 실패 시 트랜잭션 롤백을 위해 예외 다시 던지기
+				throw new CustomException(ErrorCode.INVENTORY_UPDATE_FAILED);
 			}
 		}
 	}
