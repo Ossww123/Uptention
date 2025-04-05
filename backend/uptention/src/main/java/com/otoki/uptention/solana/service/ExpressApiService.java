@@ -21,7 +21,7 @@ public class ExpressApiService {
 
 	private static final Logger log = LoggerFactory.getLogger(ExpressApiService.class);
 	private final RestTemplate restTemplate;
-	private final String expressBaseUrl = "https://j12d211.p.ssafy.io/sol";
+	private static final String expressBaseUrl = "https://j12d211.p.ssafy.io/sol";
 
 	// 생성자 주입 (RestTemplate)
 	public ExpressApiService(RestTemplate restTemplate) {
