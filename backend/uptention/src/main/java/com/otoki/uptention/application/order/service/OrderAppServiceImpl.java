@@ -1,6 +1,5 @@
 package com.otoki.uptention.application.order.service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,33 +60,27 @@ public class OrderAppServiceImpl implements OrderAppService {
 	public InitiateOrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
 		User user = securityService.getLoggedInUser();
 
-		// 성공적으로 예약된 상품 ID와 수량을 추적
-		Map<Integer, Integer> reservedItems = new HashMap<>();
+		// 1. 모든 상품에 대한 재고 예약 정보 구성
+		Map<Integer, Integer> itemQuantities = new HashMap<>();
+		for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
+			itemQuantities.put(itemRequest.getItemId(), itemRequest.getQuantity());
+		}
+
+		// 2. 한 번에 모든 상품의 재고 예약 (MultiLock 사용)
+		boolean reserved = inventoryService.reserveInventories(itemQuantities);
+		if (!reserved) {
+			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
+		}
 
 		try {
-			// 1. 먼저 재고 예약
-			for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
-				boolean reserved = inventoryService.reserveInventory(
-					itemRequest.getItemId(), itemRequest.getQuantity());
-
-				if (!reserved) {
-					// 예약 실패 시 이전에 성공한 예약 취소
-					rollbackReservations(reservedItems);
-					throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
-				}
-
-				// 예약 성공 시 추적 맵에 추가
-				reservedItems.put(itemRequest.getItemId(), itemRequest.getQuantity());
-			}
-
-			// 2. Order 생성
+			// 3. Order 생성
 			Order order = Order.builder()
 				.user(user)
 				.address(orderRequestDto.getAddress())
 				.build();
 			Order savedOrder = orderService.saveOrder(order);
 
-			// 3. 각 상품에 대한 OrderItem 생성 및 저장
+			// 4. 각 상품에 대한 OrderItem 생성 및 저장
 			int totalPaymentAmount = 0;
 			for (ItemQuantityRequestDto itemRequest : orderRequestDto.getItems()) {
 				OrderItem orderItem = processOrderItem(order, itemRequest.getItemId(), itemRequest.getQuantity());
@@ -99,41 +92,9 @@ public class OrderAppServiceImpl implements OrderAppService {
 				.paymentAmount(totalPaymentAmount)
 				.build();
 		} catch (Exception e) {
-			// 예외 발생 시 재고 예약 롤백
-			rollbackReservations(reservedItems);
+			// 예약이 성공한 후 주문 생성 과정에서 에러가 발생하면 예약 롤백
+			inventoryService.cancelReservations(itemQuantities);
 			throw e;
-		}
-	}
-
-	// 개선된 재고 예약 롤백 메서드
-	private void rollbackReservations(Map<Integer, Integer> itemQuantities) {
-		if (itemQuantities.isEmpty()) {
-			return;
-		}
-
-		log.info("롤백 시작: {} 개 상품의 재고 예약 취소", itemQuantities.size());
-		List<Integer> rollbackFailedItems = new ArrayList<>();
-
-		for (Map.Entry<Integer, Integer> entry : itemQuantities.entrySet()) {
-			try {
-				Integer itemId = entry.getKey();
-				Integer quantity = entry.getValue();
-
-				boolean canceled = inventoryService.cancelReservation(itemId, quantity);
-				if (!canceled) {
-					rollbackFailedItems.add(itemId);
-					log.error("상품 ID({})의 재고 예약 취소 실패", itemId);
-				}
-			} catch (Exception e) {
-				rollbackFailedItems.add(entry.getKey());
-				log.error("상품 ID({})의 재고 예약 취소 중 오류 발생", entry.getKey(), e);
-			}
-		}
-
-		// 롤백 실패 항목 기록 (향후 수동 개입이나 보상 트랜잭션을 위해)
-		if (!rollbackFailedItems.isEmpty()) {
-			log.error("일부 상품의 재고 예약 취소 실패: {}", rollbackFailedItems);
-			// 필요시 알림 서비스나 보상 큐에 메시지 발송 로직 추가
 		}
 	}
 
@@ -146,8 +107,12 @@ public class OrderAppServiceImpl implements OrderAppService {
 		User sender = securityService.getLoggedInUser();
 		User receiver = userService.getUserById(giftRequestDto.getReceiverId());
 
+		// 단일 상품이지만 일관성을 위해 배치 메서드 사용
+		Map<Integer, Integer> itemQuantity = new HashMap<>();
+		itemQuantity.put(giftRequestDto.getItemId(), 1);
+
 		// 재고 예약 시도
-		boolean reserved = inventoryService.reserveInventory(giftRequestDto.getItemId(), 1);
+		boolean reserved = inventoryService.reserveInventories(itemQuantity);
 		if (!reserved) {
 			throw new CustomException(ErrorCode.ITEM_INSUFFICIENT_STOCK);
 		}
@@ -176,8 +141,8 @@ public class OrderAppServiceImpl implements OrderAppService {
 				.paymentAmount(totalPaymentAmount)
 				.build();
 		} catch (Exception e) {
-			// 예외 발생 시 재고 예약 롤백
-			inventoryService.cancelReservation(giftRequestDto.getItemId(), 1);
+			// 예외 발생 시 재고 예약 롤백 (MultiLock 사용)
+			inventoryService.cancelReservations(itemQuantity);
 			throw e;
 		}
 	}
