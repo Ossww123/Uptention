@@ -14,10 +14,10 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
           <p>{message}</p>
         </div>
         <div className="modal-footer">
-          <button className="cancel-button" onClick={onCancel}>
+          <button className="modal-cancel-button" onClick={onCancel}>
             취소
           </button>
-          <button className="confirm-button" onClick={onConfirm}>
+          <button className="modal-confirm-button" onClick={onConfirm}>
             확인
           </button>
         </div>

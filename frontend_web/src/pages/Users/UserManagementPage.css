@@ -243,6 +243,8 @@
   display: flex;
   align-items: center;
   box-shadow: 0 2px 5px rgba(255, 140, 0, 0.3);
+  min-width: 80px; /* 최소 너비 설정 */
+  justify-content: center; /* 내용 중앙 정렬 */
 }
 
 .add-button::before {

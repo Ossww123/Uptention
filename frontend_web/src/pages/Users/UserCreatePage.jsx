@@ -428,23 +428,25 @@ const UserCreatePage = () => {
               </tr>
             </tbody>
           </table>
-          
-          <div className="form-actions">
-            <button 
-              type="button" 
-              className="cancel-button"
-              onClick={handleCancel}
-            >
-              취소
-            </button>
-            <button 
-              type="submit" 
-              className="submit-button"
-            >
-              등록
-            </button>
-          </div>
         </form>
+      </div>
+      
+      {/* 버튼들을 콘텐츠 카드 바깥으로 이동 */}
+      <div className="form-actions outside-card">
+        <button 
+          type="button" 
+          className="user-cancel-button"
+          onClick={handleCancel}
+        >
+          취소
+        </button>
+        <button 
+          type="button" 
+          className="user-submit-button"
+          onClick={handleSubmit}
+        >
+          등록
+        </button>
       </div>
     </div>
   );
