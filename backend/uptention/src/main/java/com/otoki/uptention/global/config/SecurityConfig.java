@@ -5,6 +5,7 @@ import java.util.Collections;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -81,6 +82,96 @@ public class SecurityConfig {
 		// 권한 설정
 		http
 			.authorizeHttpRequests(auth -> auth
+				// 상품 목록 조회 (ROLE_ADMIN, ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/items").hasAnyRole("ADMIN", "MEMBER")
+				// 상품 등록 (ROLE_ADMIN)
+				.requestMatchers(HttpMethod.POST, "/api/items").hasRole("ADMIN")
+				// 상품 상세 조회 (ROLE_ADMIN, ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/items/{itemId}").hasAnyRole("ADMIN", "MEMBER")
+				// 상품 삭제 (ROLE_ADMIN)
+				.requestMatchers(HttpMethod.DELETE, "/api/items/{itemId}").hasRole("ADMIN")
+				// 상품 수정 (ROLE_ADMIN)
+				.requestMatchers(HttpMethod.PATCH, "/api/items/{itemId}").hasRole("ADMIN")
+
+				// 배송 정보 등록 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.POST, "/api/orders/{orderId}/delivery-info").hasRole("MEMBER")
+				// 상품 검증 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.POST, "/api/orders/verify").hasRole("MEMBER")
+				// 상품 주문 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.POST, "/api/orders/purchase").hasRole("MEMBER")
+				// 상품 선물 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.POST, "/api/orders/gift").hasRole("MEMBER")
+				// 주문 내역 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/orders").hasRole("MEMBER")
+				// 주문 상세 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/orders/{orderId}/order-items/{orderItemId}").hasRole("MEMBER")
+				// 최근 배송지 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/orders/delivery-info").hasRole("MEMBER")
+
+				// 전체 카테고리 목록 조회 (ROLE_ADMIN, ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/category").hasAnyRole("ADMIN", "MEMBER")
+
+				// 모든 알림 읽음 처리 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.PATCH, "/api/notifications/read").hasRole("MEMBER")
+				// 알림 목록 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/notifications").hasRole("MEMBER")
+				// 읽지 않은 알림 개수 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/notifications/count").hasRole("MEMBER")
+
+				// 프로필 이미지 업로드 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.PUT, "/api/users/{userId}/profiles").hasRole("MEMBER")
+				// 프로필 이미지 삭제 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.DELETE, "/api/users/{userId}/profiles").hasRole("MEMBER")
+				// 지갑 연결 (ROLE_TEMP_MEMBER, ROLE_MEMBER)
+				.requestMatchers(HttpMethod.POST, "/api/users/{userId}/wallet").hasAnyRole("TEMP_MEMBER", "MEMBER")
+				// 유저 정보 페이징 조회 (ROLE_ADMIN, ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("ADMIN", "MEMBER")
+				// 유저 정보 조회 (ROLE_ADMIN, ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/users/{userId}").hasAnyRole("ADMIN", "MEMBER")
+				// 유저 삭제 (ROLE_ADMIN)
+				.requestMatchers(HttpMethod.DELETE, "/api/users/{userId}").hasRole("ADMIN")
+				// 포인트 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/users/{userId}/point").hasRole("MEMBER")
+				// 집중 모드 시간 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/users/{userId}/mining-times").hasRole("MEMBER")
+
+				// 인증, 인가 관련 API
+				// 로그인 (모든 사용자 접근 가능)
+				.requestMatchers(HttpMethod.POST, "/api/login").permitAll()
+				// 회원가입 (ROLE_ADMIN)
+				.requestMatchers(HttpMethod.POST, "/api/join").hasRole("ADMIN")
+				// 비밀번호 변경 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.PATCH, "/api/users/{userId}/password").hasRole("MEMBER")
+				// 아이디 중복 검사 (ROLE_ADMIN)
+				.requestMatchers(HttpMethod.GET, "/api/join/check-username").hasRole("ADMIN")
+				// 사번 중복 검사 (ROLE_ADMIN)
+				.requestMatchers(HttpMethod.GET, "/api/join/check-employee-number").hasRole("ADMIN")
+
+				// 장바구니 API
+				// 장바구니 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/shopping-cart").hasRole("MEMBER")
+				// 장바구니 담기 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.POST, "/api/shopping-cart").hasRole("MEMBER")
+				// 장바구니 상품 삭제 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.DELETE, "/api/shopping-cart").hasRole("MEMBER")
+				// 장바구니 상품 수량 수정 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.PATCH, "/api/shopping-cart/{cartId}/quantity").hasRole("MEMBER")
+				// 장바구니 상품 개수 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/shopping-cart/count").hasRole("MEMBER")
+
+				// 집중 모드 API
+				// 집중 모드 시작 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.POST, "/api/mining-time/focus").hasRole("MEMBER")
+				// 집중 모드 종료 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.PATCH, "/api/mining-time/focus").hasRole("MEMBER")
+				// 우수 사원 랭킹 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/mining-time").hasRole("MEMBER")
+
+				// 선물함 API
+				// 선물함 목록 조회 (ROLE_MEMBER)
+				.requestMatchers(HttpMethod.GET, "/api/gifts").hasRole("MEMBER")
+
+				// 나머지 요청
 				.anyRequest().permitAll());
 
 		//JWTFilter 등록
@@ -93,7 +184,7 @@ public class SecurityConfig {
 
 		http
 			.addFilterBefore(new FilterExceptionHandler(), LogoutFilter.class);
-		
+
 		http
 			.addFilterAfter(customLogoutFilter, LogoutFilter.class);
 
