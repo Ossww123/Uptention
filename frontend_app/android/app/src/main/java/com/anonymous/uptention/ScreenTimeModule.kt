@@ -23,6 +23,62 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
         return "ScreenTimeModule"
     }
 
+    // 오버레이 권한 확인
+    @ReactMethod
+    fun hasOverlayPermission(promise: Promise) {
+        val context = reactApplicationContext
+        val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(context)
+        } else {
+            true // Android 6.0 이전 버전에서는 별도 권한이 필요 없음
+        }
+        promise.resolve(hasPermission)
+    }
+
+    // 오버레이 권한 설정 화면 열기
+    @ReactMethod
+    fun openOverlaySettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, 
+                Uri.parse("package:" + reactApplicationContext.packageName))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            reactApplicationContext.startActivity(intent)
+        }
+    }
+
+    // 접근성 권한 확인
+    @ReactMethod
+    fun hasAccessibilityPermission(promise: Promise) {
+        val context = reactApplicationContext
+        val accessibilityEnabled = try {
+            Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED)
+        } catch (e: Settings.SettingNotFoundException) {
+            0
+        }
+        
+        if (accessibilityEnabled == 1) {
+            val servicesString = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )
+            val packageName = context.packageName
+            val serviceName = packageName + "/.AccessibilityService"
+            
+            val hasService = servicesString?.contains(serviceName) ?: false
+            promise.resolve(hasService)
+        } else {
+            promise.resolve(false)
+        }
+    }
+
+    // 접근성 설정 화면 열기
+    @ReactMethod
+    fun openAccessibilitySettings() {
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        reactApplicationContext.startActivity(intent)
+    }
+
     @ReactMethod
     fun hasUsageStatsPermission(promise: Promise) {
         val context = reactApplicationContext

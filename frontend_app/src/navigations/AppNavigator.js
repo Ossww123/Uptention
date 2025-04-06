@@ -9,29 +9,9 @@ import ScreenTime from "../utils/ScreenTime";
 // 스크린 컴포넌트 임포트
 import SplashScreen from "../screens/auth/SplashScreen";
 import LoginScreen from "../screens/auth/LoginScreen";
-import ScreenTimePermissionScreen from "../screens/auth/ScreenTimePermissionScreen";
+import PermissionsScreen from "../screens/auth/PermissionsScreen"; // 권한 설정 화면 이름 변경
 import WalletConnectScreen from "../screens/auth/WalletConnectScreen";
 import StackNavigator from "./StackNavigator";
-
-// 개발용 AsyncStorage 초기화
-// 개발용 AsyncStorage 초기화
-// 개발용 AsyncStorage 초기화
-
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// const clearStorage = async () => {
-//   try {
-//     await AsyncStorage.clear();
-//     console.log('Storage successfully cleared!');
-//   } catch (e) {
-//     console.log('Failed to clear the async storage.');
-//   }
-// }
-// clearStorage();
-
-// 개발용 AsyncStorage 초기화
-// 개발용 AsyncStorage 초기화
-// 개발용 AsyncStorage 초기화
-
 
 // 네비게이션 스택 생성
 const Stack = createNativeStackNavigator();
@@ -53,44 +33,81 @@ const AppNavigator = forwardRef((props, ref) => {
   }));
 
   // 권한 관련 상태
-  const [hasScreenTimePermission, setHasScreenTimePermission] = useState(false);
-  const [checkingPermissions, setCheckingPermissions] = useState(true); // 권한 체크 중 상태 추가
-  
+  const [permissions, setPermissions] = useState({
+    screenTime: false,
+    overlay: false,
+    accessibility: false
+  });
+  const [checkingPermissions, setCheckingPermissions] = useState(true);
+  const [allPermissionsGranted, setAllPermissionsGranted] = useState(false);
+
   // 인증 상태 변경 처리
   const handleLoginSuccess = () => {
     refreshAuth();
-    checkScreenTimePermission(); // 로그인 성공 시 권한 확인
+    checkAllPermissions(); // 로그인 성공 시 권한 확인
   };
 
-  // 권한 상태 확인 함수
-  const checkScreenTimePermission = async () => {
+  // 모든 권한 상태 확인 함수
+  const checkAllPermissions = async () => {
     try {
       setCheckingPermissions(true);
-      const granted = await ScreenTime.hasUsageStatsPermission();
-      console.log('스크린타임 권한 상태:', granted);
-      setHasScreenTimePermission(granted);
+      
+      // 세 가지 권한 모두 확인
+      const [screenTimeGranted, overlayGranted, accessibilityGranted] = await Promise.all([
+        ScreenTime.hasUsageStatsPermission(),
+        ScreenTime.hasOverlayPermission(),
+        ScreenTime.hasAccessibilityPermission()
+      ]);
+      
+      console.log('권한 상태:', { 
+        screenTime: screenTimeGranted,
+        overlay: overlayGranted,
+        accessibility: accessibilityGranted
+      });
+      
+      // 상태 업데이트
+      const updatedPermissions = {
+        screenTime: screenTimeGranted,
+        overlay: overlayGranted,
+        accessibility: accessibilityGranted
+      };
+      
+      setPermissions(updatedPermissions);
+      
+      // 모든 권한이 허용되었는지 확인
+      const allGranted = screenTimeGranted && overlayGranted && accessibilityGranted;
+      setAllPermissionsGranted(allGranted);
+      
     } catch (error) {
       console.error('권한 확인 오류:', error);
-      setHasScreenTimePermission(false);
+      setAllPermissionsGranted(false);
     } finally {
       setCheckingPermissions(false);
     }
   };
 
   // 권한 상태 변경 처리
-  const handlePermissionGranted = () => {
-    setHasScreenTimePermission(true);
+  const handlePermissionsGranted = (updatedPermissions) => {
+    setPermissions(updatedPermissions);
+    
+    // 모든 권한이 허용되었는지 확인
+    const allGranted = 
+      updatedPermissions.screenTime && 
+      updatedPermissions.overlay && 
+      updatedPermissions.accessibility;
+    
+    setAllPermissionsGranted(allGranted);
   };
 
   // 지갑 연결 상태 변경 처리
   const handleWalletConnected = () => {
-    updateWalletStatus(); // 지갑 연결 후 사용자 정보 갱신
+    updateWalletStatus();
   };
 
   // 인증 상태가 변경되면 권한 상태 확인
   useEffect(() => {
     if (isAuthenticated) {
-      checkScreenTimePermission();
+      checkAllPermissions();
     }
   }, [isAuthenticated]);
 
@@ -112,18 +129,19 @@ const AppNavigator = forwardRef((props, ref) => {
               />
             )}
           </Stack.Screen>
-        ) : !hasScreenTimePermission ? (
-          // 스크린타임 권한 화면
-          <Stack.Screen name="ScreenTimePermission">
+        ) : !allPermissionsGranted ? (
+          // 권한 설정 화면
+          <Stack.Screen name="Permissions">
             {(props) => (
-              <ScreenTimePermissionScreen
+              <PermissionsScreen
                 {...props}
-                onPermissionGranted={handlePermissionGranted}
+                permissions={permissions}
+                onPermissionsGranted={handlePermissionsGranted}
               />
             )}
           </Stack.Screen>
         ) : !isWalletConnected ? (
-          // 지갑 연결 화면 - 이미 연결된 경우 건너뜀
+          // 지갑 연결 화면
           <Stack.Screen name="WalletConnect">
             {(props) => (
               <WalletConnectScreen
