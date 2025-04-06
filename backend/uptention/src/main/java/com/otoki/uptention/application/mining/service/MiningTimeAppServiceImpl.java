@@ -78,6 +78,13 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		LocalDateTime now = LocalDateTime.now();
 		if (findMiningTime != null && findMiningTime.getEndTime() == null) {
 			findMiningTime.updateEndTime(now);
+
+			LocalDateTime startTime = findMiningTime.getStartTime();
+			LocalDateTime endTime = findMiningTime.getEndTime();
+
+			long diffMinutes = Duration.between(startTime, endTime).toMinutes();
+
+			loggedInUser.setPoint((int)(loggedInUser.getPoint() + diffMinutes));
 		}
 
 		// 1. 채굴시간 생성
