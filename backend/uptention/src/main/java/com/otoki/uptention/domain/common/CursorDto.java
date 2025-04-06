@@ -6,7 +6,6 @@ import java.util.Base64;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
@@ -43,7 +42,7 @@ public class CursorDto<T> {
 			byte[] decodedBytes = Base64.getDecoder().decode(cursorStr);
 			String json = new String(decodedBytes, StandardCharsets.UTF_8);
 			ObjectMapper mapper = new ObjectMapper();
-			JavaType type = mapper.getTypeFactory().constructParametricType(UserCursorDto.class, valueType);
+			JavaType type = mapper.getTypeFactory().constructParametricType(CursorDto.class, valueType);
 			return mapper.readValue(json, type);
 		} catch (Exception e) {
 			throw new CustomException(ErrorCode.CURSOR_DECODING_FAILED);
