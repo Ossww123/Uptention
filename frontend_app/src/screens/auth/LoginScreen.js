@@ -1,4 +1,4 @@
-// src/screens/auth/LoginScreen.js - 수정 버전
+// src/screens/auth/LoginScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -90,11 +90,6 @@ const LoginScreen = ({ onLoginSuccess }) => {
     }
   };
 
-  // 개발용 임시 다음 화면 이동 함수
-  const handleDevSkip = () => {
-    onLoginSuccess();
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -166,14 +161,6 @@ const LoginScreen = ({ onLoginSuccess }) => {
             <Text style={styles.noteText}>
               * 계정이 없으신 경우 관리자에게 문의하세요.
             </Text>
-            
-            {/* 개발용 임시 버튼 */}
-            <TouchableOpacity
-              style={styles.devSkipButton}
-              onPress={handleDevSkip}
-            >
-              <Text style={styles.devSkipButtonText}>개발용: 다음 화면으로</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -259,23 +246,6 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     fontStyle: 'italic',
-  },
-  // 개발용 임시 버튼 스타일
-  devSkipButton: {
-    backgroundColor: '#E0E0E0',
-    borderRadius: 8,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 30,
-    borderWidth: 1,
-    borderColor: '#CCCCCC',
-    borderStyle: 'dashed',
-  },
-  devSkipButtonText: {
-    color: '#666666',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
 });
 

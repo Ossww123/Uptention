@@ -7,6 +7,11 @@ import RankingScreen from '../screens/RankingScreen';
 import NotificationScreen from '../screens/NotificationScreen';
 import OrderCompleteScreen from '../screens/OrderCompleteScreen';
 import OrderHistoryScreen from '../screens/OrderHistoryScreen';
+import AddressSearchScreen from '../screens/AddressSearchScreen';
+import AddressDetailScreen from '../screens/AddressDetailScreen';
+import GiftBoxScreen from '../screens/GiftBoxScreen';
+import GiftDetailScreen from '../screens/GiftDetailScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -50,9 +55,51 @@ const StackNavigator = () => {
         name="OrderHistory" 
         component={OrderHistoryScreen} 
         options={{ 
-          headerShown: false,
+          headerShown: true,
+          headerTitle: '주문 내역',
+          headerTitleAlign: 'center',
           presentation: 'card',
           animation: 'slide_from_right'
+        }}
+      />
+      <Stack.Screen
+        name="AddressSearch"
+        component={AddressSearchScreen}
+        options={{
+          headerShown: false,
+          presentation: 'modal',
+          gestureEnabled: true,
+        }}
+      />
+      <Stack.Screen
+        name="AddressDetail"
+        component={AddressDetailScreen}
+        options={{
+          headerShown: false,
+          unmountOnBlur: false,
+        }}
+      />
+      <Stack.Screen 
+        name="GiftBox" 
+        component={GiftBoxScreen}
+        options={{
+          headerShown: false
+        }}
+      />
+      <Stack.Screen 
+        name="GiftDetail" 
+        component={GiftDetailScreen}
+        options={{
+          headerShown: true,
+          headerTitle: '선물함',
+          headerTitleAlign: 'center',
+        }}
+      />
+      <Stack.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{
+          headerShown: false,
         }}
       />
     </Stack.Navigator>

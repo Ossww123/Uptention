@@ -26,8 +26,24 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`);
-      setOrderDetail(response.data);
+      // 이전 주문 상세 데이터를 임시 저장
+      const prevOrderDetail = orderDetail;
+      
+      // 새로운 주문 ID나 아이템 ID로 요청할 때만 데이터를 새로 불러옴
+      if (!prevOrderDetail || 
+          prevOrderDetail.orderId !== orderId || 
+          prevOrderDetail.orderItemId !== orderItemId) {
+        const response = await axios.get(
+          `${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`
+        );
+        // 응답 데이터에 ID 정보 추가
+        const enrichedData = {
+          ...response.data,
+          orderId,
+          orderItemId
+        };
+        setOrderDetail(enrichedData);
+      }
     } catch (err) {
       setError('주문 상세 정보를 불러오는데 실패했습니다.');
       console.error('Error fetching order detail:', err);
@@ -36,17 +52,33 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
     }
   };
 
+  // visible 상태가 false로 변경될 때 로딩 상태만 초기화
+  useEffect(() => {
+    if (!visible) {
+      const timer = setTimeout(() => {
+        setLoading(false);
+        setError(null);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
   useEffect(() => {
     if (visible && orderId && orderItemId) {
+      // 현재 보여지는 데이터가 요청하는 데이터와 다를 때만 로딩 표시
+      if (!orderDetail || 
+          orderDetail.orderId !== orderId || 
+          orderDetail.orderItemId !== orderItemId) {
+        setLoading(true);
+      }
       fetchOrderDetail();
-      // 바텀 시트를 올리는 애니메이션
+      
       Animated.spring(slideAnim, {
         toValue: 0,
         useNativeDriver: true,
         bounciness: 0,
       }).start();
     } else {
-      // 바텀 시트를 내리는 애니메이션
       Animated.timing(slideAnim, {
         toValue: height,
         duration: 250,
@@ -74,7 +106,13 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
       );
     }
 
-    if (!orderDetail) return null;
+    if (!orderDetail) {
+      return (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#FF8C00" />
+        </View>
+      );
+    }
 
     return (
       <>

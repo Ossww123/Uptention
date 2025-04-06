@@ -1,3 +1,4 @@
+// src/screens/auth/SplashScreen.js
 import React from 'react';
 import { View, Image, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

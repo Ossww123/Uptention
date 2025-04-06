@@ -15,6 +15,7 @@ import {
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction
 } from '@solana/spl-token';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 if (typeof globalThis.Buffer === 'undefined') {
@@ -33,6 +34,9 @@ const YOUR_TOKEN_MINT = new PublicKey('5ymZGsCFkfSzZN6AbwMWU2v4A4c5yeqmGj1vSpRWg
 
 // 상수 추가
 const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+
+// AsyncStorage 키 상수 추가
+// const WALLET_STORAGE_KEY = '@wallet_info';
 
 export const WalletProvider = ({ children }) => {
   const [tokenBalance, setTokenBalance] = useState(null);
@@ -123,6 +127,8 @@ export const WalletProvider = ({ children }) => {
         : `phantom://ul/v1/disconnect?${params.toString()}`;
 
       await Linking.openURL(url);
+      // 저장된 지갑 정보 삭제
+      // await clearWalletInfo();
     } catch (error) {
       console.error('Disconnect error:', error);
       throw error;
@@ -249,6 +255,48 @@ export const WalletProvider = ({ children }) => {
     }
   };
 
+  // 지갑 정보 저장 함수
+  // const saveWalletInfo = async (walletInfo) => {
+  //   try {
+  //     await AsyncStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(walletInfo));
+  //   } catch (error) {
+  //     console.error('지갑 정보 저장 오류:', error);
+  //   }
+  // };
+
+  // 지갑 정보 로드 함수
+  // const loadWalletInfo = async () => {
+  //   try {
+  //     const savedInfo = await AsyncStorage.getItem(WALLET_STORAGE_KEY);
+  //     if (savedInfo) {
+  //       const walletInfo = JSON.parse(savedInfo);
+  //       setPublicKey(walletInfo.publicKey);
+  //       setSharedSecret(walletInfo.sharedSecret);
+  //       setSession(walletInfo.session);
+  //       if (walletInfo.publicKey) {
+  //         fetchBalances(walletInfo.publicKey);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('지갑 정보 로드 오류:', error);
+  //   }
+  // };
+
+  // 지갑 정보 삭제 함수
+  // const clearWalletInfo = async () => {
+  //   try {
+  //     await AsyncStorage.removeItem(WALLET_STORAGE_KEY);
+  //   } catch (error) {
+  //     console.error('지갑 정보 삭제 오류:', error);
+  //   }
+  // };
+
+  // 앱 시작 시 저장된 지갑 정보 로드
+  // useEffect(() => {
+  //   loadWalletInfo();
+  // }, []);
+
+  // deepLink 처리 useEffect 수정
   useEffect(() => {
     if (!deepLink) return;
 
@@ -257,10 +305,6 @@ export const WalletProvider = ({ children }) => {
       const isConnectPath = urlWithoutParams.includes('onConnect');
       const isDisconnectPath = urlWithoutParams.includes('onDisconnect');
       const params = new URLSearchParams(queryString);
-
-      console.log('=== 연결 처리 로그 ===');
-      console.log('연결 URL:', urlWithoutParams);
-      console.log('쿼리 파라미터:', queryString);
 
       if (params.get("errorCode")) {
         console.error('Connection error:', params.get("errorMessage"));
@@ -295,7 +339,13 @@ export const WalletProvider = ({ children }) => {
         setSession(connectData.session);
         setPublicKey(connectData.public_key);
         
-        // 연결 직후 잔액 조회
+        // 지갑 연결 정보 저장
+        // saveWalletInfo({
+        //   publicKey: connectData.public_key,
+        //   sharedSecret: sharedSecretDapp,
+        //   session: connectData.session
+        // });
+        
         fetchBalances(connectData.public_key);
       }
 
@@ -305,6 +355,8 @@ export const WalletProvider = ({ children }) => {
         setSession(null);
         setSolBalance(null);
         setTokenBalance(null);
+        // 저장된 지갑 정보 삭제
+        // clearWalletInfo();
       }
     } catch (error) {
       console.error('Error processing deeplink:', error);

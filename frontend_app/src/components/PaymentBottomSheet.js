@@ -174,15 +174,30 @@ const PaymentBottomSheet = ({
         // 검증 실패 처리
         let errorMessage = "상품 검증 중 오류가 발생했습니다.";
         
-        if (status === 400) {
-          errorMessage = verifyData.message || "재고가 부족한 상품이 있습니다.";
-        } else if (status === 404) {
-          errorMessage = verifyData.message || "존재하지 않는 상품이 있습니다.";
-        } else if (status === 409) {
-          errorMessage = verifyData.message || "상품 가격이 변경되었습니다.";
+        if (verifyData?.code) {
+          switch (verifyData.code) {
+            case 'X002':
+              errorMessage = "검증할 상품 목록이 없습니다.";
+              break;
+            case 'ITEM_001':
+              errorMessage = "상품이 존재하지 않습니다.";
+              break;
+            case 'ITEM_004':
+              errorMessage = "재고가 부족한 상품이 있습니다.";
+              break;
+            case 'ITEM_006':
+              errorMessage = "상품 가격이 변경되었습니다.";
+              break;
+            case 'ITEM_007':
+              errorMessage = "삭제된 상품입니다.";
+              break;
+            default:
+              errorMessage = verifyData.message || "상품 검증 중 오류가 발생했습니다.";
+          }
         }
         
         console.log('=== 검증 실패 ===');
+        console.log('실패 코드:', verifyData?.code);
         console.log('실패 사유:', errorMessage);
         
         Alert.alert("주문 확인", errorMessage, [
@@ -201,9 +216,27 @@ const PaymentBottomSheet = ({
       console.error('에러 메시지:', error.message);
       console.error('에러 응답:', error.response?.data);
       
+      let errorMessage = "결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.";
+      
+      if (error.response?.data?.code) {
+        switch (error.response.data.code) {
+          case 'ITEM_004':
+            errorMessage = "재고가 부족한 상품이 있습니다.";
+            break;
+          case 'X002':
+            errorMessage = error.response.data.message || "[address] 배송 주소는 필수입니다.";
+            break;
+          case 'ITEM_001':
+            errorMessage = "상품이 존재하지 않습니다.";
+            break;
+          default:
+            errorMessage = error.response.data.message || "결제 처리 중 오류가 발생했습니다.";
+        }
+      }
+      
       Alert.alert(
         "오류",
-        "결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.",
+        errorMessage,
         [
           {
             text: "확인",

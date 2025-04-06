@@ -16,9 +16,11 @@ class AppBlockerManager(private val context: Context) {
         
         // 항상 허용되어야 하는 필수 앱 목록
         private val ESSENTIAL_APPS = setOf(
+            // 기본 시스템 및 UI 기능
             "com.android.launcher3",                     // 기본 홈 런처
             "com.anonymous.uptention",                   // 현재 앱
             "com.android.settings",                      // 설정
+            "com.samsung.android.settings",              // 삼성 설정
             "com.android.systemui",                      // 시스템 UI
             "com.google.android.apps.nexuslauncher",    // Pixel 런처
             "com.google.android.packageinstaller",       // 패키지 설치 관리자
@@ -28,9 +30,72 @@ class AppBlockerManager(private val context: Context) {
             "com.google.android.launcher.layouts.nexus", // Nexus 런처 레이아웃
             "android",                                   // 안드로이드 시스템
             "com.android.launcher2",                     // 레거시 런처
-            "com.google.android.googlequicksearchbox",   // 구글 검색
+            "com.lge.launcher3",                         // LG 홈 (LG 런처)
+            
+            // 개발 및 지갑 앱
+            "com.expo.development",                     // Expo Go
+            "com.phantom.mobile.wallet",                // Phantom 지갑
+            "app.phantom",
+            "host.exp.exponent",
+
+            // 핵심 통신 기능
+            "com.android.dialer",                        // 안드로이드 전화
+            "com.samsung.android.dialer",                // 삼성 전화
+            "com.google.android.dialer",                 // Google 전화
+            "com.android.phone",                         // 전화 서비스
+            "com.android.mms",                           // 안드로이드 메시지
+            "com.samsung.android.messaging",             // 삼성 메시지
+            "com.android.messaging",                     // 안드로이드 메시지
+            "com.google.android.apps.messaging",         // 구글 메시지
+            
+            // 업무에 필수적인 앱
+            "com.google.android.gm",                     // Gmail
+            "com.google.android.calendar",               // Google 캘린더
+            "com.samsung.android.calendar",              // 삼성 캘린더
+            "com.google.android.apps.docs",              // Google 문서
+            "com.samsung.android.app.notes",             // 삼성 노트
+            "com.google.android.apps.tachyon",           // Google Meet
+            
+            // 입력 관련(필수)
             "com.google.android.inputmethod.latin",      // Gboard
-            "com.samsung.android.honeyboard"            // 삼성 키보드
+            "com.google.android.inputmethod.korean",     // Google 한국어 입력기
+            "com.samsung.android.honeyboard",           // 삼성 키보드
+            "com.lge.ime",                               // LG 키보드
+            
+            // 핵심 시스템 서비스
+            "com.google.android.gms",                    // Google Play 서비스
+            "com.google.android.gsf",                    // Google 서비스 프레임워크
+            "com.android.providers.media",               // 미디어 저장소
+            "com.android.providers.downloads",           // 다운로드 매니저
+            "com.android.providers.settings",            // 시스템 설정 제공자
+            "com.google.android.googlequicksearchbox",   // 구글 검색
+            "com.samsung.android.app.contacts",          // 삼성 연락처
+            "com.google.android.contacts",               // Google 주소록
+            
+            // 업무용 도구
+            "com.android.calculator2",                   // 안드로이드 계산기
+            "com.sec.android.calculator",                // 삼성 계산기
+            "com.google.android.calculator",             // Google 계산기
+            "com.android.documentsui",                   // 파일 관리자
+            "com.sec.android.app.myfiles",               // 내 파일
+            "com.google.android.apps.nbu.files",         // Files by Google
+            "com.google.android.apps.translate",         // Google 번역
+            "com.android.camera",                        // 안드로이드 카메라
+            "com.android.camera2",                       // 안드로이드 카메라2
+            "com.sec.android.app.camera",                // 삼성 카메라
+            "com.lge.camera",                            // LG 카메라
+            "com.lge.qmemoplus",                         // Q메모+(메모 앱)
+            
+            // 디바이스 안정성과 관련된 앱
+            "com.samsung.android.lool",                  // 디바이스 케어
+            "com.lge.smartdoctor",                       // 스마트 닥터
+            "com.google.android.apps.wellbeing",         // 디지털 웰빙
+            "com.google.android.apps.restore",            // 기기 복원
+            
+            // 시스템 설정
+            "com.samsung.android.settings",              // 삼성 설정
+            "com.samsung.accessibility",                 // 삼성 접근성 설정
+            "com.samsung.android.accessibility.settings", // 삼성 접근성 설정 (대체 패키지)
         )
     }
 

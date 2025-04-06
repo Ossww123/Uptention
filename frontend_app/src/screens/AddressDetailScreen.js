@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 
 const AddressDetailScreen = ({ navigation, route }) => {
-  const { address, prevScreen, product, prevItems, prevTotalPrice } = route.params;
+  const { address, prevScreen, product, prevItems, prevTotalPrice, orderId, item } = route.params;
   const [detailAddress, setDetailAddress] = useState('');
 
   const handleSave = () => {
@@ -20,8 +20,23 @@ const AddressDetailScreen = ({ navigation, route }) => {
         productId: product.itemId,
         showPaymentSheet: true
       });
-    } else {
-      // CheckoutScreen에서 온 경우
+    } 
+    // DeliveryAddressBottomSheet에서 온 경우
+    else if (prevScreen === 'DeliveryAddressBottomSheet') {
+      // 기존 item의 모든 정보를 유지하고 주소만 업데이트
+      const updatedItem = {
+        ...item,
+        address: `${address.roadAddress} ${detailAddress}`
+      };
+
+      navigation.navigate('GiftDetail', {
+        item: updatedItem,
+        refreshKey: Date.now(),
+        showDeliveryAddressBottomSheet: true
+      });
+    }
+    // CheckoutScreen에서 온 경우
+    else {
       navigation.navigate('CheckoutScreen', { 
         address: completeAddress,
         selectedItems: prevItems,
