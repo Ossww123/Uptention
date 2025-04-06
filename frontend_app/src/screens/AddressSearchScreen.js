@@ -32,6 +32,13 @@ const AddressSearchScreen = ({ navigation, route }) => {
         prevScreen: 'PaymentBottomSheet',
         product: route.params?.product
       });
+    } else if (route.params?.prevScreen === 'DeliveryAddressBottomSheet') {
+      navigation.navigate('AddressDetail', {
+        address: completeAddress,
+        prevScreen: 'DeliveryAddressBottomSheet',
+        orderId: route.params?.orderId,
+        item: route.params?.item
+      });
     } else {
       navigation.navigate('AddressDetail', { 
         address: completeAddress,

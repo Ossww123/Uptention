@@ -316,28 +316,26 @@ useFocusEffect(
     if (!userId || !authToken) return;
 
     try {
-      // 오늘 날짜의 시작과 끝 시간 설정
+      // 현재 시간을 KST로 변환
       const now = new Date();
-      const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-
-      // 날짜를 YYYY-MM-DDTHH:mm:ss 형식으로 변환
-      const formatDate = (date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
-        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-      };
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const kstNow = new Date(utc + (9 * 60 * 60 * 1000));
       
+      const year = kstNow.getFullYear();
+      const month = String(kstNow.getMonth() + 1).padStart(2, '0');
+      const day = String(kstNow.getDate()).padStart(2, '0');
+      
+      // ISO 형식의 시작 시간과 종료 시간 생성 (KST)
+      const startTime = `${year}-${month}-${day}T00:00:00`;
+      const endTime = `${year}-${month}-${day}T23:59:59`;
+
       console.log('API 요청 파라미터:', {
-        startTime: formatDate(startTime),
-        endTime: formatDate(endTime)
+        startTime,
+        endTime,
+        userId,
+        현재_KST: kstNow.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
       });
 
-      // API 호출
       const response = await axios.get(
         `${API_BASE_URL}/api/users/${userId}/mining-times`,
         {
@@ -345,8 +343,8 @@ useFocusEffect(
             'Authorization': `Bearer ${authToken}`
           },
           params: {
-            startTime: formatDate(startTime),
-            endTime: formatDate(endTime)
+            startTime,
+            endTime
           }
         }
       );
@@ -354,24 +352,17 @@ useFocusEffect(
       console.log('API 응답 데이터:', response.data);
       
       if (response.data && Array.isArray(response.data)) {
-        // 집중 시간 세션 로그 출력
-        console.log('=== 오늘의 집중 시간 세션 ===');
         let totalMinutes = 0;
 
-        response.data.forEach((session, index) => {
-          console.log(`세션 ${index + 1}:`);
-          console.log(`날짜: ${session.date}`);
-          console.log(`총 시간: ${session.totalTime}분`);
-          console.log('------------------------');
-          
-          // 문자열이나 숫자 모두 처리 가능하도록
+        response.data.forEach((session) => {
+          console.log('세션 데이터:', session);
           const sessionTime = parseInt(session.totalTime || 0);
           if (!isNaN(sessionTime)) {
             totalMinutes += sessionTime;
           }
         });
         
-        console.log(`총 집중 시간: ${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분`);
+        console.log('계산된 총 집중 시간:', totalMinutes, '분');
         setDailyFocusTime(totalMinutes);
       } else {
         console.error('잘못된 응답 형식:', response.data);
@@ -409,6 +400,22 @@ useFocusEffect(
 
     return unsubscribe;
   }, [navigation, userId, authToken]);
+
+  useEffect(() => {
+    // 현재 시간과 다음 자정까지의 시간 계산
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setHours(24, 0, 0, 0);
+    const timeUntilMidnight = tomorrow - now;
+
+    // 자정에 데이터 초기화하는 타이머 설정
+    const timer = setTimeout(() => {
+      fetchDailyFocusTime();
+      fetchUserPoint();
+    }, timeUntilMidnight);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

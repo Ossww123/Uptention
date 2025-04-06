@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Platform, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, Platform, TextInput, Modal, ActionSheetIOS } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import 'react-native-get-random-values';
@@ -42,7 +42,12 @@ const ProfileScreen = ({ navigation }) => {
   
   const { userId, authToken, logout } = useAuth();
   const [userInfo, setUserInfo] = useState(null);
-  const [showDeleteButton, setShowDeleteButton] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // 로그아웃 함수 수정
   const handleLogout = async () => {
@@ -219,7 +224,6 @@ const ProfileScreen = ({ navigation }) => {
 
       if (response.status === 200) {
         Alert.alert('성공', '프로필 이미지가 삭제되었습니다.');
-        setShowDeleteButton(false);
         fetchUserInfo(); // 프로필 정보 새로고침
       }
     } catch (error) {
@@ -228,13 +232,85 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const handleImagePress = () => {
-    handleImageUpload();  // 항상 갤러리 열기
+  const handleEditPress = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['취소', '프로필 사진 변경', '프로필 사진 삭제', '비밀번호 변경'],
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: 2,
+          anchor: 150,
+          alignItems: 'center',
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            handleImageUpload();
+          } else if (buttonIndex === 2) {
+            Alert.alert(
+              '프로필 사진 삭제',
+              '프로필 사진을 삭제하시겠습니까?',
+              [
+                { text: '취소', style: 'cancel' },
+                { 
+                  text: '삭제', 
+                  style: 'destructive',
+                  onPress: handleDeleteImage 
+                }
+              ]
+            );
+          } else if (buttonIndex === 3) {
+            setShowPasswordModal(true);
+          }
+        }
+      );
+    } else {
+      // Android의 경우 Modal을 사용하여 커스텀 UI 구현
+      setShowEditModal(true);
+    }
   };
 
-  const handleLongPress = () => {
-    if (userInfo?.profileImage) {
-      setShowDeleteButton(!showDeleteButton);  // X 버튼 토글
+  const handlePasswordChange = async () => {
+    // 비밀번호 유효성 검사
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert('오류', '모든 필드를 입력해주세요.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert('오류', '새 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    try {
+      const response = await axios.patch(
+        `${API_BASE_URL}/api/users/${userId}/password`,
+        {
+          currentPassword: currentPassword,
+          newPassword: newPassword
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.status === 200) {
+        Alert.alert('성공', '비밀번호가 성공적으로 변경되었습니다.');
+        // 모달 닫고 입력값 초기화
+        setShowPasswordModal(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (error) {
+      console.error('비밀번호 변경 오류:', error);
+      if (error.response?.status === 400) {
+        Alert.alert('오류', '현재 비밀번호가 일치하지 않습니다.');
+      } else {
+        Alert.alert('오류', '비밀번호 변경 중 문제가 발생했습니다.');
+      }
     }
   };
 
@@ -242,55 +318,25 @@ const ProfileScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          {/* 상단 지갑 아이콘 */}
-          <View style={styles.headerSection}>
-            <TouchableOpacity 
-              style={styles.walletIconContainer}
-              onPress={publicKey ? handleDisconnectWallet : handleConnectWallet}
-            >
-              <Ionicons 
-                name={publicKey ? "wallet" : "wallet-outline"} 
-                size={25} 
-                color={publicKey ? "#4CAF50" : "black"} 
-              />
-              {publicKey && <View style={styles.connectedDot} />}
-            </TouchableOpacity>
-          </View>
-
           {/* 프로필 섹션 */}
           <View style={styles.profileSection}>
             <TouchableOpacity 
               style={styles.editButton}
-              onPress={handleImagePress}
+              onPress={handleEditPress}
             >
               <Ionicons name="pencil" size={15} color="black" />
             </TouchableOpacity>
             <View style={styles.profileInfo}>
-              <TouchableOpacity 
-                style={styles.profileImageContainer}
-                onPress={handleImagePress}
-                onLongPress={handleLongPress}
-                delayLongPress={500}
-              >
+              <View style={styles.profileImageContainer}>
                 {userInfo?.profileImage ? (
-                  <>
-                    <Image 
-                      source={{ uri: userInfo.profileImage }} 
-                      style={styles.profileImage}
-                    />
-                    {showDeleteButton && (
-                      <TouchableOpacity 
-                        style={styles.deleteButton}
-                        onPress={handleDeleteImage}
-                      >
-                        <Ionicons name="close-circle" size={24} color="red" />
-                      </TouchableOpacity>
-                    )}
-                  </>
+                  <Image 
+                    source={{ uri: `${userInfo.profileImage}?w=100&h=100&t=cover&f=webp` }} 
+                    style={styles.profileImage}
+                  />
                 ) : (
                   <View style={styles.profileImage} />
                 )}
-              </TouchableOpacity>
+              </View>
               <View style={styles.infoContainer}>
                 <View style={styles.textContainer}>
                   <View style={styles.profileDetails}>
@@ -356,6 +402,137 @@ const ProfileScreen = ({ navigation }) => {
           >
             <Text style={styles.logoutText}>로그아웃</Text>
           </TouchableOpacity>
+
+          {/* 비밀번호 변경 모달 */}
+          <Modal
+            visible={showPasswordModal}
+            animationType="slide"
+            transparent={true}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>비밀번호 변경</Text>
+                
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="현재 비밀번호"
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    secureTextEntry={secureTextEntry}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIcon}
+                    onPress={() => setSecureTextEntry(!secureTextEntry)}
+                  >
+                    <Ionicons
+                      name={secureTextEntry ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color="#888"
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="새 비밀번호"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    secureTextEntry={secureTextEntry}
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="새 비밀번호 확인"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={secureTextEntry}
+                  />
+                </View>
+
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowPasswordModal(false);
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>취소</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.confirmButton]}
+                    onPress={handlePasswordChange}
+                  >
+                    <Text style={styles.confirmButtonText}>변경</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          {/* 프로필 편집 모달 */}
+          <Modal
+            visible={showEditModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowEditModal(false)}
+          >
+            <View style={styles.editModalContainer}>
+              <View style={styles.editModalContent}>
+                <Text style={styles.editModalTitle}>프로필 편집</Text>
+                <TouchableOpacity
+                  style={styles.editModalButton}
+                  onPress={() => {
+                    setShowEditModal(false);
+                    handleImageUpload();
+                  }}
+                >
+                  <Text style={styles.editModalButtonText}>프로필 사진 변경</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.editModalButton}
+                  onPress={() => {
+                    setShowEditModal(false);
+                    Alert.alert(
+                      '프로필 사진 삭제',
+                      '프로필 사진을 삭제하시겠습니까?',
+                      [
+                        { text: '취소', style: 'cancel' },
+                        { 
+                          text: '삭제', 
+                          style: 'destructive',
+                          onPress: handleDeleteImage 
+                        }
+                      ]
+                    );
+                  }}
+                >
+                  <Text style={styles.editModalButtonText}>프로필 사진 삭제</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.editModalButton}
+                  onPress={() => {
+                    setShowEditModal(false);
+                    setShowPasswordModal(true);
+                  }}
+                >
+                  <Text style={styles.editModalButtonText}>비밀번호 변경</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.editModalButton, styles.editModalCancelButton]}
+                  onPress={() => setShowEditModal(false)}
+                >
+                  <Text style={styles.editModalCancelText}>취소</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -531,31 +708,114 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'flex-end',
   },
-  headerSection: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
     marginBottom: 20,
   },
-  walletIconContainer: {
-    padding: 8,
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    marginBottom: 15,
+    paddingHorizontal: 10,
   },
-  connectedDot: {
-    position: 'absolute',
-    right: -2,
-    top: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4CAF50',
+  input: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
   },
-  deleteButton: {
-    position: 'absolute',
-    top: -10,
-    right: -10,
+  eyeIcon: {
+    padding: 10,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 20,
+  },
+  modalButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  cancelButton: {
+    backgroundColor: '#F0F0F0',
+  },
+  confirmButton: {
+    backgroundColor: '#FF8C00',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  editModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  editModalContent: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 2,
+    borderRadius: 15,
+    padding: 20,
+    width: '80%',
+  },
+  editModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  editModalButton: {
+    width: '100%',
+    paddingVertical: 15,
+    marginBottom: 10,
+    borderRadius: 8,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  editModalButtonText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#000',
+  },
+  editModalCancelButton: {
+    marginBottom: 0,
+    backgroundColor: '#f8f8f8',
+    borderColor: '#f8f8f8',
+  },
+  editModalCancelText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#666',
   },
 });
 
