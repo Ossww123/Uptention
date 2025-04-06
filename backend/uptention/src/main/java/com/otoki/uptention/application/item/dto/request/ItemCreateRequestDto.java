@@ -23,7 +23,7 @@ public class ItemCreateRequestDto {
 	private String name;
 
 	@NotBlank(message = "브랜드명은 필수입니다.")
-	@Size(max = 30, message = "브랜드명은 최대 30자까지 입력 가능합니다.")
+	@Size(max = 50, message = "브랜드명은 최대 30자까지 입력 가능합니다.")
 	@Schema(description = "브랜드명", example = "스타벅스")
 	private String brand;
 
