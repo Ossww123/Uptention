@@ -55,6 +55,9 @@ dependencies {
     // Spring MVC, Tomcat, Jackson 을 포함한 웹 개발 스타터 패키지
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
+    // Spring WebSocket
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
     // Swagger 추가
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
 
