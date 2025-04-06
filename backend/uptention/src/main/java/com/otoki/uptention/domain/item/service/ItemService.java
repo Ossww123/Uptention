@@ -13,7 +13,7 @@ public interface ItemService {
 
 	Item getItemById(Integer id);
 
-	List<ItemDto> getItemsByCursor(Integer categoryId, String keyword, CursorDto cursor, SortType sortType, int size);
+	List<ItemDto> getItemsByCursor(Integer categoryId, String keyword, CursorDto<Integer> cursor, SortType sortType, int size);
 
 	List<ItemDto> getItemsByIds(List<Integer> itemIds);
 

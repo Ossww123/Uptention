@@ -254,7 +254,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	 * 유형에 따른 주문 목록 조회
 	 */
 	private List<Order> fetchOrdersByType(Integer userId, String cursorStr, int limit, OrderHistoryType type) {
-		CursorDto cursor = CursorDto.decode(cursorStr);
+		CursorDto<Integer> cursor = CursorDto.decode(cursorStr, Integer.class);
 		boolean isPurchase = OrderHistoryType.PURCHASE.equals(type);
 
 		if (cursor == null) {
@@ -337,7 +337,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 	private String createNextCursor(boolean hasNextPage, List<Order> resultOrders) {
 		if (hasNextPage && !resultOrders.isEmpty()) {
 			Order lastOrder = resultOrders.get(resultOrders.size() - 1);
-			CursorDto nextCursorDto = new CursorDto(0, lastOrder.getId());
+			CursorDto<Integer> nextCursorDto = new CursorDto<>(0, lastOrder.getId());
 			return nextCursorDto.encode();
 		}
 		return null;
