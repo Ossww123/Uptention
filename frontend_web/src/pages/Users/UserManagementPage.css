@@ -79,7 +79,7 @@
   flex-wrap: wrap;
 }
 
-.filters-container > div:first-child {
+.filters-container > div {
   display: flex;
   align-items: center;
 }
@@ -88,7 +88,6 @@
   display: flex;
   align-items: center;
   margin-right: 20px;
-  margin-bottom: 10px;
 }
 
 .filter-group label {
@@ -335,4 +334,35 @@
     flex-direction: column;
     gap: 10px;
   }
+}
+
+/* 테이블 열 너비 지정 예시 */
+.user-table th:nth-child(1), 
+.user-table td:nth-child(1) {
+  width: 15%; /* 사원번호 열 */
+}
+
+.user-table th:nth-child(2), 
+.user-table td:nth-child(2) {
+  width: 20%; /* 회원아이디 열 */
+}
+
+.user-table th:nth-child(3), 
+.user-table td:nth-child(3) {
+  width: 15%; /* 이름 열 */
+}
+
+.user-table th:nth-child(4), 
+.user-table td:nth-child(4) {
+  width: 15%; /* 지갑 연동 열 */
+}
+
+.user-table th:nth-child(5), 
+.user-table td:nth-child(5) {
+  width: 20%; /* 가입날짜 열 */
+}
+
+.user-table th:nth-child(6), 
+.user-table td:nth-child(6) {
+  width: 15%; /* 회원삭제 열 */
 }
