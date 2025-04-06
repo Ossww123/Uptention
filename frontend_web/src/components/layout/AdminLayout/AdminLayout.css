@@ -3,17 +3,29 @@
   display: flex;
   min-height: 100vh;
   background-color: #f1f1f1;
+  overflow: hidden; /* 전체 레이아웃에서 넘침 방지 */
 }
 
 .admin-content-wrapper {
   flex: 1;
   margin-left: 260px; /* 사이드바 너비와 동일 */
   width: calc(100% - 260px);
-  overflow-x: hidden;
+  height: 100vh; /* 브라우저 전체 높이 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 중요: 여기에서 overflow 제어 */
+}
+
+/* Header.css에서 헤더 스타일을 수정하는 것이 좋지만, 여기서도 추가 가능 */
+.admin-header {
+  flex-shrink: 0; /* 헤더 크기 고정 */
 }
 
 .admin-content {
-  width: 100%;
+  flex: 1; /* 남은 공간 모두 차지 */
+  overflow-y: auto; /* 내용이 넘칠 경우 이 영역에만 스크롤 표시 */
+  padding: 20px;
+  /* height 속성 제거 - flex: 1이 공간을 알아서 조절할 것임 */
 }
 
 /* 반응형 스타일 */

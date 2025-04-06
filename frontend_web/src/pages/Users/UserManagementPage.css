@@ -1,8 +1,8 @@
-/* src/pages/Users/UserManagementPage.css */
+/* src/pages/Users/UserManagementPage.css - 필터 컨테이너 위치 수정 */
 .user-management {
   padding: 20px;
   background-color: #f1f1f1;
-  min-height: 100vh;
+  /*min-height: 100vh;*/
 }
 
 /* 콘텐츠 카드 스타일 */
@@ -66,20 +66,20 @@
   color: #333;
 }
 
-/* 필터 컨테이너 스타일 */
-.filters-container {
-  background-color: white;
-  border-radius: 8px;
+/* 필터 컨테이너 스타일 - 테이블 아래 위치할 경우 */
+.filters-container-bottom {
+  margin-top: 20px;
   padding: 15px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #f8f9fa;
+  border-radius: 8px;
   display: flex;
   justify-content: space-between; /* 좌우 정렬 유지 */
   align-items: center;
   flex-wrap: wrap;
+  border-top: 1px solid #eee;
 }
 
-.filters-container > div {
+.filters-container-bottom > div {
   display: flex;
   align-items: center;
 }
@@ -147,6 +147,7 @@
   overflow: auto;
   position: relative;
   min-height: 200px;
+  max-height: 500px; /* 테이블 영역 최대 높이 설정 */
 }
 
 /* 테이블 스타일 개선 */
@@ -166,6 +167,9 @@
   padding: 15px;
   text-align: left;
   border-bottom: 2px solid #eee;
+  position: sticky; /* 헤더 고정 */
+  top: 0; /* 테이블 상단에 고정 */
+  z-index: 10; /* 다른 요소보다 앞에 표시 */
 }
 
 .user-table tr:nth-child(even) {
@@ -304,7 +308,7 @@
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
-  .filters-container {
+  .filters-container-bottom {
     flex-direction: column;
     align-items: flex-start;
   }

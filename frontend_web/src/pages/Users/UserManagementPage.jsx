@@ -1,4 +1,4 @@
-// src/pages/Users/UserManagementPage.jsx
+// src/pages/Users/UserManagementPage.jsx - 레이아웃 수정 버전
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -238,56 +238,7 @@ const UserManagementPage = () => {
 
   return (
     <div className="user-management">
-      {/* 상단 필터 및 검색 영역 */}
-      <div className="filters-container">
-        {/* 정렬 옵션 선택 */}
-        <div className="filter-group">
-          <label htmlFor="sortOption">정렬: </label>
-          <select
-            id="sortOption"
-            value={sortOption}
-            onChange={handleSortChange}
-            className="filter-select"
-          >
-            <option value="NAMES_ASC">이름 내림차순</option>
-            <option value="REGISTER_DATE_ASC">가입날짜 오름차순</option>
-            <option value="REGISTER_DATE_DESC">가입날짜 내림차순</option>
-          </select>
-        </div>
-
-        {/* 지갑 연동 필터 */}
-        <div className="filter-group">
-          <label htmlFor="userRole">지갑 연동 여부:</label>
-          <select
-            id="userRole"
-            value={userRole}
-            onChange={handleRoleChange}
-            className="filter-select"
-          >
-            <option value="">전체</option>
-            <option value="ROLE_MEMBER">연동됨</option>
-            <option value="ROLE_TEMP_MEMBER">미연동</option>
-          </select>
-        </div>
-
-        {/* 검색바 */}
-        <div className="search-bar">
-          <form onSubmit={handleSearch}>
-            <input
-              type="text"
-              placeholder="회원 검색"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="search-input"
-            />
-            <button type="submit" className="search-button">
-              검색
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* 회원 목록 영역 - 흰색 카드 */}
+      {/* 회원 목록 영역 - 흰색 카드, 필터 및 검색 영역도 포함 */}
       <div className="content-card">
         <div className="user-management-header">
           <h1 className="page-title">회원 목록</h1>
@@ -380,6 +331,55 @@ const UserManagementPage = () => {
               <p>등록된 회원이 없습니다.</p>
             </div>
           )}
+        </div>
+
+        {/* 필터 및 검색 영역을 테이블 아래로 이동 */}
+        <div className="filters-container-bottom">
+          {/* 정렬 옵션 선택 */}
+          <div className="filter-group">
+            <label htmlFor="sortOption">정렬: </label>
+            <select
+              id="sortOption"
+              value={sortOption}
+              onChange={handleSortChange}
+              className="filter-select"
+            >
+              <option value="NAMES_ASC">이름 내림차순</option>
+              <option value="REGISTER_DATE_ASC">가입날짜 오름차순</option>
+              <option value="REGISTER_DATE_DESC">가입날짜 내림차순</option>
+            </select>
+          </div>
+
+          {/* 지갑 연동 필터 */}
+          <div className="filter-group">
+            <label htmlFor="userRole">지갑 연동 여부:</label>
+            <select
+              id="userRole"
+              value={userRole}
+              onChange={handleRoleChange}
+              className="filter-select"
+            >
+              <option value="">전체</option>
+              <option value="ROLE_MEMBER">연동됨</option>
+              <option value="ROLE_TEMP_MEMBER">미연동</option>
+            </select>
+          </div>
+
+          {/* 검색바 */}
+          <div className="search-bar">
+            <form onSubmit={handleSearch}>
+              <input
+                type="text"
+                placeholder="회원 검색"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="search-input"
+              />
+              <button type="submit" className="search-button">
+                검색
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 
