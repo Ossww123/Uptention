@@ -49,7 +49,7 @@ const HomeScreen = ({ navigation }) => {
   const progress = (remainingMinutes / maxFocusMinutes) * 100; // 남은 시간의 비율
   const svgProgress = (progress * circum) / 100; // progress가 클수록 비어있는 상태
 
-  // FCM 메시지 리스너 설정
+  // FCM 메시지 리스너 내부 수정
 useEffect(() => {
   // 포그라운드 메시지 리스너
   const unsubscribe = messaging().onMessage(async (remoteMessage) => {
@@ -57,7 +57,10 @@ useEffect(() => {
     
     // 알림 받은 후 최신 알림 개수 조회
     try {
-      const { data, ok } = await get('/notifications/unread/count');
+      const { data, ok } = await get('/notifications/count', {
+        params: { read: false }
+      });
+      
       if (ok) {
         setUnreadNotifications(data.count);
       }
@@ -77,27 +80,31 @@ useEffect(() => {
   return unsubscribe;
 }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      // 화면이 포커스될 때마다 알림 카운트 조회 API 호출
-      const fetchUnreadNotificationCount = async () => {
-        try {
-          const { data, ok } = await get('/notifications/unread/count');
-          if (ok) {
-            setUnreadNotifications(data.count);
-          }
-        } catch (error) {
-          console.error('알림 개수 조회 오류:', error);
+// useFocusEffect 부분 수정
+useFocusEffect(
+  useCallback(() => {
+    // 화면이 포커스될 때마다 알림 카운트 조회 API 호출
+    const fetchUnreadNotificationCount = async () => {
+      try {
+        const { data, ok } = await get('/notifications/count', {
+          params: { read: false }
+        });
+        
+        if (ok) {
+          setUnreadNotifications(data.count);
         }
-      };
-  
-      fetchUnreadNotificationCount();
-      
-      return () => {
-        // 클린업 코드 (필요시)
-      };
-    }, [])
-  );
+      } catch (error) {
+        console.error('알림 개수 조회 오류:', error);
+      }
+    };
+
+    fetchUnreadNotificationCount();
+    
+    return () => {
+      // 클린업 코드 (필요시)
+    };
+  }, [])
+);
   
   // JWT 토큰에서 payload를 추출하는 함수
   const parseJwt = (token) => {
