@@ -368,7 +368,7 @@ const endTime = formatDate(endDate);
               });
             }}
           />
-          <Text style={styles.minutesLabel}>480분</Text>
+          <Text style={styles.minutesLabel}>8시간</Text>
           <View style={styles.chartDivider} />
           <Text style={styles.updateTimeText}>
             {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}에 업데이트됨
