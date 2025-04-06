@@ -171,7 +171,7 @@ public interface ItemApiDoc {
 					@ExampleObject(
 						name = "상품명 길이 초과",
 						summary = "상품명이 최대 길이를 초과함",
-						value = "{\"code\":\"X002\",\"message\":\"[name] 상품명은 최대 30자까지 입력 가능합니다.\",\"path\":\"/api/items\"}"
+						value = "{\"code\":\"X002\",\"message\":\"[name] 상품명은 최대 50자까지 입력 가능합니다.\",\"path\":\"/api/items\"}"
 					),
 					@ExampleObject(
 						name = "브랜드명 길이 초과",
