@@ -74,14 +74,16 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		}
 
 		MiningTime findMiningTime = miningTimeService.findMiningTime(loggedInUser);
-		if (findMiningTime.getEndTime() == null) {
-			throw new CustomException(ErrorCode.FOCUS_MODE_ON_FAILED);
+
+		LocalDateTime now = LocalDateTime.now();
+		if (findMiningTime != null && findMiningTime.getEndTime() == null) {
+			findMiningTime.updateEndTime(now);
 		}
 
 		// 1. 채굴시간 생성
 		MiningTime miningTime = MiningTime.builder()
 			.user(loggedInUser)
-			.startTime(LocalDateTime.now())
+			.startTime(now)
 			.endTime(null)
 			.build();
 
@@ -97,7 +99,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		// 1. 채굴 시간 조회
 		MiningTime findMiningTime = miningTimeService.findMiningTime(loggedInUser);
 
-		if (findMiningTime.getEndTime() != null) {
+		if (findMiningTime == null || findMiningTime.getEndTime() != null) {
 			throw new CustomException(ErrorCode.FOCUS_MODE_OFF_FAILED);
 		}
 

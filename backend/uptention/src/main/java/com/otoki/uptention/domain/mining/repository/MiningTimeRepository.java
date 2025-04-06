@@ -16,7 +16,7 @@ import com.otoki.uptention.domain.user.entity.User;
 
 @Repository
 public interface MiningTimeRepository extends JpaRepository<MiningTime, Integer> {
-	Optional<MiningTime> findTopByUserOrderByStartTimeDesc(User user);
+	MiningTime findTopByUserOrderByStartTimeDesc(User user);
 
 	@Modifying(clearAutomatically = true)
 	@Query("UPDATE MiningTime m SET m.endTime = :endTime WHERE m.endTime IS NULL")
