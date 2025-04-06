@@ -520,6 +520,7 @@ const styles = StyleSheet.create({
   },
   chartContent: {
     paddingBottom: 5,
+    paddingTop: 30, // 상단에 "8시간" 라벨을 위한 공간 확보
     position: "relative",
   },
   barsContainer: {
@@ -536,6 +537,7 @@ const styles = StyleSheet.create({
   barWrapper: {
     height: "100%",
     justifyContent: "flex-end",
+    paddingTop: 25, // "8시간" 라벨 아래에서 시작하도록 조정
   },
   bar: {
     width: 16,
@@ -549,18 +551,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#D0D0D0",
   },
   barText: {
-    marginTop: 8,
+    marginTop: 10, // 8에서 10으로 증가
     fontSize: 14,
     color: "#666",
   },
   barDayOfWeek: {
     fontSize: 12,
     color: "#888",
-    marginTop: 2,
+    marginTop: 3,
   },
   minutesLabel: {
     position: "absolute",
-    top: 10,
+    top: 5, // 상단에서 거리 조정
     right: 0,
     fontSize: 12,
     color: "#888",

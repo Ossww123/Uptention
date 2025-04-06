@@ -383,7 +383,7 @@ const DailyView = () => {
               index,
             })}
             onLayout={() => {
-              // 컴포넌트가 렌더링된 후 마지막 위치로 스크롤
+              // 단순하게 한 번만 스크롤 설정
               graphScrollRef.current?.scrollToIndex({
                 index: miningData.length - 7,
                 animated: false,
@@ -530,11 +530,12 @@ const styles = StyleSheet.create({
   },
   chartContent: {
     paddingBottom: 5,
+    paddingTop: 30, // 상단에 "8시간" 라벨을 위한 공간 확보
     position: "relative",
-    height: 200, // 그래프 높이 조정
+    height: 200,
   },
   barsContainer: {
-    height: 150, // 원래 높이
+    height: 115, // 원래 높이
     alignItems: "flex-end",
     paddingRight: 10,
     paddingBottom: 30, // 하단 패딩 추가
@@ -547,6 +548,7 @@ const styles = StyleSheet.create({
   barWrapper: {
     height: "100%",
     justifyContent: "flex-end",
+    paddingTop: 25, // "8시간" 라벨 아래에서 시작하도록 조정
   },
   bar: {
     width: 16,
@@ -582,7 +584,7 @@ const styles = StyleSheet.create({
   },
   minutesLabel: {
     position: "absolute",
-    top: 10,
+    top: 5, // 상단에서 거리 조정
     right: 10,
     fontSize: 12,
     color: "#888",
@@ -736,12 +738,12 @@ const styles = StyleSheet.create({
   timezoneContainer: {
     marginHorizontal: 20,
     marginBottom: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   timezoneText: {
     fontSize: 12,
-    color: '#888',
-    textAlign: 'center',
+    color: "#888",
+    textAlign: "center",
   },
 });
 
