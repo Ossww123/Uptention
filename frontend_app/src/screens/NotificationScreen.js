@@ -1,3 +1,4 @@
+// NotificationScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -11,12 +12,15 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { get, patch, del } from '../services/api';
+import { get } from '../services/api';
+import messaging from '@react-native-firebase/messaging';
+import { useFocusEffect } from '@react-navigation/native';
 
 const NotificationScreen = ({ navigation }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [newNotificationReceived, setNewNotificationReceived] = useState(false);
 
   // 더미 데이터 생성 함수
   const generateDummyNotifications = () => {
@@ -107,6 +111,24 @@ const NotificationScreen = ({ navigation }) => {
   // 컴포넌트 마운트 시 알림 데이터 로드
   useEffect(() => {
     fetchNotifications();
+    
+    // 포그라운드 메시지 리스너 설정
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      console.log('NotificationScreen - 포그라운드 메시지 수신:', remoteMessage);
+      
+      // 새 알림 수신 상태 업데이트
+      setNewNotificationReceived(true);
+      
+      // 3초 후 상태 초기화
+      setTimeout(() => {
+        setNewNotificationReceived(false);
+      }, 3000);
+      
+      // 알림 목록 새로고침 (필요한 경우 주석 해제)
+      // fetchNotifications();
+    });
+    
+    return unsubscribe;
   }, []);
 
   // 알림 목록 조회 (더미 데이터)
@@ -134,63 +156,16 @@ const NotificationScreen = ({ navigation }) => {
     }
   };
 
-  // 알림 읽음 처리
-  const markAsRead = async (notificationId) => {
-    try {
-      // 실제 API 호출
-      // const { ok, data } = await patch(`/notifications/${notificationId}`, { read: true });
-      // if (!ok) {
-      //   throw new Error(data.message || '알림 읽음 처리에 실패했습니다.');
-      // }
+  useFocusEffect(
+    useCallback(() => {
+      // 화면이 포커스될 때마다 알림 목록 조회 API 호출
+      fetchNotifications();
       
-      // 더미 데이터 업데이트
-      setNotifications(prevNotifications => 
-        prevNotifications.map(notification => 
-          notification.id === notificationId 
-            ? { ...notification, read: true } 
-            : notification
-        )
-      );
-    } catch (error) {
-      console.error('알림 읽음 처리 오류:', error);
-      Alert.alert('오류', '알림 읽음 처리에 실패했습니다.');
-    }
-  };
-
-  // 알림 삭제
-  const deleteNotification = async (notificationId) => {
-    try {
-      // 확인 다이얼로그 표시
-      Alert.alert(
-        '알림 삭제',
-        '이 알림을 삭제하시겠습니까?',
-        [
-          {
-            text: '취소',
-            style: 'cancel'
-          },
-          {
-            text: '삭제',
-            onPress: async () => {
-              // 실제 API 호출
-              // const { ok, data } = await del(`/notifications/${notificationId}`);
-              // if (!ok) {
-              //   throw new Error(data.message || '알림 삭제에 실패했습니다.');
-              // }
-              
-              // 더미 데이터 업데이트
-              setNotifications(prevNotifications => 
-                prevNotifications.filter(notification => notification.id !== notificationId)
-              );
-            }
-          }
-        ]
-      );
-    } catch (error) {
-      console.error('알림 삭제 오류:', error);
-      Alert.alert('오류', '알림 삭제에 실패했습니다.');
-    }
-  };
+      return () => {
+        // 클린업 코드 (필요시)
+      };
+    }, [])
+  );
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString) => {
@@ -246,12 +221,6 @@ const NotificationScreen = ({ navigation }) => {
         styles.notificationItem, 
         item.read ? styles.readNotification : styles.unreadNotification
       ]}
-      onPress={() => {
-        if (!item.read) {
-          markAsRead(item.id);
-        }
-        // 나중에 필요하다면 알림 상세 페이지로 이동하는 로직 추가
-      }}
     >
       <View style={styles.notificationIconContainer}>
         {getNotificationIcon(item.type)}
@@ -263,12 +232,6 @@ const NotificationScreen = ({ navigation }) => {
         </View>
         <Text style={styles.notificationMessage}>{item.message}</Text>
       </View>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => deleteNotification(item.id)}
-      >
-        <Ionicons name="trash-outline" size={20} color="#888" />
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -293,29 +256,16 @@ const NotificationScreen = ({ navigation }) => {
           <Ionicons name="chevron-back" size={28} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>알림</Text>
-        
-        {/* 전체 읽음 처리 버튼 */}
-        <TouchableOpacity 
-          style={styles.readAllButton}
-          onPress={() => {
-            // 읽지 않은 알림이 있는지 확인
-            const unreadNotifications = notifications.filter(notification => !notification.read);
-            if (unreadNotifications.length === 0) {
-              Alert.alert('알림', '읽지 않은 알림이 없습니다.');
-              return;
-            }
-            
-            // 모든 알림 읽음 처리
-            setNotifications(prevNotifications => 
-              prevNotifications.map(notification => ({ ...notification, read: true }))
-            );
-            
-            Alert.alert('알림', '모든 알림을 읽음 처리했습니다.');
-          }}
-        >
-          <Text style={styles.readAllButtonText}>모두 읽음</Text>
-        </TouchableOpacity>
+        <View style={{width: 40}} />
       </View>
+
+      {/* 새 알림 수신 배너 */}
+      {newNotificationReceived && (
+        <View style={styles.newNotificationBanner}>
+          <Ionicons name="notifications" size={20} color="#fff" />
+          <Text style={styles.newNotificationText}>새 알림이 왔습니다</Text>
+        </View>
+      )}
 
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
@@ -359,13 +309,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  readAllButton: {
-    padding: 5,
-  },
-  readAllButtonText: {
-    fontSize: 14,
-    color: '#FF8C00',
   },
   loadingContainer: {
     flex: 1,
@@ -426,10 +369,6 @@ const styles = StyleSheet.create({
     color: '#444',
     lineHeight: 20,
   },
-  deleteButton: {
-    padding: 5,
-    justifyContent: 'center',
-  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -441,6 +380,25 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 10,
   },
+  // 새 알림 배너 스타일
+  newNotificationBanner: {
+    position: 'absolute',
+    top: 60, // 헤더 아래에 표시
+    left: 20,
+    right: 20,
+    backgroundColor: '#FF8C00',
+    padding: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  newNotificationText: {
+    color: '#fff',
+    marginLeft: 10,
+    fontWeight: 'bold',
+  }
 });
 
 export default NotificationScreen;
