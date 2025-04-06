@@ -38,7 +38,7 @@ public class Notification extends TimeStampEntity {
 	@Column
 	private String message;
 
-	@Column
+	@Column(name = "`read`")
 	@Builder.Default
 	private Boolean read = false;
 
