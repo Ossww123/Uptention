@@ -268,3 +268,36 @@ input[name="password"] ~ .error-hint {
     text-align: left;
   }
 }
+
+/* 비밀번호 입력 필드와 토글 버튼을 위한 컨테이너 */
+.password-input-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.password-toggle-button {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.password-toggle-button:hover {
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+/* 토글 버튼이 있는 입력 필드의 패딩 조정 */
+.password-input-container .form-input {
+  padding-right: 60px; /* 토글 버튼을 위한 공간 확보 */
+}

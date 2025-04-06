@@ -119,3 +119,31 @@
   .modal-confirm-button:hover {
     background-color: #e67e00;
   }
+
+  /* 비밀번호 표시 토글 관련 스타일 */
+.password-info-item {
+    align-items: center;
+  }
+  
+  .password-value-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .modal-password-toggle {
+    background: none;
+    border: 1px solid #ddd;
+    color: #666;
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .modal-password-toggle:hover {
+    background-color: #f1f1f1;
+    color: #333;
+    border-color: #ccc;
+  }
