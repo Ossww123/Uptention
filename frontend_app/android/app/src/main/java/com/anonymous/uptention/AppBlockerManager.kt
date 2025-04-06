@@ -35,7 +35,9 @@ class AppBlockerManager(private val context: Context) {
             // 개발 및 지갑 앱
             "com.expo.development",                     // Expo Go
             "com.phantom.mobile.wallet",                // Phantom 지갑
-            
+            "app.phantom",
+            "host.exp.exponent",
+
             // 핵심 통신 기능
             "com.android.dialer",                        // 안드로이드 전화
             "com.samsung.android.dialer",                // 삼성 전화

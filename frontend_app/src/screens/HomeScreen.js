@@ -256,28 +256,24 @@ const HomeScreen = ({ navigation }) => {
     if (!userId || !authToken) return;
 
     try {
-      // 현재 한국 시간 기준으로 오늘 날짜의 시작과 끝 시간 설정
+      // 현재 시간을 KST로 변환
       const now = new Date();
-      const todayStart = new Date(now);
-      todayStart.setHours(0, 0, 0, 0);  // 한국 시간 기준 오늘 00:00:00
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const kstNow = new Date(utc + (9 * 60 * 60 * 1000));
       
-      const todayEnd = new Date(now);
-      todayEnd.setHours(23, 59, 59, 999);  // 한국 시간 기준 오늘 23:59:59
-
-      // UTC로 변환
-      const startTimeUTC = new Date(todayStart.getTime() - (9 * 60 * 60 * 1000));  // KST -> UTC
-      const endTimeUTC = new Date(todayEnd.getTime() - (9 * 60 * 60 * 1000));  // KST -> UTC
-
-      // UTC 날짜를 ISO 문자열로 변환
-      const formatDate = (date) => {
-        return date.toISOString().split('.')[0];
-      };
+      const year = kstNow.getFullYear();
+      const month = String(kstNow.getMonth() + 1).padStart(2, '0');
+      const day = String(kstNow.getDate()).padStart(2, '0');
+      
+      // ISO 형식의 시작 시간과 종료 시간 생성 (KST)
+      const startTime = `${year}-${month}-${day}T00:00:00`;
+      const endTime = `${year}-${month}-${day}T23:59:59`;
 
       console.log('API 요청 파라미터:', {
-        startTime: formatDate(startTimeUTC),
-        endTime: formatDate(endTimeUTC),
-        localTime: todayStart.toLocaleString('ko-KR'),
-        utcTime: startTimeUTC.toISOString()
+        startTime,
+        endTime,
+        userId,
+        현재_KST: kstNow.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })
       });
 
       const response = await axios.get(
@@ -287,8 +283,8 @@ const HomeScreen = ({ navigation }) => {
             'Authorization': `Bearer ${authToken}`
           },
           params: {
-            startTime: formatDate(startTimeUTC),
-            endTime: formatDate(endTimeUTC)
+            startTime,
+            endTime
           }
         }
       );
@@ -296,24 +292,17 @@ const HomeScreen = ({ navigation }) => {
       console.log('API 응답 데이터:', response.data);
       
       if (response.data && Array.isArray(response.data)) {
-        // 집중 시간 세션 로그 출력
-        console.log('=== 오늘의 집중 시간 세션 ===');
         let totalMinutes = 0;
 
-        response.data.forEach((session, index) => {
-          console.log(`세션 ${index + 1}:`);
-          console.log(`날짜: ${session.date}`);
-          console.log(`총 시간: ${session.totalTime}분`);
-          console.log('------------------------');
-          
-          // 문자열이나 숫자 모두 처리 가능하도록
+        response.data.forEach((session) => {
+          console.log('세션 데이터:', session);
           const sessionTime = parseInt(session.totalTime || 0);
           if (!isNaN(sessionTime)) {
             totalMinutes += sessionTime;
           }
         });
         
-        console.log(`총 집중 시간: ${Math.floor(totalMinutes / 60)}시간 ${totalMinutes % 60}분`);
+        console.log('계산된 총 집중 시간:', totalMinutes, '분');
         setDailyFocusTime(totalMinutes);
       } else {
         console.error('잘못된 응답 형식:', response.data);

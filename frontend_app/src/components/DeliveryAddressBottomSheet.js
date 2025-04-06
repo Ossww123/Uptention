@@ -7,20 +7,22 @@ import {
   Animated,
   Dimensions,
   TouchableWithoutFeedback,
-  TextInput,
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 const { height } = Dimensions.get('window');
 
-const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess }) => {
+const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item }) => {
+  const navigation = useNavigation();
   const slideAnim = useRef(new Animated.Value(height)).current;
-  const [address, setAddress] = useState('');
-  const [detailAddress, setDetailAddress] = useState('');
+  const [address, setAddress] = useState(null);
+  const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const { authToken } = useAuth();
 
   useEffect(() => {
@@ -36,22 +38,97 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess }) =>
         duration: 250,
         useNativeDriver: true,
       }).start();
-      // 바텀시트가 닫힐 때 입력값 초기화
-      setAddress('');
-      setDetailAddress('');
+      setAddress(null);
     }
   }, [visible]);
 
+  // 최근 배송지 조회
+  const fetchRecentAddress = async () => {
+    try {
+      setIsLoadingAddress(true);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/orders/delivery-info`,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.address) {
+        const addressParts = response.data.address.split(' ');
+        const zonecode = addressParts[0].replace('[', '').replace(']', '');
+        const roadAddress = addressParts.slice(1, -1).join(' ');
+        const detailAddress = addressParts[addressParts.length - 1];
+
+        setAddress({
+          zonecode,
+          roadAddress,
+          detailAddress,
+          buildingName: ''
+        });
+      }
+    } catch (error) {
+      console.error('최근 배송지 조회 실패:', error);
+    } finally {
+      setIsLoadingAddress(false);
+    }
+  };
+
+  // 컴포넌트 마운트 시 최근 배송지 조회
+  useEffect(() => {
+    if (visible && navigation) {
+      const currentState = navigation.getState();
+      if (!currentState.routes.some(route => 
+        route.name === 'AddressSearch' || route.name === 'AddressDetail'
+      )) {
+        fetchRecentAddress();
+      }
+    }
+  }, [visible, navigation]);
+
+  // 라우트 파라미터에서 주소 정보 받아오기
+  useEffect(() => {
+    if (visible && navigation) {
+      const currentState = navigation.getState();
+      const currentRoute = currentState.routes[currentState.routes.length - 1];
+      console.log('Current Route Params:', currentRoute.params);
+      
+      // item에서 address 정보가 있는 경우
+      if (item?.address) {
+        const addressParts = item.address.split(' ');
+        const roadAddress = addressParts.slice(0, -1).join(' ');
+        const detailAddress = addressParts[addressParts.length - 1];
+
+        setAddress({
+          zonecode: '',  // 우편번호는 표시하지 않음
+          roadAddress,
+          detailAddress,
+          buildingName: ''
+        });
+        setIsLoadingAddress(false);
+      }
+      // route.params에서 address 정보가 있는 경우
+      else if (currentRoute.params?.address) {
+        console.log('받은 주소:', currentRoute.params.address);
+        setAddress(currentRoute.params.address);
+        setIsLoadingAddress(false);
+      } else {
+        setIsLoadingAddress(false);  // 주소 정보가 없는 경우에도 로딩 상태 해제
+      }
+    }
+  }, [visible, navigation.getState(), item]);  // item 의존성 추가
+
   const handleSubmit = async () => {
     try {
-      const fullAddress = `${address} ${detailAddress}`.trim();
-      
-      if (!fullAddress) {
+      if (!address) {
         Alert.alert('알림', '주소를 입력해주세요.');
         return;
       }
 
-      // 배송 정보 등록 API 호출
+      const fullAddress = `${address.roadAddress} ${address.detailAddress}`;
+
       await axios.post(
         `${API_BASE_URL}/api/orders/${orderId}/delivery-info`,
         { address: fullAddress },
@@ -63,19 +140,32 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess }) =>
         }
       );
 
-      Alert.alert('알림', '배송지가 등록되었습니다.', [
-        {
-          text: '확인',
-          onPress: () => {
-            onSuccess && onSuccess();
-            onClose();
+      onClose(); // 먼저 바텀시트를 닫고
+      
+      setTimeout(() => {
+        Alert.alert('알림', '배송지가 등록되었습니다.', [
+          {
+            text: '확인',
+            onPress: () => {
+              onSuccess && onSuccess();
+            }
           }
-        }
-      ]);
+        ]);
+      }, 100);
     } catch (error) {
       console.error('배송지 등록 오류:', error);
       Alert.alert('오류', '배송지 등록에 실패했습니다. 다시 시도해주세요.');
     }
+  };
+
+  // 주소 검색 화면으로 이동
+  const handleAddressSearch = () => {
+    onClose(); // 바텀시트를 먼저 닫고
+    navigation.navigate('AddressSearch', {
+      prevScreen: 'DeliveryAddressBottomSheet',
+      orderId: orderId,
+      item: item
+    });
   };
 
   return (
@@ -94,29 +184,36 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess }) =>
               <View style={styles.handle} />
               <Text style={styles.title}>배송지 입력</Text>
               
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>주소</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="주소를 입력해주세요"
-                  value={address}
-                  onChangeText={setAddress}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="상세주소를 입력해주세요"
-                  value={detailAddress}
-                  onChangeText={setDetailAddress}
-                />
+              <View style={styles.addressContainer}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="location-outline" size={24} color="#666" />
+                </View>
+                <View style={styles.addressTextContainer}>
+                  <Text style={styles.addressLabel}>배송 주소</Text>
+                  {isLoadingAddress ? (
+                    <Text style={styles.addressText}>배송지 정보를 불러오는 중...</Text>
+                  ) : address ? (
+                    <>
+                      <Text style={styles.addressText}>
+                        {address.roadAddress} {address.detailAddress}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.addressText}>배송지를 입력해주세요</Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={handleAddressSearch}
+                >
+                  <Ionicons name="chevron-forward" size={24} color="#888" />
+                </TouchableOpacity>
               </View>
 
               <TouchableOpacity 
-                style={[
-                  styles.submitButton,
-                  (!address || !detailAddress) && styles.submitButtonDisabled
-                ]} 
+                style={[styles.submitButton, !address && styles.submitButtonDisabled]} 
                 onPress={handleSubmit}
-                disabled={!address || !detailAddress}
+                disabled={!address}
               >
                 <Text style={styles.submitButtonText}>확인</Text>
               </TouchableOpacity>
@@ -154,21 +251,37 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 24,
   },
-  inputContainer: {
+  addressContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: 24,
+    backgroundColor: '#f8f8f8',
+    padding: 15,
+    borderRadius: 10,
   },
-  label: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 8,
+  iconContainer: {
+    marginRight: 10,
+    marginTop: 2,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+  addressTextContainer: {
+    flex: 1,
+  },
+  addressLabel: {
     fontSize: 14,
+    color: '#666',
+    marginBottom: 5,
+  },
+  addressText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 3,
+  },
+  addressDetail: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  editButton: {
+    padding: 5,
   },
   submitButton: {
     backgroundColor: '#FF8C00',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,24 @@ const GiftDetailScreen = ({ route, navigation }) => {
   const [isBottomSheetVisible, setIsBottomSheetVisible] = useState(false);
   const { authToken } = useAuth();
 
+  // 주소 검색 후 돌아왔을 때 바텀시트를 자동으로 열기
+  useEffect(() => {
+    // showDeliveryAddressBottomSheet 플래그가 있으면 바텀시트를 엽니다
+    if (route.params?.showDeliveryAddressBottomSheet) {
+      setIsBottomSheetVisible(true);
+    }
+    
+    // 주소 정보가 있다면 DeliveryAddressBottomSheet에 전달하기 위해 저장
+    if (route.params?.address) {
+      // DeliveryAddressBottomSheet는 현재 경로 파라미터에서 주소를 읽어옴
+      // navigation.setParams로 route.params에 address를 유지합니다
+      navigation.setParams({
+        address: route.params.address,
+        // showDeliveryAddressBottomSheet 플래그는 제거하여 다음 화면 전환 시 바텀시트가 또 열리지 않도록 함
+        showDeliveryAddressBottomSheet: undefined
+      });
+    }
+  }, [route.params]);
 
   // 디버깅을 위한 콘솔 출력 추가
   console.log('선물 상세 정보:', {
@@ -35,8 +53,27 @@ const GiftDetailScreen = ({ route, navigation }) => {
   };
 
   const handleDeliverySuccess = () => {
-    // 선물함 화면으로 이동 (새로 렌더링)
-    navigation.replace('GiftBox');
+    // ProfileStackNavigator의 GiftBox로 이동
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Main',
+          state: {
+            routes: [
+              {
+                name: 'Profile',
+                state: {
+                  routes: [{ name: 'GiftBox' }],
+                  index: 0,
+                }
+              }
+            ],
+            index: 0,
+          }
+        }
+      ]
+    });
   };
 
   return (
@@ -111,6 +148,7 @@ const GiftDetailScreen = ({ route, navigation }) => {
         onClose={() => setIsBottomSheetVisible(false)}
         orderId={giftData.orderId}
         onSuccess={handleDeliverySuccess}
+        item={giftData}
       />
     </SafeAreaView>
   );

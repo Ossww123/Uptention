@@ -110,14 +110,14 @@ const FocusModeScreen = ({ navigation }) => {
     stopTimer();  // 타이머 즉시 중지
 
     try {
-      const finalSeconds = getTimeInSeconds();
-      const finalPoints = Math.floor(finalSeconds / 60);
+      // 현재 화면에 표시된 포인트 값을 사용
+      const finalPoints = points;
 
       // 포커스 모드 종료 API 호출
       const response = await axios.patch(
         `${API_BASE_URL}/api/mining-time/focus`,
         {
-          totalTime: finalPoints  // 분 단위로 전송
+          totalTime: finalPoints  // 현재 표시된 포인트 값 전송
         },
         {
           headers: {
@@ -167,7 +167,7 @@ const FocusModeScreen = ({ navigation }) => {
         navigation.goBack();
         
         console.log('포커스 모드 종료:', {
-          totalSeconds: finalSeconds,
+          totalSeconds: totalSecondsRef.current,
           earnedPoints: finalPoints,
           updatedPoint: updatedPoint
         });
