@@ -262,7 +262,7 @@ const PermissionsScreen = ({ onPermissionsGranted, permissions: initialPermissio
             사용됩니다.
           </Text>
 
-          {/* 모든 권한 한번에 설정 버튼 */}
+          {/* 모든 권한 한번에 설정 버튼
           {!(permissions.screenTime && permissions.overlay && permissions.accessibility) && (
             <TouchableOpacity
               style={styles.allPermissionsButton}
@@ -279,7 +279,7 @@ const PermissionsScreen = ({ onPermissionsGranted, permissions: initialPermissio
             >
               <Text style={styles.allPermissionsButtonText}>모든 권한 설정하기</Text>
             </TouchableOpacity>
-          )}
+          )} */}
         </View>
       </ScrollView>
     </SafeAreaView>
