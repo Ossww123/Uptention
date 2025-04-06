@@ -4,6 +4,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import OrderHistoryScreen from '../screens/OrderHistoryScreen';
 import GiftBoxScreen from '../screens/GiftBoxScreen';
 import GiftDetailScreen from '../screens/GiftDetailScreen';
+import NFTScreen from '../screens/NFTScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -55,6 +56,23 @@ const ProfileStackNavigator = () => {
         options={{
           headerShown: true,
           headerTitle: '선물함',
+          headerTitleAlign: 'center',
+          headerShadowVisible: false,
+          headerTitleStyle: {
+            fontSize: 16,
+            fontWeight: '600',
+          },
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+          },
+        }}
+      />
+      <Stack.Screen 
+        name="NFT" 
+        component={NFTScreen}
+        options={{
+          headerShown: true,
+          headerTitle: 'NFT',
           headerTitleAlign: 'center',
           headerShadowVisible: false,
           headerTitleStyle: {
