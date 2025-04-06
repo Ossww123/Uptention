@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./UserCreatePage.css";
 import axios from "axios";
+import UserConfirmModal from "../../components/UserConfirmModal/UserConfirmModal"; // 경로는 실제 프로젝트 구조에 맞게 조정하세요
 
 const BASE_URL = "https://j12d211.p.ssafy.io";
 
@@ -22,6 +23,9 @@ const UserCreatePage = () => {
   const [isCheckingEmpNum, setIsCheckingEmpNum] = useState(false);
   const [isIdAvailable, setIsIdAvailable] = useState(false);
   const [isEmpNumAvailable, setIsEmpNumAvailable] = useState(false);
+
+  // 모달 관련 상태
+  const [modalOpen, setModalOpen] = useState(false);
 
   // 폼 필드 상태 변경 시 에러 메시지 초기화
   const handleChange = (e) => {
@@ -86,6 +90,8 @@ const UserCreatePage = () => {
           },
         }
       );
+
+      console.log(response);
 
       // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsIdAvailable(true);
@@ -155,6 +161,8 @@ const UserCreatePage = () => {
           },
         }
       );
+
+      console.log(response);
 
       // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsEmpNumAvailable(true);
@@ -251,13 +259,19 @@ const UserCreatePage = () => {
     return isValid;
   };
 
-  const handleSubmit = async (e) => {
+  // 폼 제출 전 확인 모달 열기
+  const openConfirmModal = (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
 
+    setModalOpen(true);
+  };
+
+  // 모달 확인 버튼 클릭 시 실제 폼 제출
+  const handleSubmit = async () => {
     try {
       // 필요없는 confirmPassword 제거
       const { confirmPassword, ...dataToSubmit } = formData;
@@ -275,6 +289,8 @@ const UserCreatePage = () => {
           "Content-Type": "application/json",
         },
       });
+
+      console.log(response);
 
       // 성공 응답 처리
       alert("회원가입 성공");
@@ -314,7 +330,15 @@ const UserCreatePage = () => {
       } else {
         alert(error.message || "회원 등록 중 오류가 발생했습니다.");
       }
+    } finally {
+      // 모달 닫기
+      setModalOpen(false);
     }
+  };
+
+  // 모달 취소
+  const cancelModal = () => {
+    setModalOpen(false);
   };
 
   const handleCancel = () => {
@@ -330,7 +354,7 @@ const UserCreatePage = () => {
 
         <div className="sub-title">회원 정보</div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={openConfirmModal}>
           <table className="form-table">
             <tbody>
               <tr>
@@ -446,7 +470,7 @@ const UserCreatePage = () => {
                 <td className="input-cell">
                   <div className="input-wrapper">
                     <input
-                      type="password"
+                      type="text"
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
@@ -477,7 +501,7 @@ const UserCreatePage = () => {
                 <td className="input-cell">
                   <div className="input-wrapper">
                     <input
-                      type="password"
+                      type="text"
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
@@ -509,11 +533,19 @@ const UserCreatePage = () => {
         <button
           type="button"
           className="user-submit-button"
-          onClick={handleSubmit}
+          onClick={openConfirmModal}
         >
           등록
         </button>
       </div>
+
+      {/* 회원 정보 확인 모달 */}
+      <UserConfirmModal
+        isOpen={modalOpen}
+        userData={formData}
+        onConfirm={handleSubmit}
+        onCancel={cancelModal}
+      />
     </div>
   );
 };
