@@ -171,6 +171,15 @@ public class SecurityConfig {
 				// 선물함 목록 조회 (ROLE_MEMBER)
 				.requestMatchers(HttpMethod.GET, "/api/gifts").hasRole("MEMBER")
 
+				// Solana 테스트 컨트롤러 API (로그인한 사용자만 - ROLE_ADMIN, ROLE_MEMBER, ROLE_TEMP_MEMBER)
+				.requestMatchers(HttpMethod.POST, "/api/test/solana/process-transaction").authenticated()
+				.requestMatchers(HttpMethod.GET, "/api/test/solana/transaction/{signature}").authenticated()
+				.requestMatchers(HttpMethod.GET, "/api/test/solana/recent-transactions").authenticated()
+				.requestMatchers(HttpMethod.GET, "/api/test/solana/pending-orders").authenticated()
+				.requestMatchers(HttpMethod.GET, "/api/test/solana/config").authenticated()
+				.requestMatchers(HttpMethod.GET, "/api/test/solana/company-balance").authenticated()
+				.requestMatchers(HttpMethod.GET, "/api/test/solana/check-connection").authenticated()
+
 				// 나머지 요청
 				.anyRequest().permitAll());
 
