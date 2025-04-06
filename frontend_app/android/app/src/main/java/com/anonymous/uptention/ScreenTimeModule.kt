@@ -16,6 +16,7 @@ import com.facebook.react.bridge.*
 import java.io.ByteArrayOutputStream
 import java.util.*
 import kotlin.collections.HashMap
+import android.net.Uri
 
 class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
@@ -47,6 +48,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     }
 
     // 접근성 권한 확인
+    // 접근성 권한 확인
     @ReactMethod
     fun hasAccessibilityPermission(promise: Promise) {
         val context = reactApplicationContext
@@ -62,7 +64,7 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
             )
             val packageName = context.packageName
-            val serviceName = packageName + "/.AccessibilityService"
+            val serviceName = packageName + "/com.anonymous.uptention.AppBlockerService"
             
             val hasService = servicesString?.contains(serviceName) ?: false
             promise.resolve(hasService)
