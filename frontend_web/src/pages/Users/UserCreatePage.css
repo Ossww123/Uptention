@@ -2,12 +2,12 @@
 .user-create {
   padding: 20px;
   background-color: #f1f1f1;
-  min-height: 100vh;
+  /* min-height: 100vh; */
 }
 
 .content-card {
   background-color: white;
-  border-radius: 4px;
+  border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 20px;
   margin-bottom: 20px;
@@ -32,7 +32,7 @@
 .form-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 30px;
+  margin-bottom: 10px;
 }
 
 .form-table tr {
@@ -51,6 +51,30 @@
 .input-cell {
   width: 85%;
   padding: 15px;
+  vertical-align: top;
+}
+
+/* 새로운 입력 래퍼 컨테이너 */
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative; /* 상대 위치 설정 */
+  min-height: 70px; /* 높이를 충분히 설정하여 오류 메시지 공간 확보 */
+}
+
+/* 비밀번호 필드의 input-wrapper에 대한 특별 스타일 */
+input[name="password"] ~ .password-hint,
+input[name="password"] ~ .error-hint {
+  margin-top: 5px;
+}
+
+/* 비밀번호 힌트와 에러 메시지를 포함할 컨테이너 */
+.password-message-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 5px;
 }
 
 .form-input, .form-select, .form-textarea {
@@ -77,18 +101,7 @@
   margin-left: 3px;
 }
 
-.error-message {
-  color: #e74c3c;
-  font-size: 12px;
-  margin-top: 5px;
-}
-
-.success-message {
-  color: #2ecc71;
-  font-size: 12px;
-  margin-top: 5px;
-}
-
+/* 폼 액션 버튼 */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -96,29 +109,51 @@
   margin-top: 20px;
 }
 
-.cancel-button {
-  padding: 10px 20px;
-  background-color: #f1f1f1;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  color: #666;
-  font-size: 14px;
-  cursor: pointer;
+.form-actions.outside-card {
+  margin-top: 0;
+  padding: 0 5px;
 }
 
-.submit-button {
+.user-cancel-button {
   padding: 10px 20px;
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #666;
+  border-radius: 4px; 
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+.user-cancel-button:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+  color: #555;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-submit-button {
+  padding: 10px 25px;
   background-color: #FF8C00;
   border: none;
-  border-radius: 4px;
+  border-radius: 4px; 
   color: white;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+  box-shadow: 0 2px 5px rgba(255, 140, 0, 0.3);
+  min-width: 80px;
+  display: flex;
+  justify-content: center;
 }
 
-.submit-button:hover {
+.user-submit-button:hover {
   background-color: #e67e00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 140, 0, 0.4);
 }
 
 /* 아이디 중복확인 스타일 */
@@ -138,6 +173,7 @@
   cursor: pointer;
   white-space: nowrap;
   height: 40px;
+  flex-shrink: 0;
 }
 
 .id-check-button:hover {
@@ -147,6 +183,62 @@
 .id-check-button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+/* 오류/성공 메시지 공간 */
+.message-space {
+  min-height: 20px; /* 오류 메시지를 위한 최소 높이 */
+  margin-top: 5px; /* 입력 필드와의 간격 */
+}
+
+/* 오류 힌트 메시지 스타일 - 수정됨 */
+.error-hint {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: right;
+  display: block;
+  height: 20px; /* 고정 높이 설정 */
+  /* 절대 위치를 제거하고 상대적 위치로 변경 */
+  position: static;
+  width: 100%;
+}
+
+/* 비밀번호 필드에서 힌트와 에러 메시지를 한 줄에 표시하기 위한 특별 스타일 */
+input[name="password"] ~ .error-hint {
+  display: inline-block;
+  width: 30%; /* 에러 메시지가 차지할 너비 */
+  vertical-align: top;
+  margin-top: 5px;
+}
+
+/* 성공 힌트 메시지 스타일 - 수정됨 */
+.success-hint {
+  color: #2ecc71;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: right;
+  display: block;
+  height: 20px; /* 고정 높이 설정 */
+  /* 절대 위치를 제거하고 상대적 위치로 변경 */
+  position: static;
+  width: 100%;
+}
+
+/* 오류 상태의 입력 필드 스타일 */
+.form-input.has-error {
+  border-color: #e74c3c;
+  background-color: #fff5f5;
+}
+
+/* 비밀번호 힌트 스타일 */
+.password-hint {
+  color: #888;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: left;
+  display: inline-block;
+  width: 70%; /* 힌트 메시지가 차지할 너비 */
 }
 
 /* 반응형 레이아웃을 위한 미디어 쿼리 */
@@ -169,5 +261,10 @@
   
   .form-table, .form-table tbody, .form-table tr {
     display: block;
+  }
+  
+  .error-hint, .success-hint {
+    position: static; /* 모바일에서는 정적 위치로 변경 */
+    text-align: left;
   }
 }
