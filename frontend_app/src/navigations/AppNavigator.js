@@ -15,26 +15,34 @@ import StackNavigator from "./StackNavigator";
 // 개발용 AsyncStorage 초기화
 // 개발용 AsyncStorage 초기화
 // 개발용 AsyncStorage 초기화
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// 앱 시작 시 호출하는 함수
-const clearStorage = async () => {
-  try {
-    await AsyncStorage.clear();
-    console.log('Storage successfully cleared!');
-  } catch (e) {
-    console.log('Failed to clear the async storage.');
-  }
-}
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+// const clearStorage = async () => {
+//   try {
+//     await AsyncStorage.clear();
+//     console.log('Storage successfully cleared!');
+//   } catch (e) {
+//     console.log('Failed to clear the async storage.');
+//   }
+// }
+// clearStorage();
 
-// 함수 호출
-clearStorage();
+// 개발용 AsyncStorage 초기화
+// 개발용 AsyncStorage 초기화
+// 개발용 AsyncStorage 초기화
+
 
 // 네비게이션 스택 생성
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = forwardRef((props, ref) => {
-  const { isAuthenticated, isLoading, refreshAuth } = useAuth();
+  const { 
+    isAuthenticated, 
+    isLoading, 
+    refreshAuth, 
+    isWalletConnected, 
+    updateWalletStatus 
+  } = useAuth();
   const navigationRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
@@ -43,9 +51,8 @@ const AppNavigator = forwardRef((props, ref) => {
     }
   }));
 
-  // 권한 관련 상태 (예시)
+  // 권한 관련 상태
   const [hasScreenTimePermission, setHasScreenTimePermission] = useState(false);
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
 
   // 인증 상태 변경 처리
   const handleLoginSuccess = () => {
@@ -59,7 +66,7 @@ const AppNavigator = forwardRef((props, ref) => {
 
   // 지갑 연결 상태 변경 처리
   const handleWalletConnected = () => {
-    setIsWalletConnected(true);
+    updateWalletStatus(); // 지갑 연결 후 사용자 정보 갱신
   };
 
   // 로딩 중일 때 로딩 화면 표시
@@ -91,7 +98,7 @@ const AppNavigator = forwardRef((props, ref) => {
             )}
           </Stack.Screen>
         ) : !isWalletConnected ? (
-          // 지갑 연결 화면
+          // 지갑 연결 화면 - 이미 연결된 경우 건너뜀
           <Stack.Screen name="WalletConnect">
             {(props) => (
               <WalletConnectScreen

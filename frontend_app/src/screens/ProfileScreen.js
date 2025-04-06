@@ -16,6 +16,8 @@ import { API_BASE_URL } from '../config/config';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { removeToken } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import FCMUtils from '../utils/FCMUtils';
+import { post } from '../services/api';
 
 if (typeof globalThis.Buffer === 'undefined') {
   globalThis.Buffer = Buffer;
