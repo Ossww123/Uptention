@@ -14,6 +14,7 @@ import com.otoki.uptention.domain.order.dto.GiftItemDto;
 import com.otoki.uptention.domain.order.enums.GiftStatus;
 import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.user.entity.User;
+import com.otoki.uptention.global.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +25,7 @@ public class GiftAppServiceImpl implements GiftAppService {
 
 	private final GiftService giftService;
 	private final SecurityService securityService;
+	private final ImageUploadService imageUploadService;
 
 	@Override
 	public GiftHistoryCursorResponseDto getGiftHistory(String cursorStr, int size, GiftStatus type) {
@@ -87,18 +89,24 @@ public class GiftAppServiceImpl implements GiftAppService {
 	 */
 	private List<GiftItemResponseDto> convertToGiftItemResponseDtos(List<GiftItemDto> resultItems) {
 		return resultItems.stream()
-			.map(item -> GiftItemResponseDto.builder()
-				.giftId(item.getGiftId())
-				.orderId(item.getOrderId())
-				.itemName(item.getItemName())
-				.brand(item.getBrand())
-				.status(item.getStatus().getDescription())
-				.receivedDate(item.getReceivedDate())
-				.imageUrl(item.getImageUrl())
-				.senderId(item.getSenderId())
-				.senderName(item.getSenderName())
-				.address(item.getAddress())
-				.build())
+			.map(item -> {
+				// 이미지 URL 변환
+				String fullImageUrl = item.getImageUrl() != null ?
+					imageUploadService.getImageUrl(item.getImageUrl()) : null;
+
+				return GiftItemResponseDto.builder()
+					.giftId(item.getGiftId())
+					.orderId(item.getOrderId())
+					.itemName(item.getItemName())
+					.brand(item.getBrand())
+					.status(item.getStatus().getDescription())
+					.receivedDate(item.getReceivedDate())
+					.imageUrl(fullImageUrl)
+					.senderId(item.getSenderId())
+					.senderName(item.getSenderName())
+					.address(item.getAddress())
+					.build();
+			})
 			.collect(Collectors.toList());
 	}
 

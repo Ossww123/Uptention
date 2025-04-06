@@ -2,9 +2,7 @@ package com.otoki.uptention.application.item.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import com.otoki.uptention.domain.image.entity.Image;
 import com.otoki.uptention.domain.item.entity.Item;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,7 +48,7 @@ public class ItemResponseDto {
 	@Schema(description = "상품 생성 일시", example = "2025-03-21T04:05:54")
 	private LocalDateTime createdAt;
 
-	public static ItemResponseDto from(Item item, List<Image> imageList) {
+	public static ItemResponseDto from(Item item, List<String> imageUrls) {
 		return ItemResponseDto.builder()
 			.itemId(item.getId())
 			.name(item.getName())
@@ -60,9 +58,7 @@ public class ItemResponseDto {
 			.quantity(item.getQuantity())
 			.categoryId(item.getCategory().getId())
 			.categoryName(item.getCategory().getName())
-			.images(imageList.stream()
-				.map(Image::getUrl)
-				.collect(Collectors.toList()))
+			.images(imageUrls)
 			.createdAt(item.getCreatedAt())
 			.build();
 	}
