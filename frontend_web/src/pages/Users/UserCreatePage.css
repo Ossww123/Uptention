@@ -63,6 +63,20 @@
   min-height: 70px; /* 높이를 충분히 설정하여 오류 메시지 공간 확보 */
 }
 
+/* 비밀번호 필드의 input-wrapper에 대한 특별 스타일 */
+input[name="password"] ~ .password-hint,
+input[name="password"] ~ .error-hint {
+  margin-top: 5px;
+}
+
+/* 비밀번호 힌트와 에러 메시지를 포함할 컨테이너 */
+.password-message-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 5px;
+}
+
 .form-input, .form-select, .form-textarea {
   width: 100%;
   padding: 10px;
@@ -177,28 +191,38 @@
   margin-top: 5px; /* 입력 필드와의 간격 */
 }
 
-/* 오류 힌트 메시지 스타일 */
+/* 오류 힌트 메시지 스타일 - 수정됨 */
 .error-hint {
   color: #e74c3c;
   font-size: 12px;
   margin-top: 5px;
   text-align: right;
-  position: absolute; /* 절대 위치로 설정 */
-  bottom: 0; /* 컨테이너 하단에 위치 */
-  right: 0; /* 우측 정렬 */
+  display: block;
   height: 20px; /* 고정 높이 설정 */
+  /* 절대 위치를 제거하고 상대적 위치로 변경 */
+  position: static;
+  width: 100%;
 }
 
-/* 성공 힌트 메시지 스타일 */
+/* 비밀번호 필드에서 힌트와 에러 메시지를 한 줄에 표시하기 위한 특별 스타일 */
+input[name="password"] ~ .error-hint {
+  display: inline-block;
+  width: 30%; /* 에러 메시지가 차지할 너비 */
+  vertical-align: top;
+  margin-top: 5px;
+}
+
+/* 성공 힌트 메시지 스타일 - 수정됨 */
 .success-hint {
   color: #2ecc71;
   font-size: 12px;
   margin-top: 5px;
   text-align: right;
-  position: absolute; /* 절대 위치로 설정 */
-  bottom: 0; /* 컨테이너 하단에 위치 */
-  right: 0; /* 우측 정렬 */
+  display: block;
   height: 20px; /* 고정 높이 설정 */
+  /* 절대 위치를 제거하고 상대적 위치로 변경 */
+  position: static;
+  width: 100%;
 }
 
 /* 오류 상태의 입력 필드 스타일 */
@@ -207,12 +231,14 @@
   background-color: #fff5f5;
 }
 
-/* 비밀번호 힌트 스타일 - 좌측 정렬로 변경 */
+/* 비밀번호 힌트 스타일 */
 .password-hint {
   color: #888;
   font-size: 12px;
   margin-top: 5px;
-  text-align: left; /* 좌측 정렬로 변경 */
+  text-align: left;
+  display: inline-block;
+  width: 70%; /* 힌트 메시지가 차지할 너비 */
 }
 
 /* 반응형 레이아웃을 위한 미디어 쿼리 */
