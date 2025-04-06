@@ -16,6 +16,7 @@ import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
+import com.otoki.uptention.global.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +31,7 @@ public class CartAppServiceImpl implements CartAppService {
 	private final CartService cartService;
 	private final ItemService itemService;
 	private final SecurityService securityService;
+	private final ImageUploadService imageUploadService;
 
 	/**
 	 * 장바구니에 상품 추가
@@ -57,7 +59,18 @@ public class CartAppServiceImpl implements CartAppService {
 	public List<CartItemDto> getUserCartItems() {
 		User user = securityService.getLoggedInUser();
 
-		return cartService.getCartItemsByUserId(user.getId());
+		// 장바구니 항목 조회
+		List<CartItemDto> cartItems = cartService.getCartItemsByUserId(user.getId());
+
+		// 이미지 URL 변환
+		cartItems.forEach(cartItem -> {
+			if (cartItem.getThumbnail() != null && !cartItem.getThumbnail().isEmpty()) {
+				String fullImageUrl = imageUploadService.getImageUrl(cartItem.getThumbnail());
+				cartItem.updateThumbnail(fullImageUrl);
+			}
+		});
+
+		return cartItems;
 	}
 
 	@Transactional

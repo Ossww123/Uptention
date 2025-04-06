@@ -164,6 +164,11 @@ public class ItemAppServiceImpl implements ItemAppService {
 		// 1. MySQL에서 상품 기본 정보 조회
 		Item item = itemService.getItemById(itemId);
 
+		// 이미지 URL 변환 처리
+		List<String> imageUrls = item.getImages().stream()
+			.map(image -> imageUploadService.getImageUrl(image.getUrl()))
+			.toList();
+
 		// 2. Redis에서 최신 재고 정보 조회 시도
 		try {
 			// Redis에서 재고 정보 가져오기
@@ -183,12 +188,12 @@ public class ItemAppServiceImpl implements ItemAppService {
 				.images(item.getImages())
 				.build();
 
-			return ItemResponseDto.from(updatedItem, item.getImages());
+			return ItemResponseDto.from(updatedItem, imageUrls);
 		} catch (Exception e) {
 			// Redis 조회 실패 시 MySQL 데이터만으로 응답
 			log.warn("Failed to get inventory from Redis for item {}, using database value: {}",
 				itemId, e.getMessage());
-			return ItemResponseDto.from(item, item.getImages());
+			return ItemResponseDto.from(item, imageUrls);
 		}
 	}
 
@@ -218,6 +223,15 @@ public class ItemAppServiceImpl implements ItemAppService {
 
 		// Redis에서 실시간 재고 정보 조회하여 업데이트
 		updateItemsWithRealTimeInventory(resultItems);
+
+		// 각 아이템의 thumbnail(이미지 키)을 완전한 URL로 변환
+		resultItems.forEach(item -> {
+			if (item.getThumbnail() != null && !item.getThumbnail().isEmpty()) {
+				// 썸네일 이미지 키를 완전한 URL로 변환
+				String fullImageUrl = imageUploadService.getImageUrl(item.getThumbnail());
+				item.setThumbnail(fullImageUrl);
+			}
+		});
 
 		// 다음 커서 생성
 		String nextCursor = hasNextPage && !resultItems.isEmpty()

@@ -15,6 +15,7 @@ import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
+import com.otoki.uptention.global.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class OrderVerifyAppServiceImpl implements OrderVerifyAppService {
 
 	private final ItemService itemService;
 	private final InventoryService inventoryService;
+	private final ImageUploadService imageUploadService;
 
 	/**
 	 * 주문 전 상품 검증
@@ -88,6 +90,12 @@ public class OrderVerifyAppServiceImpl implements OrderVerifyAppService {
 				Integer itemId = requestItem.getItemId();
 				ItemDto itemDto = itemDtoMap.get(itemId);
 
+				// 이미지 키를 완전한 URL로 변환
+				String thumbnail = itemDto.getThumbnail();
+				if (thumbnail != null && !thumbnail.isEmpty()) {
+					thumbnail = imageUploadService.getImageUrl(thumbnail);
+				}
+
 				return ItemVerificationResponseDto.builder()
 					.itemId(itemDto.getItemId())
 					.name(itemDto.getName())
@@ -95,8 +103,9 @@ public class OrderVerifyAppServiceImpl implements OrderVerifyAppService {
 					.brand(itemDto.getBrand())
 					.quantity(requestItem.getQuantity())
 					.totalPrice(itemDto.getPrice() * requestItem.getQuantity())
-					.thumbnail(itemDto.getThumbnail())
+					.thumbnail(thumbnail) // 변환된 URL 사용
 					.build();
+
 			})
 			.collect(Collectors.toList());
 
