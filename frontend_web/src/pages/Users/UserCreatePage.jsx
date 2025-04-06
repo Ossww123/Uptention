@@ -342,8 +342,19 @@ const UserCreatePage = () => {
   };
 
   const handleCancel = () => {
-    if (window.confirm("작성 중인 내용이 있습니다. 취소하시겠습니까?")) {
-      navigate("/admin/users");
+    // 폼에 데이터가 입력되었는지 확인
+    const hasInput = 
+      formData.name.trim() !== '' || 
+      formData.employeeNumber.trim() !== '' || 
+      formData.username.trim() !== '' || 
+      formData.password.trim() !== '' || 
+      formData.confirmPassword.trim() !== '';
+    
+    // 입력된 내용이 있으면 확인 창 표시, 없으면 바로 이동
+    if (!hasInput) {
+      navigate('/admin/users');
+    } else if (window.confirm('작성 중인 내용이 있습니다. 취소하시겠습니까?')) {
+      navigate('/admin/users');
     }
   };
 
