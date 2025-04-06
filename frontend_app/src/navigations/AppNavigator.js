@@ -4,6 +4,7 @@ import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from '../contexts/AuthContext';
+import ScreenTime from "../utils/ScreenTime";
 
 // 스크린 컴포넌트 임포트
 import SplashScreen from "../screens/auth/SplashScreen";
@@ -53,10 +54,27 @@ const AppNavigator = forwardRef((props, ref) => {
 
   // 권한 관련 상태
   const [hasScreenTimePermission, setHasScreenTimePermission] = useState(false);
-
+  const [checkingPermissions, setCheckingPermissions] = useState(true); // 권한 체크 중 상태 추가
+  
   // 인증 상태 변경 처리
   const handleLoginSuccess = () => {
     refreshAuth();
+    checkScreenTimePermission(); // 로그인 성공 시 권한 확인
+  };
+
+  // 권한 상태 확인 함수
+  const checkScreenTimePermission = async () => {
+    try {
+      setCheckingPermissions(true);
+      const granted = await ScreenTime.hasUsageStatsPermission();
+      console.log('스크린타임 권한 상태:', granted);
+      setHasScreenTimePermission(granted);
+    } catch (error) {
+      console.error('권한 확인 오류:', error);
+      setHasScreenTimePermission(false);
+    } finally {
+      setCheckingPermissions(false);
+    }
   };
 
   // 권한 상태 변경 처리
@@ -69,8 +87,15 @@ const AppNavigator = forwardRef((props, ref) => {
     updateWalletStatus(); // 지갑 연결 후 사용자 정보 갱신
   };
 
-  // 로딩 중일 때 로딩 화면 표시
-  if (isLoading) {
+  // 인증 상태가 변경되면 권한 상태 확인
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkScreenTimePermission();
+    }
+  }, [isAuthenticated]);
+
+  // 로딩 중이거나 권한 체크 중일 때 로딩 화면 표시
+  if (isLoading || (isAuthenticated && checkingPermissions)) {
     return <SplashScreen />;
   }
 
