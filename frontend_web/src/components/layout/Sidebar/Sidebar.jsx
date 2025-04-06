@@ -37,7 +37,7 @@ const Sidebar = () => {
       <div className="sidebar-header">
         <div className="sidebar-logo-container">
           <img src={logo} alt="UPTENTION" className="sidebar-logo" />
-          <div className="sidebar-title">UP<br />TENSION</div>
+          <div className="sidebar-title">UP<br />TENTION</div>
         </div>
       </div>
       
