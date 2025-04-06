@@ -199,7 +199,7 @@ const CartScreen = ({ navigation }) => {
   // 상품 검증 및 결제 페이지로 이동
   const handleCheckout = async () => {
     const selectedItems = cartItems.filter((item) => item.selected);
-    
+
     if (selectedItems.length === 0) {
       Alert.alert("알림", "선택된 상품이 없습니다.");
       return;
@@ -207,37 +207,41 @@ const CartScreen = ({ navigation }) => {
 
     try {
       setLoading(true);
-      
+
       // 주문 검증 API 요청 데이터 준비
-      const orderVerifyData = selectedItems.map(item => ({
+      const orderVerifyData = selectedItems.map((item) => ({
         itemId: item.itemId,
         price: item.price,
-        quantity: item.quantity
+        quantity: item.quantity,
       }));
-      
+
       // 주문 검증 API 호출
-      const { data, ok, status } = await post("/orders/verify", orderVerifyData);
-      
+      const { data, ok, status } = await post(
+        "/orders/verify",
+        orderVerifyData
+      );
+
       if (ok) {
         // 검증 성공 시 결제 페이지로 이동
         const totalPrice = selectedItems.reduce(
-          (total, item) => total + item.totalPrice, 0
+          (total, item) => total + item.totalPrice,
+          0
         );
-        
+
         // cartId를 포함한 선택된 아이템 정보 전달
-        const itemsWithCartId = selectedItems.map(item => ({
-          ...data.find(verifiedItem => verifiedItem.itemId === item.itemId),
-          cartId: item.cartId
+        const itemsWithCartId = selectedItems.map((item) => ({
+          ...data.find((verifiedItem) => verifiedItem.itemId === item.itemId),
+          cartId: item.cartId,
         }));
-        
+
         navigation.navigate("CheckoutScreen", {
           selectedItems: itemsWithCartId,
-          totalPrice: totalPrice
+          totalPrice: totalPrice,
         });
       } else {
         // 에러 코드에 따른 처리
         let errorMessage = "상품 검증 중 오류가 발생했습니다.";
-        
+
         if (status === 400) {
           errorMessage = data.message || "재고가 부족한 상품이 있습니다.";
         } else if (status === 404) {
@@ -245,12 +249,12 @@ const CartScreen = ({ navigation }) => {
         } else if (status === 409) {
           errorMessage = data.message || "상품 가격이 변경되었습니다.";
         }
-        
+
         Alert.alert("주문 확인", errorMessage, [
           {
             text: "확인",
-            onPress: handleRefresh // 오류 발생 시 장바구니 새로고침
-          }
+            onPress: handleRefresh, // 오류 발생 시 장바구니 새로고침
+          },
         ]);
       }
     } catch (error) {
@@ -266,55 +270,64 @@ const CartScreen = ({ navigation }) => {
 
   // 장바구니 상품 목록 렌더링
   const renderCartItems = () => {
-    return cartItems.map((item) => (
-      <View key={item.cartId} style={styles.cartItem}>
-        <TouchableOpacity
-          style={styles.checkbox}
-          onPress={() => toggleSelection(item.cartId)}
-        >
-          <Ionicons
-            name={item.selected ? "checkbox" : "square-outline"}
-            size={24}
-            color={item.selected ? "#FF8C00" : "#999"}
+    return cartItems.map((item) => {
+      // 이미지 URL 최적화 (80x80 크기에 맞게 설정)
+      const optimizedImageUrl = item.image.uri
+        ? `${item.image.uri}?w=80&h=80&t=cover&f=webp`
+        : item.image;
+      return (
+        <View key={item.cartId} style={styles.cartItem}>
+          <TouchableOpacity
+            style={styles.checkbox}
+            onPress={() => toggleSelection(item.cartId)}
+          >
+            <Ionicons
+              name={item.selected ? "checkbox" : "square-outline"}
+              size={24}
+              color={item.selected ? "#FF8C00" : "#999"}
+            />
+          </TouchableOpacity>
+
+          <Image
+            source={item.image.uri ? { uri: optimizedImageUrl } : item.image}
+            style={styles.itemImage}
           />
-        </TouchableOpacity>
 
-        <Image source={item.image} style={styles.itemImage} />
-
-        <View style={styles.itemInfo}>
-          <View style={styles.itemHeader}>
-            <View style={styles.itemTitleContainer}>
-              <Text style={styles.itemBrand}>{item.brand}</Text>
-              <Text style={styles.itemName}>{item.name}</Text>
+          <View style={styles.itemInfo}>
+            <View style={styles.itemHeader}>
+              <View style={styles.itemTitleContainer}>
+                <Text style={styles.itemBrand}>{item.brand}</Text>
+                <Text style={styles.itemName}>{item.name}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => deleteItem(item.cartId)}
+                style={styles.deleteButton}
+              >
+                <Ionicons name="close" size={24} color="#999" />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={() => deleteItem(item.cartId)}
-              style={styles.deleteButton}
-            >
-              <Ionicons name="close" size={24} color="#999" />
-            </TouchableOpacity>
-          </View>
 
-          <Text style={styles.itemPrice}>{item.price} WORK</Text>
+            <Text style={styles.itemPrice}>{item.price} WORK</Text>
 
-          <View style={styles.quantityContainer}>
-            <TouchableOpacity
-              onPress={() => updateQuantity(item.cartId, -1)}
-              style={styles.quantityButton}
-            >
-              <Text style={styles.quantityButtonText}>-</Text>
-            </TouchableOpacity>
-            <Text style={styles.quantity}>{item.quantity}</Text>
-            <TouchableOpacity
-              onPress={() => updateQuantity(item.cartId, 1)}
-              style={styles.quantityButton}
-            >
-              <Text style={styles.quantityButtonText}>+</Text>
-            </TouchableOpacity>
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity
+                onPress={() => updateQuantity(item.cartId, -1)}
+                style={styles.quantityButton}
+              >
+                <Text style={styles.quantityButtonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.quantity}>{item.quantity}</Text>
+              <TouchableOpacity
+                onPress={() => updateQuantity(item.cartId, 1)}
+                style={styles.quantityButton}
+              >
+                <Text style={styles.quantityButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    ));
+      );
+    });
   };
 
   // 장바구니 비었을 때 렌더링
@@ -560,10 +573,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   itemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    width: "100%",
   },
   itemTitleContainer: {
     flex: 1,
