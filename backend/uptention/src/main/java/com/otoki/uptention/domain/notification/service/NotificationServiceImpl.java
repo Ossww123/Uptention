@@ -4,9 +4,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.notification.entity.Notification;
 import com.otoki.uptention.domain.notification.repository.NotificationRepository;
-import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ public class NotificationServiceImpl implements NotificationService {
 
 	@Override
 	public List<Notification> getNotificationsByCursor(User user, Boolean read, String keyword,
-		UserCursorDto<String> cursor, int size) {
+		CursorDto<String> cursor, int size) {
 		return notificationRepository.findNotificationsByCursor(user, read, keyword, cursor, size);
 	}
 

@@ -10,9 +10,9 @@ import com.otoki.uptention.application.notification.dto.response.NotificationCou
 import com.otoki.uptention.application.notification.dto.response.NotificationCursorResponseDto;
 import com.otoki.uptention.application.notification.dto.response.NotificationResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
+import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.notification.entity.Notification;
 import com.otoki.uptention.domain.notification.service.NotificationService;
-import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class NotificationAppServiceImpl implements NotificationAppService {
 		User loggedInUser = securityService.getLoggedInUser();
 
 		// 커서 디코딩
-		UserCursorDto<String> cursor = UserCursorDto.decode(cursorStr, String.class);
+		CursorDto<String> cursor = CursorDto.decode(cursorStr, String.class);
 
 		// size + 1개 조회하여 다음 페이지 존재 여부 확인
 		List<Notification> notifications = notificationService.getNotificationsByCursor(
@@ -87,6 +87,6 @@ public class NotificationAppServiceImpl implements NotificationAppService {
 	// 다음 커서 생성
 	private String createNextCursor(Notification lastNotification) {
 		String value = lastNotification.getCreatedAt().toString();
-		return new UserCursorDto<>(value, lastNotification.getId()).encode();
+		return new CursorDto<>(value, lastNotification.getId()).encode();
 	}
 }

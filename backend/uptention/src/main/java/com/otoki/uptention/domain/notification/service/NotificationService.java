@@ -2,8 +2,8 @@ package com.otoki.uptention.domain.notification.service;
 
 import java.util.List;
 
+import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.notification.entity.Notification;
-import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.User;
 
 public interface NotificationService {
@@ -15,7 +15,7 @@ public interface NotificationService {
 
 	// 커서 기반 알림 조회
 	List<Notification> getNotificationsByCursor(User user, Boolean read, String keyword,
-		UserCursorDto<String> cursor, int size);
+		CursorDto<String> cursor, int size);
 
 	// 유저의 알림 개수 조회 (읽음 상태별)
 	int countByUserAndRead(User user, Boolean read);

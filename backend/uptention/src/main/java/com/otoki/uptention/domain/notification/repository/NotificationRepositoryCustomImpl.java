@@ -3,9 +3,9 @@ package com.otoki.uptention.domain.notification.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.notification.entity.Notification;
 import com.otoki.uptention.domain.notification.entity.QNotification;
-import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
@@ -22,7 +22,7 @@ public class NotificationRepositoryCustomImpl implements NotificationRepositoryC
 
 	@Override
 	public List<Notification> findNotificationsByCursor(User user, Boolean read, String keyword,
-		UserCursorDto<String> cursor, int size) {
+		CursorDto<String> cursor, int size) {
 		QNotification notification = QNotification.notification;
 
 		// 기본 조건: 요청한 사용자에게 속한 알림
@@ -57,7 +57,7 @@ public class NotificationRepositoryCustomImpl implements NotificationRepositoryC
 	/**
 	 * 커서 조건 생성 (생성일 최신순)
 	 */
-	private BooleanExpression getCursorCondition(QNotification notification, UserCursorDto<String> cursor) {
+	private BooleanExpression getCursorCondition(QNotification notification, CursorDto<String> cursor) {
 		try {
 			LocalDateTime cursorDate = LocalDateTime.parse(cursor.getValue());
 			return notification.createdAt.lt(cursorDate)
