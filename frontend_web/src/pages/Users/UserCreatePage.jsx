@@ -23,6 +23,7 @@ const UserCreatePage = () => {
   const [isIdAvailable, setIsIdAvailable] = useState(false);
   const [isEmpNumAvailable, setIsEmpNumAvailable] = useState(false);
   
+  // 폼 필드 상태 변경 시 에러 메시지 초기화
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -35,6 +36,14 @@ const UserCreatePage = () => {
       setIsIdAvailable(false);
     } else if (name === 'employeeNumber') {
       setIsEmpNumAvailable(false);
+    }
+    
+    // 해당 필드의 오류 메시지 제거
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
   
@@ -73,8 +82,6 @@ const UserCreatePage = () => {
           'Authorization': `${token}`
         }
       });
-
-      console.log(response)
       
       // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsIdAvailable(true);
@@ -88,9 +95,10 @@ const UserCreatePage = () => {
       
       // 409 Conflict는 이미 사용 중인 경우
       if (error.response && error.response.status === 409) {
+        const errorMsg = error.response.data.message || '이미 사용 중인 아이디입니다';
         setErrors(prev => ({
           ...prev,
-          username: error.response.data.message || '이미 사용 중인 아이디입니다'
+          username: errorMsg
         }));
       } else {
         setErrors(prev => ({
@@ -139,8 +147,6 @@ const UserCreatePage = () => {
         }
       });
       
-      console.log(response)
-
       // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsEmpNumAvailable(true);
       setErrors(prev => ({
@@ -153,9 +159,10 @@ const UserCreatePage = () => {
       
       // 409 Conflict는 이미 사용 중인 경우
       if (error.response && error.response.status === 409) {
+        const errorMsg = error.response.data.message || '이미 사용 중인 사번입니다';
         setErrors(prev => ({
           ...prev,
-          employeeNumber: error.response.data.message || '이미 사용 중인 사번입니다'
+          employeeNumber: errorMsg
         }));
       } else {
         setErrors(prev => ({
@@ -255,8 +262,6 @@ const UserCreatePage = () => {
           'Content-Type': 'application/json'
         }
       });
-
-      console.log(response)
       
       // 성공 응답 처리
       alert('회원가입 성공');
@@ -320,16 +325,18 @@ const UserCreatePage = () => {
                   <label>성명<span className="required">*</span></label>
                 </td>
                 <td className="input-cell">
-                  <input 
-                    type="text" 
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="성명 입력 (2~20자, 한글/영어만 가능)"
-                    maxLength="20"
-                  />
-                  {errors.name && <div className="error-message">{errors.name}</div>}
+                  <div className="input-wrapper">
+                    <input 
+                      type="text" 
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`form-input ${errors.name ? 'has-error' : ''}`}
+                      placeholder="성명 입력 (2~20자, 한글/영어만 가능)"
+                      maxLength="20"
+                    />
+                    {errors.name && <div className="error-hint">{errors.name}</div>}
+                  </div>
                 </td>
               </tr>
               
@@ -338,27 +345,29 @@ const UserCreatePage = () => {
                   <label>사원번호<span className="required">*</span></label>
                 </td>
                 <td className="input-cell">
-                  <div className="id-check-container">
-                    <input 
-                      type="text" 
-                      name="employeeNumber"
-                      value={formData.employeeNumber}
-                      onChange={handleChange}
-                      className="form-input"
-                      placeholder="사원번호 입력 (1~20자, 영어/숫자만 가능)"
-                      maxLength="20"
-                    />
-                    <button 
-                      type="button" 
-                      className="id-check-button"
-                      onClick={checkEmpNumDuplicate}
-                      disabled={isCheckingEmpNum}
-                    >
-                      {isCheckingEmpNum ? '확인 중...' : '중복 확인'}
-                    </button>
+                  <div className="input-wrapper">
+                    <div className="id-check-container">
+                      <input 
+                        type="text" 
+                        name="employeeNumber"
+                        value={formData.employeeNumber}
+                        onChange={handleChange}
+                        className={`form-input ${errors.employeeNumber ? 'has-error' : ''}`}
+                        placeholder="사원번호 입력 (1~20자, 영어/숫자만 가능)"
+                        maxLength="20"
+                      />
+                      <button 
+                        type="button" 
+                        className="id-check-button"
+                        onClick={checkEmpNumDuplicate}
+                        disabled={isCheckingEmpNum}
+                      >
+                        {isCheckingEmpNum ? '확인 중...' : '중복 확인'}
+                      </button>
+                    </div>
+                    {errors.employeeNumber && <div className="error-hint">{errors.employeeNumber}</div>}
+                    {isEmpNumAvailable && <div className="success-hint">사용 가능한 사번입니다</div>}
                   </div>
-                  {errors.employeeNumber && <div className="error-message">{errors.employeeNumber}</div>}
-                  {isEmpNumAvailable && <div className="success-message">사용 가능한 사번입니다</div>}
                 </td>
               </tr>
               
@@ -367,27 +376,29 @@ const UserCreatePage = () => {
                   <label>회원 ID<span className="required">*</span></label>
                 </td>
                 <td className="input-cell">
-                  <div className="id-check-container">
-                    <input 
-                      type="text" 
-                      name="username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      className="form-input"
-                      placeholder="회원 ID 입력 (8~15자, 영소문자/숫자만 가능)"
-                      maxLength="15"
-                    />
-                    <button 
-                      type="button" 
-                      className="id-check-button"
-                      onClick={checkIdDuplicate}
-                      disabled={isCheckingId}
-                    >
-                      {isCheckingId ? '확인 중...' : '중복 확인'}
-                    </button>
+                  <div className="input-wrapper">
+                    <div className="id-check-container">
+                      <input 
+                        type="text" 
+                        name="username"
+                        value={formData.username}
+                        onChange={handleChange}
+                        className={`form-input ${errors.username ? 'has-error' : ''}`}
+                        placeholder="회원 ID 입력 (8~15자, 영소문자/숫자만 가능)"
+                        maxLength="15"
+                      />
+                      <button 
+                        type="button" 
+                        className="id-check-button"
+                        onClick={checkIdDuplicate}
+                        disabled={isCheckingId}
+                      >
+                        {isCheckingId ? '확인 중...' : '중복 확인'}
+                      </button>
+                    </div>
+                    {errors.username && <div className="error-hint">{errors.username}</div>}
+                    {isIdAvailable && <div className="success-hint">사용 가능한 아이디입니다</div>}
                   </div>
-                  {errors.username && <div className="error-message">{errors.username}</div>}
-                  {isIdAvailable && <div className="success-message">사용 가능한 아이디입니다</div>}
                 </td>
               </tr>
               
@@ -396,16 +407,19 @@ const UserCreatePage = () => {
                   <label>비밀번호<span className="required">*</span></label>
                 </td>
                 <td className="input-cell">
-                  <input 
-                    type="password" 
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="비밀번호 입력 (8~15자, 영문/숫자 필수)"
-                    maxLength="15"
-                  />
-                  {errors.password && <div className="error-message">{errors.password}</div>}
+                  <div className="input-wrapper">
+                    <input 
+                      type="password" 
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={`form-input ${errors.password ? 'has-error' : ''}`}
+                      placeholder="비밀번호 입력 (8~15자, 영문/숫자 필수)"
+                      maxLength="15"
+                    />
+                    <div className="password-hint">사용 가능한 특수문자: ! @ # $ % ^ & *</div>
+                    {errors.password && <div className="error-hint">{errors.password}</div>}
+                  </div>
                 </td>
               </tr>
               
@@ -414,16 +428,18 @@ const UserCreatePage = () => {
                   <label>비밀번호 확인<span className="required">*</span></label>
                 </td>
                 <td className="input-cell">
-                  <input 
-                    type="password" 
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="비밀번호 다시 입력"
-                    maxLength="15"
-                  />
-                  {errors.confirmPassword && <div className="error-message">{errors.confirmPassword}</div>}
+                  <div className="input-wrapper">
+                    <input 
+                      type="password" 
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className={`form-input ${errors.confirmPassword ? 'has-error' : ''}`}
+                      placeholder="비밀번호 다시 입력"
+                      maxLength="15"
+                    />
+                    {errors.confirmPassword && <div className="error-hint">{errors.confirmPassword}</div>}
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -431,7 +447,6 @@ const UserCreatePage = () => {
         </form>
       </div>
       
-      {/* 버튼들을 콘텐츠 카드 바깥으로 이동 */}
       <div className="form-actions outside-card">
         <button 
           type="button" 

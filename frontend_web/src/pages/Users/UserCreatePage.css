@@ -32,7 +32,7 @@
 .form-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 10px; /* 버튼이 바깥으로 이동했으므로 마진 줄임 */
+  margin-bottom: 10px;
 }
 
 .form-table tr {
@@ -51,6 +51,16 @@
 .input-cell {
   width: 85%;
   padding: 15px;
+  vertical-align: top;
+}
+
+/* 새로운 입력 래퍼 컨테이너 */
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative; /* 상대 위치 설정 */
+  min-height: 70px; /* 높이를 충분히 설정하여 오류 메시지 공간 확보 */
 }
 
 .form-input, .form-select, .form-textarea {
@@ -77,19 +87,7 @@
   margin-left: 3px;
 }
 
-.error-message {
-  color: #e74c3c;
-  font-size: 12px;
-  margin-top: 5px;
-}
-
-.success-message {
-  color: #2ecc71;
-  font-size: 12px;
-  margin-top: 5px;
-}
-
-/* 폼 액션 버튼 스타일 수정 - 컨테이너 바깥으로 */
+/* 폼 액션 버튼 */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -98,8 +96,8 @@
 }
 
 .form-actions.outside-card {
-  margin-top: 0; /* 상단 여백 제거 */
-  padding: 0 5px; /* 좌우 패딩 추가 */
+  margin-top: 0;
+  padding: 0 5px;
 }
 
 .user-cancel-button {
@@ -110,8 +108,9 @@
   border-radius: 4px; 
   font-size: 14px;
   cursor: pointer;
-  min-width: 80px; /* 최소 너비 설정 */
-  justify-content: center; /* 내용 중앙 정렬 */
+  min-width: 80px;
+  display: flex;
+  justify-content: center;
 }
 
 .user-cancel-button:hover {
@@ -132,8 +131,9 @@
   font-weight: 500;
   cursor: pointer;
   box-shadow: 0 2px 5px rgba(255, 140, 0, 0.3);
-  min-width: 80px; /* 최소 너비 설정 */
-  justify-content: center; /* 내용 중앙 정렬 */
+  min-width: 80px;
+  display: flex;
+  justify-content: center;
 }
 
 .user-submit-button:hover {
@@ -159,6 +159,7 @@
   cursor: pointer;
   white-space: nowrap;
   height: 40px;
+  flex-shrink: 0;
 }
 
 .id-check-button:hover {
@@ -168,6 +169,50 @@
 .id-check-button:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
+}
+
+/* 오류/성공 메시지 공간 */
+.message-space {
+  min-height: 20px; /* 오류 메시지를 위한 최소 높이 */
+  margin-top: 5px; /* 입력 필드와의 간격 */
+}
+
+/* 오류 힌트 메시지 스타일 */
+.error-hint {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: right;
+  position: absolute; /* 절대 위치로 설정 */
+  bottom: 0; /* 컨테이너 하단에 위치 */
+  right: 0; /* 우측 정렬 */
+  height: 20px; /* 고정 높이 설정 */
+}
+
+/* 성공 힌트 메시지 스타일 */
+.success-hint {
+  color: #2ecc71;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: right;
+  position: absolute; /* 절대 위치로 설정 */
+  bottom: 0; /* 컨테이너 하단에 위치 */
+  right: 0; /* 우측 정렬 */
+  height: 20px; /* 고정 높이 설정 */
+}
+
+/* 오류 상태의 입력 필드 스타일 */
+.form-input.has-error {
+  border-color: #e74c3c;
+  background-color: #fff5f5;
+}
+
+/* 비밀번호 힌트 스타일 - 좌측 정렬로 변경 */
+.password-hint {
+  color: #888;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: left; /* 좌측 정렬로 변경 */
 }
 
 /* 반응형 레이아웃을 위한 미디어 쿼리 */
@@ -190,5 +235,10 @@
   
   .form-table, .form-table tbody, .form-table tr {
     display: block;
+  }
+  
+  .error-hint, .success-hint {
+    position: static; /* 모바일에서는 정적 위치로 변경 */
+    text-align: left;
   }
 }
