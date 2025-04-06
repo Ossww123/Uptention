@@ -12,7 +12,7 @@ import {
  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { get } from '../services/api';
+import { get, patch } from '../services/api';
 import messaging from '@react-native-firebase/messaging';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -60,81 +60,108 @@ const NotificationScreen = ({ navigation }) => {
  );
 
  // 첫 페이지만 가져오는 함수 (새로고침 또는 FCM 수신 시 사용)
- const fetchFirstPage = async () => {
-   try {
-     // 커서 초기화 (첫 페이지부터 다시 불러옴)
-     setCursor(null);
-     
-     // API 호출
-     const { data, ok } = await get(`/notifications?size=${PAGE_SIZE}`);
-     
-     if (!ok) {
-       throw new Error('알림 목록을 불러오는데 실패했습니다.');
-     }
-     
-     // 응답 데이터 처리
-     setNotifications(data.notifications || []);
-     setHasNextPage(data.hasNextPage || false);
-     setCursor(data.nextCursor);
-     
-     return true;
-   } catch (error) {
-     console.error('알림 첫 페이지 조회 오류:', error);
-     return false;
-   }
- };
+ // 첫 페이지만 가져오는 함수 수정
+const fetchFirstPage = async () => {
+  try {
+    // 커서 초기화 (첫 페이지부터 다시 불러옴)
+    setCursor(null);
+    
+    // 모든 알림 읽음 처리 API 호출
+    try {
+      const { ok } = await patch('/notifications/read');
+      if (ok) {
+        console.log('모든 알림 읽음 처리 성공');
+      } else {
+        console.warn('모든 알림 읽음 처리 실패');
+      }
+    } catch (readError) {
+      console.error('알림 읽음 처리 API 오류:', readError);
+      // 읽음 처리 실패해도 목록 조회는 계속 진행
+    }
+    
+    // API 호출
+    const { data, ok } = await get(`/notifications?size=${PAGE_SIZE}`);
+    
+    if (!ok) {
+      throw new Error('알림 목록을 불러오는데 실패했습니다.');
+    }
+    
+    // 응답 데이터 처리
+    setNotifications(data.notifications || []);
+    setHasNextPage(data.hasNextPage || false);
+    setCursor(data.nextCursor);
+    
+    return true;
+  } catch (error) {
+    console.error('알림 첫 페이지 조회 오류:', error);
+    return false;
+  }
+};
 
  // 알림 목록 조회 (API 연동)
  const fetchNotifications = async (isLoadMore = false) => {
-   // 이미 로딩 중이거나, 더 불러올 페이지가 없는 경우
-   if ((loadingMore && isLoadMore) || (isLoadMore && !hasNextPage)) {
-     return;
-   }
-   
-   try {
-     if (!isLoadMore) {
-       setLoading(true);
-     } else {
-       setLoadingMore(true);
-     }
-     
-     // API 엔드포인트 구성 (커서가 있으면 추가)
-     let endpoint = `/notifications?size=${PAGE_SIZE}`;
-     if (isLoadMore && cursor) {
-       endpoint += `&cursor=${cursor}`;
-     }
-     
-     // API 호출
-     const { data, ok } = await get(endpoint);
-     
-     if (!ok) {
-       throw new Error('알림 목록을 불러오는데 실패했습니다.');
-     }
-     
-     // 응답 데이터 처리
-     if (isLoadMore) {
-       // 기존 목록에 추가
-       setNotifications(prev => [...prev, ...(data.notifications || [])]);
-     } else {
-       // 목록 초기화
-       setNotifications(data.notifications || []);
-     }
-     
-     // 다음 페이지 정보 업데이트
-     setHasNextPage(data.hasNextPage || false);
-     setCursor(data.nextCursor);
-     
-   } catch (error) {
-     console.error('알림 목록 조회 오류:', error);
-     if (!isLoadMore) {
-       Alert.alert('오류', '알림 목록을 불러오는데 실패했습니다.');
-     }
-   } finally {
-     setLoading(false);
-     setRefreshing(false);
-     setLoadingMore(false);
-   }
- };
+  // 이미 로딩 중이거나, 더 불러올 페이지가 없는 경우
+  if ((loadingMore && isLoadMore) || (isLoadMore && !hasNextPage)) {
+    return;
+  }
+  
+  try {
+    if (!isLoadMore) {
+      setLoading(true);
+      
+      // 페이지 첫 로드 시에만 모든 알림 읽음 처리 API 호출
+      try {
+        const { ok } = await patch('/notifications/read');
+        if (ok) {
+          console.log('모든 알림 읽음 처리 성공');
+        } else {
+          console.warn('모든 알림 읽음 처리 실패');
+        }
+      } catch (readError) {
+        console.error('알림 읽음 처리 API 오류:', readError);
+        // 읽음 처리 실패해도 목록 조회는 계속 진행
+      }
+    } else {
+      setLoadingMore(true);
+    }
+    
+    // API 엔드포인트 구성 (커서가 있으면 추가)
+    let endpoint = `/notifications?size=${PAGE_SIZE}`;
+    if (isLoadMore && cursor) {
+      endpoint += `&cursor=${cursor}`;
+    }
+    
+    // 알림 목록 조회 API 호출
+    const { data, ok } = await get(endpoint);
+    
+    if (!ok) {
+      throw new Error('알림 목록을 불러오는데 실패했습니다.');
+    }
+    
+    // 응답 데이터 처리
+    if (isLoadMore) {
+      // 기존 목록에 추가
+      setNotifications(prev => [...prev, ...(data.notifications || [])]);
+    } else {
+      // 목록 초기화
+      setNotifications(data.notifications || []);
+    }
+    
+    // 다음 페이지 정보 업데이트
+    setHasNextPage(data.hasNextPage || false);
+    setCursor(data.nextCursor);
+    
+  } catch (error) {
+    console.error('알림 목록 조회 오류:', error);
+    if (!isLoadMore) {
+      Alert.alert('오류', '알림 목록을 불러오는데 실패했습니다.');
+    }
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+    setLoadingMore(false);
+  }
+};
 
  // 날짜 포맷팅 함수
  const formatDate = (dateString) => {
