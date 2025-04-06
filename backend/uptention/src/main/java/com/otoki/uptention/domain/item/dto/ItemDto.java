@@ -29,6 +29,12 @@ public class ItemDto {
 	@Schema(description = "재고 수량", example = "10")
 	private int quantity;
 
+	@Schema(description = "카테고리 ID", example = "1")
+	private Integer categoryId;
+
+	@Schema(description = "카테고리 이름", example = "가전디지털")
+	private String categoryName;
+
 	@Schema(description = "상품 대표 이미지 URL", example = "https://example.com/images/product_1_1.jpg")
 	private String thumbnail;
 

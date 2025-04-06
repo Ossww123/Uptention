@@ -42,7 +42,7 @@ public class ItemServiceImpl implements ItemService {
 
 	@Override
 	public List<ItemDto> getItemsByCursor(Integer categoryId, String keyword,
-		CursorDto cursor, SortType sortType, int size) {
+		CursorDto<Integer> cursor, SortType sortType, int size) {
 		return itemRepository.findItemsByCursor(categoryId, keyword, cursor, sortType, size);
 	}
 

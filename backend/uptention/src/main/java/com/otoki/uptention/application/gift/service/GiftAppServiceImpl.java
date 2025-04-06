@@ -40,7 +40,7 @@ public class GiftAppServiceImpl implements GiftAppService {
 	 * 상태에 따른 선물 목록 조회
 	 */
 	private List<GiftItemDto> fetchGiftsByStatus(Integer userId, String cursorStr, int limit, GiftStatus status) {
-		CursorDto cursor = CursorDto.decode(cursorStr);
+		CursorDto<Integer> cursor = CursorDto.decode(cursorStr, Integer.class);
 
 		if (cursor == null) {
 			// 첫 페이지 조회
@@ -108,7 +108,7 @@ public class GiftAppServiceImpl implements GiftAppService {
 	private String createNextCursor(boolean hasNextPage, List<GiftItemDto> resultItems) {
 		if (hasNextPage && !resultItems.isEmpty()) {
 			GiftItemDto lastItem = resultItems.get(resultItems.size() - 1);
-			CursorDto nextCursorDto = new CursorDto(0, lastItem.getGiftId());
+			CursorDto<Integer> nextCursorDto = new CursorDto<>(0, lastItem.getGiftId());
 			return nextCursorDto.encode();
 		}
 		return null;

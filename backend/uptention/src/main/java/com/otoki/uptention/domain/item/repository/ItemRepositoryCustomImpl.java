@@ -52,6 +52,8 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 					item.quantity,
 					item.salesCount,
 					item.status,
+					item.category.id.as("categoryId"),
+					item.category.name.as("categoryName"),
 					ExpressionUtils.as(thumbnailSubquery, "thumbnail")
 				)
 			)
@@ -61,7 +63,7 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 	}
 
 	@Override
-	public List<ItemDto> findItemsByCursor(Integer categoryId, String keyword, CursorDto cursor, SortType sortType,
+	public List<ItemDto> findItemsByCursor(Integer categoryId, String keyword, CursorDto<Integer> cursor, SortType sortType,
 		int size) {
 		QItem item = QItem.item;
 		QImage image = QImage.image;
@@ -93,6 +95,9 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 				item.brand,
 				item.quantity,
 				item.salesCount,
+				item.status,
+				item.category.id.as("categoryId"),
+				item.category.name.as("categoryName"),
 				ExpressionUtils.as(thumbnailSubquery, "thumbnail")
 			))
 			.from(item)
@@ -122,13 +127,15 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 	/**
 	 * 커서 기반 페이징을 위한 조건을 생성합니다.
 	 */
-	private BooleanExpression getCursorCondition(QItem item, CursorDto cursor, SortType sortType) {
+	private BooleanExpression getCursorCondition(QItem item, CursorDto<Integer> cursor, SortType sortType) {
 		if (sortType == SortType.LOW_PRICE) {
 			return item.price.gt(cursor.getValue())
 				.or(item.price.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
 		} else if (sortType == SortType.HIGH_PRICE) {
 			return item.price.lt(cursor.getValue())
 				.or(item.price.eq(cursor.getValue()).and(item.id.lt(cursor.getId())));
+		} else if (sortType == SortType.ID_ASC) {
+			return item.id.gt(cursor.getId());
 		} else {
 			// SALES 또는 기본값
 			return item.salesCount.lt(cursor.getValue())
@@ -149,6 +156,10 @@ public class ItemRepositoryCustomImpl implements ItemRepositoryCustom {
 			return new com.querydsl.core.types.OrderSpecifier<?>[] {
 				item.price.desc(),
 				item.id.desc()
+			};
+		} else if (sortType == SortType.ID_ASC) {
+			return new com.querydsl.core.types.OrderSpecifier<?>[] {
+				item.id.asc()
 			};
 		} else {
 			// SALES 또는 기본값
