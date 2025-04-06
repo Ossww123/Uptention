@@ -18,7 +18,7 @@ public class ItemCreateRequestDto {
 	private Integer categoryId;
 
 	@NotBlank(message = "상품명은 필수입니다.")
-	@Size(max = 30, message = "상품명은 최대 30자까지 입력 가능합니다.")
+	@Size(max = 255, message = "상품명은 최대 30자까지 입력 가능합니다.")
 	@Schema(description = "상품명", example = "프리미엄 커피")
 	private String name;
 
