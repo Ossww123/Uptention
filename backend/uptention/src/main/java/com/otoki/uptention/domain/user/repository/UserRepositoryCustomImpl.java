@@ -3,8 +3,8 @@ package com.otoki.uptention.domain.user.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.company.entity.Company;
-import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.QUser;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.enums.UserRole;
@@ -24,7 +24,7 @@ public class UserRepositoryCustomImpl implements UserRepositoryCustom {
 
 	@Override
 	public List<User> findUsersByCursor(Company company, UserRole userRole, String keyword,
-		UserCursorDto<String> cursor, UserSortType sortType, int size) {
+		CursorDto<String> cursor, UserSortType sortType, int size) {
 		QUser user = QUser.user;
 
 		// 기본 조건: 소속 Company 및 활성화 상태
@@ -59,7 +59,7 @@ public class UserRepositoryCustomImpl implements UserRepositoryCustom {
 	/**
 	 * 커서 조건 생성 (정렬 타입에 따라)
 	 */
-	private BooleanExpression getCursorCondition(QUser user, UserCursorDto<String> cursor, UserSortType sortType) {
+	private BooleanExpression getCursorCondition(QUser user, CursorDto<String> cursor, UserSortType sortType) {
 		if (sortType == UserSortType.NAMES_ASC) {
 			return user.name.gt(cursor.getValue())
 				.or(user.name.eq(cursor.getValue()).and(user.id.gt(cursor.getId())));

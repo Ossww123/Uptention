@@ -1,4 +1,4 @@
-package com.otoki.uptention.application.mining.service.dto.response;
+package com.otoki.uptention.application.mining.dto.response;
 
 import java.time.LocalDate;
 

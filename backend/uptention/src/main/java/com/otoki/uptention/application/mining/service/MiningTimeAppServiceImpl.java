@@ -23,8 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.otoki.uptention.application.mining.service.dto.request.FocusModeOnRequestDto;
-import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
+import com.otoki.uptention.application.mining.dto.request.FocusModeOnRequestDto;
+import com.otoki.uptention.application.mining.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.application.user.service.UserAppService;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.company.entity.Company;
@@ -140,7 +140,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 	// 채굴 시간 조회
 	@Override
-	public List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime) {
+	public List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime,
+		LocalDateTime endTime) {
 		User loggedInUser = securityService.getLoggedInUser();
 
 		if (!loggedInUser.getId().equals(userId)) {
@@ -182,7 +183,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 	// 우수사원 랭킹 조회
 	@Override
-	public  Map<String, List<MiningTimeRankResponseDto>> findMiningRank(Integer top) {
+	public Map<String, List<MiningTimeRankResponseDto>> findMiningRank(Integer top) {
 		if (top == null || top <= 0) {
 			throw new CustomException(ErrorCode.TOP_VARIABLE_ERROR);
 		}
@@ -239,7 +240,9 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 						walletAddress,
 						amountStr
 					);
-					log.info("토큰 전송 API 성공. 응답 일부: {}", response != null ? response.substring(0, Math.min(response.length(), 100)) : "null"); // 응답이 길 수 있으므로 일부만 로깅
+					log.info("토큰 전송 API 성공. 응답 일부: {}",
+						response != null ? response.substring(0, Math.min(response.length(), 100)) :
+							"null"); // 응답이 길 수 있으므로 일부만 로깅
 
 					user.setPoint(0);
 
@@ -318,16 +321,19 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 				try {
 					log.debug("NFT 생성 API 호출 시도. User ID: {}, Rank: {}", userId, s);
 
-					String response = expressApiService.createNft(s, name, description,  attributes, "SSAFY"); // 동기 호출
+					String response = expressApiService.createNft(s, name, description, attributes, "SSAFY"); // 동기 호출
 
 					log.info("NFT 생성 API 호출 성공. User ID: {}, Rank: {}, Response: {}", userId, s, response);
-					CreateNftApiResponse createNftApiResponse = objectMapper.readValue(response, CreateNftApiResponse.class);
-					MintAddressResponse mintAddressResponse = new MintAddressResponse(createNftApiResponse.getMintAddress(), user.getWallet());
+					CreateNftApiResponse createNftApiResponse = objectMapper.readValue(response,
+						CreateNftApiResponse.class);
+					MintAddressResponse mintAddressResponse = new MintAddressResponse(
+						createNftApiResponse.getMintAddress(), user.getWallet());
 					result.add(mintAddressResponse);
 				} catch (RestClientException e) {
 					log.error("NFT 생성 API 호출 실패. User ID: {}, Rank: {}, Error: {}", userId, s, e.getMessage());
 				} catch (Exception e) {
-					log.error("NFT 생성 처리 중 예상치 못한 오류 발생. User ID: {}, Rank: {}, Error: {}", userId, s, e.getMessage(), e);
+					log.error("NFT 생성 처리 중 예상치 못한 오류 발생. User ID: {}, Rank: {}, Error: {}", userId, s, e.getMessage(),
+						e);
 				}
 			}
 		}
@@ -366,7 +372,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 			try {
 				String response = expressApiService.transferNft(recipientWallet, nftMintAddress);
 
-				log.info("NFT 전송 API 호출 성공: {}, 응답 일부: {}", identifier, response != null ? response.substring(0, Math.min(response.length(), 100)) : "null");
+				log.info("NFT 전송 API 호출 성공: {}, 응답 일부: {}", identifier,
+					response != null ? response.substring(0, Math.min(response.length(), 100)) : "null");
 
 			} catch (RestClientException e) {
 				log.error("NFT 전송 API 호출 실패: {}, 오류: {}", identifier, e.getMessage());
@@ -395,7 +402,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		return distance <= radiusInMeters;
 	}
 
-	private List<LocalDateTime> calculatePreviousWeekUtcBounds(LocalDateTime referenceLocalDateTime, ZoneId calculationZone) {
+	private List<LocalDateTime> calculatePreviousWeekUtcBounds(LocalDateTime referenceLocalDateTime,
+		ZoneId calculationZone) {
 		// 입력된 LocalDateTime과 ZoneId를 결합하여 ZonedDateTime 생성
 		ZonedDateTime referenceDateTime = referenceLocalDateTime.atZone(calculationZone);
 
@@ -425,7 +433,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		return bounds;
 	}
 
-	private Map<Integer, List<MiningTimeRankResponseDto>> calculationRank(List<MiningTimeRankResponseDto> miningRank, int top) {
+	private Map<Integer, List<MiningTimeRankResponseDto>> calculationRank(List<MiningTimeRankResponseDto> miningRank,
+		int top) {
 		Map<Integer, List<MiningTimeRankResponseDto>> rankMap = new LinkedHashMap<>();
 		int currentRank = 0;
 		Long previousTotalTime = null;
@@ -445,7 +454,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		return rankMap;
 	}
 
-	private Map<String, List<MiningTimeRankResponseDto>> convertJson(Map<Integer, List<MiningTimeRankResponseDto>> rankMap) {
+	private Map<String, List<MiningTimeRankResponseDto>> convertJson(
+		Map<Integer, List<MiningTimeRankResponseDto>> rankMap) {
 		// JSON 형태에 맞게 키를 문자열로 변환
 		Map<String, List<MiningTimeRankResponseDto>> result = new LinkedHashMap<>();
 		for (Map.Entry<Integer, List<MiningTimeRankResponseDto>> entry : rankMap.entrySet()) {

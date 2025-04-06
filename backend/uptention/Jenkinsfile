@@ -45,6 +45,15 @@ pipeline {
                     credentialsId: '0d048b2d-2bdf-4166-a809-76e195d64abb'
             }
         }
+        // Firebase 서비스 계정 키 파일을 주입
+        stage('Inject Firebase Credentials') {
+            steps {
+                withCredentials([file(credentialsId: 'FIREBASE_ACCOUNT_KEY', variable: 'FIREBASE_ACCOUNT_KEY')]) {
+                    sh 'mkdir -p backend/uptention/src/main/resources/firebase'
+                    sh 'cp $FIREBASE_ACCOUNT_KEY backend/uptention/src/main/resources/firebase/serviceAccountKey.json'
+                }
+            }
+        }
         stage('Build Application') {
             steps {
                 echo 'Building the application with Gradle Wrapper...'

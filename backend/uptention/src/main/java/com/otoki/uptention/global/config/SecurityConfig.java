@@ -18,9 +18,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 
+import com.otoki.uptention.auth.filter.CustomLogoutFilter;
 import com.otoki.uptention.auth.filter.JWTFilter;
 import com.otoki.uptention.auth.filter.LoginFilter;
-import com.otoki.uptention.auth.service.TokenService;
+import com.otoki.uptention.auth.service.AccessTokenService;
+import com.otoki.uptention.domain.user.service.FcmTokenService;
+import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.FilterExceptionHandler;
 
 import lombok.RequiredArgsConstructor;
@@ -30,7 +33,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 	private final JWTFilter jwtFilter;
-	private final TokenService tokenService;
+	private final AccessTokenService accessTokenService;
+	private final FcmTokenService fcmTokenService;
+	private final UserService userService;
+	private final CustomLogoutFilter customLogoutFilter;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -45,7 +51,8 @@ public class SecurityConfig {
 
 	@Bean
 	public LoginFilter loginFilter(AuthenticationManager authenticationManager) {
-		LoginFilter loginFilter = new LoginFilter(authenticationManager, tokenService);
+		LoginFilter loginFilter = new LoginFilter(authenticationManager, accessTokenService, fcmTokenService,
+			userService);
 		loginFilter.setFilterProcessesUrl("/api/login");
 		return loginFilter;
 	}
@@ -65,7 +72,8 @@ public class SecurityConfig {
 				configuration.setAllowedHeaders(Collections.singletonList("*"));
 				configuration.setMaxAge(3600L);
 
-				configuration.setExposedHeaders(Collections.singletonList("Authorization"));
+				// 클라이언트에서 읽을 수 있도록 응답 헤더에 Authorization과 FCM-Token 추가
+				configuration.setExposedHeaders(Arrays.asList("Authorization", "FCM-Token"));
 
 				return configuration;
 			})));
@@ -85,6 +93,9 @@ public class SecurityConfig {
 
 		http
 			.addFilterBefore(new FilterExceptionHandler(), LogoutFilter.class);
+		
+		http
+			.addFilterAfter(customLogoutFilter, LogoutFilter.class);
 
 		// 기본 logout 비활성화
 		http

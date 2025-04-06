@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.otoki.uptention.application.mining.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.application.mining.service.MiningTimeAppService;
-import com.otoki.uptention.application.mining.service.dto.response.MiningTimeResponseDto;
 import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
@@ -92,7 +92,8 @@ public class UserController implements UserApiDoc {
 
 	// 지갑 연결
 	@PostMapping("/{userId}/wallet")
-	public ResponseEntity<String> connectWallet(HttpServletResponse response, @PathVariable Integer userId, @RequestParam String wallet) {
+	public ResponseEntity<String> connectWallet(HttpServletResponse response, @PathVariable Integer userId,
+		@RequestParam String wallet) {
 		userAppService.connectWallet(response, userId, wallet);
 		return ResponseEntity.ok("지갑 연동 성공");
 	}

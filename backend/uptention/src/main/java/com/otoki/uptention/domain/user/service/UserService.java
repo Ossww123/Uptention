@@ -2,8 +2,8 @@ package com.otoki.uptention.domain.user.service;
 
 import java.util.List;
 
+import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.company.entity.Company;
-import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.enums.UserRole;
 import com.otoki.uptention.domain.user.enums.UserSortType;
@@ -24,7 +24,7 @@ public interface UserService {
 	void validateDuplicateEmployeeNumber(String employeeNumber);
 
 	List<User> getUsersByCursor(Company company, UserRole userRole, String keyword,
-		UserCursorDto<String> cursor, UserSortType sortType, int size);
+		CursorDto<String> cursor, UserSortType sortType, int size);
 
 	List<User> getUsersByRole();
 }

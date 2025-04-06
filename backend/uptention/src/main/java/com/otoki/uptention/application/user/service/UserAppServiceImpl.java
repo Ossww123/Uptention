@@ -14,10 +14,10 @@ import com.otoki.uptention.application.user.dto.response.PointResponseDto;
 import com.otoki.uptention.application.user.dto.response.ProfileImageResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserCursorResponseDto;
 import com.otoki.uptention.application.user.dto.response.UserResponseDto;
+import com.otoki.uptention.auth.service.AccessTokenService;
 import com.otoki.uptention.auth.service.SecurityService;
-import com.otoki.uptention.auth.service.TokenService;
+import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.company.entity.Company;
-import com.otoki.uptention.domain.user.dto.UserCursorDto;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.enums.UserRole;
 import com.otoki.uptention.domain.user.enums.UserSortType;
@@ -38,7 +38,7 @@ public class UserAppServiceImpl implements UserAppService {
 	private final SecurityService securityService;
 	private final ImageUploadService imageUploadService;
 	private final PasswordEncoder passwordEncoder;
-	private	final TokenService tokenService;
+	private final AccessTokenService accessTokenService;
 
 	// 일반 멤버 회원가입
 	@Override
@@ -144,7 +144,7 @@ public class UserAppServiceImpl implements UserAppService {
 		Company company = loggedInUser.getCompany();
 
 		// 커서 디코딩
-		UserCursorDto<String> cursor = UserCursorDto.decode(cursorStr, String.class);
+		CursorDto<String> cursor = CursorDto.decode(cursorStr, String.class);
 
 		// size + 1개 조회하여 다음 페이지 존재 여부 확인
 		List<User> users = userService.getUsersByCursor(company, userRole, keyword, cursor, sortType, size + 1);
@@ -215,7 +215,7 @@ public class UserAppServiceImpl implements UserAppService {
 		loggedInUser.setWallet(wallet);
 
 		// accessToken 재발급
-		tokenService.issueToken(response, userId, loggedInUser.getRole().name());
+		accessTokenService.issueToken(response, userId, loggedInUser.getRole().name());
 	}
 
 	private UserResponseDto mapToDto(User user) {
@@ -241,7 +241,7 @@ public class UserAppServiceImpl implements UserAppService {
 		} else {
 			throw new CustomException(ErrorCode.USER_INVALID_SORT_TYPE);
 		}
-		return new UserCursorDto<>(value, lastUser.getId()).encode();
+		return new CursorDto<>(value, lastUser.getId()).encode();
 	}
 
 }

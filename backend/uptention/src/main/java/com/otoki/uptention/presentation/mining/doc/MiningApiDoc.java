@@ -7,13 +7,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.otoki.uptention.application.mining.service.dto.request.FocusModeOnRequestDto;
+import com.otoki.uptention.application.mining.dto.request.FocusModeOnRequestDto;
 import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
 import com.otoki.uptention.global.exception.ErrorResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -87,7 +87,6 @@ public interface MiningApiDoc {
 		)
 	})
 	ResponseEntity<String> focusModeOff();
-
 
 	@Operation(summary = "우수 사원 랭킹 조회", description = "상위 top개의 결과를 기반으로 우수 사원 랭킹을 조회한다.")
 	@ApiResponses(value = {
