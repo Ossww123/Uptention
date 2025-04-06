@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./UserManagementPage.css";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal"; // 경로는 실제 프로젝트 구조에 맞게 조정하세요
 
 const UserManagementPage = () => {
   // 상태 관리
@@ -14,6 +15,10 @@ const UserManagementPage = () => {
   const [nextCursor, setNextCursor] = useState(null);
   const [sortOption, setSortOption] = useState("REGISTER_DATE_DESC"); // 기본 정렬: 가입일 내림차순
   const [userRole, setUserRole] = useState(""); // 기본값: 모든 역할
+  
+  // 모달 관련 상태
+  const [modalOpen, setModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
   // Refs
   const observer = useRef();
@@ -162,41 +167,59 @@ const UserManagementPage = () => {
     setUserRole(e.target.value);
   };
 
-  // 사용자 삭제 핸들러
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm("정말로 이 회원을 삭제하시겠습니까?")) {
-      try {
-        // 토큰 가져오기
-        const token = localStorage.getItem("auth-token");
-        if (!token) {
-          throw new Error("인증 토큰이 없습니다. 다시 로그인해주세요.");
-        }
+  // 사용자 삭제 모달 열기
+  const openDeleteModal = (userId) => {
+    setUserToDelete(userId);
+    setModalOpen(true);
+  };
 
-        await axios.delete(`${API_BASE_URL}/api/users/${userId}`, {
-          headers: {
-            Authorization: `${token}`,
-          },
-        });
-
-        // UI에서 사용자 제거
-        setUsers(users.filter((user) => user.userId !== userId));
-
-        // 성공 메시지 표시
-        alert("회원이 성공적으로 삭제되었습니다.");
-      } catch (err) {
-        console.error("회원 삭제 오류:", err);
-
-        if (err.response) {
-          alert(
-            `회원 삭제에 실패했습니다: ${
-              err.response.data.message || "알 수 없는 오류"
-            }`
-          );
-        } else {
-          alert("회원 삭제에 실패했습니다. 네트워크 연결을 확인해주세요.");
-        }
+  // 사용자 삭제 확인
+  const confirmDelete = async () => {
+    try {
+      // 토큰 가져오기
+      const token = localStorage.getItem("auth-token");
+      if (!token) {
+        throw new Error("인증 토큰이 없습니다. 다시 로그인해주세요.");
       }
+
+      await axios.delete(`${API_BASE_URL}/api/users/${userToDelete}`, {
+        headers: {
+          Authorization: `${token}`,
+        },
+      });
+
+      // UI에서 사용자 제거
+      setUsers(users.filter((user) => user.userId !== userToDelete));
+
+      // 성공 메시지 표시
+      alert("회원이 성공적으로 삭제되었습니다.");
+      
+      // 모달 닫기
+      setModalOpen(false);
+      setUserToDelete(null);
+    } catch (err) {
+      console.error("회원 삭제 오류:", err);
+
+      if (err.response) {
+        alert(
+          `회원 삭제에 실패했습니다: ${
+            err.response.data.message || "알 수 없는 오류"
+          }`
+        );
+      } else {
+        alert("회원 삭제에 실패했습니다. 네트워크 연결을 확인해주세요.");
+      }
+      
+      // 모달 닫기
+      setModalOpen(false);
+      setUserToDelete(null);
     }
+  };
+
+  // 모달 취소
+  const cancelDelete = () => {
+    setModalOpen(false);
+    setUserToDelete(null);
   };
 
   // 사용자 추가 버튼 핸들러
@@ -334,7 +357,7 @@ const UserManagementPage = () => {
                   <td>
                     <button
                       className="delete-button"
-                      onClick={() => handleDeleteUser(user.userId)}
+                      onClick={() => openDeleteModal(user.userId)}
                       disabled={user.role === "ROLE_ADMIN"} // 관리자는 삭제 불가
                     >
                       삭제하기
@@ -365,6 +388,15 @@ const UserManagementPage = () => {
           추가
         </button>
       </div>
+      
+      {/* 삭제 확인 모달 */}
+      <ConfirmModal
+        isOpen={modalOpen}
+        title="회원 삭제"
+        message="정말로 이 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };
