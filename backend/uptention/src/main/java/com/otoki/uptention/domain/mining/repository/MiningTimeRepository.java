@@ -25,12 +25,12 @@ public interface MiningTimeRepository extends JpaRepository<MiningTime, Integer>
 	@Modifying(clearAutomatically = true)
 	@Query(value = "UPDATE `user` u " +
 		"JOIN ( " +
-		"    SELECT user_id, ROUND(SUM(TIMESTAMPDIFF(MINUTE, start_time, end_time)) / 10) AS additional_points " +
+		"    SELECT user_id, ROUND(SUM(TIMESTAMPDIFF(MINUTE, start_time, end_time))) AS additional_points " +
 		"    FROM mining_time " +
 		"    WHERE start_time > DATE_SUB(:inspectionTime, INTERVAL 1 DAY) " +
 		"    GROUP BY user_id " +
 		") m ON u.id = m.user_id " +
-		"SET u.point = u.point + LEAST(m.additional_points, 8)", nativeQuery = true)
+		"SET u.point = u.point + LEAST(m.additional_points, 480)", nativeQuery = true)
 	int updateUserPoints(@Param("inspectionTime") LocalDateTime specifiedTime);
 
 
