@@ -23,9 +23,20 @@ const UserCreatePage = () => {
   const [isCheckingEmpNum, setIsCheckingEmpNum] = useState(false);
   const [isIdAvailable, setIsIdAvailable] = useState(false);
   const [isEmpNumAvailable, setIsEmpNumAvailable] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // 모달 관련 상태
   const [modalOpen, setModalOpen] = useState(false);
+
+  // 비밀번호 표시/숨김 토글 함수
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
 
   // 폼 필드 상태 변경 시 에러 메시지 초기화
   const handleChange = (e) => {
@@ -343,18 +354,18 @@ const UserCreatePage = () => {
 
   const handleCancel = () => {
     // 폼에 데이터가 입력되었는지 확인
-    const hasInput = 
-      formData.name.trim() !== '' || 
-      formData.employeeNumber.trim() !== '' || 
-      formData.username.trim() !== '' || 
-      formData.password.trim() !== '' || 
-      formData.confirmPassword.trim() !== '';
-    
+    const hasInput =
+      formData.name.trim() !== "" ||
+      formData.employeeNumber.trim() !== "" ||
+      formData.username.trim() !== "" ||
+      formData.password.trim() !== "" ||
+      formData.confirmPassword.trim() !== "";
+
     // 입력된 내용이 있으면 확인 창 표시, 없으면 바로 이동
     if (!hasInput) {
-      navigate('/admin/users');
-    } else if (window.confirm('작성 중인 내용이 있습니다. 취소하시겠습니까?')) {
-      navigate('/admin/users');
+      navigate("/admin/users");
+    } else if (window.confirm("작성 중인 내용이 있습니다. 취소하시겠습니까?")) {
+      navigate("/admin/users");
     }
   };
 
@@ -480,17 +491,26 @@ const UserCreatePage = () => {
                 </td>
                 <td className="input-cell">
                   <div className="input-wrapper">
-                    <input
-                      type="text"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      className={`form-input ${
-                        errors.password ? "has-error" : ""
-                      }`}
-                      placeholder="비밀번호 입력 (8~15자, 영문/숫자 필수)"
-                      maxLength="15"
-                    />
+                    <div className="password-input-container">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className={`form-input ${
+                          errors.password ? "has-error" : ""
+                        }`}
+                        placeholder="비밀번호 입력 (8~15자, 영문/숫자 필수)"
+                        maxLength="15"
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle-button"
+                        onClick={togglePasswordVisibility}
+                      >
+                        {showPassword ? "숨기기" : "보기"}
+                      </button>
+                    </div>
                     <div className="password-message-container">
                       <div className="password-hint">
                         사용 가능한 특수문자: ! @ # $ % ^ & *
@@ -511,17 +531,26 @@ const UserCreatePage = () => {
                 </td>
                 <td className="input-cell">
                   <div className="input-wrapper">
-                    <input
-                      type="text"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      className={`form-input ${
-                        errors.confirmPassword ? "has-error" : ""
-                      }`}
-                      placeholder="비밀번호 다시 입력"
-                      maxLength="15"
-                    />
+                    <div className="password-input-container">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className={`form-input ${
+                          errors.confirmPassword ? "has-error" : ""
+                        }`}
+                        placeholder="비밀번호 다시 입력"
+                        maxLength="15"
+                      />
+                      <button
+                        type="button"
+                        className="password-toggle-button"
+                        onClick={toggleConfirmPasswordVisibility}
+                      >
+                        {showConfirmPassword ? "숨기기" : "보기"}
+                      </button>
+                    </div>
                     {errors.confirmPassword && (
                       <div className="error-hint">{errors.confirmPassword}</div>
                     )}
