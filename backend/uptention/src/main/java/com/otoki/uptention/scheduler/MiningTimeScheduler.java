@@ -2,7 +2,6 @@ package com.otoki.uptention.scheduler;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.mining.service.MiningTimeAppService;
 import com.otoki.uptention.global.lock.DistributedLockManager;
@@ -21,7 +20,6 @@ public class MiningTimeScheduler {
 	private final MiningTimeAppService miningTimeAppService;
 	private final DistributedLockManager lockManager;
 
-	@Transactional
 	@Scheduled(cron = "00 30 23 * * *", zone = "Asia/Seoul")
 	public void updateNullEndTime() {
 		lockManager.executeWithLock(UPDATE_MINING_LOCK, 30, 1800, () -> {
@@ -31,7 +29,6 @@ public class MiningTimeScheduler {
 		});
 	}
 
-	@Transactional
 	@Scheduled(cron = "00 45 23 * * SUN", zone = "Asia/Seoul")
 	public void sendNft() {
 		lockManager.executeWithLock(SEND_NFT_LOCK, 30, 3600, () -> {
