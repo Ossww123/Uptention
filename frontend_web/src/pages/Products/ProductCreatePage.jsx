@@ -426,14 +426,7 @@ const ProductCreatePage = () => {
         {/* 폼 전체 에러 메시지 */}
         {errors.form && <div className="form-error-message">{errors.form}</div>}
 
-        {/* 이미지 관련 에러 메시지 */}
-        {(errors.imageSize || errors.imageType || errors.imageFormat) && (
-          <div className="form-error-message">
-            {errors.imageSize && <p>{errors.imageSize}</p>}
-            {errors.imageType && <p>{errors.imageType}</p>}
-            {errors.imageFormat && <p>{errors.imageFormat}</p>}
-          </div>
-        )}
+        
 
         <div className="sub-title">상품 정보</div>
 
@@ -598,6 +591,14 @@ const ProductCreatePage = () => {
 
           <div className="sub-title">상품 이미지</div>
 
+                    {/* 이미지 관련 에러 메시지 */}
+        {(errors.imageSize || errors.imageType || errors.imageFormat) && (
+          <div className="form-error-message">
+            {errors.imageSize && <p>{errors.imageSize}</p>}
+            {errors.imageType && <p>{errors.imageType}</p>}
+            {errors.imageFormat && <p>{errors.imageFormat}</p>}
+          </div>
+        )}
           <table className="form-table">
             <tbody>
               <tr>
