@@ -236,7 +236,7 @@ const NFTScreen = ({ navigation }) => {
       </ScrollView>
 
       <NFTDetailBottomSheet
-        isVisible={isBottomSheetVisible}
+        visible={isBottomSheetVisible}
         onClose={handleCloseBottomSheet}
         nft={selectedNft}
       />

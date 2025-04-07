@@ -61,8 +61,9 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
 
           if (response.status === 200) {
             console.log('지갑 연결 성공:', response.data);
-            // onWalletConnected 콜백 호출
+            // onWalletConnected 콜백만 호출
             onWalletConnected();
+            navigation.replace('MainApp');
           }
         } catch (error) {
           console.error('지갑 연결 API 오류:', error);
@@ -81,7 +82,7 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
     };
 
     connectWallet();
-  }, [publicKey, userId, authToken, onWalletConnected]);
+  }, [publicKey, userId, authToken, onWalletConnected, navigation]);
 
   const handleConnect = async () => {
     try {
@@ -144,7 +145,10 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
 
         <TouchableOpacity
           style={styles.skipButton}
-          onPress={() => navigation.navigate('MainApp')}
+          onPress={() => {
+            console.log('건너뛰기 버튼 클릭됨');
+            navigation.replace('MainApp');
+          }}
         >
           <Text style={styles.skipButtonText}>건너뛰기</Text>
         </TouchableOpacity>

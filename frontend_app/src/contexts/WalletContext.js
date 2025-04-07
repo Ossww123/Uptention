@@ -36,7 +36,7 @@ const YOUR_TOKEN_MINT = new PublicKey('5ymZGsCFkfSzZN6AbwMWU2v4A4c5yeqmGj1vSpRWg
 const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
 
 // AsyncStorage 키 상수 추가
-// const WALLET_STORAGE_KEY = '@wallet_info';
+const WALLET_STORAGE_KEY = '@wallet_info';
 
 export const WalletProvider = ({ children }) => {
   const [tokenBalance, setTokenBalance] = useState(null);
@@ -128,7 +128,7 @@ export const WalletProvider = ({ children }) => {
 
       await Linking.openURL(url);
       // 저장된 지갑 정보 삭제
-      // await clearWalletInfo();
+      await clearWalletInfo();
     } catch (error) {
       console.error('Disconnect error:', error);
       throw error;
@@ -256,111 +256,144 @@ export const WalletProvider = ({ children }) => {
   };
 
   // 지갑 정보 저장 함수
-  // const saveWalletInfo = async (walletInfo) => {
-  //   try {
-  //     await AsyncStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(walletInfo));
-  //   } catch (error) {
-  //     console.error('지갑 정보 저장 오류:', error);
-  //   }
-  // };
+  const saveWalletInfo = async (walletInfo) => {
+    try {
+      // sharedSecret를 base58로 인코딩하여 저장
+      const encodedSecret = bs58.encode(walletInfo.sharedSecret);
+      const walletData = {
+        publicKey: walletInfo.publicKey,
+        sharedSecret: encodedSecret,
+        session: walletInfo.session,
+        dappPublicKey: bs58.encode(dappKeyPair.publicKey),
+        dappSecretKey: bs58.encode(dappKeyPair.secretKey)
+      };
+      await AsyncStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(walletData));
+      console.log('지갑 정보 저장 완료');
+    } catch (error) {
+      console.error('지갑 정보 저장 오류:', error);
+    }
+  };
 
   // 지갑 정보 로드 함수
-  // const loadWalletInfo = async () => {
-  //   try {
-  //     const savedInfo = await AsyncStorage.getItem(WALLET_STORAGE_KEY);
-  //     if (savedInfo) {
-  //       const walletInfo = JSON.parse(savedInfo);
-  //       setPublicKey(walletInfo.publicKey);
-  //       setSharedSecret(walletInfo.sharedSecret);
-  //       setSession(walletInfo.session);
-  //       if (walletInfo.publicKey) {
-  //         fetchBalances(walletInfo.publicKey);
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('지갑 정보 로드 오류:', error);
-  //   }
-  // };
+  const loadWalletInfo = async () => {
+    try {
+      const savedInfo = await AsyncStorage.getItem(WALLET_STORAGE_KEY);
+      if (savedInfo) {
+        const walletData = JSON.parse(savedInfo);
+
+        // base58로 인코딩된 값들을 다시 Uint8Array로 변환
+        const sharedSecret = bs58.decode(walletData.sharedSecret);
+        const dappPublicKey = bs58.decode(walletData.dappPublicKey);
+        const dappSecretKey = bs58.decode(walletData.dappSecretKey);
+
+        setPublicKey(walletData.publicKey);
+        setSharedSecret(sharedSecret);
+        setSession(walletData.session);
+        
+        // dappKeyPair 재설정
+        Object.assign(dappKeyPair, {
+          publicKey: dappPublicKey,
+          secretKey: dappSecretKey
+        });
+
+        if (walletData.publicKey) {
+          fetchBalances(walletData.publicKey);
+        }
+        
+        console.log('지갑 정보 로드 완료');
+      }
+    } catch (error) {
+      console.error('지갑 정보 로드 오류:', error);
+      await clearWalletInfo();
+    }
+  };
 
   // 지갑 정보 삭제 함수
-  // const clearWalletInfo = async () => {
-  //   try {
-  //     await AsyncStorage.removeItem(WALLET_STORAGE_KEY);
-  //   } catch (error) {
-  //     console.error('지갑 정보 삭제 오류:', error);
-  //   }
-  // };
+  const clearWalletInfo = async () => {
+    try {
+      await AsyncStorage.removeItem(WALLET_STORAGE_KEY);
+      console.log('지갑 정보 삭제 완료');
+    } catch (error) {
+      console.error('지갑 정보 삭제 오류:', error);
+    }
+  };
 
   // 앱 시작 시 저장된 지갑 정보 로드
-  // useEffect(() => {
-  //   loadWalletInfo();
-  // }, []);
+  useEffect(() => {
+    loadWalletInfo();
+  }, []);
 
   // deepLink 처리 useEffect 수정
   useEffect(() => {
     if (!deepLink) return;
 
-    try {
-      const [urlWithoutParams, queryString] = deepLink.split('?');
-      const isConnectPath = urlWithoutParams.includes('onConnect');
-      const isDisconnectPath = urlWithoutParams.includes('onDisconnect');
-      const params = new URLSearchParams(queryString);
+    const processDeepLink = async () => {
+      try {
+        const [urlWithoutParams, queryString] = deepLink.split('?');
+        const isConnectPath = urlWithoutParams.includes('onConnect');
+        const isDisconnectPath = urlWithoutParams.includes('onDisconnect');
+        const params = new URLSearchParams(queryString);
 
-      if (params.get("errorCode")) {
-        console.error('Connection error:', params.get("errorMessage"));
-        return;
-      }
-
-      if (isConnectPath) {
-        const phantom_encryption_public_key = params.get("phantom_encryption_public_key");
-        const data = params.get("data");
-        const nonce = params.get("nonce");
-
-        console.log('phantom_encryption_public_key:', phantom_encryption_public_key);
-        console.log('data 존재:', !!data);
-        console.log('nonce 존재:', !!nonce);
-
-        if (!phantom_encryption_public_key || !data || !nonce) {
+        if (params.get("errorCode")) {
+          console.error('Connection error:', params.get("errorMessage"));
           return;
         }
 
-        const sharedSecretDapp = nacl.box.before(
-          bs58.decode(phantom_encryption_public_key),
-          dappKeyPair.secretKey
-        );
+        if (isConnectPath) {
+          const phantom_encryption_public_key = params.get("phantom_encryption_public_key");
+          const data = params.get("data");
+          const nonce = params.get("nonce");
 
-        const connectData = decryptPayload(
-          data,
-          nonce,
-          sharedSecretDapp
-        );
+          console.log('phantom_encryption_public_key:', phantom_encryption_public_key);
+          console.log('data 존재:', !!data);
+          console.log('nonce 존재:', !!nonce);
 
-        setSharedSecret(sharedSecretDapp);
-        setSession(connectData.session);
-        setPublicKey(connectData.public_key);
-        
-        // 지갑 연결 정보 저장
-        // saveWalletInfo({
-        //   publicKey: connectData.public_key,
-        //   sharedSecret: sharedSecretDapp,
-        //   session: connectData.session
-        // });
-        
-        fetchBalances(connectData.public_key);
+          if (!phantom_encryption_public_key || !data || !nonce) {
+            return;
+          }
+
+          const sharedSecretDapp = nacl.box.before(
+            bs58.decode(phantom_encryption_public_key),
+            dappKeyPair.secretKey
+          );
+
+          const connectData = decryptPayload(
+            data,
+            nonce,
+            sharedSecretDapp
+          );
+
+          setSharedSecret(sharedSecretDapp);
+          setSession(connectData.session);
+          setPublicKey(connectData.public_key);
+          
+          // 지갑 연결 정보 저장
+          await saveWalletInfo({
+            publicKey: connectData.public_key,
+            sharedSecret: sharedSecretDapp,
+            session: connectData.session
+          });
+          
+          fetchBalances(connectData.public_key);
+        }
+
+        if (isDisconnectPath) {
+          // 모든 상태 초기화
+          setPublicKey(null);
+          setSharedSecret(null);
+          setSession(null);
+          setSolBalance(null);
+          setTokenBalance(null);
+          // 저장된 지갑 정보 삭제
+          await clearWalletInfo();
+          console.log('지갑 연결 해제 및 정보 초기화 완료');
+        }
+      } catch (error) {
+        console.error('Error processing deeplink:', error);
       }
+    };
 
-      if (isDisconnectPath) {
-        setPublicKey(null);
-        setSharedSecret(null);
-        setSession(null);
-        setSolBalance(null);
-        setTokenBalance(null);
-        // 저장된 지갑 정보 삭제
-        // clearWalletInfo();
-      }
-    } catch (error) {
-      console.error('Error processing deeplink:', error);
-    }
+    processDeepLink();
   }, [deepLink, decryptPayload, dappKeyPair.secretKey]);
 
   useEffect(() => {
