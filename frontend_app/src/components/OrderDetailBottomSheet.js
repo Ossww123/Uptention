@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
+import { useAuth } from '../contexts/AuthContext';
 
 const { height } = Dimensions.get('window');
 
@@ -21,6 +22,7 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
   const [orderDetail, setOrderDetail] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { authToken } = useAuth();
 
   const fetchOrderDetail = async () => {
     try {
@@ -34,7 +36,12 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
           prevOrderDetail.orderId !== orderId || 
           prevOrderDetail.orderItemId !== orderItemId) {
         const response = await axios.get(
-          `${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`
+          `${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${authToken}`
+            }
+          }
         );
         // 응답 데이터에 ID 정보 추가
         const enrichedData = {
