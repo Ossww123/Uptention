@@ -218,14 +218,19 @@ const ProductDetailScreen = ({ route, navigation }) => {
             );
             setCurrentImageIndex(slideIndex);
           }}
-          renderItem={({ item }) => (
-            <Image 
-              source={{ uri: item }} 
-              style={styles.productImage}
-              resizeMode="contain"
-              fadeDuration={0} // 이미지 페이드 효과 제거
-            />
-          )}
+          renderItem={({ item }) => {
+            // 기본 URL에 width와 height 파라미터 추가
+            const optimizedImageUrl = `${item}?w=${Math.round(width)}&h=${Math.round(width)}&t=cover&f=webp`;
+            
+            return (
+              <Image 
+                source={{ uri: optimizedImageUrl }} 
+                style={styles.productImage}
+                resizeMode="contain"
+                fadeDuration={0}
+              />
+            );
+          }}
           keyExtractor={(item, index) => `image-${index}`}
         />
         
