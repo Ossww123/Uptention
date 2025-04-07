@@ -290,17 +290,56 @@ const ProductManagementPage = () => {
         </div>
         
         <div className="search-section">
-          <form onSubmit={handleSearch} className="search-form">
-            <input
-              type="text"
-              placeholder="상품명 검색"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            <button type="submit" className="search-button">검색</button>
-          </form>
-        </div>
+  {/* 카테고리와 정렬 옵션을 search-section으로 이동 */}
+  <div className="filter-controls">
+    {/* 카테고리 필터 */}
+    <div className="filter-group">
+      <label htmlFor="category-select">카테고리:</label>
+      <select 
+        id="category-select"
+        value={selectedCategory || "all"}
+        onChange={handleCategoryChange}
+        className="filter-select"
+      >
+        <option value="all">전체</option>
+        {categories.map(category => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+      </select>
+    </div>
+    
+    {/* 정렬 옵션 */}
+    <div className="filter-group">
+      <label htmlFor="sort-select">정렬:</label>
+      <select 
+        id="sort-select"
+        value={sortOption}
+        onChange={handleSortChange}
+        className="filter-select"
+      >
+        {sortOptions.map(option => (
+          <option key={option.id} value={option.id}>
+            {option.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+
+  {/* 검색 폼은 그대로 유지 */}
+  <form onSubmit={handleSearch} className="search-form">
+    <input
+      type="text"
+      placeholder="상품명 검색"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="search-input"
+    />
+    <button type="submit" className="search-button">검색</button>
+  </form>
+</div>
         
         {/* 테이블 컨테이너에 ref 추가 및 클래스 추가 */}
         <div 
@@ -362,44 +401,6 @@ const ProductManagementPage = () => {
               <p>상품을 불러오는 중...</p>
             </div>
           )}
-        </div>
-  
-        {/* 필터 컨테이너를 테이블 아래로 이동 */}
-        <div className="filters-container-bottom">
-          {/* 카테고리 필터 */}
-          <div className="filter-group">
-            <label htmlFor="category-select">카테고리:</label>
-            <select 
-              id="category-select"
-              value={selectedCategory || "all"}
-              onChange={handleCategoryChange}
-              className="filter-select"
-            >
-              <option value="all">전체</option>
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* 정렬 옵션 */}
-          <div className="filter-group">
-            <label htmlFor="sort-select">정렬:</label>
-            <select 
-              id="sort-select"
-              value={sortOption}
-              onChange={handleSortChange}
-              className="filter-select"
-            >
-              {sortOptions.map(option => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </div>
   
