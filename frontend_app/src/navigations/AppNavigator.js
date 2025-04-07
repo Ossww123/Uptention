@@ -51,12 +51,19 @@ const AppNavigator = forwardRef((props, ref) => {
       return "Login";
     }
     
-    if (!hasScreenTimePermission) {
-      return "Permissions";
+    // 권한이 있고 지갑도 있으면 바로 MainApp으로
+    if (hasScreenTimePermission && publicKey) {
+      return "MainApp";
     }
     
-    if (!publicKey) {
+    // 권한은 있지만 지갑이 없으면 WalletConnect로
+    if (hasScreenTimePermission && !publicKey) {
       return "WalletConnect";
+    }
+    
+    // 권한이 없으면 Permissions로
+    if (!hasScreenTimePermission) {
+      return "Permissions";
     }
     
     return "MainApp";
@@ -68,52 +75,6 @@ const AppNavigator = forwardRef((props, ref) => {
     }
   }));
 
-  // 권한 체크 함수 수정
-  const checkPermissions = async () => {
-    try {
-      setIsCheckingPermissions(true);
-      
-      // 메소드 이름을 ScreenTime.js에 맞게 수정
-      const screenTimeEnabled = await ScreenTime.hasUsageStatsPermission();
-      const overlayEnabled = await ScreenTime.hasOverlayPermission();
-      const accessibilityEnabled = await ScreenTime.hasAccessibilityPermission();
-
-      console.log('권한 체크 결과:', {
-        screenTime: screenTimeEnabled,
-        overlay: overlayEnabled,
-        accessibility: accessibilityEnabled
-      });
-
-      const allPermissionsGranted = screenTimeEnabled && overlayEnabled && accessibilityEnabled;
-      setHasScreenTimePermission(allPermissionsGranted);
-      
-      // 인증은 되었지만 권한이 없는 경우, Permissions 화면으로 강제 이동
-      if (isAuthenticated && !allPermissionsGranted) {
-        console.log('권한 없음, Permissions 화면으로 강제 이동 설정');
-        setForceScreen('Permissions');
-        
-        // navigationRef가 있으면 직접 이동 시도
-        if (navigationRef.current) {
-          setTimeout(() => {
-            try {
-              navigationRef.current.reset({
-                index: 0,
-                routes: [{ name: 'Permissions' }],
-              });
-            } catch (e) {
-              console.error('네비게이션 리셋 오류:', e);
-            }
-          }, 500);
-        }
-      }
-    } catch (error) {
-      console.error('권한 체크 중 오류:', error);
-      setHasScreenTimePermission(false);
-    } finally {
-      setIsCheckingPermissions(false);
-    }
-  };
-
   // 인증 상태 변경 처리
   const handleLoginSuccess = async () => {
     console.log('로그인 성공 핸들러 호출됨');
@@ -122,26 +83,37 @@ const AppNavigator = forwardRef((props, ref) => {
       await refreshAuth();
       console.log('인증 상태 갱신됨, 권한 체크 시작');
       
-      // 로그인 성공 직후 권한 화면으로 강제 이동
-      setForceScreen('Permissions');
+      // 권한 체크
+      const screenTimeEnabled = await ScreenTime.hasUsageStatsPermission();
+      const overlayEnabled = await ScreenTime.hasOverlayPermission();
+      const accessibilityEnabled = await ScreenTime.hasAccessibilityPermission();
       
-      // 약간의 지연 후 권한 체크 실행 (상태 업데이트 보장)
-      setTimeout(async () => {
-        await checkPermissions();
-        
-        // navigationRef가 있으면 직접 이동 시도
-        if (navigationRef.current) {
-          try {
-            console.log('로그인 성공 후 Permissions 화면으로 직접 이동 시도');
-            navigationRef.current.reset({
-              index: 0,
-              routes: [{ name: 'Permissions' }],
-            });
-          } catch (e) {
-            console.error('네비게이션 리셋 오류:', e);
-          }
-        }
-      }, 500);
+      const allPermissionsGranted = screenTimeEnabled && overlayEnabled && accessibilityEnabled;
+      setHasScreenTimePermission(allPermissionsGranted);
+
+      // 권한 상태에 따라 한 번에 적절한 화면으로 이동
+      if (!allPermissionsGranted) {
+        // 권한이 없는 경우에만 Permissions 화면으로
+        setForceScreen('Permissions');
+        navigationRef.current?.reset({
+          index: 0,
+          routes: [{ name: 'Permissions' }],
+        });
+      } else if (!publicKey) {
+        // 권한은 있지만 지갑이 없는 경우 WalletConnect로
+        setForceScreen('WalletConnect');
+        navigationRef.current?.reset({
+          index: 0,
+          routes: [{ name: 'WalletConnect' }],
+        });
+      } else {
+        // 모든 조건이 충족되면 MainApp으로
+        setForceScreen('MainApp');
+        navigationRef.current?.reset({
+          index: 0,
+          routes: [{ name: 'MainApp' }],
+        });
+      }
     } catch (error) {
       console.error('로그인 성공 처리 오류:', error);
     }
@@ -152,25 +124,21 @@ const AppNavigator = forwardRef((props, ref) => {
     console.log('권한 상태 변경:', permissions);
     if (permissions.screenTime && permissions.overlay && permissions.accessibility) {
       console.log('모든 권한이 허용됨');
-      await checkPermissions(); // 권한 변경 후 실제 권한 상태 확인
+      setHasScreenTimePermission(true);
       
-      // 모든 권한이 허용되고 지갑이 없다면 WalletConnect 화면으로 강제 이동
+      // 권한이 허용되면 지갑 상태에 따라 한 번에 이동
       if (!publicKey) {
         setForceScreen('WalletConnect');
-        
-        // navigationRef가 있으면 직접 이동 시도
-        if (navigationRef.current) {
-          setTimeout(() => {
-            try {
-              navigationRef.current.reset({
-                index: 0,
-                routes: [{ name: 'WalletConnect' }],
-              });
-            } catch (e) {
-              console.error('네비게이션 리셋 오류:', e);
-            }
-          }, 500);
-        }
+        navigationRef.current?.reset({
+          index: 0,
+          routes: [{ name: 'WalletConnect' }],
+        });
+      } else {
+        setForceScreen('MainApp');
+        navigationRef.current?.reset({
+          index: 0,
+          routes: [{ name: 'MainApp' }],
+        });
       }
     }
   };
@@ -178,8 +146,8 @@ const AppNavigator = forwardRef((props, ref) => {
   // 컴포넌트 마운트 시와 인증 상태 변경 시 권한 체크
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('인증 상태 변경 감지, 권한 체크 실행');
-      checkPermissions();
+      console.log('인증 상태 변경 감지');
+      // 불필요한 checkPermissions 호출 제거
     }
   }, [isAuthenticated]);
 
@@ -197,7 +165,11 @@ const AppNavigator = forwardRef((props, ref) => {
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator 
         initialRouteName={getInitialRoute()}
-        screenOptions={{ headerShown: false }}
+        screenOptions={{ 
+          headerShown: false,
+          animation: 'fade',
+          animationDuration: 200
+        }}
       >
         <Stack.Screen 
           name="Splash" 

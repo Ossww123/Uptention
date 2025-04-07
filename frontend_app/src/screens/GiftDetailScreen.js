@@ -53,7 +53,6 @@ const GiftDetailScreen = ({ route, navigation }) => {
   };
 
   const handleDeliverySuccess = () => {
-    // ProfileStackNavigator의 GiftBox로 이동
     navigation.reset({
       index: 0,
       routes: [
@@ -64,8 +63,11 @@ const GiftDetailScreen = ({ route, navigation }) => {
               {
                 name: 'Profile',
                 state: {
-                  routes: [{ name: 'GiftBox' }],
-                  index: 0,
+                  routes: [
+                    { name: 'ProfileMain' },
+                    { name: 'GiftBox' }
+                  ],
+                  index: 1,
                 }
               }
             ],
