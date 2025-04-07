@@ -385,6 +385,18 @@ const DailyView = () => {
           {`${selectedDayData.month}월 ${selectedDayData.day}일 ${selectedDayData.dayOfWeek}요일`}
         </Text>
         <View style={styles.chartContent}>
+          {/* 8시간 표시선 */}
+          <View style={styles.hourLine}>
+            <Text style={styles.hourLineLabel}>8시간</Text>
+            <View style={styles.hourLineDivider} />
+          </View>
+          
+          {/* 4시간 표시선 */}
+          <View style={[styles.hourLine, styles.hourLineHalf]}>
+            <Text style={styles.hourLineLabel}>4시간</Text>
+            <View style={styles.hourLineDivider} />
+          </View>
+  
           {/* 수평 스크롤 가능한 그래프 */}
           <FlatList
             ref={graphScrollRef}
@@ -408,7 +420,6 @@ const DailyView = () => {
               });
             }}
           />
-          <Text style={styles.minutesLabel}>8시간</Text>
           <View style={styles.chartDivider} />
           <Text style={styles.updateTimeText}>
             {new Date().toLocaleTimeString([], {
@@ -552,6 +563,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     paddingRight: 10,
     paddingBottom: 30, // 하단 패딩 추가
+    zIndex: 5, // 차트 바가 시간 표시선 위에 표시되도록 zIndex 추가
   },
   barContainer: {
     alignItems: "center",
@@ -594,13 +606,6 @@ const styles = StyleSheet.create({
   selectedBarText: {
     color: "#FFA54F",
     fontWeight: "500",
-  },
-  minutesLabel: {
-    position: "absolute",
-    top: 5, // 상단에서 거리 조정
-    right: 10,
-    fontSize: 12,
-    color: "#888",
   },
   chartDivider: {
     height: 1,
@@ -755,6 +760,30 @@ const styles = StyleSheet.create({
   },
   rightAlignedText: {
     textAlign: 'right',
+  },
+  // 새로 추가할 스타일
+  hourLine: {
+    position: "absolute",
+    top: 0, // 상단에서 거리 조정
+    width: "100%",
+    zIndex: 1,
+  },
+  hourLineHalf: {
+    top: 45, // 4시간 표시선은 8시간과 0시간 사이에 위치 (중간 지점)
+  },
+  hourLineLabel: {
+    position: "absolute",
+    right: 10,
+    fontSize: 12,
+    color: "#888",
+    zIndex: 2,
+  },
+  hourLineDivider: {
+    height: 1,
+    backgroundColor: "#DDD",
+    marginTop: 17, // 라벨 아래 위치하도록 조정
+    width: "100%",
+    opacity: 0.7,
   },
 });
 
