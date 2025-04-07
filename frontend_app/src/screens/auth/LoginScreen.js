@@ -1,4 +1,4 @@
-// src/screens/auth/LoginScreen.js - 수정 버전
+// src/screens/auth/LoginScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,

@@ -1,3 +1,4 @@
+// src/screens/auth/WalletConnectScreen.js
 import React from "react";
 import {
   View,

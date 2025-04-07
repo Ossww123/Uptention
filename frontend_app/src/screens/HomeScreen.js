@@ -21,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken } from '../services/AuthService';
 import messaging from '@react-native-firebase/messaging';
 import { useFocusEffect} from '@react-navigation/native';
+import { get } from '../services/api';
 
 const { AppBlockerModule } = NativeModules;
 

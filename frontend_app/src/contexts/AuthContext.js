@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.js - 수정 버전
+// src/contexts/AuthContext.js 수정
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   getToken, 
@@ -9,7 +9,7 @@ import {
   parseJwt
 } from '../services/AuthService';
 import FCMUtils from '../utils/FCMUtils';
-import { post } from '../services/api'; // api 함수 추가
+import { post, get } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -19,15 +19,37 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [userId, setUserId] = useState(null);
-  const [authToken, setAuthToken] = useState(null); // 토큰 상태 추가
+  const [authToken, setAuthToken] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [userRole, setUserRole] = useState(null); // 사용자 역할 추가
+  const [isWalletConnected, setIsWalletConnected] = useState(false); // 지갑 연동 상태 추가
+  
   // FCM 초기화
   useEffect(() => {
-    // 앱 시작 시 FCM 초기화
     FCMUtils.initializeFCM();
   }, []);
+  
+  // 사용자 정보 가져오기
+  const fetchUserInfo = async (id) => {
+    try {
+      const { data, ok } = await get(`/users/${id}`);
+      
+      if (ok && data) {
+        // 역할 정보 저장
+        setUserRole(data.role);
+        
+        // 지갑 연동 상태 설정 (ROLE_MEMBER인 경우 지갑 연동된 상태)
+        setIsWalletConnected(data.role === 'ROLE_MEMBER');
+        
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('사용자 정보 가져오기 오류:', error);
+      return null;
+    }
+  };
 
   // 사용자 데이터 로드 함수
   const loadUserData = async () => {
@@ -46,11 +68,19 @@ export const AuthProvider = ({ children }) => {
             await saveUserId(extractedUserId);
             setUserId(extractedUserId);
             console.log('토큰에서 추출한 userId:', extractedUserId);
+            
+            // 사용자 정보 가져오기
+            await fetchUserInfo(extractedUserId);
+            
             return { userId: extractedUserId, token };
           }
         } else {
           setUserId(storedUserId);
           console.log('저장된 userId:', storedUserId);
+          
+          // 사용자 정보 가져오기
+          await fetchUserInfo(storedUserId);
+          
           return { userId: storedUserId, token };
         }
       }
@@ -83,6 +113,10 @@ export const AuthProvider = ({ children }) => {
         setUserId(id);
         setAuthToken(token);
         setIsAuthenticated(true);
+        
+        // 사용자 정보 가져오기
+        await fetchUserInfo(id);
+        
         return true;
       }
       
@@ -93,32 +127,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 로그아웃 함수 - 수정
+  // 로그아웃 함수
   const logout = async () => {
     try {
-      // 서버에 로그아웃 요청 먼저 수행
       const token = await getToken();
       if (token) {
         try {
-          // /logout API 호출 - FCM 토큰은 api.js에서 자동으로 헤더에 추가됨
           await post('/logout', {});
         } catch (error) {
           console.error('로그아웃 API 호출 오류:', error);
-          // API 호출이 실패해도 로컬 로그아웃은 진행
         }
       }
 
-      // 로컬 데이터 삭제
       await clearAuthData();
       
-      // FCM 토큰 삭제 (선택적)
-      // 주석 해제 시 기기에서 푸시 알림을 받지 않게 됨
-      // await FCMUtils.clearFCMToken();
-      
-      // 상태 초기화
       setUserId(null);
       setAuthToken(null);
       setIsAuthenticated(false);
+      setUserRole(null);
+      setIsWalletConnected(false);
       return true;
     } catch (error) {
       console.error('로그아웃 처리 오류:', error);
@@ -136,7 +163,6 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         setAuthToken(token);
         
-        // 저장된 userId가 있으면 사용, 없으면 토큰에서 추출
         let id = storedUserId;
         if (!id) {
           const payload = parseJwt(token);
@@ -149,12 +175,22 @@ export const AuthProvider = ({ children }) => {
         if (id) {
           setUserId(id);
           setIsAuthenticated(true);
+          
+          // 사용자 정보 가져오기
+          await fetchUserInfo(id);
         }
       }
     } catch (error) {
       console.error('인증 초기화 오류:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 지갑 연동 상태 업데이트
+  const updateWalletStatus = async () => {
+    if (userId) {
+      await fetchUserInfo(userId);
     }
   };
 
@@ -171,10 +207,13 @@ export const AuthProvider = ({ children }) => {
     setUserId,
     isAuthenticated,
     isLoading,
+    userRole,
+    isWalletConnected,
     login,
     logout,
     refreshAuth: initializeAuth,
-    loadUserData
+    loadUserData,
+    updateWalletStatus
   };
 
   return (

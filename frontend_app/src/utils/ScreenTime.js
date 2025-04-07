@@ -30,6 +30,36 @@ class ScreenTime {
  static openUsageSettings() {
    ScreenTimeModule.openUsageSettings();
  }
+ 
+ /**
+  * 오버레이 권한이 있는지 확인
+  * @returns {Promise<boolean>} 권한 여부
+  */
+ static hasOverlayPermission() {
+   return ScreenTimeModule.hasOverlayPermission();
+ }
+
+ /**
+  * 오버레이 권한 설정 화면 열기
+  */
+ static openOverlaySettings() {
+   ScreenTimeModule.openOverlaySettings();
+ }
+
+ /**
+  * 접근성 권한이 있는지 확인
+  * @returns {Promise<boolean>} 권한 여부
+  */
+ static hasAccessibilityPermission() {
+   return ScreenTimeModule.hasAccessibilityPermission();
+ }
+
+ /**
+  * 접근성 권한 설정 화면 열기
+  */
+ static openAccessibilitySettings() {
+   ScreenTimeModule.openAccessibilitySettings();
+ }
 
  /**
   * 패키지명으로 앱 이름 가져오기
