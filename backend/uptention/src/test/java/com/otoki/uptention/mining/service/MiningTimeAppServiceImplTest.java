@@ -14,11 +14,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.otoki.uptention.application.mining.service.MiningTimeAppServiceImpl;
 import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.domain.mining.service.MiningTimeService;
 import com.otoki.uptention.domain.user.entity.User;
+import com.otoki.uptention.domain.user.service.UserService;
+import com.otoki.uptention.solana.service.ExpressApiService;
 
 @ExtendWith(MockitoExtension.class)
 class MiningTimeAppServiceImplTest {
@@ -26,12 +30,21 @@ class MiningTimeAppServiceImplTest {
 	@Mock
 	private MiningTimeService miningTimeService;
 
+	@Mock
+	private UserService userService;
+
+	@Mock
+	private ExpressApiService expressApiService;
+
+	@Mock
+	private ObjectMapper objectMapper;
+
 	@InjectMocks
 	private MiningTimeAppServiceImpl miningTimeAppService;
 
 	@Test
 	@DisplayName("지정 된 시간에 end_time이 비어 있는 mining time은 지정 시간으로 업데이트된다")
-	void bulkUpdateMiningTime() {
+	void bulkUpdateMiningTime() throws Exception {
 		Integer userId = 1;
 		User user = createUser(userId);
 
@@ -47,8 +60,9 @@ class MiningTimeAppServiceImplTest {
 		when(miningTimeService.updateEndTimeForUnfinishedMining(expectedEndTime))
 			.thenReturn(miningTimes.size());
 
-		// Act: bulkUpdateMiningTime() 호출
-		int updatedCount = miningTimeAppService.bulkUpdateMiningTime();
+		// private 메서드를 직접 호출하기 위해 리플렉션 사용
+		int updatedCount = (int)ReflectionTestUtils.invokeMethod(miningTimeAppService,
+			"bulkUpdateMiningTime");
 
 		// Assert: Repository의 bulk update 메서드가 한 번 호출되었는지와 반환값이 예상과 일치하는지 검증
 		verify(miningTimeService, times(1)).updateEndTimeForUnfinishedMining(expectedEndTime);
@@ -70,5 +84,4 @@ class MiningTimeAppServiceImplTest {
 			.endTime(endTime)
 			.build();
 	}
-
 }
