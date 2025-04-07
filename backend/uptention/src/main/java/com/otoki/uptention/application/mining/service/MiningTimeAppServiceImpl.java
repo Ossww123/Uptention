@@ -1,5 +1,6 @@
 package com.otoki.uptention.application.mining.service;
 
+import java.text.DecimalFormat;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.Instant;
@@ -230,7 +231,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 					return;
 				}
 
-				int pointsToSend = user.getPoint() / 10;
+				double pointsToSend = user.getPoint() / 10.0;
 				if (pointsToSend <= 0) {
 					log.warn("전송할 포인트 없음");
 					return;
@@ -238,9 +239,10 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 				String name = user.getName();
 				String walletAddress = user.getWallet();
-				String amountStr = Integer.toString(pointsToSend);
-
+				DecimalFormat df = new DecimalFormat("0.0");
+				String amountStr = df.format(pointsToSend);
 				log.debug("토큰 전송 시도 사용자명={}", name);
+
 				try {
 					// --- RestTemplate 동기 호출 ---
 					String response = expressApiService.transferToken(
