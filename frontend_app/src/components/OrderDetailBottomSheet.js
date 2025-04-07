@@ -22,84 +22,81 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
   const [orderDetail, setOrderDetail] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
   const { authToken } = useAuth();
+
+  // 데이터 로딩 상태 추적을 위한 ref
+  const loadingRef = useRef({
+    isLoading: false,
+    requestId: 0
+  });
 
   const fetchOrderDetail = async () => {
     try {
       setLoading(true);
+      setIsLayoutReady(false); // 데이터 로딩 시작 시 레이아웃 준비 상태 초기화
       setError(null);
-      // 이전 주문 상세 데이터를 임시 저장
-      const prevOrderDetail = orderDetail;
       
-      // 새로운 주문 ID나 아이템 ID로 요청할 때만 데이터를 새로 불러옴
-      if (!prevOrderDetail || 
-          prevOrderDetail.orderId !== orderId || 
-          prevOrderDetail.orderItemId !== orderItemId) {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
+      const currentRequestId = loadingRef.current.requestId + 1;
+      loadingRef.current = {
+        isLoading: true,
+        requestId: currentRequestId
+      };
+      
+      console.log('[OrderDetail] 데이터 로딩 시작:', {
+        requestId: currentRequestId,
+        orderId,
+        orderItemId
+      });
+
+      const response = await axios.get(
+        `${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
           }
-        );
-        // 응답 데이터에 ID 정보 추가
+        }
+      );
+
+      if (loadingRef.current.requestId === currentRequestId) {
         const enrichedData = {
           ...response.data,
           orderId,
           orderItemId
         };
+        
         setOrderDetail(enrichedData);
+        
+        // 데이터 설정 후 즉시 로딩 상태 해제
+        setLoading(false);
+        loadingRef.current.isLoading = false;
+        
+        // 데이터 설정 후 레이아웃 준비 상태 업데이트
+        requestAnimationFrame(() => {
+          setIsLayoutReady(true);
+        });
       }
     } catch (err) {
+      console.error('[OrderDetail] 데이터 로딩 실패:', err);
       setError('주문 상세 정보를 불러오는데 실패했습니다.');
-      console.error('Error fetching order detail:', err);
-    } finally {
       setLoading(false);
+      loadingRef.current.isLoading = false;
     }
   };
 
-  // visible 상태가 false로 변경될 때 로딩 상태만 초기화
-  useEffect(() => {
-    if (!visible) {
-      const timer = setTimeout(() => {
-        setLoading(false);
-        setError(null);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [visible]);
-
-  useEffect(() => {
-    if (visible && orderId && orderItemId) {
-      // 현재 보여지는 데이터가 요청하는 데이터와 다를 때만 로딩 표시
-      if (!orderDetail || 
-          orderDetail.orderId !== orderId || 
-          orderDetail.orderItemId !== orderItemId) {
-        setLoading(true);
-      }
-      fetchOrderDetail();
-      
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        bounciness: 0,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: height,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [visible, orderId, orderItemId]);
-
-  if (!orderId || !orderItemId) return null;
-
   const renderContent = () => {
-    if (loading) {
+    // 로딩 상태 체크 로직 수정
+    if (loading || (!isLayoutReady && !error)) {
+      console.log('[OrderDetail] 로딩 상태 렌더링:', {
+        loading,
+        isLayoutReady,
+        hasError: !!error,
+        hasData: !!orderDetail
+      });
       return (
-        <View style={styles.centerContainer}>
+        <View style={[styles.centerContainer, { minHeight: 200 }]}>
           <ActivityIndicator size="large" color="#FF8C00" />
         </View>
       );
@@ -116,13 +113,14 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
     if (!orderDetail) {
       return (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#FF8C00" />
+          <Text style={styles.errorText}>데이터를 불러올 수 없습니다.</Text>
         </View>
       );
     }
 
+    // 실제 컨텐츠 렌더링
     return (
-      <>
+      <View style={styles.contentContainer}>
         <View style={styles.detailRow}>
           <Text style={styles.label}>주문 상태</Text>
           <Text style={styles.value}>{orderDetail.status}</Text>
@@ -177,9 +175,48 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
             </Text>
           </View>
         )}
-      </>
+      </View>
     );
   };
+
+  // visible 상태 변경 시 초기화 로직 수정
+  useEffect(() => {
+    if (!visible) {
+      const timer = setTimeout(() => {
+        setOrderDetail(null);
+        setLoading(false);
+        setError(null);
+        setIsLayoutReady(false);
+        loadingRef.current = {
+          isLoading: false,
+          requestId: 0
+        };
+        console.log('[OrderDetail] 상태 초기화 완료');
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  // 데이터 로딩 트리거 로직 수정
+  useEffect(() => {
+    if (visible && orderId && orderItemId) {
+      fetchOrderDetail();
+      
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        bounciness: 0,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: height,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible, orderId, orderItemId]);
+
+  if (!orderId || !orderItemId) return null;
 
   return (
     <Modal
@@ -187,6 +224,7 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
       transparent
       animationType="none"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
@@ -198,10 +236,18 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
                   transform: [{ translateY: slideAnim }],
                 },
               ]}
+              onLayout={() => {
+                console.log('[OrderDetail] 바텀시트 레이아웃 계산 완료');
+              }}
             >
               <View style={styles.handle} />
-              
-              <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+              <ScrollView 
+                style={styles.scrollView} 
+                showsVerticalScrollIndicator={false}
+                onLayout={() => {
+                  console.log('[OrderDetail] 스크롤뷰 레이아웃 계산 완료');
+                }}
+              >
                 <View style={styles.content}>
                   <Text style={styles.title}>주문 상세</Text>
                   {renderContent()}
@@ -263,11 +309,13 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: '500',
     textAlign: 'right',
+    minWidth: 100,
   },
   itemName: {
     flex: 1,
     marginLeft: 16,
     textAlign: 'right',
+    minWidth: 150,
   },
   amount: {
     color: '#FF8C00',
@@ -301,6 +349,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000000',
     lineHeight: 20,
+  },
+  contentContainer: {
+    minHeight: 200,
+    paddingBottom: 20,
   },
 });
 

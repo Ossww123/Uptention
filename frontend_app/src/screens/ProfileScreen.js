@@ -70,6 +70,11 @@ const ProfileScreen = ({ navigation }) => {
             text: "로그아웃",
             onPress: async () => {
               try {
+                // 지갑 연결 해제 처리
+                if (publicKey) {
+                  await handleDisconnectWallet();
+                }
+
                 // 서버에 로그아웃 요청 (FCM 토큰은 api.js에서 자동으로 헤더에 추가)
                 await post('/logout', {});
                 console.log('로그아웃 API 요청 성공');

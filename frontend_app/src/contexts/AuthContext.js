@@ -22,8 +22,6 @@ export const AuthProvider = ({ children }) => {
   const [authToken, setAuthToken] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [userRole, setUserRole] = useState(null); // 사용자 역할 추가
-  const [isWalletConnected, setIsWalletConnected] = useState(false); // 지갑 연동 상태 추가
   
   // FCM 초기화
   useEffect(() => {
@@ -34,14 +32,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUserInfo = async (id) => {
     try {
       const { data, ok } = await get(`/users/${id}`);
-      
       if (ok && data) {
-        // 역할 정보 저장
-        setUserRole(data.role);
-        
-        // 지갑 연동 상태 설정 (ROLE_MEMBER인 경우 지갑 연동된 상태)
-        setIsWalletConnected(data.role === 'ROLE_MEMBER');
-        
         return data;
       }
       return null;
@@ -144,8 +135,6 @@ export const AuthProvider = ({ children }) => {
       setUserId(null);
       setAuthToken(null);
       setIsAuthenticated(false);
-      setUserRole(null);
-      setIsWalletConnected(false);
       return true;
     } catch (error) {
       console.error('로그아웃 처리 오류:', error);
@@ -187,13 +176,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 지갑 연동 상태 업데이트
-  const updateWalletStatus = async () => {
-    if (userId) {
-      await fetchUserInfo(userId);
-    }
-  };
-
   // 컴포넌트 마운트 시 인증 상태 초기화
   useEffect(() => {
     initializeAuth();
@@ -207,13 +189,10 @@ export const AuthProvider = ({ children }) => {
     setUserId,
     isAuthenticated,
     isLoading,
-    userRole,
-    isWalletConnected,
     login,
     logout,
     refreshAuth: initializeAuth,
-    loadUserData,
-    updateWalletStatus
+    loadUserData
   };
 
   return (
