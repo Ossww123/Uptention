@@ -284,43 +284,6 @@ const ProductManagementPage = () => {
 
   return (
     <div className="product-management">
-      <div className="filters-container">
-        {/* 카테고리 필터 */}
-        <div className="filter-group">
-          <label htmlFor="category-select">카테고리:</label>
-          <select 
-            id="category-select"
-            value={selectedCategory || "all"}
-            onChange={handleCategoryChange}
-            className="filter-select"
-          >
-            <option value="all">전체</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        {/* 정렬 옵션 */}
-        <div className="filter-group">
-          <label htmlFor="sort-select">정렬:</label>
-          <select 
-            id="sort-select"
-            value={sortOption}
-            onChange={handleSortChange}
-            className="filter-select"
-          >
-            {sortOptions.map(option => (
-              <option key={option.id} value={option.id}>
-                {option.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      
       <div className="content-card">
         <div className="product-management-header">
           <h1 className="page-title">상품 관리</h1>
@@ -337,13 +300,6 @@ const ProductManagementPage = () => {
             />
             <button type="submit" className="search-button">검색</button>
           </form>
-          
-          <button 
-            className="add-button"
-            onClick={handleAddProduct}
-          >
-            추가
-          </button>
         </div>
         
         {/* 테이블 컨테이너에 ref 추가 및 클래스 추가 */}
@@ -373,7 +329,6 @@ const ProductManagementPage = () => {
                 products.map((product, index) => (
                   <tr 
                     key={product.itemId}
-                    // 마지막 요소에 ref 추가
                     ref={index === products.length - 1 ? lastProductElementRef : null}
                   >
                     <td>{product.itemId}</td>
@@ -408,6 +363,54 @@ const ProductManagementPage = () => {
             </div>
           )}
         </div>
+  
+        {/* 필터 컨테이너를 테이블 아래로 이동 */}
+        <div className="filters-container-bottom">
+          {/* 카테고리 필터 */}
+          <div className="filter-group">
+            <label htmlFor="category-select">카테고리:</label>
+            <select 
+              id="category-select"
+              value={selectedCategory || "all"}
+              onChange={handleCategoryChange}
+              className="filter-select"
+            >
+              <option value="all">전체</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* 정렬 옵션 */}
+          <div className="filter-group">
+            <label htmlFor="sort-select">정렬:</label>
+            <select 
+              id="sort-select"
+              value={sortOption}
+              onChange={handleSortChange}
+              className="filter-select"
+            >
+              {sortOptions.map(option => (
+                <option key={option.id} value={option.id}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+  
+      {/* 추가 버튼을 컨테이너 밖으로 이동 */}
+      <div className="action-buttons">
+        <button 
+          className="add-button"
+          onClick={handleAddProduct}
+        >
+          추가
+        </button>
       </div>
     </div>
   );
