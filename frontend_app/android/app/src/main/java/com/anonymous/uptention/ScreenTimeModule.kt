@@ -318,6 +318,9 @@ fun getWeeklyScreenTime(daysToFetch: Int = 14, promise: Promise) {
         // 일별 데이터를 저장할 맵
         val dailyScreenTime = Arguments.createMap()
         
+        // 앱별 사용 시간을 저장할 맵
+        val appUsageMap = HashMap<String, Long>()
+        
         // 설정된 일수만큼 데이터 계산
         for (day in 0 until daysToFetch) {
             calendar.timeInMillis = endTime
@@ -339,6 +342,9 @@ fun getWeeklyScreenTime(daysToFetch: Int = 14, promise: Promise) {
             val eventMap = HashMap<String, Long>()
             var dayTotalTime = 0L
 
+            // 일별 앱 사용 시간을 저장할 임시 맵
+            val dayAppUsageMap = HashMap<String, Long>()
+
             while (usageEvents.hasNextEvent()) {
                 usageEvents.getNextEvent(event)
                 val packageName = event.packageName
@@ -352,6 +358,9 @@ fun getWeeklyScreenTime(daysToFetch: Int = 14, promise: Promise) {
                         
                         if (timeUsed > 0) {
                             dayTotalTime += timeUsed
+                            // 앱별 사용 시간 추적
+                            dayAppUsageMap[packageName] = 
+                                (dayAppUsageMap[packageName] ?: 0) + timeUsed
                         }
                         eventMap.remove(packageName)
                     }
@@ -362,12 +371,24 @@ fun getWeeklyScreenTime(daysToFetch: Int = 14, promise: Promise) {
             val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val dateString = dateFormat.format(Date(dayStart))
             dailyScreenTime.putDouble(dateString, (dayTotalTime / 60000).toDouble())
+
+            // 앱별 사용 시간 누적
+            dayAppUsageMap.forEach { (packageName, time) ->
+                appUsageMap[packageName] = (appUsageMap[packageName] ?: 0) + time
+            }
+        }
+
+        // 앱 사용 시간을 분 단위로 변환하여 맵 생성
+        val appUsage = Arguments.createMap()
+        appUsageMap.forEach { (packageName, time) ->
+            appUsage.putDouble(packageName, (time / 60000).toDouble())
         }
 
         val result = Arguments.createMap()
         result.putBoolean("hasPermission", true)
         result.putMap("dailyScreenTime", dailyScreenTime)
-        result.putInt("daysToFetch", daysToFetch) // 요청한 일수 정보 추가
+        result.putMap("appUsage", appUsage)
+        result.putInt("daysToFetch", daysToFetch)
         
         promise.resolve(result)
     } catch (e: Exception) {

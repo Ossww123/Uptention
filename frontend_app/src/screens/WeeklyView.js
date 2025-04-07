@@ -5,18 +5,14 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
-  Dimensions,
   ActivityIndicator,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import ScreenTime from "../utils/ScreenTime";
 import { get } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import MiningGraph from "../components/MiningGraph"; // 공통 그래프 컴포넌트
 import MiningStats from "../components/MiningStats"; // 공통 통계 컴포넌트
-
-const { width } = Dimensions.get("window");
+import AppUsageStats from "../components/AppUsageStats"; // 공통 앱 사용 컴포넌트
 
 const WeeklyView = () => {
   const { userId } = useAuth(); // AuthContext에서 userId 가져오기
@@ -181,9 +177,11 @@ const WeeklyView = () => {
         setWeeklyComparison(randomComparisonValue);
 
         // 앱 사용 정보 가져오기
-        const dailyData = await ScreenTime.getDailyScreenTime();
-        if (dailyData.hasPermission) {
-          setAppUsage(dailyData.appUsageWithNames || {});
+        const weeklyScreenTimeData = await ScreenTime.getWeeklyScreenTime();
+        console.log('WeeklyView - ScreenTime Data:', weeklyScreenTimeData);
+        if (weeklyScreenTimeData.hasPermission) {
+          console.log('WeeklyView - App Usage Data:', weeklyScreenTimeData.appUsageWithNames);
+          setAppUsage(weeklyScreenTimeData.appUsageWithNames || {});
         }
       } else {
         console.error("주간 채굴 시간 데이터 가져오기 실패:", response.data);
@@ -257,6 +255,26 @@ const WeeklyView = () => {
     // 임의의 전주 대비 증감값 설정
     const randomComparisonValue = Math.floor(Math.random() * 600) - 300; // -300 ~ 300 사이의 임의 값 (분 단위)
     setWeeklyComparison(randomComparisonValue);
+    
+    // 더미 앱 사용 데이터 설정
+    const dummyAppUsage = {
+      "com.google.android.youtube": {
+        appName: "YouTube",
+        usageTime: 185,
+        iconBase64: null
+      },
+      "com.kakao.talk": {
+        appName: "카카오톡",
+        usageTime: 120,
+        iconBase64: null
+      },
+      "com.instagram.android": {
+        appName: "Instagram",
+        usageTime: 90,
+        iconBase64: null
+      }
+    };
+    setAppUsage(dummyAppUsage);
   };
 
   // 이전/다음 주 이동 처리
@@ -291,41 +309,6 @@ const WeeklyView = () => {
 
       setCurrentWeekRange(newStartDate, newEndDate);
       setCurrentWeekIndex(currentWeekIndex - 1);
-    }
-  };
-
-  // 앱 사용 시간 바 너비 계산
-  const getBarWidth = (usageTime) => {
-    // 앱 중 최대 사용 시간 찾기
-    const maxTime = Math.max(
-      ...Object.values(appUsage).map((data) => data.usageTime)
-    );
-
-    // 최대 너비의 70%까지만 사용
-    const maxWidth = width * 0.7;
-    return (usageTime / maxTime) * maxWidth;
-  };
-
-  // 앱 아이콘 렌더링 함수
-  const renderAppIcon = (data) => {
-    if (data.iconBase64) {
-      // 앱 아이콘이 있는 경우 Base64로 인코딩된 이미지 렌더링
-      return (
-        <Image
-          source={{ uri: `data:image/png;base64,${data.iconBase64}` }}
-          style={styles.appIcon}
-          resizeMode="contain"
-        />
-      );
-    } else {
-      // 앱 아이콘이 없는 경우 기본 이미지 사용
-      return (
-        <Image
-          source={require("../../assets/chrome-icon.png")}
-          style={styles.appIcon}
-          resizeMode="contain"
-        />
-      );
     }
   };
 
@@ -364,47 +347,16 @@ const WeeklyView = () => {
         }}
       />
 
-      {/* 가장 많이 사용한 앱 */}
-      <View style={styles.appUsageContainer}>
-        <View style={styles.appUsageHeader}>
-          <Text style={styles.appUsageTitle}>최근 7일간 많이 사용한 앱</Text>
-        </View>
+      {/* 앱 사용 통계 로그 */}
+    {console.log('WeeklyView Render - App Usage:', appUsage)}
+    {console.log('WeeklyView Render - Has Data:', Object.keys(appUsage).length > 0)}
+    
 
-        {Object.entries(appUsage)
-          .sort(([, dataA], [, dataB]) => dataB.usageTime - dataA.usageTime)
-          .slice(0, 3) // 상위 3개 앱만 표시
-          .map(([packageName, data], index) => {
-            const hours = Math.floor(data.usageTime / 60);
-            const minutes = Math.floor(data.usageTime % 60);
-
-            return (
-              <View key={packageName} style={styles.appItem}>
-                <View style={styles.appInfoContainer}>
-                  {renderAppIcon(data)}
-                  <Text style={styles.appName}>{data.appName}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#888" />
-                </View>
-                <Text style={styles.appTimeText}>
-                  {hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`}
-                </Text>
-                <View style={styles.appUsageBarContainer}>
-                  <View
-                    style={[
-                      styles.appUsageBar,
-                      { width: getBarWidth(data.usageTime) },
-                    ]}
-                  />
-                  <View style={styles.appUsageBarBg} />
-                </View>
-              </View>
-            );
-          })}
-        <View style={styles.timezoneContainer}>
-          <Text style={styles.timezoneText}>
-            채굴 시간은 한국 시간(UTC+9) 기준입니다.
-          </Text>
-        </View>
-      </View>
+      {/* 공통 앱 사용 통계 컴포넌트 사용 */}
+      <AppUsageStats
+        viewType="weekly"
+        appUsage={appUsage}
+      />
     </ScrollView>
   );
 };
@@ -423,163 +375,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-  },
-  miningTimeContainer: {
-    margin: 20,
-    marginTop: 10,
-    backgroundColor: "#F8F8F8",
-    borderRadius: 15,
-    padding: 15,
-  },
-  miningTimeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  miningTimeTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  increasedTimeText: {
-    fontSize: 14,
-    color: "#333",
-    marginBottom: 15,
-  },
-  miningTimeContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  pickaxeContainer: {
-    marginRight: 15,
-  },
-  pickaxeIcon: {
-    width: 40,
-    height: 40,
-    transform: [{ rotate: "-30deg" }],
-  },
-  miningTimeInfo: {
-    flex: 1,
-  },
-  miningTimeValue: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  weeklyText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  hoursText: {
-    fontSize: 30,
-    fontWeight: "bold",
-  },
-  minutesText: {
-    fontSize: 30,
-    fontWeight: "bold",
-  },
-  dailyMiningContainer: {
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    padding: 15,
-    marginTop: 10,
-  },
-  dailyMiningTitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  dailyMiningList: {
-    marginTop: 5,
-  },
-  dailyMiningItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  dailyMiningDate: {
-    fontSize: 14,
-    color: "#333",
-  },
-  dailyMiningTime: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#333",
-  },
-  appUsageContainer: {
-    margin: 20,
-    marginTop: 0,
-    marginBottom: 100, // 하단 여백
-  },
-  appUsageHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  appUsageTitle: {
-    fontSize: 18,
-    fontWeight: "500",
-  },
-  appItem: {
-    marginBottom: 20,
-  },
-  appInfoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  appIcon: {
-    width: 30,
-    height: 30,
-    marginRight: 10,
-  },
-  appName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  appTimeText: {
-    fontSize: 14,
-    marginBottom: 5,
-    alignSelf: "flex-end",
-  },
-  appUsageBarContainer: {
-    height: 12,
-    borderRadius: 6,
-    overflow: "hidden",
-    position: "relative",
-  },
-  appUsageBar: {
-    height: "100%",
-    backgroundColor: "#FF8C00",
-    borderRadius: 6,
-    position: "absolute",
-    left: 0,
-    top: 0,
-  },
-  appUsageBarBg: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    height: "100%",
-    left: 0,
-    backgroundColor: "#EEEEEE",
-    borderRadius: 6,
-    zIndex: -1,
-  },
-  timezoneContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-    alignItems: "center",
-  },
-  timezoneText: {
-    fontSize: 12,
-    color: "#888",
-    textAlign: "center",
   },
 });
 
