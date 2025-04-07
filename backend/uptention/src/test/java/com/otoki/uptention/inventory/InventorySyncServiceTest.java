@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,7 @@ import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.inventory.service.InventorySyncServiceImpl;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
+import com.otoki.uptention.global.lock.DistributedLockManager;
 
 @ExtendWith(MockitoExtension.class)
 public class InventorySyncServiceTest {
@@ -30,8 +32,21 @@ public class InventorySyncServiceTest {
 	@Mock
 	private InventoryService inventoryService;
 
+	@Mock(lenient = true)  // lenient 모드 설정
+	private DistributedLockManager lockManager;
+
 	@InjectMocks
 	private InventorySyncServiceImpl inventorySyncService;
+
+	@BeforeEach
+	void setUp() {
+		// 중요: executeWithLock 호출 시 람다가 실행되도록 설정
+		doAnswer(invocation -> {
+			Runnable runnable = invocation.getArgument(3);
+			runnable.run();  // 이 부분이 중요함
+			return null;
+		}).when(lockManager).executeWithLock(anyString(), anyInt(), anyInt(), any(Runnable.class));
+	}
 
 	@Test
 	@DisplayName("애플리케이션 시작 시 모든 아이템의 재고를 Redis에 초기화한다")

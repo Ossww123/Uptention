@@ -6,11 +6,11 @@ import java.util.Map;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.domain.inventory.dto.InventoryDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.service.ItemService;
+import com.otoki.uptention.global.lock.DistributedLockManager;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class InventorySyncServiceImpl implements InventorySyncService {
+	private static final String INVENTORY_SYNC_LOCK = "scheduler:inventory:sync";
+
 	private final InventoryService inventoryService;
 	private final ItemService itemService;
+	private final DistributedLockManager lockManager;
 
 	@Override
 	public void initializeAllInventories() {
@@ -35,25 +38,26 @@ public class InventorySyncServiceImpl implements InventorySyncService {
 		inventoryService.initializeInventories(itemQuantities);
 	}
 
-	@Transactional
 	@Scheduled(fixedDelay = 300000)
 	@Override
 	public void syncAllInventoriesToDatabase() {
-		log.info("Starting synchronization of all inventories to database");
+		lockManager.executeWithLock(INVENTORY_SYNC_LOCK, 10, 240, () -> {
+			log.info("Starting synchronization of all inventories to database");
 
-		List<Item> allItems = itemService.getAllItems();
-		for (Item item : allItems) {
-			try {
-				InventoryDto inventory = inventoryService.getInventory(item.getId());
-				item.updateQuantity(inventory.getQuantity());
+			List<Item> allItems = itemService.getAllItems();
+			for (Item item : allItems) {
+				try {
+					InventoryDto inventory = inventoryService.getInventory(item.getId());
+					item.updateQuantity(inventory.getQuantity());
 
-				log.info("Synchronized inventory for item {} to database: quantity={}", item.getId(),
-					inventory.getQuantity());
-			} catch (Exception e) {
-				log.error("Error synchronizing inventory for item {}", item.getId(), e);
+					log.info("Synchronized inventory for item {} to database: quantity={}", item.getId(),
+						inventory.getQuantity());
+				} catch (Exception e) {
+					log.error("Error synchronizing inventory for item {}", item.getId(), e);
+				}
 			}
-		}
 
-		log.info("Completed synchronization of all inventories to database");
+			log.info("Completed synchronization of all inventories to database");
+		});
 	}
 }

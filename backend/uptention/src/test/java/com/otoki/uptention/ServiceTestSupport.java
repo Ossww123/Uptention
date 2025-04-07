@@ -10,6 +10,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
+import com.otoki.uptention.global.lock.DistributedLockManager;
 import com.otoki.uptention.solana.service.SolanaRpcService;
 import com.otoki.uptention.solana.service.SolanaTransactionMonitorService;
 
@@ -42,4 +43,7 @@ public abstract class ServiceTestSupport {
 
 	@MockBean
 	private RedisConnectionFactory redisConnectionFactory;
+
+	@MockBean
+	protected DistributedLockManager lockManager;
 }

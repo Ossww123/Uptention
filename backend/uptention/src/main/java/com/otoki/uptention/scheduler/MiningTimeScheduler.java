@@ -1,13 +1,10 @@
 package com.otoki.uptention.scheduler;
 
-import java.util.List;
-
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.mining.service.MiningTimeAppService;
-import com.otoki.uptention.application.mining.service.MiningTimeAppServiceImpl;
+import com.otoki.uptention.global.lock.DistributedLockManager;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,25 +14,27 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MiningTimeScheduler {
 
-	private final MiningTimeAppService miningTimeAppService;
+	private static final String UPDATE_MINING_LOCK = "scheduler:mining:update";
+	private static final String SEND_NFT_LOCK = "scheduler:mining:nft";
 
-	@Transactional
+	private final MiningTimeAppService miningTimeAppService;
+	private final DistributedLockManager lockManager;
+
 	@Scheduled(cron = "00 30 23 * * *", zone = "Asia/Seoul")
 	public void updateNullEndTime() {
-		log.info("Updating null end time for scheduler");
-		miningTimeAppService.bulkUpdateMiningTime();
-		log.info("Updating user point for scheduler");
-		miningTimeAppService.bulkUpdateUserPoints();
-		log.info("Send Token for scheduler");
-		miningTimeAppService.bulkSendToken();
+		lockManager.executeWithLock(UPDATE_MINING_LOCK, 30, 1800, () -> {
+			log.info("Acquired lock for daily mining processes");
+			// 서비스 레이어의 트랜잭션 메서드 호출
+			miningTimeAppService.executeDailyMiningProcesses();
+		});
 	}
 
-	@Transactional
 	@Scheduled(cron = "00 45 23 * * SUN", zone = "Asia/Seoul")
 	public void sendNft() {
-		log.info("Create NFT for scheduler");
-		List<MiningTimeAppServiceImpl.MintAddressResponse> mintAddressResponses = miningTimeAppService.bulkCreateNFT();
-		log.info("Send NFT for scheduler");
-		miningTimeAppService.bulkSendNFT(mintAddressResponses);
+		lockManager.executeWithLock(SEND_NFT_LOCK, 30, 3600, () -> {
+			log.info("Acquired lock for weekly NFT processes");
+			// 서비스 레이어의 트랜잭션 메서드 호출
+			miningTimeAppService.executeWeeklyNftProcesses();
+		});
 	}
 }

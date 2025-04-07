@@ -56,9 +56,11 @@ class ItemAppServiceTest extends ServiceTestSupport {
 		assertThat(response.getCategoryName()).isEqualTo("테스트 카테고리");
 		assertThat(response.getQuantity()).isEqualTo(50);
 		assertThat(response.getImages()).hasSize(2);
+
+		// 클라우드프론트 도메인이 포함된 URL 형태로 기대값 수정
 		assertThat(response.getImages()).containsExactly(
-			"http://example.com/image1.jpg",
-			"http://example.com/image2.jpg"
+			"https://ddnwvg9t77g5o.cloudfront.net/http://example.com/image1.jpg",
+			"https://ddnwvg9t77g5o.cloudfront.net/http://example.com/image2.jpg"
 		);
 	}
 
