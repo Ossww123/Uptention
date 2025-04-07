@@ -10,12 +10,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.item.entity.Item;
+import com.otoki.uptention.domain.notification.entity.Notification;
+import com.otoki.uptention.domain.notification.service.NotificationService;
+import com.otoki.uptention.domain.order.entity.Gift;
 import com.otoki.uptention.domain.order.entity.Order;
 import com.otoki.uptention.domain.order.enums.OrderStatus;
+import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.domain.orderitem.entity.OrderItem;
 import com.otoki.uptention.domain.orderitem.service.OrderItemService;
+import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.global.service.FcmSendService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +37,9 @@ public class PaymentProcessService {
 	private final OrderService orderService;
 	private final OrderItemService orderItemService;
 	private final InventoryService inventoryService;
+	private final GiftService giftService;
+	private final FcmSendService fcmSendService;
+	private final NotificationService notificationService;
 
 	/**
 	 * 결제 완료 처리
@@ -68,6 +77,9 @@ public class PaymentProcessService {
 
 			// 주문 상태 업데이트
 			order.updateStatus(OrderStatus.PAYMENT_COMPLETED);
+
+			// 선물인 경우 알림 처리
+			processGiftNotificationIfNeeded(order);
 
 			log.info("주문 ID({})에 대한 결제 완료 처리 완료", orderId);
 			return true;
@@ -165,7 +177,6 @@ public class PaymentProcessService {
 			Item item = entry.getKey();
 			Integer quantity = entry.getValue();
 			item.increaseSalesCount(quantity);
-			// 중요: 재고 차감은 Redis가 처리했으므로 MySQL에서 별도로 차감하지 않음
 		}
 	}
 
@@ -181,5 +192,50 @@ public class PaymentProcessService {
 			log.error("{} 처리 중 예상치 못한 오류 발생: {}", processType, orderId, e);
 		}
 		return false;
+	}
+
+	/**
+	 * 선물인 경우 알림 처리
+	 */
+	private void processGiftNotificationIfNeeded(Order order) {
+		try {
+			// 선물인지 확인
+			Gift gift = giftService.findGiftByOrderId(order.getId());
+
+			if (gift != null) {
+				User sender = order.getUser();
+				User receiver = gift.getReceiver();
+
+				log.info("주문 ID({})는 선물입니다. 수신자({})에게 알림을 보냅니다.", order.getId(), receiver.getId());
+
+
+				// 선물 상품명 조회 (선물은 단일 상품만 가능)
+				List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(order.getId());
+				String itemName = "상품";
+				if (!orderItems.isEmpty()) {
+					itemName = orderItems.get(0).getItem().getName();
+				}
+
+				// FCM 알림 전송
+				String title = "선물이 도착했어요!";
+				String body = sender.getName() + "님이 " + itemName + "을(를) 선물로 보냈어요!";
+				fcmSendService.sendNotificationToUser(receiver, title, body);
+
+				// 알림 내역 저장
+				Notification notification = Notification.builder()
+					.user(receiver)
+					.title("선물이 도착했어요!")
+					.message(body)
+					.read(false)
+					.build();
+
+				notificationService.saveNotification(notification);
+
+				log.info("선물 알림이 성공적으로 전송되었습니다. 주문 ID: {}, 수신자: {}", order.getId(), receiver.getId());
+			}
+		} catch (Exception e) {
+			// 알림 전송 실패가 결제 처리 성공에 영향을 주지 않도록 예외 처리
+			log.error("선물 알림 처리 중 오류 발생: 주문 ID: {}, 오류: {}", order.getId(), e.getMessage(), e);
+		}
 	}
 }
