@@ -2,6 +2,13 @@ spring:
   application:
     name: uptention
 
+  # Scheduler Thread 갯수 설정
+  task:
+    scheduling:
+      thread-name-prefix: scheduling-
+      pool:
+        size: 10
+
   # 캐시 설정
   cache:
     type: redis
