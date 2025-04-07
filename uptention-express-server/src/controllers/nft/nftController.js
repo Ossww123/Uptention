@@ -66,13 +66,7 @@ export const createNft = async (req, res) => {
         res.status(201).json({
             success: true,
             message: "NFT가 성공적으로 생성 및 민팅되었습니다!",
-            nft: {
-                mintAddress: nftResult.mintAddress,
-                ownerAta: nftResult.ownerAta,
-                metadataUri: nftResult.metadataUri,
-                imageUri: nftResult.imageUri,
-                metadata: nftResult.metadata,
-            },
+            mintAddress: nftResult.mintAddress,
             transaction: `https://explorer.solana.com/tx/${nftResult.transactionSignature}?cluster=devnet`
         });
 
@@ -128,13 +122,7 @@ export const createNftWithUri = async (req, res) => {
         res.status(201).json({
             success: true,
             message: "NFT가 성공적으로 생성 및 민팅되었습니다 (URI 사용)!",
-            nft: { // 서비스 결과에서 필요한 정보 추출하여 구성
-                mintAddress: nftResult.mintAddress,
-                ownerAta: nftResult.ownerAta,
-                metadataUri: nftResult.metadataUri,
-                imageUri: nftResult.imageUri, // 실제 사용된 이미지 URI
-                metadata: nftResult.metadata, // 최종 생성된 메타데이터
-            },
+            mintAddress: nftResult.mintAddress,
             transaction: `https://explorer.solana.com/tx/${nftResult.transactionSignature}?cluster=devnet`
          });
 
