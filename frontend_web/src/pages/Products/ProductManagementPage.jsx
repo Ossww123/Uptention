@@ -342,66 +342,71 @@ const ProductManagementPage = () => {
 </div>
         
         {/* 테이블 컨테이너에 ref 추가 및 클래스 추가 */}
-        <div 
-          className="products-table-container scrollable-container" 
-          ref={tableContainerRef}
-        >
-          {error && <div className="error-message">{error}</div>}
-          
-          <table className="products-table">
-            <thead>
-              <tr>
-                <th>상품ID</th>
-                <th>상품명</th>
-                <th>브랜드명</th>
-                <th>카테고리</th>
-                <th>가격(WORK)</th>
-                <th>관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.length === 0 && !loading ? (
-                <tr>
-                  <td colSpan="6" className="no-products">상품이 없습니다.</td>
-                </tr>
-              ) : (
-                products.map((product, index) => (
-                  <tr 
-                    key={product.itemId}
-                    ref={index === products.length - 1 ? lastProductElementRef : null}
-                  >
-                    <td>{product.itemId}</td>
-                    <td>{product.name}</td>
-                    <td>{product.brand}</td>
-                    <td>{product.categoryName}</td>
-                    <td>{product.price}</td>
-                    <td className="action-buttons">
-                      <button 
-                        className="edit-button"
-                        onClick={() => handleEditProduct(product.itemId)}
-                      >
-                        수정
-                      </button>
-                      <button 
-                        className="delete-button"
-                        onClick={() => handleDeleteProduct(product.itemId)}
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          
-          {loading && (
-            <div className="loading">
-              <div className="loading-spinner"></div>
-              <p>상품을 불러오는 중...</p>
-            </div>
-          )}
-        </div>
+        {/* 테이블 컨테이너에 ref 추가 및 클래스 추가 */}
+<div 
+  className="products-table-container" 
+  ref={tableContainerRef}
+>
+  {error && <div className="error-message">{error}</div>}
+  
+  <table className="products-table">
+    <thead>
+      <tr>
+        <th>상품ID</th>
+        <th>상품명</th>
+        <th>브랜드명</th>
+        <th>카테고리</th>
+        <th>가격(WORK)</th>
+        <th>재고</th>
+        <th>판매량</th>
+        <th>관리</th>
+      </tr>
+    </thead>
+    <tbody>
+      {products.length === 0 && !loading ? (
+        <tr>
+          <td colSpan="8" className="no-products">상품이 없습니다.</td>
+        </tr>
+      ) : (
+        products.map((product, index) => (
+          <tr 
+            key={product.itemId}
+            ref={index === products.length - 1 ? lastProductElementRef : null}
+          >
+            <td>{product.itemId}</td>
+            <td>{product.name}</td>
+            <td>{product.brand}</td>
+            <td>{product.categoryName}</td>
+            <td>{product.price}</td>
+            <td>{product.quantity}</td>
+            <td>{product.salesCount}</td>
+            <td className="product-table-action-buttons">
+              <button 
+                className="product-table-edit-button"
+                onClick={() => handleEditProduct(product.itemId)}
+              >
+                수정
+              </button>
+              <button 
+                className="product-table-delete-button"
+                onClick={() => handleDeleteProduct(product.itemId)}
+              >
+                삭제
+              </button>
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+  
+  {loading && (
+    <div className="loading">
+      <div className="loading-spinner"></div>
+      <p>상품을 불러오는 중...</p>
+    </div>
+  )}
+</div>
       </div>
   
       {/* 추가 버튼을 컨테이너 밖으로 이동 */}
