@@ -31,7 +31,7 @@ public class MiningTimeScheduler {
 	}
 
 	@Transactional
-	@Scheduled(cron = "00 45 23 * * *", zone = "Asia/Seoul")
+	@Scheduled(cron = "00 45 23 * * SUN", zone = "Asia/Seoul")
 	public void sendNft() {
 		log.info("Create NFT for scheduler");
 		List<MiningTimeAppServiceImpl.MintAddressResponse> mintAddressResponses = miningTimeAppService.bulkCreateNFT();
