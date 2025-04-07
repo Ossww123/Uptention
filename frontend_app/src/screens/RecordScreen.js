@@ -1,5 +1,5 @@
 // RecordScreen.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -8,16 +8,21 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import PagerView from 'react-native-pager-view';
 import ScreenTime from "../utils/ScreenTime";
-import DailyView from "./DailyView"; // 기존 일간 뷰를 별도 컴포넌트로 분리했다고 가정
-import WeeklyView from "./WeeklyView"; // 새로 만든 주간 뷰 컴포넌트
+import DailyView from "./DailyView";
+import WeeklyView from "./WeeklyView";
+
+const { width } = Dimensions.get('window');
 
 const RecordScreen = () => {
   const [loading, setLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
-  const [viewMode, setViewMode] = useState("day"); // 'day' 또는 'week'
+  const [viewMode, setViewMode] = useState(0); // 0: 일간, 1: 주간
+  const pagerRef = useRef(null);
 
   useEffect(() => {
     checkPermission();
@@ -67,6 +72,18 @@ const RecordScreen = () => {
     </View>
   );
 
+  // 탭 전환 핸들러
+  const handleTabChange = (index) => {
+    setViewMode(index);
+    pagerRef.current?.setPage(index);
+  };
+
+  // 페이지 스와이프 이벤트 핸들러
+  const handlePageSelected = (e) => {
+    const position = e.nativeEvent.position;
+    setViewMode(position);
+  };
+
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -83,9 +100,6 @@ const RecordScreen = () => {
       {/* 헤더 */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>채굴 기록</Text>
-        <TouchableOpacity style={styles.helpButton}>
-          <Ionicons name="help-circle-outline" size={24} color="#888" />
-        </TouchableOpacity>
       </View>
       
       {!hasPermission ? (
@@ -97,14 +111,14 @@ const RecordScreen = () => {
             <TouchableOpacity
               style={[
                 styles.tabButton,
-                viewMode === "day" && styles.activeTabButton,
+                viewMode === 0 && styles.activeTabButton,
               ]}
-              onPress={() => setViewMode("day")}
+              onPress={() => handleTabChange(0)}
             >
               <Text
                 style={[
                   styles.tabText,
-                  viewMode === "day" && styles.activeTabText,
+                  viewMode === 0 && styles.activeTabText,
                 ]}
               >
                 Day
@@ -114,14 +128,14 @@ const RecordScreen = () => {
             <TouchableOpacity
               style={[
                 styles.tabButton,
-                viewMode === "week" && styles.activeTabButton,
+                viewMode === 1 && styles.activeTabButton,
               ]}
-              onPress={() => setViewMode("week")}
+              onPress={() => handleTabChange(1)}
             >
               <Text
                 style={[
                   styles.tabText,
-                  viewMode === "week" && styles.activeTabText,
+                  viewMode === 1 && styles.activeTabText,
                 ]}
               >
                 Week
@@ -129,8 +143,23 @@ const RecordScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* 일간/주간 뷰 렌더링 */}
-          {viewMode === "day" ? <DailyView /> : <WeeklyView />}
+          {/* 페이저뷰로 슬라이드 전환 구현 */}
+          <PagerView
+            ref={pagerRef}
+            style={styles.pagerView}
+            initialPage={0}
+            onPageSelected={handlePageSelected}
+          >
+            {/* 일간 뷰 */}
+            <View key="1">
+              <DailyView />
+            </View>
+            
+            {/* 주간 뷰 */}
+            <View key="2">
+              <WeeklyView />
+            </View>
+          </PagerView>
         </>
       )}
     </View>
@@ -183,9 +212,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#000",
   },
-  helpButton: {
-    padding: 5,
-  },
   tabContainer: {
     flexDirection: "row",
     marginHorizontal: 20,
@@ -217,6 +243,9 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: "#FF8C00",
     fontWeight: "500",
+  },
+  pagerView: {
+    flex: 1,
   },
 });
 

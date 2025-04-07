@@ -9,12 +9,12 @@ import {
   Image,
   Dimensions,
   FlatList,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 import ScreenTime from "../utils/ScreenTime";
-import { get } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import { get } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 const { width } = Dimensions.get("window");
 
@@ -23,13 +23,16 @@ const DailyView = () => {
   const [dailyScreenTime, setDailyScreenTime] = useState(0);
   const [appUsage, setAppUsage] = useState({});
   const [loading, setLoading] = useState(true);
-  
+
   // 현재 선택된 날짜 (기본값은 오늘)
   const [selectedDate, setSelectedDate] = useState(new Date());
-  
+
   // 선택된 날짜의 데이터
   const [selectedDayData, setSelectedDayData] = useState(null);
   
+  // 전날 대비 채굴 시간 차이
+  const [miningDifference, setMiningDifference] = useState(0);
+
   // 그래프 스크롤 참조
   const graphScrollRef = useRef(null);
 
@@ -45,69 +48,57 @@ const DailyView = () => {
   const fetchMiningData = async () => {
     try {
       setLoading(true);
-      
+
       // 날짜 범위 계산 (오늘 포함 지난 14일)
-const endDate = new Date();
-const startDate = new Date();
-startDate.setDate(endDate.getDate() - 14);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 14);
 
-// 날짜를 'yyyy-MM-ddThh:mm:ss' 형식으로 변환
-const formatDate = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-};
+      // 날짜를 'yyyy-MM-ddThh:mm:ss' 형식으로 변환
+      const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
 
-// 형식화된 날짜 문자열로 변환
-const startTime = formatDate(startDate);
-const endTime = formatDate(endDate);
-      
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+      };
+
+      // 형식화된 날짜 문자열로 변환
+      const startTime = formatDate(startDate);
+      const endTime = formatDate(endDate);
+
       // API 호출
-      const response = await get(`/users/${userId}/mining-times?startTime=${startTime}&endTime=${endTime}`);
-      
+      const response = await get(
+        `/users/${userId}/mining-times?startTime=${startTime}&endTime=${endTime}`
+      );
+
       if (response.ok) {
         const apiData = response.data;
-        
+
         // 날짜 범위에 대한 전체 데이터 배열 생성 (데이터가 없는 날짜는 0으로 설정)
         const miningDataArray = [];
         const days = ["일", "월", "화", "수", "목", "금", "토"];
-        
+
         for (let i = 14; i >= 0; i--) {
           const date = new Date();
           date.setDate(endDate.getDate() - i);
-          
+
           const day = date.getDate();
           const month = date.getMonth() + 1;
           const dayOfWeek = days[date.getDay()];
-          const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
-          
+          const formattedDate = date.toISOString().split("T")[0]; // YYYY-MM-DD 형식
+
           // API 응답에서 해당 날짜의 데이터 찾기
-          const dayData = apiData.find(item => item.date === formattedDate);
+          const dayData = apiData.find((item) => item.date === formattedDate);
           const totalTime = dayData ? dayData.totalTime : 0; // 데이터가 없으면 0
-          
+
           // 시간과 분 계산
           const hours = Math.floor(totalTime / 60);
           const minutes = totalTime % 60;
-          
-          // 표시용 시작/종료 시간 (실제 값은 서버에서 제공하지 않으므로 임의로 생성)
-          const startHour = 9; // 예: 오전 9시 시작으로 가정
-          const startMinute = 0;
-          
-          // 종료 시간 계산
-          const endTime = new Date();
-          endTime.setHours(startHour);
-          endTime.setMinutes(startMinute);
-          endTime.setHours(endTime.getHours() + hours);
-          endTime.setMinutes(endTime.getMinutes() + minutes);
-          
-          const endHour = endTime.getHours();
-          const endMinute = endTime.getMinutes();
-          
+
           miningDataArray.push({
             id: `${month}-${day}`,
             day: day,
@@ -118,36 +109,65 @@ const endTime = formatDate(endDate);
             miningTime: {
               hours: hours,
               minutes: minutes,
-              startTime: `오전 ${startHour}:${startMinute.toString().padStart(2, '0')}`,
-              endTime: `오${endHour >= 12 ? '후' : '전'} ${endHour > 12 ? endHour - 12 : endHour}:${endMinute.toString().padStart(2, '0')}`
-            }
+              totalMinutes: totalTime
+            },
           });
         }
-        
+
         setMiningData(miningDataArray);
-        
+
         // 오늘 데이터를 기본 선택으로 설정
-        const todayData = miningDataArray.find(item => item.isToday);
+        const todayData = miningDataArray.find((item) => item.isToday);
         setSelectedDayData(todayData);
-      } else {
-        console.error('채굴 시간 데이터 가져오기 실패:', response.data);
         
+        // 오늘과 어제의 채굴 시간 차이 계산
+        if (miningDataArray.length >= 2) {
+          const todayIndex = miningDataArray.findIndex(item => item.isToday);
+          if (todayIndex >= 1) { // 어제 데이터가 있는지 확인
+            const today = miningDataArray[todayIndex].miningTime.totalMinutes;
+            const yesterday = miningDataArray[todayIndex - 1].miningTime.totalMinutes;
+            setMiningDifference(today - yesterday);
+          }
+        }
+      } else {
+        console.error("채굴 시간 데이터 가져오기 실패:", response.data);
+
         // API 오류 시 기본 더미 데이터 생성 (개발 중 테스트용)
         const dummyData = generateDummyMiningData();
         setMiningData(dummyData);
-        
-        const todayData = dummyData.find(item => item.isToday);
+
+        const todayData = dummyData.find((item) => item.isToday);
         setSelectedDayData(todayData);
+        
+        // 더미 데이터로 채굴 시간 차이 계산
+        if (dummyData.length >= 2) {
+          const todayIndex = dummyData.findIndex(item => item.isToday);
+          if (todayIndex >= 1) {
+            const today = dummyData[todayIndex].miningTime.totalMinutes;
+            const yesterday = dummyData[todayIndex - 1].miningTime.totalMinutes;
+            setMiningDifference(today - yesterday);
+          }
+        }
       }
     } catch (error) {
-      console.error('채굴 시간 데이터 가져오기 오류:', error);
-      
+      console.error("채굴 시간 데이터 가져오기 오류:", error);
+
       // 오류 발생 시 기본 더미 데이터 생성
       const dummyData = generateDummyMiningData();
       setMiningData(dummyData);
-      
-      const todayData = dummyData.find(item => item.isToday);
+
+      const todayData = dummyData.find((item) => item.isToday);
       setSelectedDayData(todayData);
+      
+      // 더미 데이터로 채굴 시간 차이 계산
+      if (dummyData.length >= 2) {
+        const todayIndex = dummyData.findIndex(item => item.isToday);
+        if (todayIndex >= 1) {
+          const today = dummyData[todayIndex].miningTime.totalMinutes;
+          const yesterday = dummyData[todayIndex - 1].miningTime.totalMinutes;
+          setMiningDifference(today - yesterday);
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -157,38 +177,24 @@ const endTime = formatDate(endDate);
   const generateDummyMiningData = () => {
     const today = new Date();
     const data = [];
-    
+
     // 14일 전부터 오늘까지의 데이터 생성
     for (let i = 14; i >= 0; i--) {
       const date = new Date();
       date.setDate(today.getDate() - i);
-      
+
       const day = date.getDate();
       const month = date.getMonth() + 1;
       const value = Math.floor(Math.random() * 30) + 5; // 5-35분 사이 랜덤값
-      
+
       const days = ["일", "월", "화", "수", "목", "금", "토"];
       const dayOfWeek = days[date.getDay()];
-      
+
       // 채굴 시간 더미 데이터 (시간, 분)
       const hours = Math.floor(Math.random() * 8) + 1; // 1-8시간
       const minutes = Math.floor(Math.random() * 60); // 0-59분
-      
-      // 시작 시간 (오전 8-10시 사이)
-      const startHour = Math.floor(Math.random() * 3) + 8;
-      const startMinute = Math.floor(Math.random() * 60);
-      
-      // 종료 시간 (시작 시간 + 채굴 시간)
-      const endTime = new Date();
-      endTime.setHours(startHour);
-      endTime.setMinutes(startMinute);
-      endTime.setHours(endTime.getHours() + hours);
-      endTime.setMinutes(endTime.getMinutes() + minutes);
-      
-      // 종료 시간 포맷팅
-      const endHour = endTime.getHours();
-      const endMinute = endTime.getMinutes();
-      
+      const totalMinutes = hours * 60 + minutes;
+
       data.push({
         id: `${month}-${day}`,
         day: day,
@@ -199,12 +205,11 @@ const endTime = formatDate(endDate);
         miningTime: {
           hours: hours,
           minutes: minutes,
-          startTime: `오전 ${startHour}:${startMinute.toString().padStart(2, '0')}`,
-          endTime: `오${endHour >= 12 ? '후' : '전'} ${endHour > 12 ? endHour - 12 : endHour}:${endMinute.toString().padStart(2, '0')}`
-        }
+          totalMinutes: totalMinutes
+        },
       });
     }
-    
+
     return data;
   };
 
@@ -226,22 +231,37 @@ const endTime = formatDate(endDate);
   // 특정 날짜 선택 처리
   const handleSelectDay = async (item) => {
     setSelectedDayData(item);
-    
+
     // 선택한 날짜 객체 생성
     const selectedDateObj = new Date(2025, item.month - 1, item.day);
     setSelectedDate(selectedDateObj);
     
+    // 선택된 날짜와 전날의 채굴 시간 차이 계산
+    const selectedIndex = miningData.findIndex(data => data.id === item.id);
+    if (selectedIndex > 0) { // 선택된 날짜 이전 데이터가 있는지 확인
+      const selectedTime = miningData[selectedIndex].miningTime.totalMinutes;
+      const prevDayTime = miningData[selectedIndex - 1].miningTime.totalMinutes;
+      setMiningDifference(selectedTime - prevDayTime);
+    } else {
+      setMiningDifference(0); // 이전 날짜가 없으면 차이를 0으로 설정
+    }
+
     try {
       // 선택한 날짜의 스크린타임 데이터 가져오기
-      const screenTimeData = await ScreenTime.getScreenTimeByDate(selectedDateObj);
-      
+      const screenTimeData = await ScreenTime.getScreenTimeByDate(
+        selectedDateObj
+      );
+
       if (screenTimeData.hasPermission) {
         setDailyScreenTime(screenTimeData.totalScreenTimeMinutes);
         // 앱 이름과 아이콘이 포함된 appUsageWithNames 사용
         setAppUsage(screenTimeData.appUsageWithNames || {});
       }
     } catch (error) {
-      console.error(`${item.month}월 ${item.day}일 데이터 가져오기 오류:`, error);
+      console.error(
+        `${item.month}월 ${item.day}일 데이터 가져오기 오류:`,
+        error
+      );
       // 오류 발생 시 빈 데이터 설정
       setAppUsage({});
     }
@@ -253,7 +273,7 @@ const endTime = formatDate(endDate);
     const maxTime = Math.max(
       ...Object.values(appUsage).map((data) => data.usageTime)
     );
-    
+
     // 최대 너비의 70%까지만 사용
     const maxWidth = width * 0.7;
     return (usageTime / maxTime) * maxWidth;
@@ -264,7 +284,7 @@ const endTime = formatDate(endDate);
     if (data.iconBase64) {
       // 앱 아이콘이 있는 경우 Base64로 인코딩된 이미지 렌더링
       return (
-        <Image 
+        <Image
           source={{ uri: `data:image/png;base64,${data.iconBase64}` }}
           style={styles.appIcon}
           resizeMode="contain"
@@ -273,8 +293,8 @@ const endTime = formatDate(endDate);
     } else {
       // 앱 아이콘이 없는 경우 기본 이미지 사용
       return (
-        <Image 
-          source={require('../../assets/chrome-icon.png')}
+        <Image
+          source={require("../../assets/chrome-icon.png")}
           style={styles.appIcon}
           resizeMode="contain"
         />
@@ -287,42 +307,62 @@ const endTime = formatDate(endDate);
     // 최대 채굴 시간 계산 (8시간 = 480분)
     const MAX_MINING_TIME = 480;
     // 모든 데이터 중 최대값 확인 (API 데이터 기준)
-    const maxValue = Math.max(...miningData.map(d => d.value), MAX_MINING_TIME);
+    const maxValue = Math.max(
+      ...miningData.map((d) => d.value),
+      MAX_MINING_TIME
+    );
     // 상대적 높이 계산 (8시간 초과 시에도 표현 가능하도록)
     const barHeight = (item.value / maxValue) * 100;
     const isSelected = selectedDayData && selectedDayData.id === item.id;
-    
+
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.barContainer}
         onPress={() => handleSelectDay(item)}
       >
         <View style={styles.barWrapper}>
-          <View 
+          <View
             style={[
-              styles.bar, 
+              styles.bar,
               { height: `${barHeight}%` },
               item.isToday ? styles.activeBar : styles.inactiveBar,
-              isSelected && !item.isToday && styles.selectedBar
-            ]} 
+              isSelected && !item.isToday && styles.selectedBar,
+            ]}
           />
         </View>
-        <Text style={[
-          styles.barText, 
-          item.isToday && styles.activeBarText,
-          isSelected && !item.isToday && styles.selectedBarText
-        ]}>
+        <Text
+          style={[
+            styles.barText,
+            item.isToday && styles.activeBarText,
+            isSelected && !item.isToday && styles.selectedBarText,
+          ]}
+        >
           {item.day}
         </Text>
-        <Text style={[
-          styles.barDayOfWeek,
-          item.isToday && styles.activeBarText,
-          isSelected && !item.isToday && styles.selectedBarText
-        ]}>
+        <Text
+          style={[
+            styles.barDayOfWeek,
+            item.isToday && styles.activeBarText,
+            isSelected && !item.isToday && styles.selectedBarText,
+          ]}
+        >
           {item.dayOfWeek}
         </Text>
       </TouchableOpacity>
     );
+  };
+
+  // 시간 차이를 분 또는 시간+분 형식으로 표시
+  const formatTimeDifference = (minutes) => {
+    const absMinutes = Math.abs(minutes);
+    const hours = Math.floor(absMinutes / 60);
+    const mins = absMinutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}시간 ${mins}분`;
+    } else {
+      return `${mins}분`;
+    }
   };
 
   if (loading) {
@@ -335,7 +375,7 @@ const endTime = formatDate(endDate);
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.scrollContainer}
       showsVerticalScrollIndicator={false}
     >
@@ -345,6 +385,18 @@ const endTime = formatDate(endDate);
           {`${selectedDayData.month}월 ${selectedDayData.day}일 ${selectedDayData.dayOfWeek}요일`}
         </Text>
         <View style={styles.chartContent}>
+          {/* 8시간 표시선 */}
+          <View style={styles.hourLine}>
+            <Text style={styles.hourLineLabel}>8시간</Text>
+            <View style={styles.hourLineDivider} />
+          </View>
+          
+          {/* 4시간 표시선 */}
+          <View style={[styles.hourLine, styles.hourLineHalf]}>
+            <Text style={styles.hourLineLabel}>4시간</Text>
+            <View style={styles.hourLineDivider} />
+          </View>
+  
           {/* 수평 스크롤 가능한 그래프 */}
           <FlatList
             ref={graphScrollRef}
@@ -361,57 +413,67 @@ const endTime = formatDate(endDate);
               index,
             })}
             onLayout={() => {
-              // 컴포넌트가 렌더링된 후 마지막 위치로 스크롤
+              // 단순하게 한 번만 스크롤 설정
               graphScrollRef.current?.scrollToIndex({
                 index: miningData.length - 7,
                 animated: false,
               });
             }}
           />
-          <Text style={styles.minutesLabel}>480분</Text>
           <View style={styles.chartDivider} />
           <Text style={styles.updateTimeText}>
-            {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}에 업데이트됨
+            {new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            에 업데이트됨
           </Text>
         </View>
       </View>
 
       {/* 채굴 시간 */}
       <View style={styles.miningTimeContainer}>
-        <View style={styles.miningTimeHeader}>
-          <Text style={styles.miningTimeTitle}>채굴 시간</Text>
-          <Ionicons name="chevron-forward" size={20} color="#888" />
-        </View>
-        
-        <View style={styles.miningTimeContent}>
-          <View style={styles.pickaxeContainer}>
-            <Image 
-              source={require('../../assets/pickaxe.png')} 
-              style={styles.pickaxeIcon}
-              resizeMode="contain"
-            />
-          </View>
-          <View style={styles.miningTimeInfo}>
-            <Text style={styles.miningTimeValue}>
-              <Text style={styles.hoursText}>{selectedDayData.miningTime.hours}</Text>시간
-              <Text style={styles.minutesText}>{selectedDayData.miningTime.minutes}</Text>분
-            </Text>
-            <Text style={styles.miningTimeRange}>
-              {selectedDayData.miningTime.startTime} - {selectedDayData.miningTime.endTime}
-            </Text>
-          </View>
-        </View>
+      <View style={styles.miningTimeHeader}>
+  <Text style={styles.miningTimeTitle}>채굴 시간</Text>
+</View>
 
-        {selectedDayData.isToday && (
+
+<View style={styles.miningTimeContent}>
+  <View style={styles.pickaxeContainer}>
+    <Image
+      source={require("../../assets/pickaxe.png")}
+      style={styles.pickaxeIcon}
+      resizeMode="contain"
+    />
+  </View>
+  <View style={styles.miningTimeInfo}>
+    <Text style={[styles.miningTimeValue, styles.rightAlignedText]}>
+      <Text style={styles.hoursText}>
+        {selectedDayData.miningTime.hours}
+      </Text>
+      시간 
+      <Text style={styles.minutesText}>
+        {selectedDayData.miningTime.minutes}
+      </Text>
+      분
+    </Text>
+  </View>
+</View>
+
+        {selectedDayData.isToday && miningDifference !== 0 && (
           <View style={styles.characterContainer}>
-            <Image 
-              source={require('../../assets/coin-character.png')} 
+            <Image
+              source={require("../../assets/coin-character.png")}
               style={styles.characterImage}
               resizeMode="contain"
             />
             <View style={styles.characterBubble}>
-              <Text style={styles.characterText}>대단한데?</Text>
-              <Text style={styles.characterText}>어제보다 37분 더 채굴했어!!</Text>
+              <Text style={styles.characterText}>
+                {miningDifference > 0 ? "대단한데?" : "힘내!"}
+              </Text>
+              <Text style={styles.characterText}>
+                어제보다 {formatTimeDifference(miningDifference)} {miningDifference > 0 ? "더" : "적게"} 채굴했어!!
+              </Text>
             </View>
           </View>
         )}
@@ -421,9 +483,6 @@ const endTime = formatDate(endDate);
       <View style={styles.appUsageContainer}>
         <View style={styles.appUsageHeader}>
           <Text style={styles.appUsageTitle}>가장 많이 사용한 앱</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeMoreText}>자세히 보기</Text>
-          </TouchableOpacity>
         </View>
 
         {Object.entries(appUsage)
@@ -432,7 +491,7 @@ const endTime = formatDate(endDate);
           .map(([packageName, data], index) => {
             const hours = Math.floor(data.usageTime / 60);
             const minutes = Math.floor(data.usageTime % 60);
-            
+
             return (
               <View key={packageName} style={styles.appItem}>
                 <View style={styles.appInfoContainer}>
@@ -444,17 +503,23 @@ const endTime = formatDate(endDate);
                   {hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`}
                 </Text>
                 <View style={styles.appUsageBarContainer}>
-                  <View 
+                  <View
                     style={[
-                      styles.appUsageBar, 
-                      { width: getBarWidth(data.usageTime) }
-                    ]} 
+                      styles.appUsageBar,
+                      { width: getBarWidth(data.usageTime) },
+                    ]}
                   />
                   <View style={styles.appUsageBarBg} />
                 </View>
               </View>
             );
           })}
+        {/* 시간대 정보 */}
+        <View style={styles.timezoneContainer}>
+          <Text style={styles.timezoneText}>
+            채굴 시간은 한국 시간(UTC+9) 기준입니다.
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -463,13 +528,13 @@ const endTime = formatDate(endDate);
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666666',
+    color: "#666666",
   },
   scrollContainer: {
     flex: 1,
@@ -489,13 +554,16 @@ const styles = StyleSheet.create({
   },
   chartContent: {
     paddingBottom: 5,
+    paddingTop: 30, // 상단에 "8시간" 라벨을 위한 공간 확보
     position: "relative",
-    height: 200, // 그래프 높이 조정
+    height: 200,
   },
   barsContainer: {
-    height: 150,
+    height: 115, // 원래 높이
     alignItems: "flex-end",
     paddingRight: 10,
+    paddingBottom: 30, // 하단 패딩 추가
+    zIndex: 5, // 차트 바가 시간 표시선 위에 표시되도록 zIndex 추가
   },
   barContainer: {
     alignItems: "center",
@@ -505,6 +573,7 @@ const styles = StyleSheet.create({
   barWrapper: {
     height: "100%",
     justifyContent: "flex-end",
+    paddingTop: 25, // "8시간" 라벨 아래에서 시작하도록 조정
   },
   bar: {
     width: 16,
@@ -521,14 +590,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFA54F", // 선택된 막대 색상
   },
   barText: {
-    marginTop: 8,
+    marginTop: 10, // 8에서 10으로 증가
     fontSize: 14,
     color: "#666",
   },
   barDayOfWeek: {
     fontSize: 12,
     color: "#888",
-    marginTop: 2,
+    marginTop: 3, // 2에서 3으로 증가
   },
   activeBarText: {
     color: "#FF8C00",
@@ -537,13 +606,6 @@ const styles = StyleSheet.create({
   selectedBarText: {
     color: "#FFA54F",
     fontWeight: "500",
-  },
-  minutesLabel: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    fontSize: 12,
-    color: "#888",
   },
   chartDivider: {
     height: 1,
@@ -600,11 +662,6 @@ const styles = StyleSheet.create({
   minutesText: {
     fontSize: 30,
     fontWeight: "bold",
-  },
-  miningTimeRange: {
-    fontSize: 14,
-    color: "#888",
-    marginTop: 5,
   },
   characterContainer: {
     flexDirection: "row",
@@ -690,6 +747,43 @@ const styles = StyleSheet.create({
     backgroundColor: "#EEEEEE",
     borderRadius: 6,
     zIndex: -1,
+  },
+  timezoneContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  timezoneText: {
+    fontSize: 12,
+    color: "#888",
+    textAlign: "center",
+  },
+  rightAlignedText: {
+    textAlign: 'right',
+  },
+  // 새로 추가할 스타일
+  hourLine: {
+    position: "absolute",
+    top: 0, // 상단에서 거리 조정
+    width: "100%",
+    zIndex: 1,
+  },
+  hourLineHalf: {
+    top: 45, // 4시간 표시선은 8시간과 0시간 사이에 위치 (중간 지점)
+  },
+  hourLineLabel: {
+    position: "absolute",
+    right: 10,
+    fontSize: 12,
+    color: "#888",
+    zIndex: 2,
+  },
+  hourLineDivider: {
+    height: 1,
+    backgroundColor: "#DDD",
+    marginTop: 17, // 라벨 아래 위치하도록 조정
+    width: "100%",
+    opacity: 0.7,
   },
 });
 
