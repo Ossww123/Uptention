@@ -422,32 +422,32 @@ const DailyView = () => {
 
       {/* 채굴 시간 */}
       <View style={styles.miningTimeContainer}>
-        <View style={styles.miningTimeHeader}>
-          <Text style={styles.miningTimeTitle}>채굴 시간</Text>
-          <Ionicons name="chevron-forward" size={20} color="#888" />
-        </View>
+      <View style={styles.miningTimeHeader}>
+  <Text style={styles.miningTimeTitle}>채굴 시간</Text>
+</View>
 
-        <View style={styles.miningTimeContent}>
-          <View style={styles.pickaxeContainer}>
-            <Image
-              source={require("../../assets/pickaxe.png")}
-              style={styles.pickaxeIcon}
-              resizeMode="contain"
-            />
-          </View>
-          <View style={styles.miningTimeInfo}>
-            <Text style={styles.miningTimeValue}>
-              <Text style={styles.hoursText}>
-                {selectedDayData.miningTime.hours}
-              </Text>
-              시간
-              <Text style={styles.minutesText}>
-                {selectedDayData.miningTime.minutes}
-              </Text>
-              분
-            </Text>
-          </View>
-        </View>
+
+<View style={styles.miningTimeContent}>
+  <View style={styles.pickaxeContainer}>
+    <Image
+      source={require("../../assets/pickaxe.png")}
+      style={styles.pickaxeIcon}
+      resizeMode="contain"
+    />
+  </View>
+  <View style={styles.miningTimeInfo}>
+    <Text style={[styles.miningTimeValue, styles.rightAlignedText]}>
+      <Text style={styles.hoursText}>
+        {selectedDayData.miningTime.hours}
+      </Text>
+      시간 
+      <Text style={styles.minutesText}>
+        {selectedDayData.miningTime.minutes}
+      </Text>
+      분
+    </Text>
+  </View>
+</View>
 
         {selectedDayData.isToday && miningDifference !== 0 && (
           <View style={styles.characterContainer}>
@@ -458,7 +458,7 @@ const DailyView = () => {
             />
             <View style={styles.characterBubble}>
               <Text style={styles.characterText}>
-                {miningDifference > 0 ? "대단한데?" : "아쉽네!"}
+                {miningDifference > 0 ? "대단한데?" : "힘내!"}
               </Text>
               <Text style={styles.characterText}>
                 어제보다 {formatTimeDifference(miningDifference)} {miningDifference > 0 ? "더" : "적게"} 채굴했어!!
@@ -472,9 +472,6 @@ const DailyView = () => {
       <View style={styles.appUsageContainer}>
         <View style={styles.appUsageHeader}>
           <Text style={styles.appUsageTitle}>가장 많이 사용한 앱</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeMoreText}>자세히 보기</Text>
-          </TouchableOpacity>
         </View>
 
         {Object.entries(appUsage)
@@ -755,6 +752,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#888",
     textAlign: "center",
+  },
+  rightAlignedText: {
+    textAlign: 'right',
   },
 });
 

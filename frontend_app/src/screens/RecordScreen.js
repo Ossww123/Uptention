@@ -83,9 +83,6 @@ const RecordScreen = () => {
       {/* 헤더 */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>채굴 기록</Text>
-        <TouchableOpacity style={styles.helpButton}>
-          <Ionicons name="help-circle-outline" size={24} color="#888" />
-        </TouchableOpacity>
       </View>
       
       {!hasPermission ? (

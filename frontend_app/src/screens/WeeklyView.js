@@ -377,72 +377,60 @@ const WeeklyView = () => {
 
       {/* 채굴 시간 */}
       <View style={styles.miningTimeContainer}>
-        <View style={styles.miningTimeHeader}>
-          <Text style={styles.miningTimeTitle}>채굴 시간</Text>
-          <Ionicons name="chevron-forward" size={20} color="#888" />
-        </View>
+  <View style={styles.miningTimeHeader}>
+    <Text style={styles.miningTimeTitle}>채굴 시간</Text>
+  </View>
 
-        <Text style={styles.increasedTimeText}>
-          전 주보다 {weeklyTotalMiningTime.increase} 증가했어요!
+  <Text style={styles.increasedTimeText}>
+    전 주보다 {weeklyTotalMiningTime.increase} 증가했어요!
+  </Text>
+
+  <View style={styles.miningTimeContent}>
+    <View style={styles.pickaxeContainer}>
+      <Image
+        source={require("../../assets/pickaxe.png")}
+        style={styles.pickaxeIcon}
+        resizeMode="contain"
+      />
+    </View>
+    <View style={styles.miningTimeInfo}>
+      <Text style={styles.miningTimeValue}>
+        <Text style={styles.weeklyText}>총</Text>{" "}
+        <Text style={styles.hoursText}>
+          {weeklyTotalMiningTime.total.split("시간")[0]}
         </Text>
-
-        <View style={styles.miningTimeContent}>
-          <View style={styles.pickaxeContainer}>
-            <Image
-              source={require("../../assets/pickaxe.png")}
-              style={styles.pickaxeIcon}
-              resizeMode="contain"
-            />
-          </View>
-          <View style={styles.miningTimeInfo}>
-            <Text style={styles.miningTimeValue}>
-              <Text style={styles.weeklyText}>총</Text>{" "}
-              <Text style={styles.hoursText}>
-                {weeklyTotalMiningTime.total.split("시간")[0]}
-              </Text>
-              시간
-              <Text style={styles.minutesText}>
-                {weeklyTotalMiningTime.total.split("시간")[1].replace("분", "")}
-              </Text>
-              분
+        시간
+        <Text style={styles.minutesText}>
+          {weeklyTotalMiningTime.total.split("시간")[1].replace("분", "")}
+        </Text>
+        분
+      </Text>
+    </View>
+  </View>
+  
+  <View style={styles.dailyMiningContainer}>
+    <Text style={styles.dailyMiningTitle}>날짜별 채굴 시간</Text>
+    <View style={styles.dailyMiningList}>
+      {weeklyMiningData.map((item, index) => {
+        const hours = Math.floor(item.value / 60);
+        const minutes = item.value % 60;
+        return (
+          <View key={index} style={styles.dailyMiningItem}>
+            <Text style={styles.dailyMiningDate}>{`${item.month}/${item.day} (${item.dayOfWeek})`}</Text>
+            <Text style={styles.dailyMiningTime}>
+              {hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`}
             </Text>
           </View>
-        </View>
-
-        <View style={styles.averageMiningContainer}>
-          <Text style={styles.averageTitle}>
-            평균 채굴 시간 {weeklyTotalMiningTime.average}
-          </Text>
-
-          <View style={styles.averageTimeRow}>
-            <View style={styles.averageTimeItem}>
-              <Ionicons name="time-outline" size={18} color="#666" />
-              <Text style={styles.averageTimeLabel}>평균 시작 시간</Text>
-              <Text style={styles.averageTimeValue}>
-                {weeklyTotalMiningTime.averageStartTime}
-              </Text>
-            </View>
-
-            <View style={styles.timelineSeparator} />
-
-            <View style={styles.averageTimeItem}>
-              <Ionicons name="time-outline" size={18} color="#666" />
-              <Text style={styles.averageTimeLabel}>평균 종료 시간</Text>
-              <Text style={styles.averageTimeValue}>
-                {weeklyTotalMiningTime.averageEndTime}
-              </Text>
-            </View>
-          </View>
-        </View>
-      </View>
+        );
+      })}
+    </View>
+  </View>
+</View>
 
       {/* 가장 많이 사용한 앱 */}
       <View style={styles.appUsageContainer}>
         <View style={styles.appUsageHeader}>
-          <Text style={styles.appUsageTitle}>가장 많이 사용한 앱</Text>
-          <TouchableOpacity>
-            <Text style={styles.seeMoreText}>자세히 보기</Text>
-          </TouchableOpacity>
+          <Text style={styles.appUsageTitle}>최근 7일간 많이 사용한 앱</Text>
         </View>
 
         {Object.entries(appUsage)
@@ -741,13 +729,68 @@ const styles = StyleSheet.create({
   timezoneContainer: {
     marginHorizontal: 20,
     marginBottom: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   timezoneText: {
     fontSize: 12,
-    color: '#888',
-    textAlign: 'center',
+    color: "#888",
+    textAlign: "center",
   },
+  // styles 객체에 추가할 스타일
+miningStatsContainer: {
+  backgroundColor: "#FFF",
+  borderRadius: 10,
+  padding: 15,
+  marginTop: 10,
+  flexDirection: "row",
+  justifyContent: "space-between",
+},
+miningStatItem: {
+  flex: 1,
+  alignItems: "center",
+  paddingVertical: 5,
+},
+miningStatLabel: {
+  fontSize: 14,
+  color: "#666",
+  marginBottom: 5,
+},
+miningStatValue: {
+  fontSize: 16,
+  fontWeight: "600",
+  color: "#333",
+},
+dailyMiningContainer: {
+  backgroundColor: "#FFF",
+  borderRadius: 10,
+  padding: 15,
+  marginTop: 10,
+},
+dailyMiningTitle: {
+  fontSize: 15,
+  fontWeight: "500",
+  marginBottom: 10,
+  textAlign: "center",
+},
+dailyMiningList: {
+  marginTop: 5,
+},
+dailyMiningItem: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  paddingVertical: 8,
+  borderBottomWidth: 1,
+  borderBottomColor: "#F0F0F0",
+},
+dailyMiningDate: {
+  fontSize: 14,
+  color: "#333",
+},
+dailyMiningTime: {
+  fontSize: 14,
+  fontWeight: "500",
+  color: "#333",
+},
 });
 
 export default WeeklyView;
