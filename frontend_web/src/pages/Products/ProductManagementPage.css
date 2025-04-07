@@ -2,12 +2,17 @@
 .product-management {
   padding: 20px;
   background-color: #f1f1f1;
-  min-height: 100vh;
+  /* min-height: 100vh; */
+}
+
+.product-management > .product-table-action-buttons {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .content-card {
   background-color: white;
-  border-radius: 4px;
+  border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 20px;
   margin-bottom: 20px;
@@ -23,157 +28,196 @@
 }
 
 .search-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between; /* 양쪽 정렬로 변경 */
+  align-items: center; /* 세로 중앙 정렬 */
 }
 
 .search-form {
   display: flex;
   align-items: center;
-  max-width: 500px;
-  width: 100%;
+  max-width: 400px; /* 약간 줄임 */
+  width: auto; /* 유연한 너비로 변경 */
 }
 
 .search-input {
   flex: 1;
-  padding: 10px;
+  padding: 10px 15px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 4px 0 0 4px;
   font-size: 14px;
+  outline: none;
 }
 
 .search-input:focus {
   border-color: #FF8C00;
-  outline: none;
 }
 
 .search-button {
-  padding: 10px 20px;
   background-color: #FF8C00;
-  border: none;
-  border-radius: 4px;
   color: white;
-  font-size: 14px;
-  margin-left: 10px;
+  border: none;
+  padding: 0 20px;
+  border-radius: 0 4px 4px 0;
   cursor: pointer;
+  font-weight: 500;
+  height: 38px;
 }
 
 .search-button:hover {
   background-color: #e67e00;
 }
 
+/* 추가 버튼 스타일 회원관리 페이지와 동일하게 업데이트 */
 .add-button {
-  padding: 10px 20px;
   background-color: #FF8C00;
-  border: none;
-  border-radius: 4px;
   color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 20px;
+  cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(255, 140, 0, 0.3);
+  min-width: 80px;
+  justify-content: center;
+}
+
+.add-button::before {
+  content: "+";
+  margin-right: 8px;
+  font-size: 18px;
 }
 
 .add-button:hover {
   background-color: #e67e00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 140, 0, 0.4);
 }
 
-/* 내부 스크롤을 위해 테이블 컨테이너 스타일 추가/수정 */
+/* products-table-container 스타일 수정 */
 .products-table-container {
-  overflow-x: auto;
-  margin-bottom: 20px;
-}
-
-/* 스크롤 가능한 고정 높이 컨테이너 스타일 */
-.scrollable-container {
-  height: 500px; /* 원하는 높이로 조정 */
-  overflow-y: auto;
+  overflow: auto;
+  position: relative;
+  min-height: 200px;
+  max-height: 500px; /* 테이블 영역 최대 높이 설정 */
   border: 1px solid #eee;
-  border-radius: 4px;
-  /* 스크롤바 스타일링 (웹킷 브라우저용) */
+  border-radius: 8px;
+  margin-bottom: 20px;
   scrollbar-width: thin;
   scrollbar-color: #ddd #f5f5f5;
 }
 
 /* 웹킷 브라우저를 위한 스크롤바 스타일링 */
-.scrollable-container::-webkit-scrollbar {
+.products-table-container::-webkit-scrollbar {
   width: 8px;
 }
 
-.scrollable-container::-webkit-scrollbar-track {
+.products-table-container::-webkit-scrollbar-track {
   background: #f5f5f5;
 }
 
-.scrollable-container::-webkit-scrollbar-thumb {
+.products-table-container::-webkit-scrollbar-thumb {
   background-color: #ddd;
   border-radius: 4px;
 }
 
-.scrollable-container::-webkit-scrollbar-thumb:hover {
+.products-table-container::-webkit-scrollbar-thumb:hover {
   background-color: #ccc;
 }
 
+/* scrollable-container 클래스는 이제 사용하지 않음 */
+.scrollable-container {
+  display: none;
+}
+
+/* 테이블 스타일 개선 - 회원 관리 테이블과 유사하게 */
 .products-table {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* 스크롤 시 헤더가 고정되도록 설정 */
-.products-table thead {
-  position: sticky;
-  top: 0;
-  background-color: #f8f8f8;
-  z-index: 10;
+/* 테이블 헤더 스타일 */
+.products-table th {
+  background-color: #f8f9fa;
+  color: #444;
+  font-weight: 600;
+  padding: 15px;
+  text-align: left;
+  border-bottom: 2px solid #eee;
+  position: sticky; /* 헤더 고정 */
+  top: 0; /* 테이블 상단에 고정 */
+  z-index: 10; /* 다른 요소보다 앞에 표시 */
 }
 
-.products-table th,
+/* 짝수/홀수 행 색상 차이 */
+.products-table tr:nth-child(even) {
+  background-color: #f8fbff;
+}
+
 .products-table td {
-  padding: 12px 15px;
+  padding: 15px;
   text-align: left;
   border-bottom: 1px solid #eee;
 }
 
-.products-table th {
-  background-color: #f8f8f8;
-  font-weight: 500;
-  color: #333;
+.products-table td .action-buttons {
+  display: flex;
+  justify-content: center; /* 가운데 정렬로 변경 */
+  gap: 8px;
+  width: 100%; /* 너비 설정 */
 }
 
 .products-table tr:hover {
-  background-color: #f9f9f9;
+  background-color: #f5f5f5;
 }
 
-.action-buttons {
+/* 테이블 셀 내 버튼 컨테이너 */
+.products-table .action-buttons {
   display: flex;
   gap: 8px;
 }
 
-.edit-button, .delete-button {
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  border: none;
+/* 액션 버튼 컨테이너 스타일 */
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
 }
 
-.edit-button {
+/* 버튼 스타일 조정 */
+.product-table-edit-button, .product-table-delete-button {
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.product-table-edit-button {
   background-color: #f1f1f1;
   color: #555;
 }
 
-.edit-button:hover {
+.product-table-edit-button:hover {
   background-color: #e5e5e5;
 }
 
-.delete-button {
+.product-table-delete-button {
   background-color: #ffebee;
   color: #e53935;
 }
 
-.delete-button:hover {
-  background-color: #ffe0e0;
+.product-table-delete-button:hover {
+  background-color: #ef5350;
+  color: white;
 }
 
 .pagination {
@@ -214,14 +258,15 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+  color: #666;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #FF8C00;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #FF8C00;
   border-radius: 50%;
+  width: 30px;
+  height: 30px;
   animation: spin 1s linear infinite;
   margin-bottom: 10px;
 }
@@ -233,26 +278,31 @@
 
 /* 에러 메시지 스타일 */
 .error-message {
+  color: #e74c3c;
   padding: 15px;
-  background-color: #ffebee;
-  color: #e53935;
+  background-color: #fdeaea;
   border-radius: 4px;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   text-align: center;
 }
 
 /* 필터 컨테이너 스타일 */
 .filters-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 20px;
-  background-color: white;
-  padding: 15px;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: none; /* 기존 컨테이너 숨기기 */
 }
 
+.filters-container-bottom {
+  display: none; /* 기존 컨테이너 숨기기 */
+}
+
+/* 필터 컨트롤 컨테이너 추가 */
+.filter-controls {
+  display: flex;
+  gap: 15px; /* 필터 그룹 사이 간격 */
+  align-items: center;
+}
+
+/* 필터 그룹 스타일 */
 .filter-group {
   display: flex;
   align-items: center;
@@ -263,8 +313,14 @@
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  outline: none;
   min-width: 150px;
+}
+
+.filter-select:focus {
+  border-color: #FF8C00;
 }
 
 /* 카테고리 라벨 스타일 */
@@ -279,4 +335,96 @@
   color: #888;
   padding: 30px;
   font-style: italic;
+}
+
+/* 테이블 열 너비 지정 예시 */
+.products-table th:nth-child(1), 
+.products-table td:nth-child(1) {
+  width: 8%; /* 상품ID 열 */
+}
+
+.products-table th:nth-child(2), 
+.products-table td:nth-child(2) {
+  width: 22%; /* 상품명 열 */
+}
+
+.products-table th:nth-child(3), 
+.products-table td:nth-child(3) {
+  width: 15%; /* 브랜드명 열 */
+}
+
+.products-table th:nth-child(4), 
+.products-table td:nth-child(4) {
+  width: 10%; /* 카테고리 열 */
+}
+
+.products-table th:nth-child(5), 
+.products-table td:nth-child(5) {
+  width: 10%; /* 가격 열 */
+}
+
+.products-table th:nth-child(6), 
+.products-table td:nth-child(6) {
+  width: 8%; /* 재고 열 */
+}
+
+.products-table th:nth-child(7), 
+.products-table td:nth-child(7) {
+  width: 8%; /* 판매량 열 */
+}
+
+.products-table th:nth-child(8), 
+.products-table td:nth-child(8) {
+  width: 15%; /* 관리 열 */
+}
+
+/* 반응형 디자인을 위한 미디어 쿼리 */
+@media (max-width: 1100px) {
+  /* 화면 너비가 좁아지면 요소들을 수직으로 배치 */
+  .search-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+  
+  .filter-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .search-form {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 더 작은 화면에서는 필터 컨트롤도 수직으로 */
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .filter-select {
+    flex: 1;
+  }
+  
+  .products-table {
+    font-size: 14px;
+  }
+  
+  .products-table th,
+  .products-table td {
+    padding: 10px 8px;
+  }
+  
+  .edit-button, .delete-button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
 }

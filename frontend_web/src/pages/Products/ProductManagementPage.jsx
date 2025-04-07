@@ -284,130 +284,139 @@ const ProductManagementPage = () => {
 
   return (
     <div className="product-management">
-      <div className="filters-container">
-        {/* 카테고리 필터 */}
-        <div className="filter-group">
-          <label htmlFor="category-select">카테고리:</label>
-          <select 
-            id="category-select"
-            value={selectedCategory || "all"}
-            onChange={handleCategoryChange}
-            className="filter-select"
-          >
-            <option value="all">전체</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        {/* 정렬 옵션 */}
-        <div className="filter-group">
-          <label htmlFor="sort-select">정렬:</label>
-          <select 
-            id="sort-select"
-            value={sortOption}
-            onChange={handleSortChange}
-            className="filter-select"
-          >
-            {sortOptions.map(option => (
-              <option key={option.id} value={option.id}>
-                {option.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      
       <div className="content-card">
         <div className="product-management-header">
           <h1 className="page-title">상품 관리</h1>
         </div>
         
         <div className="search-section">
-          <form onSubmit={handleSearch} className="search-form">
-            <input
-              type="text"
-              placeholder="상품명 검색"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            <button type="submit" className="search-button">검색</button>
-          </form>
-          
-          <button 
-            className="add-button"
-            onClick={handleAddProduct}
-          >
-            추가
-          </button>
-        </div>
+  {/* 카테고리와 정렬 옵션을 search-section으로 이동 */}
+  <div className="filter-controls">
+    {/* 카테고리 필터 */}
+    <div className="filter-group">
+      <label htmlFor="category-select">카테고리:</label>
+      <select 
+        id="category-select"
+        value={selectedCategory || "all"}
+        onChange={handleCategoryChange}
+        className="filter-select"
+      >
+        <option value="all">전체</option>
+        {categories.map(category => (
+          <option key={category.id} value={category.id}>
+            {category.name}
+          </option>
+        ))}
+      </select>
+    </div>
+    
+    {/* 정렬 옵션 */}
+    <div className="filter-group">
+      <label htmlFor="sort-select">정렬:</label>
+      <select 
+        id="sort-select"
+        value={sortOption}
+        onChange={handleSortChange}
+        className="filter-select"
+      >
+        {sortOptions.map(option => (
+          <option key={option.id} value={option.id}>
+            {option.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+
+  {/* 검색 폼은 그대로 유지 */}
+  <form onSubmit={handleSearch} className="search-form">
+    <input
+      type="text"
+      placeholder="상품명 검색"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="search-input"
+    />
+    <button type="submit" className="search-button">검색</button>
+  </form>
+</div>
         
         {/* 테이블 컨테이너에 ref 추가 및 클래스 추가 */}
-        <div 
-          className="products-table-container scrollable-container" 
-          ref={tableContainerRef}
+        {/* 테이블 컨테이너에 ref 추가 및 클래스 추가 */}
+<div 
+  className="products-table-container" 
+  ref={tableContainerRef}
+>
+  {error && <div className="error-message">{error}</div>}
+  
+  <table className="products-table">
+    <thead>
+      <tr>
+        <th>상품ID</th>
+        <th>상품명</th>
+        <th>브랜드명</th>
+        <th>카테고리</th>
+        <th>가격(WORK)</th>
+        <th>재고</th>
+        <th>판매량</th>
+        <th>관리</th>
+      </tr>
+    </thead>
+    <tbody>
+      {products.length === 0 && !loading ? (
+        <tr>
+          <td colSpan="8" className="no-products">상품이 없습니다.</td>
+        </tr>
+      ) : (
+        products.map((product, index) => (
+          <tr 
+            key={product.itemId}
+            ref={index === products.length - 1 ? lastProductElementRef : null}
+          >
+            <td>{product.itemId}</td>
+            <td>{product.name}</td>
+            <td>{product.brand}</td>
+            <td>{product.categoryName}</td>
+            <td>{product.price}</td>
+            <td>{product.quantity}</td>
+            <td>{product.salesCount}</td>
+            <td className="product-table-action-buttons">
+              <button 
+                className="product-table-edit-button"
+                onClick={() => handleEditProduct(product.itemId)}
+              >
+                수정
+              </button>
+              <button 
+                className="product-table-delete-button"
+                onClick={() => handleDeleteProduct(product.itemId)}
+              >
+                삭제
+              </button>
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+  
+  {loading && (
+    <div className="loading">
+      <div className="loading-spinner"></div>
+      <p>상품을 불러오는 중...</p>
+    </div>
+  )}
+</div>
+      </div>
+  
+      {/* 추가 버튼을 컨테이너 밖으로 이동 */}
+      <div className="action-buttons">
+        <button 
+          className="add-button"
+          onClick={handleAddProduct}
         >
-          {error && <div className="error-message">{error}</div>}
-          
-          <table className="products-table">
-            <thead>
-              <tr>
-                <th>상품ID</th>
-                <th>상품명</th>
-                <th>브랜드명</th>
-                <th>카테고리</th>
-                <th>가격(WORK)</th>
-                <th>관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.length === 0 && !loading ? (
-                <tr>
-                  <td colSpan="6" className="no-products">상품이 없습니다.</td>
-                </tr>
-              ) : (
-                products.map((product, index) => (
-                  <tr 
-                    key={product.itemId}
-                    // 마지막 요소에 ref 추가
-                    ref={index === products.length - 1 ? lastProductElementRef : null}
-                  >
-                    <td>{product.itemId}</td>
-                    <td>{product.name}</td>
-                    <td>{product.brand}</td>
-                    <td>{product.categoryName}</td>
-                    <td>{product.price}</td>
-                    <td className="action-buttons">
-                      <button 
-                        className="edit-button"
-                        onClick={() => handleEditProduct(product.itemId)}
-                      >
-                        수정
-                      </button>
-                      <button 
-                        className="delete-button"
-                        onClick={() => handleDeleteProduct(product.itemId)}
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          
-          {loading && (
-            <div className="loading">
-              <div className="loading-spinner"></div>
-              <p>상품을 불러오는 중...</p>
-            </div>
-          )}
-        </div>
+          추가
+        </button>
       </div>
     </div>
   );

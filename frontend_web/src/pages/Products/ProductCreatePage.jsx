@@ -426,14 +426,7 @@ const ProductCreatePage = () => {
         {/* 폼 전체 에러 메시지 */}
         {errors.form && <div className="form-error-message">{errors.form}</div>}
 
-        {/* 이미지 관련 에러 메시지 */}
-        {(errors.imageSize || errors.imageType || errors.imageFormat) && (
-          <div className="form-error-message">
-            {errors.imageSize && <p>{errors.imageSize}</p>}
-            {errors.imageType && <p>{errors.imageType}</p>}
-            {errors.imageFormat && <p>{errors.imageFormat}</p>}
-          </div>
-        )}
+        
 
         <div className="sub-title">상품 정보</div>
 
@@ -447,22 +440,24 @@ const ProductCreatePage = () => {
                   </label>
                 </td>
                 <td className="input-cell">
-                  <select
-                    name="categoryId"
-                    value={formData.categoryId}
-                    onChange={handleChange}
-                    className="form-select"
-                  >
-                    <option value="">선택해 주세요</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.categoryId && (
-                    <div className="error-message">{errors.categoryId}</div>
-                  )}
+                  <div className="input-wrapper">
+                    <select
+                      name="categoryId"
+                      value={formData.categoryId}
+                      onChange={handleChange}
+                      className={`form-select ${errors.categoryId ? "has-error" : ""}`}
+                    >
+                      <option value="">선택해 주세요</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.categoryId && (
+                      <div className="error-hint">{errors.categoryId}</div>
+                    )}
+                  </div>
                 </td>
               </tr>
 
@@ -473,18 +468,20 @@ const ProductCreatePage = () => {
                   </label>
                 </td>
                 <td className="input-cell">
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="상품명 입력(최대 30자)"
-                    maxLength="30"
-                  />
-                  {errors.name && (
-                    <div className="error-message">{errors.name}</div>
-                  )}
+                  <div className="input-wrapper">
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`form-input ${errors.name ? "has-error" : ""}`}
+                      placeholder="상품명 입력(최대 30자)"
+                      maxLength="30"
+                    />
+                    {errors.name && (
+                      <div className="error-hint">{errors.name}</div>
+                    )}
+                  </div>
                 </td>
               </tr>
 
@@ -495,18 +492,20 @@ const ProductCreatePage = () => {
                   </label>
                 </td>
                 <td className="input-cell">
-                  <input
-                    type="text"
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="브랜드명 입력(최대 30자)"
-                    maxLength="30"
-                  />
-                  {errors.brand && (
-                    <div className="error-message">{errors.brand}</div>
-                  )}
+                  <div className="input-wrapper">
+                    <input
+                      type="text"
+                      name="brand"
+                      value={formData.brand}
+                      onChange={handleChange}
+                      className={`form-input ${errors.brand ? "has-error" : ""}`}
+                      placeholder="브랜드명 입력(최대 30자)"
+                      maxLength="30"
+                    />
+                    {errors.brand && (
+                      <div className="error-hint">{errors.brand}</div>
+                    )}
+                  </div>
                 </td>
               </tr>
 
@@ -517,19 +516,23 @@ const ProductCreatePage = () => {
                   </label>
                 </td>
                 <td className="input-cell price-cell">
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    className="form-input price-input"
-                    min="0"
-                    placeholder="숫자만 입력"
-                  />
-                  <span className="price-currency">WORK</span>
-                  {errors.price && (
-                    <div className="error-message">{errors.price}</div>
-                  )}
+                  <div className="input-wrapper">
+                    <div className="price-input-container">
+                      <input
+                        type="number"
+                        name="price"
+                        value={formData.price}
+                        onChange={handleChange}
+                        className={`form-input price-input ${errors.price ? "has-error" : ""}`}
+                        min="0"
+                        placeholder="숫자만 입력"
+                      />
+                      <span className="price-currency">WORK</span>
+                    </div>
+                    {errors.price && (
+                      <div className="error-hint">{errors.price}</div>
+                    )}
+                  </div>
                 </td>
               </tr>
 
@@ -540,20 +543,22 @@ const ProductCreatePage = () => {
                   </label>
                 </td>
                 <td className="input-cell">
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={formData.quantity}
-                    onChange={handleChange}
-                    className="form-input"
-                    min="0"
-                    max="99"
-                    step="1"
-                    placeholder="숫자만 입력 (최대 99개)"
-                  />
-                  {errors.quantity && (
-                    <div className="error-message">{errors.quantity}</div>
-                  )}
+                  <div className="input-wrapper">
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={formData.quantity}
+                      onChange={handleChange}
+                      className={`form-input ${errors.quantity ? "has-error" : ""}`}
+                      min="0"
+                      max="99"
+                      step="1"
+                      placeholder="숫자만 입력 (최대 99개)"
+                    />
+                    {errors.quantity && (
+                      <div className="error-hint">{errors.quantity}</div>
+                    )}
+                  </div>
                 </td>
               </tr>
 
@@ -564,19 +569,21 @@ const ProductCreatePage = () => {
                   </label>
                 </td>
                 <td className="input-cell">
-                  <textarea
-                    name="detail"
-                    value={formData.detail}
-                    onChange={handleChange}
-                    className="form-textarea"
-                    placeholder="상품설명 입력(최대 255자)"
-                    maxLength="255"
-                    rows="5"
-                  />
-                  {errors.detail && (
-                    <div className="error-message">{errors.detail}</div>
-                  )}
-                  <div className="char-count">{formData.detail.length}/255</div>
+                  <div className="input-wrapper">
+                    <textarea
+                      name="detail"
+                      value={formData.detail}
+                      onChange={handleChange}
+                      className={`form-textarea ${errors.detail ? "has-error" : ""}`}
+                      placeholder="상품설명 입력(최대 255자)"
+                      maxLength="255"
+                      rows="5"
+                    />
+                    <div className="char-count">{formData.detail.length}/255</div>
+                    {errors.detail && (
+                      <div className="error-hint">{errors.detail}</div>
+                    )}
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -584,6 +591,14 @@ const ProductCreatePage = () => {
 
           <div className="sub-title">상품 이미지</div>
 
+                    {/* 이미지 관련 에러 메시지 */}
+        {(errors.imageSize || errors.imageType || errors.imageFormat) && (
+          <div className="form-error-message">
+            {errors.imageSize && <p>{errors.imageSize}</p>}
+            {errors.imageType && <p>{errors.imageType}</p>}
+            {errors.imageFormat && <p>{errors.imageFormat}</p>}
+          </div>
+        )}
           <table className="form-table">
             <tbody>
               <tr>
@@ -593,69 +608,71 @@ const ProductCreatePage = () => {
                   </label>
                 </td>
                 <td className="input-cell">
-                  <div className="image-upload-area">
-                    <div className="image-upload-box">
-                      {mainImage ? (
-                        <div className="image-preview">
-                          <img src={mainImage} alt="대표 이미지" />
-                          <div className="image-overlay">
-                            <span className="preview-label">미리보기</span>
+                  <div className="input-wrapper">
+                    <div className="image-upload-area">
+                      <div className="image-upload-box">
+                        {mainImage ? (
+                          <div className="image-preview">
+                            <img src={mainImage} alt="대표 이미지" />
+                            <div className="image-overlay">
+                              <span className="preview-label">미리보기</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMainImage(null);
+                                setMainImageFile(null);
+                                setMainImageInfo(null);
+                              }}
+                              className="remove-image-btn"
+                            >
+                              ×
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleShowImageInfo(-1)}
+                              className="info-image-btn"
+                            >
+                              <span>i</span>
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMainImage(null);
-                              setMainImageFile(null);
-                              setMainImageInfo(null);
-                            }}
-                            className="remove-image-btn"
-                          >
-                            ×
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleShowImageInfo(-1)}
-                            className="info-image-btn"
-                          >
-                            <span>i</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <input
-                            type="file"
-                            id="main-image"
-                            accept="image/*"
-                            onChange={handleMainImageChange}
-                            hidden
-                          />
-                          <label
-                            htmlFor="main-image"
-                            className="image-upload-btn"
-                          >
-                            <div className="camera-icon">
-                              <svg
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="#FF6B6B"
-                              >
-                                <path d="M9,3L7.17,5H4C2.9,5 2,5.9 2,7V19C2,20.1 2.9,21 4,21H20C21.1,21 22,20.1 22,19V7C22,5.9 21.1,5 20,5H16.83L15,3H9M12,18C9.24,18 7,15.76 7,13C7,10.24 9.24,8 12,8C14.76,8 17,10.24 17,13C17,15.76 14.76,18 12,18M12,17C14.08,17 15.8,15.28 15.8,13.2C15.8,11.12 14.08,9.4 12,9.4C9.92,9.4 8.2,11.12 8.2,13.2C8.2,15.28 9.92,17 12,17Z" />
-                              </svg>
-                            </div>
-                            <div className="upload-text">
-                              <span>클릭하여 이미지 추가</span>
-                              <small>권장: 360x360 (1:1 비율)</small>
-                            </div>
-                          </label>
-                        </>
-                      )}
-                    </div>
-                    <div className="image-upload-text">
-                      상품 대표이미지는 필수값 입니다.
+                        ) : (
+                          <>
+                            <input
+                              type="file"
+                              id="main-image"
+                              accept="image/*"
+                              onChange={handleMainImageChange}
+                              hidden
+                            />
+                            <label
+                              htmlFor="main-image"
+                              className="image-upload-btn"
+                            >
+                              <div className="camera-icon">
+                                <svg
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  fill="#FF6B6B"
+                                >
+                                  <path d="M9,3L7.17,5H4C2.9,5 2,5.9 2,7V19C2,20.1 2.9,21 4,21H20C21.1,21 22,20.1 22,19V7C22,5.9 21.1,5 20,5H16.83L15,3H9M12,18C9.24,18 7,15.76 7,13C7,10.24 9.24,8 12,8C14.76,8 17,10.24 17,13C17,15.76 14.76,18 12,18M12,17C14.08,17 15.8,15.28 15.8,13.2C15.8,11.12 14.08,9.4 12,9.4C9.92,9.4 8.2,11.12 8.2,13.2C8.2,15.28 9.92,17 12,17Z" />
+                                </svg>
+                              </div>
+                              <div className="upload-text">
+                                <span>클릭하여 이미지 추가</span>
+                                <small>권장: 360x360 (1:1 비율)</small>
+                              </div>
+                            </label>
+                          </>
+                        )}
+                      </div>
+                      <div className="image-upload-text">
+                        상품 대표이미지는 필수값 입니다.
+                      </div>
                     </div>
                     {errors.mainImage && (
-                      <div className="error-message">{errors.mainImage}</div>
+                      <div className="error-hint">{errors.mainImage}</div>
                     )}
                   </div>
                 </td>
@@ -773,70 +790,69 @@ const ProductCreatePage = () => {
 
         {/* 이미지 크롭 정보 표시 모달 */}
         {showPreviewDetails && (
-  <div className="preview-details-modal">
-    <div className="preview-details-content">
-      <h3>이미지 크롭 미리보기 정보</h3>
+          <div className="preview-details-modal">
+            <div className="preview-details-content">
+              <h3>이미지 크롭 미리보기 정보</h3>
       
-      {(() => {
-        const selectedImg = getSelectedImageInfo();
-        if (selectedImg && selectedImg.info) {
-          // 이미지 소스 결정
-          const imageSrc = selectedImageIndex === -1 
-            ? mainImageFile ? URL.createObjectURL(mainImageFile) : mainImage 
-            : subImageFiles[selectedImageIndex] ? URL.createObjectURL(subImageFiles[selectedImageIndex]) : subImages[selectedImageIndex];
-          
-          return (
-            <div className="details-section">
-              <h4>{selectedImg.title}</h4>
-              <div className="image-details">
-                <p>원본 크기: {selectedImg.info.width} x {selectedImg.info.height}px</p>
-                <p>크롭 영역: {selectedImg.info.cropInfo.size} x {selectedImg.info.cropInfo.size}px</p>
-                <p>시작 위치: X={selectedImg.info.cropInfo.x}, Y={selectedImg.info.cropInfo.y}</p>
-                
-                <div className="original-image-container">
-                  <h5>원본 이미지와 크롭 영역</h5>
-                  <div className="original-image-wrapper" style={{
-                    position: 'relative',
-                    width: '100%',
-                    // 원본 이미지 비율 유지
-                    paddingBottom: `${(selectedImg.info.height / selectedImg.info.width) * 100}%`
-                  }}>
-                    {/* 원본 이미지 */}
-                    <img 
-                      src={imageSrc} 
-                      alt="원본 이미지" 
-                      className="original-image"
-                    />
-                    
-                    {/* 크롭 영역 오버레이 */}
-                    <div className="crop-overlay">
-                      <div className="crop-area" style={{
-                        left: `${(selectedImg.info.cropInfo.x / selectedImg.info.width) * 100}%`,
-                        top: `${(selectedImg.info.cropInfo.y / selectedImg.info.height) * 100}%`,
-                        width: `${(selectedImg.info.cropInfo.size / selectedImg.info.width) * 100}%`,
-                        height: `${(selectedImg.info.cropInfo.size / selectedImg.info.height) * 100}%`,
-                      }}></div>
+              {(() => {
+                const selectedImg = getSelectedImageInfo();
+                if (selectedImg && selectedImg.info) {
+                  // 이미지 소스 결정
+                  const imageSrc = selectedImageIndex === -1 
+                    ? mainImageFile ? URL.createObjectURL(mainImageFile) : mainImage 
+                    : subImageFiles[selectedImageIndex] ? URL.createObjectURL(subImageFiles[selectedImageIndex]) : subImages[selectedImageIndex];
+                  
+                  return (
+                    <div className="details-section">
+                      <h4>{selectedImg.title}</h4>
+                      <div className="image-details">
+  <p>원본 크기: {selectedImg.info.width} x {selectedImg.info.height}px</p>
+  <p>크롭 영역: {selectedImg.info.cropInfo.size} x {selectedImg.info.cropInfo.size}px</p>
+  <p>시작 위치: X={selectedImg.info.cropInfo.x}, Y={selectedImg.info.cropInfo.y}</p>
+                      
+                      <div className="original-image-container">
+                        <h5>원본 이미지와 크롭 영역</h5>
+                        <div className="original-image-wrapper" style={{
+                          position: 'relative',
+                          width: '100%',
+                          // 원본 이미지 비율 유지
+                          paddingBottom: `${(selectedImg.info.height / selectedImg.info.width) * 100}%`
+                        }}>
+                          {/* 원본 이미지 */}
+                          <img 
+                            src={imageSrc} 
+                            alt="원본 이미지" 
+                            className="original-image"
+                          />
+                          
+                          {/* 크롭 영역 오버레이 */}
+                          <div className="crop-overlay">
+                            <div className="crop-area" style={{
+                              left: `${(selectedImg.info.cropInfo.x / selectedImg.info.width) * 100}%`,
+                              top: `${(selectedImg.info.cropInfo.y / selectedImg.info.height) * 100}%`,
+                              width: `${(selectedImg.info.cropInfo.size / selectedImg.info.width) * 100}%`,
+                              height: `${(selectedImg.info.cropInfo.size / selectedImg.info.height) * 100}%`,
+                            }}></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="cropped-preview-container">
+                        <h5>크롭 결과 미리보기</h5>
+                        <div className="cropped-preview">
+                          <img 
+                            src={selectedImageIndex === -1 ? mainImage : subImages[selectedImageIndex]} 
+                            alt="크롭된 이미지 미리보기" 
+                            className="cropped-image"
+                          />
+                        </div>
+                      </div></div> 
                     </div>
-                  </div>
-                </div>
-                
-                <div className="cropped-preview-container">
-                  <h5>크롭 결과 미리보기</h5>
-                  <div className="cropped-preview">
-                    <img 
-                      src={selectedImageIndex === -1 ? mainImage : subImages[selectedImageIndex]} 
-                      alt="크롭된 이미지 미리보기" 
-                      className="cropped-image"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        } else {
-          return <p>이미지 정보가 없습니다.</p>;
-        }
-      })()}
+                  );
+                } else {
+                  return <p>이미지 정보가 없습니다.</p>;
+                }
+              })()}
 
               <div className="modal-footer">
                 <button
