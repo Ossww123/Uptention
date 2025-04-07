@@ -8,6 +8,8 @@ public interface OrderItemService {
 
 	OrderItem saveOrderItem(OrderItem orderItem);
 
+	OrderItem findGiftItemByOrderId(Integer orderId);
+
 	List<OrderItem> findOrderItemsByOrderId(Integer orderId);
 
 	List<OrderItem> findOrderItemsByOrderIds(List<Integer> orderIds);

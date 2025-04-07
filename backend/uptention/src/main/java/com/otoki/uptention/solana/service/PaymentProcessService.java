@@ -210,11 +210,8 @@ public class PaymentProcessService {
 
 
 				// 선물 상품명 조회 (선물은 단일 상품만 가능)
-				List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(order.getId());
-				String itemName = "상품";
-				if (!orderItems.isEmpty()) {
-					itemName = orderItems.get(0).getItem().getName();
-				}
+				OrderItem giftItem = orderItemService.findGiftItemByOrderId(order.getId());
+				String itemName = giftItem.getItem().getName();
 
 				// FCM 알림 전송
 				String title = "선물이 도착했어요!";
