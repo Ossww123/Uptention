@@ -10,6 +10,7 @@ import ProductCreatePage from './pages/Products/ProductCreatePage';
 import ProductEditPage from './pages/Products/ProductEditPage'; // 추가된 부분
 import AppManagementPage from './pages/Apps/AppManagementPage';
 import AdminLayout from './components/layout/AdminLayout/AdminLayout';
+import NotFoundPage from './pages/NotFound/NotFoundPage'; // 추가된 부분
 
 // 임시 인증 상태 체크 함수 (나중에 실제 인증 로직으로 대체)
 const isAuthenticated = () => {
@@ -108,7 +109,7 @@ function App() {
         <Route path="/" element={<Navigate to="/admin/users" />} />
         
         {/* 404 페이지 */}
-        <Route path="*" element={<div>페이지를 찾을 수 없습니다.</div>} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Router>
   );
