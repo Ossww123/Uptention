@@ -8,13 +8,13 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  FlatList,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import ScreenTime from "../utils/ScreenTime";
 import { get } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import MiningGraph from "../components/MiningGraph"; // 새로운 공통 컴포넌트 임포트
 
 const { width } = Dimensions.get("window");
 
@@ -302,56 +302,6 @@ const DailyView = () => {
     }
   };
 
-  // 날짜 막대 그래프 렌더링
-  const renderMiningBar = ({ item }) => {
-    // 최대 채굴 시간 계산 (8시간 = 480분)
-    const MAX_MINING_TIME = 480;
-    // 모든 데이터 중 최대값 확인 (API 데이터 기준)
-    const maxValue = Math.max(
-      ...miningData.map((d) => d.value),
-      MAX_MINING_TIME
-    );
-    // 상대적 높이 계산 (8시간 초과 시에도 표현 가능하도록)
-    const barHeight = (item.value / maxValue) * 100;
-    const isSelected = selectedDayData && selectedDayData.id === item.id;
-
-    return (
-      <TouchableOpacity
-        style={styles.barContainer}
-        onPress={() => handleSelectDay(item)}
-      >
-        <View style={styles.barWrapper}>
-          <View
-            style={[
-              styles.bar,
-              { height: `${barHeight}%` },
-              item.isToday ? styles.activeBar : styles.inactiveBar,
-              isSelected && !item.isToday && styles.selectedBar,
-            ]}
-          />
-        </View>
-        <Text
-          style={[
-            styles.barText,
-            item.isToday && styles.activeBarText,
-            isSelected && !item.isToday && styles.selectedBarText,
-          ]}
-        >
-          {item.day}
-        </Text>
-        <Text
-          style={[
-            styles.barDayOfWeek,
-            item.isToday && styles.activeBarText,
-            isSelected && !item.isToday && styles.selectedBarText,
-          ]}
-        >
-          {item.dayOfWeek}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
   // 시간 차이를 분 또는 시간+분 형식으로 표시
   const formatTimeDifference = (minutes) => {
     const absMinutes = Math.abs(minutes);
@@ -374,91 +324,52 @@ const DailyView = () => {
     );
   }
 
+  // 데이트 타이틀 포맷팅
+  const dateTitle = selectedDayData 
+    ? `${selectedDayData.month}월 ${selectedDayData.day}일 ${selectedDayData.dayOfWeek}요일`
+    : "";
+
   return (
     <ScrollView
       style={styles.scrollContainer}
       showsVerticalScrollIndicator={false}
     >
-      {/* 일별 채굴 차트 */}
-      <View style={styles.chartContainer}>
-        <Text style={styles.dateTitle}>
-          {`${selectedDayData.month}월 ${selectedDayData.day}일 ${selectedDayData.dayOfWeek}요일`}
-        </Text>
-        <View style={styles.chartContent}>
-          {/* 8시간 표시선 */}
-          <View style={styles.hourLine}>
-            <Text style={styles.hourLineLabel}>8시간</Text>
-            <View style={styles.hourLineDivider} />
-          </View>
-          
-          {/* 4시간 표시선 */}
-          <View style={[styles.hourLine, styles.hourLineHalf]}>
-            <Text style={styles.hourLineLabel}>4시간</Text>
-            <View style={styles.hourLineDivider} />
-          </View>
-  
-          {/* 수평 스크롤 가능한 그래프 */}
-          <FlatList
-            ref={graphScrollRef}
-            data={miningData}
-            renderItem={renderMiningBar}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.barsContainer}
-            initialScrollIndex={miningData.length - 7} // 최근 7일이 보이도록 초기 스크롤 위치 설정
-            getItemLayout={(data, index) => ({
-              length: 45, // 각 아이템의 너비
-              offset: 45 * index,
-              index,
-            })}
-            onLayout={() => {
-              // 단순하게 한 번만 스크롤 설정
-              graphScrollRef.current?.scrollToIndex({
-                index: miningData.length - 7,
-                animated: false,
-              });
-            }}
-          />
-          <View style={styles.chartDivider} />
-          <Text style={styles.updateTimeText}>
-            {new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-            에 업데이트됨
-          </Text>
-        </View>
-      </View>
+      {/* 공통 그래프 컴포넌트 사용 */}
+      <MiningGraph
+        data={miningData}
+        isScrollable={true}
+        selectedItem={selectedDayData}
+        onSelectBar={handleSelectDay}
+        dateRangeTitle={dateTitle}
+      />
 
       {/* 채굴 시간 */}
       <View style={styles.miningTimeContainer}>
-      <View style={styles.miningTimeHeader}>
-  <Text style={styles.miningTimeTitle}>채굴 시간</Text>
-</View>
+        <View style={styles.miningTimeHeader}>
+          <Text style={styles.miningTimeTitle}>채굴 시간</Text>
+        </View>
 
-
-<View style={styles.miningTimeContent}>
-  <View style={styles.pickaxeContainer}>
-    <Image
-      source={require("../../assets/pickaxe.png")}
-      style={styles.pickaxeIcon}
-      resizeMode="contain"
-    />
-  </View>
-  <View style={styles.miningTimeInfo}>
-    <Text style={[styles.miningTimeValue, styles.rightAlignedText]}>
-      <Text style={styles.hoursText}>
-        {selectedDayData.miningTime.hours}
-      </Text>
-      시간 
-      <Text style={styles.minutesText}>
-        {selectedDayData.miningTime.minutes}
-      </Text>
-      분
-    </Text>
-  </View>
-</View>
+        <View style={styles.miningTimeContent}>
+          <View style={styles.pickaxeContainer}>
+            <Image
+              source={require("../../assets/pickaxe.png")}
+              style={styles.pickaxeIcon}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.miningTimeInfo}>
+            <Text style={[styles.miningTimeValue, styles.rightAlignedText]}>
+              <Text style={styles.hoursText}>
+                {selectedDayData.miningTime.hours}
+              </Text>
+              시간 
+              <Text style={styles.minutesText}>
+                {selectedDayData.miningTime.minutes}
+              </Text>
+              분
+            </Text>
+          </View>
+        </View>
 
         {selectedDayData.isToday && miningDifference !== 0 && (
           <View style={styles.characterContainer}>
@@ -514,6 +425,7 @@ const DailyView = () => {
               </View>
             );
           })}
+          
         {/* 시간대 정보 */}
         <View style={styles.timezoneContainer}>
           <Text style={styles.timezoneText}>
@@ -539,89 +451,10 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
-  chartContainer: {
-    margin: 20,
-    marginTop: 0,
-    backgroundColor: "#F8F8F8",
-    borderRadius: 15,
-    padding: 15,
-  },
-  dateTitle: {
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 20,
-  },
-  chartContent: {
-    paddingBottom: 5,
-    paddingTop: 30, // 상단에 "8시간" 라벨을 위한 공간 확보
-    position: "relative",
-    height: 200,
-  },
-  barsContainer: {
-    height: 115, // 원래 높이
-    alignItems: "flex-end",
-    paddingRight: 10,
-    paddingBottom: 30, // 하단 패딩 추가
-    zIndex: 5, // 차트 바가 시간 표시선 위에 표시되도록 zIndex 추가
-  },
-  barContainer: {
-    alignItems: "center",
-    width: 45, // 각 막대 컨테이너 너비
-    marginHorizontal: 2,
-  },
-  barWrapper: {
-    height: "100%",
-    justifyContent: "flex-end",
-    paddingTop: 25, // "8시간" 라벨 아래에서 시작하도록 조정
-  },
-  bar: {
-    width: 16,
-    borderRadius: 8,
-    minHeight: 10,
-  },
-  activeBar: {
-    backgroundColor: "#FF8C00",
-  },
-  inactiveBar: {
-    backgroundColor: "#D0D0D0",
-  },
-  selectedBar: {
-    backgroundColor: "#FFA54F", // 선택된 막대 색상
-  },
-  barText: {
-    marginTop: 10, // 8에서 10으로 증가
-    fontSize: 14,
-    color: "#666",
-  },
-  barDayOfWeek: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 3, // 2에서 3으로 증가
-  },
-  activeBarText: {
-    color: "#FF8C00",
-    fontWeight: "500",
-  },
-  selectedBarText: {
-    color: "#FFA54F",
-    fontWeight: "500",
-  },
-  chartDivider: {
-    height: 1,
-    backgroundColor: "#DDD",
-    marginTop: 5,
-  },
-  updateTimeText: {
-    fontSize: 12,
-    color: "#999",
-    textAlign: "right",
-    marginTop: 5,
-  },
   miningTimeContainer: {
     margin: 20,
     marginTop: 0,
-    backgroundColor: "#F8F8F8",
+    backgroundColor: "#F8F8F8", 
     borderRadius: 15,
     padding: 15,
   },
@@ -697,10 +530,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "500",
   },
-  seeMoreText: {
-    fontSize: 14,
-    color: "#0066CC",
-  },
   appItem: {
     marginBottom: 20,
   },
@@ -760,30 +589,6 @@ const styles = StyleSheet.create({
   },
   rightAlignedText: {
     textAlign: 'right',
-  },
-  // 새로 추가할 스타일
-  hourLine: {
-    position: "absolute",
-    top: 0, // 상단에서 거리 조정
-    width: "100%",
-    zIndex: 1,
-  },
-  hourLineHalf: {
-    top: 45, // 4시간 표시선은 8시간과 0시간 사이에 위치 (중간 지점)
-  },
-  hourLineLabel: {
-    position: "absolute",
-    right: 10,
-    fontSize: 12,
-    color: "#888",
-    zIndex: 2,
-  },
-  hourLineDivider: {
-    height: 1,
-    backgroundColor: "#DDD",
-    marginTop: 17, // 라벨 아래 위치하도록 조정
-    width: "100%",
-    opacity: 0.7,
   },
 });
 

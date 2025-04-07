@@ -5,15 +5,15 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import ScreenTime from "../utils/ScreenTime";
 import { get } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import MiningGraph from "../components/MiningGraph"; // 공통 컴포넌트 임포트
 
 const { width } = Dimensions.get("window");
 
@@ -139,11 +139,26 @@ const WeeklyView = () => {
           // 총 시간 누적
           totalMinutes += value;
 
+          // 오늘 날짜인지 확인
+          const today = new Date();
+          const isToday = (
+            date.getDate() === today.getDate() &&
+            date.getMonth() === today.getMonth() &&
+            date.getFullYear() === today.getFullYear()
+          );
+
           miningDataArray.push({
+            id: `${month}-${day}`,
             day: day.toString(),
             month: month,
             value: value > 0 ? value : 5, // 최소값 5로 설정 (그래프 표시를 위해)
             dayOfWeek: dayOfWeek,
+            isToday: isToday,
+            miningTime: {
+              hours: Math.floor(value / 60),
+              minutes: value % 60,
+              totalMinutes: value
+            }
           });
         }
 
@@ -158,7 +173,7 @@ const WeeklyView = () => {
         const avgHours = Math.floor(avgDailyMinutes / 60);
         const avgMinutes = avgDailyMinutes % 60;
 
-        // 증가량 계산 (임의 값)
+        // 증가량 계산 (임의 값 또는 API에서 제공되는 경우)
         const increaseHours = Math.floor(Math.random() * 5);
         const increaseMinutes = Math.floor(Math.random() * 60);
 
@@ -166,8 +181,8 @@ const WeeklyView = () => {
           total: `${hours}시간 ${minutes}분`,
           increase: `${increaseHours}시간 ${increaseMinutes}분`,
           average: `${avgHours}시간 ${avgMinutes}분`,
-          averageStartTime: "오전 8:42", // 임의 값
-          averageEndTime: "오후 5:52", // 임의 값
+          averageStartTime: "오전 8:42", // 임의 값 또는 API에서 제공
+          averageEndTime: "오후 5:52", // 임의 값 또는 API에서 제공
         });
       } else {
         console.error("주간 채굴 시간 데이터 가져오기 실패:", response.data);
@@ -202,13 +217,30 @@ const WeeklyView = () => {
       const day = date.getDate();
       const month = date.getMonth() + 1;
       const dayOfWeek = days[date.getDay()];
-      const value = Math.floor(Math.random() * 30) + 5; // 5-35 사이 랜덤값
+      
+      // 랜덤 채굴 시간 생성 (분 단위)
+      const value = Math.floor(Math.random() * 480) + 30; // 30-510분 사이 랜덤값
+      
+      // 오늘 날짜인지 확인
+      const today = new Date();
+      const isToday = (
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear()
+      );
 
       dummyMiningData.push({
+        id: `${month}-${day}`,
         day: day.toString(),
         month: month,
         value: value,
         dayOfWeek: dayOfWeek,
+        isToday: isToday,
+        miningTime: {
+          hours: Math.floor(value / 60),
+          minutes: value % 60,
+          totalMinutes: value
+        }
       });
     }
 
@@ -271,37 +303,6 @@ const WeeklyView = () => {
     return (usageTime / maxTime) * maxWidth;
   };
 
-  // 주간 채굴량 차트 바 렌더링
-  const renderMiningBars = () => {
-    if (weeklyMiningData.length === 0) return null;
-
-    // 최대값 계산 (8시간 = 480분 또는 최대값 중 큰 값)
-    const MAX_MINING_TIME = 480;
-    const maxDataValue = Math.max(...weeklyMiningData.map((d) => d.value));
-    const maxValue = Math.max(maxDataValue, MAX_MINING_TIME);
-
-    return weeklyMiningData.map((item, index) => {
-      // 상대적 높이 계산
-      const barHeight = (item.value / maxValue) * 100;
-
-      return (
-        <View key={index} style={styles.barContainer}>
-          <View style={styles.barWrapper}>
-            <View
-              style={[
-                styles.bar,
-                { height: `${barHeight}%` },
-                styles.activeBar,
-              ]}
-            />
-          </View>
-          <Text style={styles.barText}>{item.day}</Text>
-          <Text style={styles.barDayOfWeek}>{item.dayOfWeek}</Text>
-        </View>
-      );
-    });
-  };
-
   // 앱 아이콘 렌더링 함수
   const renderAppIcon = (data) => {
     if (data.iconBase64) {
@@ -339,93 +340,69 @@ const WeeklyView = () => {
       style={styles.scrollContainer}
       showsVerticalScrollIndicator={false}
     >
-      {/* 주간 채굴 차트 */}
-      <View style={styles.chartContainer}>
-        <View style={styles.weekNavigator}>
-          <TouchableOpacity onPress={() => navigateWeek("prev")}>
-            <Ionicons name="chevron-back" size={24} color="#666" />
-          </TouchableOpacity>
-          <Text
-            style={styles.dateTitle}
-          >{`${currentWeek.start} - ${currentWeek.end}`}</Text>
-          <TouchableOpacity
-            onPress={() => navigateWeek("next")}
-            disabled={currentWeekIndex === 0}
-            style={currentWeekIndex === 0 ? styles.disabledNavButton : {}}
-          >
-            <Ionicons
-              name="chevron-forward"
-              size={24}
-              color={currentWeekIndex === 0 ? "#ccc" : "#666"}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.chartContent}>
-          <View style={styles.barsContainer}>{renderMiningBars()}</View>
-          <Text style={styles.minutesLabel}>8시간</Text>
-          <View style={styles.chartDivider} />
-          <Text style={styles.updateTimeText}>
-            {new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-            에 업데이트됨
-          </Text>
-        </View>
-      </View>
+      {/* 공통 그래프 컴포넌트 사용 */}
+      <MiningGraph
+        data={weeklyMiningData}
+        isScrollable={false}
+        dateRangeTitle={`${currentWeek.start} - ${currentWeek.end}`}
+        onPrevWeek={() => navigateWeek("prev")}
+        onNextWeek={() => navigateWeek("next")}
+        isCurrentWeek={currentWeekIndex === 0}
+      />
 
       {/* 채굴 시간 */}
       <View style={styles.miningTimeContainer}>
-  <View style={styles.miningTimeHeader}>
-    <Text style={styles.miningTimeTitle}>채굴 시간</Text>
-  </View>
+        <View style={styles.miningTimeHeader}>
+          <Text style={styles.miningTimeTitle}>채굴 시간</Text>
+        </View>
 
-  <Text style={styles.increasedTimeText}>
-    전 주보다 {weeklyTotalMiningTime.increase} 증가했어요!
-  </Text>
+        <Text style={styles.increasedTimeText}>
+          전 주보다 {weeklyTotalMiningTime.increase} 증가했어요!
+        </Text>
 
-  <View style={styles.miningTimeContent}>
-    <View style={styles.pickaxeContainer}>
-      <Image
-        source={require("../../assets/pickaxe.png")}
-        style={styles.pickaxeIcon}
-        resizeMode="contain"
-      />
-    </View>
-    <View style={styles.miningTimeInfo}>
-      <Text style={styles.miningTimeValue}>
-        <Text style={styles.weeklyText}>총</Text>{" "}
-        <Text style={styles.hoursText}>
-          {weeklyTotalMiningTime.total.split("시간")[0]}
-        </Text>
-        시간
-        <Text style={styles.minutesText}>
-          {weeklyTotalMiningTime.total.split("시간")[1].replace("분", "")}
-        </Text>
-        분
-      </Text>
-    </View>
-  </View>
-  
-  <View style={styles.dailyMiningContainer}>
-    <Text style={styles.dailyMiningTitle}>날짜별 채굴 시간</Text>
-    <View style={styles.dailyMiningList}>
-      {weeklyMiningData.map((item, index) => {
-        const hours = Math.floor(item.value / 60);
-        const minutes = item.value % 60;
-        return (
-          <View key={index} style={styles.dailyMiningItem}>
-            <Text style={styles.dailyMiningDate}>{`${item.month}/${item.day} (${item.dayOfWeek})`}</Text>
-            <Text style={styles.dailyMiningTime}>
-              {hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`}
+        <View style={styles.miningTimeContent}>
+          <View style={styles.pickaxeContainer}>
+            <Image
+              source={require("../../assets/pickaxe.png")}
+              style={styles.pickaxeIcon}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.miningTimeInfo}>
+            <Text style={styles.miningTimeValue}>
+              <Text style={styles.weeklyText}>총</Text>{" "}
+              <Text style={styles.hoursText}>
+                {weeklyTotalMiningTime.total.split("시간")[0]}
+              </Text>
+              시간
+              <Text style={styles.minutesText}>
+                {weeklyTotalMiningTime.total.split("시간")[1].replace("분", "")}
+              </Text>
+              분
             </Text>
           </View>
-        );
-      })}
-    </View>
-  </View>
-</View>
+        </View>
+
+        <View style={styles.dailyMiningContainer}>
+          <Text style={styles.dailyMiningTitle}>날짜별 채굴 시간</Text>
+          <View style={styles.dailyMiningList}>
+            {weeklyMiningData.map((item, index) => {
+              const hours = Math.floor(item.value / 60);
+              const minutes = item.value % 60;
+              return (
+                <View key={index} style={styles.dailyMiningItem}>
+                  <Text
+                    style={styles.dailyMiningDate}
+                  >{`${item.month}/${item.day} (${item.dayOfWeek})`}</Text>
+                  <Text style={styles.dailyMiningTime}>
+                    {hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      </View>
 
       {/* 가장 많이 사용한 앱 */}
       <View style={styles.appUsageContainer}>
@@ -473,7 +450,6 @@ const WeeklyView = () => {
 };
 
 const styles = StyleSheet.create({
-  // 기존 스타일 코드와 동일
   centerContainer: {
     flex: 1,
     justifyContent: "center",
@@ -488,87 +464,9 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
-  chartContainer: {
-    margin: 20,
-    marginTop: 0,
-    backgroundColor: "#F8F8F8",
-    borderRadius: 15,
-    padding: 15,
-  },
-  weekNavigator: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  dateTitle: {
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  chartContent: {
-    paddingBottom: 5,
-    paddingTop: 30, // 상단에 "8시간" 라벨을 위한 공간 확보
-    position: "relative",
-  },
-  barsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    height: 150,
-    marginBottom: 10,
-  },
-  barContainer: {
-    alignItems: "center",
-    width: 30,
-  },
-  barWrapper: {
-    height: "100%",
-    justifyContent: "flex-end",
-    paddingTop: 25, // "8시간" 라벨 아래에서 시작하도록 조정
-  },
-  bar: {
-    width: 16,
-    borderRadius: 8,
-    minHeight: 10,
-  },
-  activeBar: {
-    backgroundColor: "#FF8C00",
-  },
-  inactiveBar: {
-    backgroundColor: "#D0D0D0",
-  },
-  barText: {
-    marginTop: 10, // 8에서 10으로 증가
-    fontSize: 14,
-    color: "#666",
-  },
-  barDayOfWeek: {
-    fontSize: 12,
-    color: "#888",
-    marginTop: 3,
-  },
-  minutesLabel: {
-    position: "absolute",
-    top: 5, // 상단에서 거리 조정
-    right: 0,
-    fontSize: 12,
-    color: "#888",
-  },
-  chartDivider: {
-    height: 1,
-    backgroundColor: "#DDD",
-    marginTop: 5,
-  },
-  updateTimeText: {
-    fontSize: 12,
-    color: "#999",
-    textAlign: "right",
-    marginTop: 5,
-  },
   miningTimeContainer: {
     margin: 20,
-    marginTop: 0,
+    marginTop: 10,
     backgroundColor: "#F8F8F8",
     borderRadius: 15,
     padding: 15,
@@ -620,42 +518,36 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "bold",
   },
-  averageMiningContainer: {
+  dailyMiningContainer: {
     backgroundColor: "#FFF",
     borderRadius: 10,
     padding: 15,
-    marginTop: 5,
+    marginTop: 10,
   },
-  averageTitle: {
+  dailyMiningTitle: {
     fontSize: 15,
     fontWeight: "500",
-    marginBottom: 15,
+    marginBottom: 10,
     textAlign: "center",
   },
-  averageTimeRow: {
+  dailyMiningList: {
+    marginTop: 5,
+  },
+  dailyMiningItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
-  averageTimeItem: {
-    flex: 1,
-    alignItems: "center",
+  dailyMiningDate: {
+    fontSize: 14,
+    color: "#333",
   },
-  timelineSeparator: {
-    width: 1,
-    height: 40,
-    backgroundColor: "#DDD",
-    marginHorizontal: 10,
-  },
-  averageTimeLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 6,
-    marginBottom: 4,
-  },
-  averageTimeValue: {
-    fontSize: 16,
+  dailyMiningTime: {
+    fontSize: 14,
     fontWeight: "500",
+    color: "#333",
   },
   appUsageContainer: {
     margin: 20,
@@ -671,10 +563,6 @@ const styles = StyleSheet.create({
   appUsageTitle: {
     fontSize: 18,
     fontWeight: "500",
-  },
-  seeMoreText: {
-    fontSize: 14,
-    color: "#0066CC",
   },
   appItem: {
     marginBottom: 20,
@@ -723,9 +611,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     zIndex: -1,
   },
-  disabledNavButton: {
-    opacity: 0.5,
-  },
   timezoneContainer: {
     marginHorizontal: 20,
     marginBottom: 20,
@@ -736,61 +621,6 @@ const styles = StyleSheet.create({
     color: "#888",
     textAlign: "center",
   },
-  // styles 객체에 추가할 스타일
-miningStatsContainer: {
-  backgroundColor: "#FFF",
-  borderRadius: 10,
-  padding: 15,
-  marginTop: 10,
-  flexDirection: "row",
-  justifyContent: "space-between",
-},
-miningStatItem: {
-  flex: 1,
-  alignItems: "center",
-  paddingVertical: 5,
-},
-miningStatLabel: {
-  fontSize: 14,
-  color: "#666",
-  marginBottom: 5,
-},
-miningStatValue: {
-  fontSize: 16,
-  fontWeight: "600",
-  color: "#333",
-},
-dailyMiningContainer: {
-  backgroundColor: "#FFF",
-  borderRadius: 10,
-  padding: 15,
-  marginTop: 10,
-},
-dailyMiningTitle: {
-  fontSize: 15,
-  fontWeight: "500",
-  marginBottom: 10,
-  textAlign: "center",
-},
-dailyMiningList: {
-  marginTop: 5,
-},
-dailyMiningItem: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  paddingVertical: 8,
-  borderBottomWidth: 1,
-  borderBottomColor: "#F0F0F0",
-},
-dailyMiningDate: {
-  fontSize: 14,
-  color: "#333",
-},
-dailyMiningTime: {
-  fontSize: 14,
-  fontWeight: "500",
-  color: "#333",
-},
 });
 
 export default WeeklyView;
