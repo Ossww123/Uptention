@@ -22,15 +22,64 @@ class AppBlockerManager(private val context: Context) {
             "com.android.settings",                      // 설정
             "com.samsung.android.settings",              // 삼성 설정
             "com.android.systemui",                      // 시스템 UI
-            "com.google.android.apps.nexuslauncher",    // Pixel 런처
-            "com.google.android.packageinstaller",       // 패키지 설치 관리자
             "com.android.permissioncontroller",          // 권한 컨트롤러
+            "android",                                   // 안드로이드 시스템
+            
+            // 런처 관련
+            "com.google.android.apps.nexuslauncher",    // Pixel 런처
             "com.sec.android.app.launcher",             // 삼성 런처
             "com.google.android.launcher",               // 구글 런처
-            "com.google.android.launcher.layouts.nexus", // Nexus 런처 레이아웃
-            "android",                                   // 안드로이드 시스템
-            "com.android.launcher2",                     // 레거시 런처
-            "com.lge.launcher3",                         // LG 홈 (LG 런처)
+            "com.lge.launcher3",                        // LG 홈 런처
+            
+            // 잠금화면 및 보안 관련
+            "com.android.keyguard",                      // 기본 잠금화면
+            "com.samsung.android.keyguard",             // 삼성 잠금화면
+            "com.android.systemui.keyguard",            // 시스템 잠금화면
+            "com.samsung.android.lock",                  // 삼성 잠금화면 매니저
+            "com.android.internal.systemui.navbar",      // 시스템 네비게이션 바
+            "com.android.credentialmanager",            // 자격증명 관리자
+            "com.samsung.android.biometrics.app.setting", // 생체인식 설정
+            "com.samsung.android.bio.face.service",      // 얼굴인식 서비스
+            "com.samsung.android.fingerprint.service",   // 지문인식 서비스
+            
+            // 전원 관리 및 부팅 관련
+            "com.android.internal.policy",              // 시스템 정책 (전원 버튼 등)
+            "com.samsung.android.powerctl",             // 삼성 전원 컨트롤
+            "com.android.server.telecom",               // 통신 서버 (긴급통화 포함)
+            "com.samsung.android.emergencymode.service", // 긴급모드 서비스
+            "com.sec.android.emergencymode",            // 삼성 긴급모드
+            "com.android.phone",                        // 전화 서비스 (긴급통화용)
+            "com.google.android.packageinstaller",       // 패키지 설치 관리자
+            "com.sec.android.app.bootloader",           // 삼성 부트로더
+            "com.samsung.android.app.watchmanager",     // 삼성 시스템 매니저
+            "com.sec.android.app.servicemodeapp",      // 삼성 서비스 모드
+            "com.samsung.android.sm",                   // 삼성 디바이스 관리
+            "com.samsung.android.sm.policy",            // 삼성 정책 관리
+            "com.sec.android.systemupdate",            // 시스템 업데이트
+            "com.sec.android.app.hwmoduletest",        // 하드웨어 테스트
+            "com.samsung.android.app.aodservice",      // Always On Display 서비스
+            "com.samsung.android.service.peoplestripe", // Edge 패널
+            "com.samsung.android.incallui",            // 통화 UI
+            "com.android.systemui.recents",            // 최근 앱 화면
+            "com.android.systemui.navigation",         // 시스템 네비게이션
+            "com.samsung.android.app.cocktailbarservice", // Edge 조명
+            "com.samsung.android.MtpApplication",      // USB 연결
+            "com.android.externalstorage",            // 외부 저장소
+            "com.android.providers.telephony",         // 통신 제공자
+            "com.samsung.android.provider.filterprovider", // 삼성 필터 제공자
+            "com.android.providers.calendar",          // 캘린더 제공자
+            "com.android.providers.contacts",          // 연락처 제공자
+            
+            // 잠금화면 및 보안 추가
+            "com.samsung.android.app.lockstar",        // 삼성 잠금화면 스타일
+            "com.samsung.android.app.smartcapture",    // 스크린샷
+            "com.samsung.android.authfw",              // 인증 프레임워크
+            "com.samsung.android.knox.containercore",  // Knox 컨테이너
+            "com.samsung.android.knox.attestation",    // Knox 인증
+            "com.samsung.android.securitylogagent",    // 보안 로그
+            "com.samsung.android.smartface",           // 스마트 페이스
+            "com.samsung.android.biometrics",          // 생체 인식
+            "com.samsung.android.bbc.bbcagent",       // 배터리 보호
             
             // 개발 및 지갑 앱
             "com.expo.development",                     // Expo Go
@@ -42,7 +91,6 @@ class AppBlockerManager(private val context: Context) {
             "com.android.dialer",                        // 안드로이드 전화
             "com.samsung.android.dialer",                // 삼성 전화
             "com.google.android.dialer",                 // Google 전화
-            "com.android.phone",                         // 전화 서비스
             "com.android.mms",                           // 안드로이드 메시지
             "com.samsung.android.messaging",             // 삼성 메시지
             "com.android.messaging",                     // 안드로이드 메시지

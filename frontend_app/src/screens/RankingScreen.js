@@ -11,11 +11,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
+import { useAuth } from '../contexts/AuthContext';
 
 const RankingScreen = ({ navigation }) => {
   const [selectedRank, setSelectedRank] = useState(1);
   const [rankingData, setRankingData] = useState({});
   const [loading, setLoading] = useState(true);
+  const { authToken } = useAuth();
 
   useEffect(() => {
     fetchRankingData();
@@ -24,13 +26,12 @@ const RankingScreen = ({ navigation }) => {
   const fetchRankingData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('https://j12d211.p.ssafy.io/api/mining-time', {
+      const response = await axios.get(`${API_BASE_URL}/api/mining-time`, {
         params: {
           top: 3
         },
         headers: {
-          'accept': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJjYXRlZ29yeSI6IkF1dGhvcml6YXRpb24iLCJ1c2VySWQiOjQsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzQzMzg0NTI1LCJleHAiOjE3NDU5NzY1MjV9.xUPE1swCITKU4f9vdxqnmUDo2N2kRkv4Ig41jWrBb4o'
+          'Authorization': `Bearer ${authToken}`
         }
       });
       

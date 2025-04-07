@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert, AppState, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, NativeModules, Alert, AppState, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTimer } from '../hooks/useTimer';
 import { useAuth } from '../contexts/AuthContext';
@@ -193,14 +193,19 @@ const FocusModeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
+        {/* 캐릭터 영역 */}
+        <View style={styles.characterContainer}>
+          <View style={styles.characterBackground} />
+          <Image 
+            source={require('../../assets/포커스모드사진.png')}
+            style={styles.characterImage}
+            resizeMode="contain"
+          />
+        </View>
+
         {/* 포인트 표시 */}
         <View style={styles.coinContainer}>
           <Text style={styles.coinText}>+ {points}p</Text>
-        </View>
-
-        {/* 캐릭터 영역 */}
-        <View style={styles.characterContainer}>
-          {/* 여기에 캐릭터 이미지나 애니메이션이 들어갈 수 있습니다 */}
         </View>
 
         <View style={styles.bottomContainer}>
@@ -254,6 +259,19 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
+  },
+  characterBackground: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  characterImage: {
+    width: 200,
+    height: 200,
+    zIndex: 1,
   },
   bottomContainer: {
     width: '100%',

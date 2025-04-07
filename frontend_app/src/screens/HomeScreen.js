@@ -422,35 +422,37 @@ useFocusEffect(
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
-          <View style={styles.header}>
-            <View style={styles.userInfoContainer}>
-              <Text style={{fontSize: 16, fontWeight: 'bold'}}>{userInfo?.employeeNumber || '-'}</Text>
+          <View style={styles.headerSection}>
+            {/* 첫 번째 줄: 사원번호와 아이콘들 */}
+            <View style={styles.header}>
+              <Text style={styles.employeeNumberText}>{userInfo?.employeeNumber || '-'}</Text>
+              <View style={styles.iconContainer}>
+                <TouchableOpacity onPress={() => navigation.navigate('Ranking')} style={styles.iconButton}>
+                  <Ionicons name="medal-outline" size={24} />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('Notification')}
+                  style={styles.notificationButton}
+                >
+                  <Ionicons name="notifications-outline" size={24} />
+                  {unreadNotifications > 0 && (
+                    <View style={styles.notificationBadge}>
+                      <Text style={styles.notificationBadgeText}>{unreadNotifications}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            {/* 두 번째 줄: 이름과 WORK 토큰 */}
+            <View style={styles.subHeader}>
               <Text style={styles.nameText}>{userInfo?.name || '-'}</Text>
-            </View>
-            <View style={styles.iconContainer}>
-              <TouchableOpacity onPress={() => navigation.navigate('Ranking')}>
-                <Ionicons name="medal-outline" size={20} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => navigation.navigate('Notification')}
-                style={styles.notificationButton}
-              >
-                <Ionicons name="notifications-outline" size={20} />
-                {unreadNotifications > 0 && (
-                  <View style={styles.notificationBadge}>
-                    <Text style={styles.notificationBadgeText}>{unreadNotifications}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.subHeader}>
-            <Text></Text>
-            <View style={styles.walletContainer}>
-              <Text style={styles.walletWorkToken}>
-                {publicKey ? `${tokenBalance} ` : '연결 필요 '}
-              </Text>
-              <Text style={styles.workText}>WORK</Text>
+              <View style={styles.walletContainer}>
+                <Text style={styles.walletWorkToken}>
+                  {publicKey ? `${tokenBalance} ` : '연결 필요 '}
+                </Text>
+                <Text style={styles.workText}>WORK</Text>
+              </View>
             </View>
           </View>
           <View style={styles.mainContainer}>
@@ -485,6 +487,11 @@ useFocusEffect(
                     transform={`rotate(-90, ${size / 2}, ${size / 2})`}
                   />
                 </Svg>
+                {/* 중앙에 캐릭터 이미지 추가 */}
+                <Image
+                  source={require('../../assets/업텐션 캐릭터.png')}
+                  style={styles.centerCharacterImage}
+                />
               </View>
             </View>
           </View>
@@ -550,32 +557,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center',
   },
- 
+  headerSection: {
+    width: '100%',
+    marginTop: 20,
+    marginBottom: 30,
+  },
   header: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    height: 45,
     alignItems: 'center',
-    marginTop: 50,
+    marginBottom: 8,
   },
-  userInfoContainer: {
-    justifyContent: 'center',
-  },
-  userInfoText: {
-    fontSize: 14,
-    marginBottom: 5,
-    color: '#000',
+  employeeNumberText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   iconContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     alignItems: 'center',
-    gap: 10,
+    gap: 15,
+  },
+  iconButton: {
+    padding: 5,
   },
   notificationButton: {
     position: 'relative',
-    padding: 3,
+    padding: 5,
   },
   notificationBadge: {
     position: 'absolute',
@@ -596,21 +604,24 @@ const styles = StyleSheet.create({
   subHeader: {
     width: '100%',
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+  },
+  nameText: {
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   walletContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   walletWorkToken: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#FF8C00',
   },
   workText: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#000000',
   },
@@ -643,11 +654,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  nameText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    alignSelf: 'flex-start',
+  centerCharacterImage: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    resizeMode: 'contain',
   },
   subContainer: {
     width: '100%',

@@ -392,7 +392,10 @@ const ProfileScreen = ({ navigation }) => {
               <Text style={styles.menuText}>선물함</Text>
               <Ionicons name="chevron-forward" size={24} color="black" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('NFT')}
+            >
               <Text style={styles.menuText}>NFT</Text>
               <Ionicons name="chevron-forward" size={24} color="black" />
             </TouchableOpacity>
