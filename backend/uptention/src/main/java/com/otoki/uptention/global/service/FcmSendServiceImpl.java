@@ -22,32 +22,6 @@ public class FcmSendServiceImpl implements FcmSendService {
 	private final FcmTokenRepository fcmTokenRepository;
 
 	/**
-	 * @param fcmToken 클라이언트 기기의 FCM 토큰
-	 * @param title    알림 제목
-	 * @param body     알림 내용
-	 */
-	@Async("fcmTaskExecutor")
-	public void sendNotification(String fcmToken, String title, String body) {
-		try {
-			// 전송할 메시지 생성
-			Message message = Message.builder()
-				.setToken(fcmToken)
-				.setNotification(Notification.builder()
-					.setTitle(title)
-					.setBody(body)
-					.build())
-				.build();
-
-			// 메시지 전송 및 결과 로깅
-			log.info("Async: Sending notification to FCM - Title: {}, Body: {}", title, body);
-			String messageId = FirebaseMessaging.getInstance().send(message);
-			log.info("Async: Successfully sent message with ID: {}", messageId);
-		} catch (Exception e) {
-			log.error("Async: Failed to send FCM notification to token {}: {}", fcmToken, e.getMessage());
-		}
-	}
-
-	/**
 	 * 특정 사용자의 모든 기기에 푸시 알림을 비동기로 전송합니다.
 	 *
 	 * @param user  알림을 받을 사용자
@@ -65,6 +39,31 @@ public class FcmSendServiceImpl implements FcmSendService {
 
 		for (FcmToken token : fcmTokens) {
 			sendNotification(token.getValue(), title, body);
+		}
+	}
+
+	/**
+	 * @param fcmToken 클라이언트 기기의 FCM 토큰
+	 * @param title    알림 제목
+	 * @param body     알림 내용
+	 */
+	private void sendNotification(String fcmToken, String title, String body) {
+		try {
+			// 전송할 메시지 생성
+			Message message = Message.builder()
+				.setToken(fcmToken)
+				.setNotification(Notification.builder()
+					.setTitle(title)
+					.setBody(body)
+					.build())
+				.build();
+
+			// 메시지 전송 및 결과 로깅
+			log.info("Async: Sending notification to FCM - Title: {}, Body: {}", title, body);
+			String messageId = FirebaseMessaging.getInstance().send(message);
+			log.info("Async: Successfully sent message with ID: {}", messageId);
+		} catch (Exception e) {
+			log.error("Async: Failed to send FCM notification to token {}: {}", fcmToken, e.getMessage());
 		}
 	}
 }
