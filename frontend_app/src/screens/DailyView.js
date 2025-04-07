@@ -15,6 +15,7 @@ import ScreenTime from "../utils/ScreenTime";
 import { get } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import MiningGraph from "../components/MiningGraph"; // 새로운 공통 컴포넌트 임포트
+import MiningStats from "../components/MiningStats";
 
 const { width } = Dimensions.get("window");
 
@@ -29,7 +30,7 @@ const DailyView = () => {
 
   // 선택된 날짜의 데이터
   const [selectedDayData, setSelectedDayData] = useState(null);
-  
+
   // 전날 대비 채굴 시간 차이
   const [miningDifference, setMiningDifference] = useState(0);
 
@@ -109,7 +110,7 @@ const DailyView = () => {
             miningTime: {
               hours: hours,
               minutes: minutes,
-              totalMinutes: totalTime
+              totalMinutes: totalTime,
             },
           });
         }
@@ -119,13 +120,15 @@ const DailyView = () => {
         // 오늘 데이터를 기본 선택으로 설정
         const todayData = miningDataArray.find((item) => item.isToday);
         setSelectedDayData(todayData);
-        
+
         // 오늘과 어제의 채굴 시간 차이 계산
         if (miningDataArray.length >= 2) {
-          const todayIndex = miningDataArray.findIndex(item => item.isToday);
-          if (todayIndex >= 1) { // 어제 데이터가 있는지 확인
+          const todayIndex = miningDataArray.findIndex((item) => item.isToday);
+          if (todayIndex >= 1) {
+            // 어제 데이터가 있는지 확인
             const today = miningDataArray[todayIndex].miningTime.totalMinutes;
-            const yesterday = miningDataArray[todayIndex - 1].miningTime.totalMinutes;
+            const yesterday =
+              miningDataArray[todayIndex - 1].miningTime.totalMinutes;
             setMiningDifference(today - yesterday);
           }
         }
@@ -138,10 +141,10 @@ const DailyView = () => {
 
         const todayData = dummyData.find((item) => item.isToday);
         setSelectedDayData(todayData);
-        
+
         // 더미 데이터로 채굴 시간 차이 계산
         if (dummyData.length >= 2) {
-          const todayIndex = dummyData.findIndex(item => item.isToday);
+          const todayIndex = dummyData.findIndex((item) => item.isToday);
           if (todayIndex >= 1) {
             const today = dummyData[todayIndex].miningTime.totalMinutes;
             const yesterday = dummyData[todayIndex - 1].miningTime.totalMinutes;
@@ -158,10 +161,10 @@ const DailyView = () => {
 
       const todayData = dummyData.find((item) => item.isToday);
       setSelectedDayData(todayData);
-      
+
       // 더미 데이터로 채굴 시간 차이 계산
       if (dummyData.length >= 2) {
-        const todayIndex = dummyData.findIndex(item => item.isToday);
+        const todayIndex = dummyData.findIndex((item) => item.isToday);
         if (todayIndex >= 1) {
           const today = dummyData[todayIndex].miningTime.totalMinutes;
           const yesterday = dummyData[todayIndex - 1].miningTime.totalMinutes;
@@ -205,7 +208,7 @@ const DailyView = () => {
         miningTime: {
           hours: hours,
           minutes: minutes,
-          totalMinutes: totalMinutes
+          totalMinutes: totalMinutes,
         },
       });
     }
@@ -235,10 +238,11 @@ const DailyView = () => {
     // 선택한 날짜 객체 생성
     const selectedDateObj = new Date(2025, item.month - 1, item.day);
     setSelectedDate(selectedDateObj);
-    
+
     // 선택된 날짜와 전날의 채굴 시간 차이 계산
-    const selectedIndex = miningData.findIndex(data => data.id === item.id);
-    if (selectedIndex > 0) { // 선택된 날짜 이전 데이터가 있는지 확인
+    const selectedIndex = miningData.findIndex((data) => data.id === item.id);
+    if (selectedIndex > 0) {
+      // 선택된 날짜 이전 데이터가 있는지 확인
       const selectedTime = miningData[selectedIndex].miningTime.totalMinutes;
       const prevDayTime = miningData[selectedIndex - 1].miningTime.totalMinutes;
       setMiningDifference(selectedTime - prevDayTime);
@@ -307,7 +311,7 @@ const DailyView = () => {
     const absMinutes = Math.abs(minutes);
     const hours = Math.floor(absMinutes / 60);
     const mins = absMinutes % 60;
-    
+
     if (hours > 0) {
       return `${hours}시간 ${mins}분`;
     } else {
@@ -325,7 +329,7 @@ const DailyView = () => {
   }
 
   // 데이트 타이틀 포맷팅
-  const dateTitle = selectedDayData 
+  const dateTitle = selectedDayData
     ? `${selectedDayData.month}월 ${selectedDayData.day}일 ${selectedDayData.dayOfWeek}요일`
     : "";
 
@@ -343,52 +347,19 @@ const DailyView = () => {
         dateRangeTitle={dateTitle}
       />
 
-      {/* 채굴 시간 */}
-      <View style={styles.miningTimeContainer}>
-        <View style={styles.miningTimeHeader}>
-          <Text style={styles.miningTimeTitle}>채굴 시간</Text>
-        </View>
-
-        <View style={styles.miningTimeContent}>
-          <View style={styles.pickaxeContainer}>
-            <Image
-              source={require("../../assets/pickaxe.png")}
-              style={styles.pickaxeIcon}
-              resizeMode="contain"
-            />
-          </View>
-          <View style={styles.miningTimeInfo}>
-            <Text style={[styles.miningTimeValue, styles.rightAlignedText]}>
-              <Text style={styles.hoursText}>
-                {selectedDayData.miningTime.hours}
-              </Text>
-              시간 
-              <Text style={styles.minutesText}>
-                {selectedDayData.miningTime.minutes}
-              </Text>
-              분
-            </Text>
-          </View>
-        </View>
-
-        {selectedDayData.isToday && miningDifference !== 0 && (
-          <View style={styles.characterContainer}>
-            <Image
-              source={require("../../assets/coin-character.png")}
-              style={styles.characterImage}
-              resizeMode="contain"
-            />
-            <View style={styles.characterBubble}>
-              <Text style={styles.characterText}>
-                {miningDifference > 0 ? "대단한데?" : "힘내!"}
-              </Text>
-              <Text style={styles.characterText}>
-                어제보다 {formatTimeDifference(miningDifference)} {miningDifference > 0 ? "더" : "적게"} 채굴했어!!
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
+      {/* 공통 채굴 통계 컴포넌트 사용 */}
+      {selectedDayData && (
+        <MiningStats
+          viewType="daily"
+          miningData={null} // 데일리뷰에서는 단일 데이터만 사용하므로 필요 없음
+          comparisonValue={miningDifference}
+          totalMiningTime={{
+            hours: selectedDayData.miningTime.hours,
+            minutes: selectedDayData.miningTime.minutes,
+          }}
+          maxPossibleHours={8} // 하루 최대 8시간 채굴 가능
+        />
+      )}
 
       {/* 가장 많이 사용한 앱 */}
       <View style={styles.appUsageContainer}>
@@ -425,7 +396,7 @@ const DailyView = () => {
               </View>
             );
           })}
-          
+
         {/* 시간대 정보 */}
         <View style={styles.timezoneContainer}>
           <Text style={styles.timezoneText}>
@@ -454,7 +425,7 @@ const styles = StyleSheet.create({
   miningTimeContainer: {
     margin: 20,
     marginTop: 0,
-    backgroundColor: "#F8F8F8", 
+    backgroundColor: "#F8F8F8",
     borderRadius: 15,
     padding: 15,
   },
@@ -588,7 +559,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   rightAlignedText: {
-    textAlign: 'right',
+    textAlign: "right",
   },
 });
 

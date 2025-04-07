@@ -13,7 +13,8 @@ import { Ionicons } from "@expo/vector-icons";
 import ScreenTime from "../utils/ScreenTime";
 import { get } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
-import MiningGraph from "../components/MiningGraph"; // 공통 컴포넌트 임포트
+import MiningGraph from "../components/MiningGraph"; // 공통 그래프 컴포넌트
+import MiningStats from "../components/MiningStats"; // 공통 통계 컴포넌트
 
 const { width } = Dimensions.get("window");
 
@@ -27,14 +28,15 @@ const WeeklyView = () => {
   // 주간 채굴 데이터
   const [weeklyMiningData, setWeeklyMiningData] = useState([]);
 
-  // 주간 총 채굴 시간 정보
-  const [weeklyTotalMiningTime, setWeeklyTotalMiningTime] = useState({
-    total: "0시간 0분",
-    increase: "0시간 0분",
-    average: "0시간 0분",
-    averageStartTime: "오전 9:00",
-    averageEndTime: "오후 6:00",
+  // 주간 총 채굴 시간 정보 (객체 형태로 변경)
+  const [weeklyTotalTime, setWeeklyTotalTime] = useState({
+    hours: 0,
+    minutes: 0,
+    totalMinutes: 0
   });
+
+  // 주간 비교값 (전주 대비)
+  const [weeklyComparison, setWeeklyComparison] = useState(0);
 
   // 현재 선택된 주 상태
   const [currentWeekIndex, setCurrentWeekIndex] = useState(0); // 0: 이번주, 1: 저번주
@@ -164,37 +166,30 @@ const WeeklyView = () => {
 
         setWeeklyMiningData(miningDataArray);
 
-        // 주간 총 채굴 시간 정보 계산
+        // 주간 총 채굴 시간 세팅 (객체 형태로)
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
-
-        // 일평균 시간
-        const avgDailyMinutes = Math.round(totalMinutes / 7);
-        const avgHours = Math.floor(avgDailyMinutes / 60);
-        const avgMinutes = avgDailyMinutes % 60;
-
-        // 증가량 계산 (임의 값 또는 API에서 제공되는 경우)
-        const increaseHours = Math.floor(Math.random() * 5);
-        const increaseMinutes = Math.floor(Math.random() * 60);
-
-        setWeeklyTotalMiningTime({
-          total: `${hours}시간 ${minutes}분`,
-          increase: `${increaseHours}시간 ${increaseMinutes}분`,
-          average: `${avgHours}시간 ${avgMinutes}분`,
-          averageStartTime: "오전 8:42", // 임의 값 또는 API에서 제공
-          averageEndTime: "오후 5:52", // 임의 값 또는 API에서 제공
+        setWeeklyTotalTime({
+          hours: hours,
+          minutes: minutes,
+          totalMinutes: totalMinutes
         });
+
+        // 임의의 전주 대비 증감값 설정 (실제로는 API에서 제공하는 값을 사용)
+        // 현재는 -300 ~ 300 사이의 임의 값 (분 단위)
+        const randomComparisonValue = Math.floor(Math.random() * 600) - 300;
+        setWeeklyComparison(randomComparisonValue);
+
+        // 앱 사용 정보 가져오기
+        const dailyData = await ScreenTime.getDailyScreenTime();
+        if (dailyData.hasPermission) {
+          setAppUsage(dailyData.appUsageWithNames || {});
+        }
       } else {
         console.error("주간 채굴 시간 데이터 가져오기 실패:", response.data);
 
         // 에러 시 더미 데이터 사용
         setDummyData();
-      }
-
-      // 앱 사용 정보 가져오기
-      const dailyData = await ScreenTime.getDailyScreenTime();
-      if (dailyData.hasPermission) {
-        setAppUsage(dailyData.appUsageWithNames || {});
       }
     } catch (error) {
       console.error("주간 데이터 가져오기 오류:", error);
@@ -209,6 +204,7 @@ const WeeklyView = () => {
   const setDummyData = () => {
     const days = ["일", "월", "화", "수", "목", "금", "토"];
     const dummyMiningData = [];
+    let totalMinutes = 0;
 
     for (let i = 0; i < 7; i++) {
       const date = new Date(currentWeek.startDate);
@@ -220,6 +216,7 @@ const WeeklyView = () => {
       
       // 랜덤 채굴 시간 생성 (분 단위)
       const value = Math.floor(Math.random() * 480) + 30; // 30-510분 사이 랜덤값
+      totalMinutes += value;
       
       // 오늘 날짜인지 확인
       const today = new Date();
@@ -246,14 +243,20 @@ const WeeklyView = () => {
 
     setWeeklyMiningData(dummyMiningData);
 
-    // 더미 총 채굴 시간 정보
-    setWeeklyTotalMiningTime({
-      total: "38시간 17분",
-      increase: "5시간 21분",
-      average: "7시간 24분",
-      averageStartTime: "오전 8:42",
-      averageEndTime: "오후 5:52",
+    // 총 시간 계산
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    // 주간 총 채굴 시간 세팅 (객체 형태로)
+    setWeeklyTotalTime({
+      hours: hours,
+      minutes: minutes,
+      totalMinutes: totalMinutes
     });
+
+    // 임의의 전주 대비 증감값 설정
+    const randomComparisonValue = Math.floor(Math.random() * 600) - 300; // -300 ~ 300 사이의 임의 값 (분 단위)
+    setWeeklyComparison(randomComparisonValue);
   };
 
   // 이전/다음 주 이동 처리
@@ -350,59 +353,16 @@ const WeeklyView = () => {
         isCurrentWeek={currentWeekIndex === 0}
       />
 
-      {/* 채굴 시간 */}
-      <View style={styles.miningTimeContainer}>
-        <View style={styles.miningTimeHeader}>
-          <Text style={styles.miningTimeTitle}>채굴 시간</Text>
-        </View>
-
-        <Text style={styles.increasedTimeText}>
-          전 주보다 {weeklyTotalMiningTime.increase} 증가했어요!
-        </Text>
-
-        <View style={styles.miningTimeContent}>
-          <View style={styles.pickaxeContainer}>
-            <Image
-              source={require("../../assets/pickaxe.png")}
-              style={styles.pickaxeIcon}
-              resizeMode="contain"
-            />
-          </View>
-          <View style={styles.miningTimeInfo}>
-            <Text style={styles.miningTimeValue}>
-              <Text style={styles.weeklyText}>총</Text>{" "}
-              <Text style={styles.hoursText}>
-                {weeklyTotalMiningTime.total.split("시간")[0]}
-              </Text>
-              시간
-              <Text style={styles.minutesText}>
-                {weeklyTotalMiningTime.total.split("시간")[1].replace("분", "")}
-              </Text>
-              분
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.dailyMiningContainer}>
-          <Text style={styles.dailyMiningTitle}>날짜별 채굴 시간</Text>
-          <View style={styles.dailyMiningList}>
-            {weeklyMiningData.map((item, index) => {
-              const hours = Math.floor(item.value / 60);
-              const minutes = item.value % 60;
-              return (
-                <View key={index} style={styles.dailyMiningItem}>
-                  <Text
-                    style={styles.dailyMiningDate}
-                  >{`${item.month}/${item.day} (${item.dayOfWeek})`}</Text>
-                  <Text style={styles.dailyMiningTime}>
-                    {hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      </View>
+      {/* 공통 채굴 통계 컴포넌트 사용 */}
+      <MiningStats
+        viewType="weekly"
+        miningData={weeklyMiningData}
+        comparisonValue={weeklyComparison}
+        totalMiningTime={{
+          hours: weeklyTotalTime.hours,
+          minutes: weeklyTotalTime.minutes
+        }}
+      />
 
       {/* 가장 많이 사용한 앱 */}
       <View style={styles.appUsageContainer}>
