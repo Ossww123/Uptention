@@ -3,11 +3,9 @@ version: '3.8' # Docker Compose 파일 버전 지정
 services:
   uptention_express_server:
       # docker hub 이미지 경로로
-    image: jaemoon99/uptention:0.2
+    image: jaemoon99/uptention:express-server-v0.6
       # 컨테이너 이름
     container_name: uptention_express_server
     ports:
       # 호스트의 3000번 포트를 컨테이너의 3000번 포트로 매핑
       - "4444:3000"
-    volumes:
-      - ./my-keypair.json:/usr/src/app/my-keypair.json:ro
