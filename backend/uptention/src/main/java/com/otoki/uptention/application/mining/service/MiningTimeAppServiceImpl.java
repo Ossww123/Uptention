@@ -26,7 +26,6 @@ import org.springframework.web.client.RestClientException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.otoki.uptention.application.mining.dto.request.FocusModeOnRequestDto;
 import com.otoki.uptention.application.mining.dto.response.MiningTimeResponseDto;
-import com.otoki.uptention.application.user.service.UserAppService;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.company.entity.Company;
 import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
@@ -53,7 +52,6 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	private final MiningTimeService miningTimeService;
 	private final SecurityService securityService;
 	private final ExpressApiService expressApiService;
-	private final UserAppService userAppService;
 	private final ObjectMapper objectMapper;
 
 	@Transactional
@@ -134,16 +132,21 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 	@Transactional
 	@Override
-	public int bulkUpdateMiningTime() {
-		LocalDateTime endTime = LocalDate.now().atTime(14, 30);
-		return miningTimeService.updateEndTimeForUnfinishedMining(endTime);
+	public void executeDailyMiningProcesses() {
+		log.info("Executing daily mining processes");
+		bulkUpdateMiningTime();
+		bulkUpdateUserPoints();
+		bulkSendToken();
+		log.info("Completed daily mining processes");
 	}
 
 	@Transactional
 	@Override
-	public int bulkUpdateUserPoints() {
-		LocalDateTime inspectionDate = LocalDate.now().atTime(14, 30);
-		return miningTimeService.calculatePoint(inspectionDate);
+	public void executeWeeklyNftProcesses() {
+		log.info("Executing weekly NFT processes");
+		List<MintAddressResponse> mintAddressResponses = bulkCreateNFT();
+		bulkSendNFT(mintAddressResponses);
+		log.info("Completed weekly NFT processes");
 	}
 
 	// 채굴 시간 조회
@@ -210,9 +213,17 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		return convertJson(rankMap);
 	}
 
-	@Transactional
-	@Override
-	public void bulkSendToken() {
+	private int bulkUpdateMiningTime() {
+		LocalDateTime endTime = LocalDate.now().atTime(14, 30);
+		return miningTimeService.updateEndTimeForUnfinishedMining(endTime);
+	}
+
+	private int bulkUpdateUserPoints() {
+		LocalDateTime inspectionDate = LocalDate.now().atTime(14, 30);
+		return miningTimeService.calculatePoint(inspectionDate);
+	}
+
+	private void bulkSendToken() {
 		log.info("토큰 전송 스케줄러 시작...");
 		List<User> users = null;
 		try {
@@ -269,9 +280,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		log.info("토큰 전송 스케줄러 종료.");
 	}
 
-	@Transactional
-	@Override
-	public List<MintAddressResponse> bulkCreateNFT() {
+	private List<MintAddressResponse> bulkCreateNFT() {
 
 		List<MintAddressResponse> result = new ArrayList<>();
 		log.info("NFT 생성 스케줄러 시작...");
@@ -350,9 +359,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		return result;
 	}
 
-	@Transactional
-	@Override
-	public void bulkSendNFT(List<MintAddressResponse> mintAddresses) {
+	private void bulkSendNFT(List<MintAddressResponse> mintAddresses) {
 		log.info("NFT 전송 작업 시작");
 
 		if (mintAddresses == null || mintAddresses.isEmpty()) {
