@@ -279,12 +279,19 @@ const ProfileScreen = ({ navigation }) => {
       Alert.alert('오류', '모든 필드를 입력해주세요.');
       return;
     }
-
+  
+    // 비밀번호 검증 (영문, 숫자 포함, 특수문자 선택적, 8~15자)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*]{8,15}$/;
+    if (!passwordRegex.test(newPassword)) {
+      Alert.alert('오류', '비밀번호는 영문, 숫자가 반드시 포함되어야 하며 8~15자여야 합니다.');
+      return;
+    }
+  
     if (newPassword !== confirmPassword) {
       Alert.alert('오류', '새 비밀번호가 일치하지 않습니다.');
       return;
     }
-
+  
     try {
       const response = await axios.patch(
         `${API_BASE_URL}/api/users/${userId}/password`,
@@ -299,7 +306,7 @@ const ProfileScreen = ({ navigation }) => {
           }
         }
       );
-
+  
       if (response.status === 200) {
         Alert.alert('성공', '비밀번호가 성공적으로 변경되었습니다.');
         // 모달 닫고 입력값 초기화
@@ -443,14 +450,17 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="새 비밀번호"
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    secureTextEntry={secureTextEntry}
-                  />
-                </View>
+  <TextInput
+    style={styles.input}
+    placeholder="새 비밀번호"
+    value={newPassword}
+    onChangeText={setNewPassword}
+    secureTextEntry={secureTextEntry}
+  />
+</View>
+<Text style={styles.passwordHint}>
+  비밀번호는 영문, 숫자 포함 8~15자 (특수문자 !@#$%^&* 사용 가능)
+</Text>
 
                 <View style={styles.inputContainer}>
                   <TextInput
@@ -840,6 +850,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     color: '#666',
+  },
+  passwordHint: {
+    fontSize: 11,
+    color: '#888',
+    marginBottom: 10,
+    marginTop: -5,
+    alignSelf: 'flex-start',
+    paddingLeft: 10,
   },
 });
 
