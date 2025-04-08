@@ -399,7 +399,13 @@ const ProductManagementPage = () => {
             <td>{product.brand}</td>
             <td>{product.categoryName}</td>
             <td>{product.price}</td>
-            <td>{product.quantity}</td>
+            <td>
+              {product.quantity === 0 ? (
+                <span className="sold-out-badge">품절😢</span>
+              ) : (
+                product.quantity
+              )}
+            </td>
             <td>{product.salesCount}</td>
             <td className="product-table-action-buttons">
               <button 
