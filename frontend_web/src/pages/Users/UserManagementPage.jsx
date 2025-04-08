@@ -310,7 +310,7 @@ const UserManagementPage = () => {
             <form onSubmit={handleSearch}>
               <input
                 type="text"
-                placeholder="회원 검색"
+                placeholder="이름 검색"
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="search-input"
