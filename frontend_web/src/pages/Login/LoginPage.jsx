@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './LoginPage.css';
-import logoImage from '../../assets/images/logo.png';
+import logoImage from '../../assets/images/login-image-Photoroom.png'; 
 
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({
