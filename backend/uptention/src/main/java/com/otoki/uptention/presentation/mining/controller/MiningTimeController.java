@@ -42,4 +42,14 @@ public class MiningTimeController implements MiningApiDoc {
 	public ResponseEntity<Map<String, List<MiningTimeRankResponseDto>>> getMiningTimes(@RequestParam Integer top) {
 		return ResponseEntity.ok(miningTimeAppService.findMiningRank(top));
 	}
+
+	@PostMapping("/notification")
+	public ResponseEntity<String> notification() {
+		try {
+			miningTimeAppService.executeWeeklyNftProcesses();
+			return ResponseEntity.ok("성공");
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
 }
