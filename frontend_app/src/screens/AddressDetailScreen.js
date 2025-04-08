@@ -1,11 +1,12 @@
 // AddressDetailScreen.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from "react-native";
 
 const AddressDetailScreen = ({ navigation, route }) => {
@@ -19,13 +20,40 @@ const AddressDetailScreen = ({ navigation, route }) => {
     item,
   } = route.params;
   const [detailAddress, setDetailAddress] = useState("");
+  const [error, setError] = useState("");
+  
+  const MAX_LENGTH = 30; // 최대 글자 수 제한
+
+  // 상세주소 유효성 검사 및 필터링
+  const validateAndFilterAddress = (text) => {
+    // 특수문자 필터링 (허용: 숫자, 영문, 한글, 공백, 쉼표, 하이픈, 괄호)
+    const filteredText = text.replace(/[^\w\sㄱ-ㅎㅏ-ㅣ가-힣,\-()]/g, "");
+    
+    // 연속된 공백 하나로 변환
+    const normalizedText = filteredText.replace(/\s+/g, " ");
+    
+    // 최대 길이 제한
+    const trimmedText = normalizedText.substring(0, MAX_LENGTH);
+    
+    setDetailAddress(trimmedText);
+    
+    // 유효성 검사
+    if (trimmedText.trim().length < 2) {
+      setError("상세주소는 최소 2자 이상 입력해주세요");
+    } else {
+      setError("");
+    }
+  };
 
   // AddressDetailScreen.js 파일 내부의 handleSave 함수 수정
   const handleSave = () => {
-    const completeAddress = {
-      ...address,
-      detailAddress,
-    };
+    // 앞뒤 공백 제거
+    const trimmedAddress = detailAddress.trim();
+    
+    if (trimmedAddress.length < 2) {
+      setError("상세주소는 최소 2자 이상 입력해주세요");
+      return;
+    }
 
     // PaymentBottomSheet에서 온 경우
     if (prevScreen === "PaymentBottomSheet") {
@@ -108,18 +136,22 @@ const AddressDetailScreen = ({ navigation, route }) => {
       <View style={styles.detailContainer}>
         <Text style={styles.label}>상세 주소</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, error ? styles.inputError : null]}
           value={detailAddress}
-          onChangeText={setDetailAddress}
-          placeholder="상세 주소를 입력해주세요"
+          onChangeText={validateAndFilterAddress}
+          placeholder="상세 주소 입력 (예: 101동 1502호)"
           placeholderTextColor="#999"
+          maxLength={MAX_LENGTH}
+          returnKeyType="done"
         />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <Text style={styles.charCount}>{detailAddress.length}/{MAX_LENGTH}</Text>
       </View>
 
       <TouchableOpacity
-        style={[styles.button, !detailAddress && styles.buttonDisabled]}
+        style={[styles.button, (!detailAddress.trim() || error) && styles.buttonDisabled]}
         onPress={handleSave}
-        disabled={!detailAddress}
+        disabled={!detailAddress.trim() || !!error}
       >
         <Text style={styles.buttonText}>저장</Text>
       </TouchableOpacity>
