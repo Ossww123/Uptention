@@ -81,12 +81,34 @@ const ProductEditPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    setEditableFields({
-      ...editableFields,
-      [name]: name === "price" || name === "quantity" 
-        ? value === "" ? "" : parseInt(value, 10) 
-        : value
-    });
+    // 상품 설명의 경우 줄바꿈 제한 처리
+    if (name === "detail") {
+      // 줄 수 계산 (줄바꿈 + 1)
+      const lines = value.split('\n');
+      const MAX_LINES = 5; // 최대 줄 수 제한
+      
+      if (lines.length > MAX_LINES) {
+        // 최대 줄 수까지만 유지
+        const limitedText = lines.slice(0, MAX_LINES).join('\n');
+        setEditableFields({
+          ...editableFields,
+          [name]: limitedText
+        });
+      } else {
+        setEditableFields({
+          ...editableFields,
+          [name]: value
+        });
+      }
+    } else {
+      // 다른 필드는 기존 로직 유지
+      setEditableFields({
+        ...editableFields,
+        [name]: name === "price" || name === "quantity" 
+          ? value === "" ? "" : parseInt(value, 10) 
+          : value
+      });
+    }
     
     // 입력 값 변경 시 해당 필드의 에러 메시지 초기화
     if (errors[name]) {
@@ -422,13 +444,25 @@ const ProductEditPage = () => {
                     name="detail"
                     value={editableFields.detail}
                     onChange={handleChange}
+                    onKeyDown={(e) => {
+                      // 이미 최대 줄 수에 도달했는지 확인
+                      if (e.key === 'Enter') {
+                        const currentLines = e.target.value.split('\n').length;
+                        const MAX_LINES = 5;
+                        if (currentLines >= MAX_LINES) {
+                          e.preventDefault(); // 엔터 입력 방지
+                        }
+                      }
+                    }}
                     className="form-textarea"
-                    placeholder={product.detail || "상품 설명을 입력하세요"}
+                    placeholder={product.detail || "상품 설명을 입력하세요 (최대 255자, 5줄 이내)"}
                     maxLength="255"
                     rows="5"
                   />
                   {errors.detail && <div className="error-message">{errors.detail}</div>}
-                  <div className="char-count">{editableFields.detail.length}/255</div>
+                  <div className="char-count">
+                    {editableFields.detail.split('\n').length}/{5}줄, {editableFields.detail.length}/255
+                  </div>
                 </td>
               </tr>
             </tbody>

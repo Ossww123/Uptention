@@ -49,15 +49,33 @@ const ProductCreatePage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]:
-        name === "price" || name === "quantity" || name === "categoryId"
-          ? value === ""
-            ? ""
-            : parseInt(value, 10)
+  // 상품 설명의 경우 줄바꿈 제한 처리
+    if (name === "detail") {
+      // 줄 수 계산 (줄바꿈 + 1)
+      const lines = value.split('\n');
+      const MAX_LINES = 5; // 최대 줄 수 제한 (필요에 따라 조정)
+      
+      if (lines.length > MAX_LINES) {
+        // 최대 줄 수까지만 유지
+        const limitedText = lines.slice(0, MAX_LINES).join('\n');
+        setFormData({
+          ...formData,
+          [name]: limitedText
+        });
+      } else {
+        setFormData({
+          ...formData,
+          [name]: value
+        });
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: name === "price" || name === "quantity" || name === "categoryId"
+          ? value === "" ? "" : parseInt(value, 10)
           : value,
-    });
+      });
+    }
 
     // 에러 메시지 초기화
     if (errors[name]) {
@@ -574,12 +592,23 @@ const ProductCreatePage = () => {
                       name="detail"
                       value={formData.detail}
                       onChange={handleChange}
+                      onKeyDown={(e) => {
+                        // 이미 최대 줄 수에 도달했는지 확인
+                        if (e.key === 'Enter') {
+                          const currentLines = e.target.value.split('\n').length;
+                          if (currentLines >= 5) {
+                            e.preventDefault(); // 엔터 입력 방지
+                          }
+                        }
+                      }}
                       className={`form-textarea ${errors.detail ? "has-error" : ""}`}
-                      placeholder="상품설명 입력(최대 255자)"
+                      placeholder="상품설명 입력(최대 255자, 5줄 이내)"
                       maxLength="255"
                       rows="5"
                     />
-                    <div className="char-count">{formData.detail.length}/255</div>
+                    <div className="char-count">
+                      {formData.detail.split('\n').length}/{5}줄, {formData.detail.length}/{255}자
+                    </div>
                     {errors.detail && (
                       <div className="error-hint">{errors.detail}</div>
                     )}
