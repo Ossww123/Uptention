@@ -363,7 +363,7 @@ const UserManagementPage = () => {
                       onClick={() => openDeleteModal(user.userId)}
                       disabled={user.role === "ROLE_ADMIN"} // 관리자는 삭제 불가
                     >
-                      삭제하기
+                      삭제
                     </button>
                   </td>
                 </tr>

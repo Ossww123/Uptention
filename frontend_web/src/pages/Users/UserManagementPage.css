@@ -192,11 +192,16 @@
   color: #444;
   font-weight: 600;
   padding: 15px;
-  text-align: left;
+  text-align: center;
   border-bottom: 2px solid #eee;
-  position: sticky; /* 헤더 고정 */
-  top: 0; /* 테이블 상단에 고정 */
-  z-index: 10; /* 다른 요소보다 앞에 표시 */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-right: 1px solid #eee;
+}
+
+.user-table th:last-child {
+  border-right: none;
 }
 
 .user-table tr:nth-child(even) {
@@ -205,8 +210,13 @@
 
 .user-table td {
   padding: 15px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid #eee;
+  border-right: 1px solid #eee;
+}
+
+.user-table td:last-child {
+  border-right: none;
 }
 
 .user-table tr:hover {
