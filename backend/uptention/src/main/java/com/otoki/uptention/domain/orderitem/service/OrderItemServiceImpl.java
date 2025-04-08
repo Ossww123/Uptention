@@ -23,6 +23,12 @@ public class OrderItemServiceImpl implements OrderItemService {
 	}
 
 	@Override
+	public OrderItem findGiftItemByOrderId(Integer orderId) {
+		return orderItemRepository.findById(orderId)
+			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_ITEM_NOT_FOUND));
+	}
+
+	@Override
 	public List<OrderItem> findOrderItemsByOrderId(Integer orderId) {
 		return orderItemRepository.findByOrderId(orderId);
 	}
