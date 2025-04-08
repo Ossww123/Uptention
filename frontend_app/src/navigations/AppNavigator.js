@@ -27,6 +27,8 @@ const AppNavigator = forwardRef((props, ref) => {
   const [hasScreenTimePermission, setHasScreenTimePermission] = useState(false);
   const [isCheckingPermissions, setIsCheckingPermissions] = useState(true);
   const [forceScreen, setForceScreen] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [previousRoute, setPreviousRoute] = useState("Splash");
   
   // 초기 라우팅 로직
   const getInitialRoute = () => {
@@ -34,39 +36,51 @@ const AppNavigator = forwardRef((props, ref) => {
       isFirstRender: global.isFirstRender,
       isAuthenticated, 
       hasScreenTimePermission,
-      forceScreen 
+      forceScreen,
+      isTransitioning,
+      previousRoute
     });
+    
+    // 전환 중이면 이전 라우트 유지
+    if (isTransitioning) {
+      return previousRoute;
+    }
     
     // 강제 화면이 있으면 우선 적용
     if (forceScreen) {
+      setPreviousRoute(forceScreen);
       return forceScreen;
     }
     
     if (global.isFirstRender) {
       global.isFirstRender = false;
+      setPreviousRoute("Splash");
       return "Splash";
     }
     
+    let route;
+    
     if (!isAuthenticated) {
-      return "Login";
+      route = "Login";
     }
-    
     // 권한이 있고 지갑도 있으면 바로 MainApp으로
-    if (hasScreenTimePermission && publicKey) {
-      return "MainApp";
+    else if (hasScreenTimePermission && publicKey) {
+      route = "MainApp";
     }
-    
     // 권한은 있지만 지갑이 없으면 WalletConnect로
-    if (hasScreenTimePermission && !publicKey) {
-      return "WalletConnect";
+    else if (hasScreenTimePermission && !publicKey) {
+      route = "WalletConnect";
     }
-    
     // 권한이 없으면 Permissions로
-    if (!hasScreenTimePermission) {
-      return "Permissions";
+    else if (!hasScreenTimePermission) {
+      route = "Permissions";
+    }
+    else {
+      route = "MainApp"; // 기본값
     }
     
-    return "MainApp";
+    setPreviousRoute(route);
+    return route;
   };
 
   useImperativeHandle(ref, () => ({
@@ -75,49 +89,54 @@ const AppNavigator = forwardRef((props, ref) => {
     }
   }));
 
-  // 인증 상태 변경 처리
-  const handleLoginSuccess = async () => {
-    console.log('로그인 성공 핸들러 호출됨');
+  // 로그인 성공 핸들러 수정
+const handleLoginSuccess = async () => {
+  console.log('로그인 성공 핸들러 호출됨');
+  setIsTransitioning(true); // 전환 중 플래그 추가
+  
+  try {
+    await refreshAuth();
+    console.log('인증 상태 갱신됨, 권한 체크 시작');
     
-    try {
-      await refreshAuth();
-      console.log('인증 상태 갱신됨, 권한 체크 시작');
-      
-      // 권한 체크
-      const screenTimeEnabled = await ScreenTime.hasUsageStatsPermission();
-      const overlayEnabled = await ScreenTime.hasOverlayPermission();
-      const accessibilityEnabled = await ScreenTime.hasAccessibilityPermission();
-      
-      const allPermissionsGranted = screenTimeEnabled && overlayEnabled && accessibilityEnabled;
-      setHasScreenTimePermission(allPermissionsGranted);
-
-      // 권한 상태에 따라 한 번에 적절한 화면으로 이동
-      if (!allPermissionsGranted) {
-        // 권한이 없는 경우에만 Permissions 화면으로
-        setForceScreen('Permissions');
-        navigationRef.current?.reset({
-          index: 0,
-          routes: [{ name: 'Permissions' }],
-        });
-      } else if (!publicKey) {
-        // 권한은 있지만 지갑이 없는 경우 WalletConnect로
-        setForceScreen('WalletConnect');
-        navigationRef.current?.reset({
-          index: 0,
-          routes: [{ name: 'WalletConnect' }],
-        });
-      } else {
-        // 모든 조건이 충족되면 MainApp으로
-        setForceScreen('MainApp');
-        navigationRef.current?.reset({
-          index: 0,
-          routes: [{ name: 'MainApp' }],
-        });
-      }
-    } catch (error) {
-      console.error('로그인 성공 처리 오류:', error);
+    // 모든 필요한 정보를 한 번에 확인
+    const [screenTimeEnabled, overlayEnabled, accessibilityEnabled] = await Promise.all([
+      ScreenTime.hasUsageStatsPermission(),
+      ScreenTime.hasOverlayPermission(),
+      ScreenTime.hasAccessibilityPermission()
+    ]);
+    
+    const allPermissionsGranted = screenTimeEnabled && overlayEnabled && accessibilityEnabled;
+    setHasScreenTimePermission(allPermissionsGranted);
+    
+    // 최종 목적지 결정
+    let finalDestination;
+    if (!allPermissionsGranted) {
+      finalDestination = 'Permissions';
+      setForceScreen('Permissions');
+    } else if (!publicKey) {
+      finalDestination = 'WalletConnect';
+      setForceScreen('WalletConnect');
+    } else {
+      finalDestination = 'MainApp';
+      setForceScreen('MainApp');
     }
-  };
+    
+    console.log('최종 목적지 결정:', finalDestination);
+    
+    // 한 번만 네비게이션 실행
+    setTimeout(() => {
+      navigationRef.current?.reset({
+        index: 0,
+        routes: [{ name: finalDestination }],
+      });
+      setPreviousRoute(finalDestination);
+      setIsTransitioning(false);
+    }, 300); // 약간의 지연으로 화면 깜빡임 방지
+  } catch (error) {
+    console.error('로그인 성공 처리 오류:', error);
+    setIsTransitioning(false);
+  }
+};
 
   // 권한 상태 변경 처리
   const handlePermissionGranted = async (permissions) => {
