@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   productImage: {
     width: "100%",
-    height: 150,
+    aspectRatio: 1, // 정사각형 비율 유지
     borderRadius: 10,
     marginBottom: 8,
     backgroundColor: "#f5f5f5",
