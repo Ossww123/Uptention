@@ -9,9 +9,9 @@ const AppUsageStats = ({
   viewType = "daily", // 'daily' 또는 'weekly'
   appUsage = {}, // 앱 사용 데이터
 }) => {
-  console.log("AppUsageStats - ViewType:", viewType);
-  console.log("AppUsageStats - AppUsage:", appUsage);
-  console.log("AppUsageStats - Keys:", Object.keys(appUsage));
+  // console.log("AppUsageStats - ViewType:", viewType);
+  // console.log("AppUsageStats - AppUsage:", appUsage);
+  // console.log("AppUsageStats - Keys:", Object.keys(appUsage));
 
   // 앱 사용 시간 바 너비 계산
   const getBarWidth = (usageTime) => {
@@ -72,7 +72,7 @@ const AppUsageStats = ({
                 <View style={styles.appInfoContainer}>
                   {renderAppIcon(data)}
                   <Text style={styles.appName}>{data.appName}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#888" />
+                  {/* <Ionicons name="chevron-forward" size={16} color="#888" /> */}
                 </View>
                 <Text style={styles.appTimeText}>
                   {hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`}

@@ -233,13 +233,13 @@ class ScreenTime {
    */
   static async getWeeklyScreenTime(daysToFetch = 14) {
     const data = await ScreenTimeModule.getWeeklyScreenTime(daysToFetch);
-    console.log("ScreenTime.js - Raw Weekly Data:", data);
+    // console.log("ScreenTime.js - Raw Weekly Data:", data);
 
     if (data.hasPermission && data.appUsage) {
-      console.log(
-        "ScreenTime.js - App Usage Data Exists:",
-        Object.keys(data.appUsage)
-      );
+      // console.log(
+      //   "ScreenTime.js - App Usage Data Exists:",
+      //   Object.keys(data.appUsage)
+      // );
       // 앱 이름 정보 가져오기
       const packageNames = Object.keys(data.appUsage);
       const appNames = await this.getAllAppNames(packageNames);
@@ -248,11 +248,11 @@ class ScreenTime {
       const appIcons = await this.getMultipleAppIcons(packageNames);
 
       // 최종 데이터 확인
-      console.log("ScreenTime.js - Processed Weekly Data:", {
-        packageCount: packageNames.length,
-        hasAppNames: !!appNames,
-        hasAppIcons: !!appIcons,
-      });
+      // console.log("ScreenTime.js - Processed Weekly Data:", {
+      //   packageCount: packageNames.length,
+      //   hasAppNames: !!appNames,
+      //   hasAppIcons: !!appIcons,
+      // });
 
       // 앱 사용 데이터에 앱 이름과 아이콘 정보 추가
       const appUsageWithNames = {};

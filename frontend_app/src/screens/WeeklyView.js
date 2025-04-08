@@ -43,6 +43,7 @@ const WeeklyView = () => {
     endDate: null,
   });
 
+
   useEffect(() => {
     // 컴포넌트 마운트 시 초기 날짜 범위 설정
     setInitialDateRange();
@@ -177,12 +178,12 @@ const WeeklyView = () => {
 
         // 앱 사용 정보 가져오기
         const weeklyScreenTimeData = await ScreenTime.getWeeklyScreenTime();
-        console.log("WeeklyView - ScreenTime Data:", weeklyScreenTimeData);
+        // console.log("WeeklyView - ScreenTime Data:", weeklyScreenTimeData);
         if (weeklyScreenTimeData.hasPermission) {
-          console.log(
-            "WeeklyView - App Usage Data:",
-            weeklyScreenTimeData.appUsageWithNames
-          );
+          // console.log(
+          //   "WeeklyView - App Usage Data:",
+          //   weeklyScreenTimeData.appUsageWithNames
+          // );
           setAppUsage(weeklyScreenTimeData.appUsageWithNames || {});
         }
       } else {
@@ -353,11 +354,11 @@ const navigateWeek = (direction) => {
       />
 
       {/* 앱 사용 통계 로그 */}
-      {console.log("WeeklyView Render - App Usage:", appUsage)}
+      {/* {console.log("WeeklyView Render - App Usage:", appUsage)}
       {console.log(
         "WeeklyView Render - Has Data:",
         Object.keys(appUsage).length > 0
-      )}
+      )} */}
 
       {/* 공통 앱 사용 통계 컴포넌트 사용 */}
       <AppUsageStats viewType="weekly" appUsage={appUsage} />

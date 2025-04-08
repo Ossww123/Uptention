@@ -84,6 +84,8 @@ const MiningStats = ({
 
   // 비교 메시지 생성
   const getComparisonMessage = () => {
+    return null;
+
     if (comparisonValue === 0) return null;
     
     const { isPositive, text } = formatComparisonValue(comparisonValue);
