@@ -150,11 +150,16 @@
   color: #444;
   font-weight: 600;
   padding: 15px;
-  text-align: left;
+  text-align: center;
   border-bottom: 2px solid #eee;
-  position: sticky; /* 헤더 고정 */
-  top: 0; /* 테이블 상단에 고정 */
-  z-index: 10; /* 다른 요소보다 앞에 표시 */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-right: 1px solid #eee; /* 세로 구분선 추가 */
+}
+
+.products-table th:last-child {
+  border-right: none; /* 마지막 열의 구분선 제거 */
 }
 
 /* 짝수/홀수 행 색상 차이 */
@@ -164,15 +169,13 @@
 
 .products-table td {
   padding: 15px;
-  text-align: left;
+  text-align: center; /* 가운데 정렬로 변경 */
   border-bottom: 1px solid #eee;
+  border-right: 1px solid #eee; /* 세로 구분선 추가 */
 }
 
-.products-table td .action-buttons {
-  display: flex;
-  justify-content: center; /* 가운데 정렬로 변경 */
-  gap: 8px;
-  width: 100%; /* 너비 설정 */
+.products-table td:last-child {
+  border-right: none; /* 마지막 열의 구분선 제거 */
 }
 
 .products-table tr:hover {
@@ -199,6 +202,7 @@
   cursor: pointer;
   border: none;
   transition: all 0.2s;
+  margin-right: 8px; /* 버튼 사이에 마진 추가 */
 }
 
 .product-table-edit-button {
@@ -213,6 +217,7 @@
 .product-table-delete-button {
   background-color: #ffebee;
   color: #e53935;
+  margin-right: 0; /* 마지막 버튼은 마진 제거 */
 }
 
 .product-table-delete-button:hover {
