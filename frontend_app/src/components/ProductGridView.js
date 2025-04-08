@@ -44,101 +44,103 @@ const ProductItem = memo(({ item, onPress, imageWidth }) => {
 });
 
 const ProductGridView = memo(
-  ({
-    products,
-    onProductPress,
-    onEndReached,
-    loading,
-    refreshing,
-    onRefresh,
-    timestamp,
-    selectedCategory,
-    currentSort,
-    imageWidth,
-  }) => {
-    const flatListRef = useRef(null);
+  React.forwardRef(
+    ({
+      products,
+      onProductPress,
+      onEndReached,
+      loading,
+      refreshing,
+      onRefresh,
+      timestamp,
+      selectedCategory,
+      currentSort,
+      imageWidth,
+    }, ref) => {
+      const flatListRef = useRef(null);
 
-    const keyExtractor = useCallback(
-      (item, index) => `product-${item.itemId || index}-${timestamp}`,
-      [timestamp]
-    );
+      const keyExtractor = useCallback(
+        (item, index) => `product-${item.itemId || index}-${timestamp}`,
+        [timestamp]
+      );
 
-    const renderFooter = useCallback(() => {
-      if (!loading || refreshing) return null;
+      const renderFooter = useCallback(() => {
+        if (!loading || refreshing) return null;
+
+        return (
+          <View style={styles.footerContainer}>
+            <ActivityIndicator size="small" color="#FF8C00" />
+            <Text style={styles.loadingText}>상품을 불러오는 중...</Text>
+          </View>
+        );
+      }, [loading, refreshing]);
+
+      const renderEmpty = useCallback((searchText) => {
+        if (loading && !refreshing) return null;
+
+        return (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="search-outline" size={50} color="#ccc" />
+            <Text style={styles.emptyText}>
+              {searchText ? "검색 결과가 없습니다." : "상품이 없습니다."}
+            </Text>
+            <Text style={styles.emptySubText}>
+              {searchText
+                ? "다른 검색어로 시도해보세요."
+                : "다른 카테고리를 선택해보세요."}
+            </Text>
+          </View>
+        );
+      }, []);
+
+      // 상품 렌더링 함수
+      const renderItem = useCallback(
+        ({ item }) => (
+          <ProductItem
+            item={item}
+            onPress={() => onProductPress(item.itemId)}
+            imageWidth={imageWidth}
+          />
+        ),
+        [onProductPress, imageWidth]
+      );
 
       return (
-        <View style={styles.footerContainer}>
-          <ActivityIndicator size="small" color="#FF8C00" />
-          <Text style={styles.loadingText}>상품을 불러오는 중...</Text>
-        </View>
-      );
-    }, [loading, refreshing]);
-
-    const renderEmpty = useCallback((searchText) => {
-      if (loading && !refreshing) return null;
-
-      return (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="search-outline" size={50} color="#ccc" />
-          <Text style={styles.emptyText}>
-            {searchText ? "검색 결과가 없습니다." : "상품이 없습니다."}
-          </Text>
-          <Text style={styles.emptySubText}>
-            {searchText
-              ? "다른 검색어로 시도해보세요."
-              : "다른 카테고리를 선택해보세요."}
-          </Text>
-        </View>
-      );
-    }, []);
-
-    // 상품 렌더링 함수
-    const renderItem = useCallback(
-      ({ item }) => (
-        <ProductItem
-          item={item}
-          onPress={() => onProductPress(item.itemId)}
-          imageWidth={imageWidth}
+        <FlatList
+          ref={ref}
+          removeClippedSubviews={false}
+          extraData={[selectedCategory, currentSort, timestamp]}
+          data={products}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          numColumns={2}
+          contentContainerStyle={[
+            styles.productList,
+            products.length === 0 && styles.emptyListContainer,
+          ]}
+          style={styles.productsGrid}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.2}
+          ListFooterComponent={renderFooter}
+          ListEmptyComponent={() => renderEmpty()}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          maxToRenderPerBatch={6}
+          initialNumToRender={6}
+          windowSize={5}
+          scrollEnabled={true}
+          onScrollToIndexFailed={() => {}}
+          disableVirtualization={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          updateCellsBatchingPeriod={50}
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+          }}
         />
-      ),
-      [onProductPress, imageWidth]
-    );
-
-    return (
-      <FlatList
-        ref={flatListRef}
-        removeClippedSubviews={false}
-        extraData={[selectedCategory, currentSort, timestamp]}
-        data={products}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        numColumns={2}
-        contentContainerStyle={[
-          styles.productList,
-          products.length === 0 && styles.emptyListContainer,
-        ]}
-        style={styles.productsGrid}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.2}
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={() => renderEmpty()}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        maxToRenderPerBatch={6}
-        initialNumToRender={6}
-        windowSize={5}
-        scrollEnabled={true}
-        onScrollToIndexFailed={() => {}}
-        disableVirtualization={false}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        updateCellsBatchingPeriod={50}
-        maintainVisibleContentPosition={{
-          minIndexForVisible: 0,
-        }}
-      />
-    );
-  }
+      );
+    }
+  )
 );
 
 const styles = StyleSheet.create({
