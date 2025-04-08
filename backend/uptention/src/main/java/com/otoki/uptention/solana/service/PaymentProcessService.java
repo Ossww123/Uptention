@@ -3,7 +3,6 @@ package com.otoki.uptention.solana.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -163,10 +162,9 @@ public class PaymentProcessService {
 		List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(orderId);
 
 		return orderItems.stream()
-			.collect(Collectors.toMap(
-				orderItem -> orderItem.getItem().getId(),
-				OrderItem::getQuantity
-			));
+			.collect(HashMap::new,
+				(map, orderItem) -> map.put(orderItem.getItem().getId(), orderItem.getQuantity()),
+				HashMap::putAll);
 	}
 
 	/**
@@ -221,7 +219,7 @@ public class PaymentProcessService {
 				// 알림 내역 저장
 				Notification notification = Notification.builder()
 					.user(receiver)
-					.title("선물이 도착했어요!")
+					.title(title)
 					.message(body)
 					.read(false)
 					.build();
