@@ -211,6 +211,7 @@ const fetchFirstPage = async () => {
        styles.notificationItem, 
        item.read ? styles.readNotification : styles.unreadNotification
      ]}
+     activeOpacity={1}
    >
      <View style={styles.notificationIconContainer}>
        <Ionicons name="notifications-outline" size={24} color="#FF8C00" />

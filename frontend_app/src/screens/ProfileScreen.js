@@ -32,6 +32,8 @@ const YOUR_TOKEN_MINT = new PublicKey('5ymZGsCFkfSzZN6AbwMWU2v4A4c5yeqmGj1vSpRWg
 
 const APP_URL_SCHEME = 'com.anonymous.uptention';
 
+const DEFAULT_PROFILE_IMAGE_URL = 'https://ddnwvg9t77g5o.cloudfront.net/profile-default.jpg';
+
 const ProfileScreen = ({ navigation }) => {
   const { 
     publicKey,
@@ -506,22 +508,24 @@ const ProfileScreen = ({ navigation }) => {
                   <Text style={styles.editModalButtonText}>프로필 사진 변경</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.editModalButton}
+                  style={[styles.editModalButton, userInfo?.profileImage === DEFAULT_PROFILE_IMAGE_URL && { opacity: 0.5 }]}
                   onPress={() => {
-                    setShowEditModal(false);
-                    Alert.alert(
-                      '프로필 사진 삭제',
-                      '프로필 사진을 삭제하시겠습니까?',
-                      [
-                        { text: '취소', style: 'cancel' },
-                        { 
-                          text: '삭제', 
-                          style: 'destructive',
-                          onPress: handleDeleteImage 
-                        }
-                      ]
-                    );
+                    if (userInfo?.profileImage !== DEFAULT_PROFILE_IMAGE_URL) {
+                      Alert.alert(
+                        '프로필 사진 삭제',
+                        '프로필 사진을 삭제하시겠습니까?',
+                        [
+                          { text: '취소', style: 'cancel' },
+                          { 
+                            text: '삭제', 
+                            style: 'destructive',
+                            onPress: handleDeleteImage 
+                          }
+                        ]
+                      );
+                    }
                   }}
+                  disabled={userInfo?.profileImage === DEFAULT_PROFILE_IMAGE_URL}
                 >
                   <Text style={styles.editModalButtonText}>프로필 사진 삭제</Text>
                 </TouchableOpacity>
