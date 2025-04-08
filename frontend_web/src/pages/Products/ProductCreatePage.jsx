@@ -49,34 +49,102 @@ const ProductCreatePage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-  // 상품 설명의 경우 줄바꿈 제한 처리
-    if (name === "detail") {
-      // 줄 수 계산 (줄바꿈 + 1)
-      const lines = value.split('\n');
-      const MAX_LINES = 5; // 최대 줄 수 제한 (필요에 따라 조정)
+
+    if (name === "quantity") {
+      // 음수와 0을 방지
+      let processedValue = value;
       
-      if (lines.length > MAX_LINES) {
-        // 최대 줄 수까지만 유지
-        const limitedText = lines.slice(0, MAX_LINES).join('\n');
-        setFormData({
-          ...formData,
-          [name]: limitedText
-        });
+      // 음수 부호 입력 방지
+      if (processedValue.startsWith('-')) {
+        processedValue = processedValue.substring(1);
+      }
+      
+      // 0만 입력된 경우 빈 문자열로 설정
+      if (/^0+$/.test(processedValue)) {
+        processedValue = '';
+      }
+      // 앞자리에 0이 있는 경우 제거 (예: "01" -> "1")
+      else if (processedValue.startsWith('0') && processedValue.length > 1) {
+        processedValue = processedValue.replace(/^0+/, '');
+      }
+      
+      // 허용 범위 검사 (1-99)
+      const numValue = parseInt(processedValue, 10);
+      if (!isNaN(numValue) && numValue > 99) {
+        processedValue = '99';
+      }
+      
+      setFormData({
+        ...formData,
+        [name]: processedValue
+      });
+    } 
+    else if (name === "price") {
+      // 음수와 0을 방지
+      let processedValue = value;
+      
+      // 음수 부호 입력 방지
+      if (processedValue.startsWith('-')) {
+        processedValue = processedValue.substring(1);
+      }
+      
+      // 0만 입력된 경우 빈 문자열로 설정
+      if (/^0+$/.test(processedValue)) {
+        processedValue = '';
+      }
+      // 앞자리에 0이 있는 경우 제거 (예: "01" -> "1")
+      else if (processedValue.startsWith('0') && processedValue.length > 1) {
+        processedValue = processedValue.replace(/^0+/, '');
+      }
+      
+      // 허용 범위 검사 (1-5000)
+      const numValue = parseInt(processedValue, 10);
+      if (!isNaN(numValue) && numValue > 5000) {
+        processedValue = '5000';
+      }
+      
+      setFormData({
+        ...formData,
+        [name]: processedValue
+      });
+    }
+    else if (name === "name" || name === "brand" || name === "detail") {
+      // 이모지 제거 (상품명, 브랜드명, 상품 설명)
+      const processedValue = value.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]/gu, '');
+      
+      if (name === "detail") {
+        // 줄 수 제한 로직 추가 (기존에 구현한 경우)
+        const lines = processedValue.split('\n');
+        const MAX_LINES = 5;
+        
+        if (lines.length > MAX_LINES) {
+          const limitedText = lines.slice(0, MAX_LINES).join('\n');
+          setFormData({
+            ...formData,
+            [name]: limitedText
+          });
+        } else {
+          setFormData({
+            ...formData,
+            [name]: processedValue
+          });
+        }
       } else {
         setFormData({
           ...formData,
-          [name]: value
+          [name]: processedValue
         });
       }
-    } else {
+    }
+    else {
       setFormData({
         ...formData,
-        [name]: name === "price" || name === "quantity" || name === "categoryId"
+        [name]: name === "categoryId"
           ? value === "" ? "" : parseInt(value, 10)
           : value,
       });
     }
-
+  
     // 에러 메시지 초기화
     if (errors[name]) {
       setErrors({
@@ -249,53 +317,122 @@ const ProductCreatePage = () => {
 
   const validateForm = () => {
     const newErrors = {};
+    let isValid = true;
+    let firstErrorField = null;
 
     if (!formData.categoryId) {
       newErrors.categoryId = "카테고리를 선택해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "categoryId";
     }
 
     if (!formData.name || formData.name.trim() === "") {
       newErrors.name = "상품명을 입력해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "name";
     } else if (formData.name.length > 30) {
       newErrors.name = "상품명은 30자 이내로 입력해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "name";
     }
 
     if (!formData.brand || formData.brand.trim() === "") {
       newErrors.brand = "브랜드명을 입력해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "brand";
     } else if (formData.brand.length > 30) {
       newErrors.brand = "브랜드명은 30자 이내로 입력해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "brand";
     }
 
     if (!formData.price && formData.price !== 0) {
       newErrors.price = "가격을 입력해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "price";
     } else if (isNaN(formData.price) || formData.price < 0) {
       newErrors.price = "유효한 가격을 입력해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "price";
     }
 
     if (!formData.quantity && formData.quantity !== 0) {
       newErrors.quantity = "재고량을 입력해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "quantity";
     } else if (
       isNaN(formData.quantity) ||
       formData.quantity < 0 ||
       !Number.isInteger(Number(formData.quantity))
     ) {
       newErrors.quantity = "유효한 재고량을 입력해 주세요 (양의 정수)";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "quantity";
     } else if (Number(formData.quantity) > 99) {
       newErrors.quantity = "재고량은 최대 99개까지 입력 가능합니다";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "quantity";
     }
 
+    // 상품 설명 유효성 검사
     if (!formData.detail || formData.detail.trim() === "") {
       newErrors.detail = "상품 설명을 입력해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "detail";
     } else if (formData.detail.length > 255) {
       newErrors.detail = "상품 설명은 255자 이내로 입력해 주세요";
+      isValid = false;
+      if (!firstErrorField) firstErrorField = "detail";
+    } else {
+      // 줄 수 확인
+      const lineCount = formData.detail.split('\n').length;
+      const MAX_LINES = 5;
+      
+      if (lineCount > MAX_LINES) {
+        newErrors.detail = `상품 설명은 최대 ${MAX_LINES}줄까지만 입력 가능합니다`;
+        isValid = false;
+        if (!firstErrorField) firstErrorField = "detail";
+      }
+      
+      // 이모지 확인
+      if (/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]/gu.test(formData.detail)) {
+        newErrors.detail = "상품 설명에 이모지를 사용할 수 없습니다";
+        isValid = false;
+        if (!firstErrorField) firstErrorField = "detail";
+      }
     }
 
     if (!mainImageFile) {
       newErrors.mainImage = "대표 이미지는 필수입니다";
+      isValid = false;
+      firstErrorField = "mainImage";
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    
+    // 에러가 있는 첫 번째 필드로 스크롤
+    if (!isValid && firstErrorField) {
+      setTimeout(() => {
+        let errorField;
+        
+        if (firstErrorField === "mainImage") {
+          // 메인 이미지 에러일 경우 이미지 업로드 영역으로 스크롤
+          errorField = document.querySelector(".image-upload-box");
+        } else {
+          // 일반 필드 에러
+          errorField = document.querySelector(`[name="${firstErrorField}"]`);
+        }
+        
+        if (errorField) {
+          errorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (errorField.focus && firstErrorField !== "mainImage") {
+            errorField.focus();
+          }
+        }
+      }, 100);
+    }
+    
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
@@ -303,8 +440,7 @@ const ProductCreatePage = () => {
 
     // 유효성 검사
     if (!validateForm()) {
-      // 에러 발생 시 페이지 상단으로 스크롤
-      window.scrollTo(0, 0);
+      // validateForm 내부에서 스크롤 처리
       return;
     }
 
@@ -376,25 +512,25 @@ const ProductCreatePage = () => {
         if (status === 400) {
           setErrors((prev) => ({
             ...prev,
-            form: `잘못된 요청: ${data.message || "입력 정보를 확인해주세요"}`,
+            form: `잘못된 요청: ${data.message || "입력 정보를 확인해주세요"}`
           }));
         } else if (status === 404) {
           setErrors((prev) => ({
             ...prev,
-            form: `오류: ${data.message || "카테고리가 존재하지 않습니다"}`,
+            form: `오류: ${data.message || "카테고리가 존재하지 않습니다"}`
           }));
         } else {
           setErrors((prev) => ({
             ...prev,
             form: `상품 등록 실패: ${
               data.message || "서버 오류가 발생했습니다"
-            }`,
+            }`
           }));
         }
       } else {
         setErrors((prev) => ({
           ...prev,
-          form: "상품 등록 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.",
+          form: "상품 등록 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요."
         }));
       }
 
@@ -443,8 +579,6 @@ const ProductCreatePage = () => {
 
         {/* 폼 전체 에러 메시지 */}
         {errors.form && <div className="form-error-message">{errors.form}</div>}
-
-        
 
         <div className="sub-title">상품 정보</div>
 
@@ -534,23 +668,31 @@ const ProductCreatePage = () => {
                   </label>
                 </td>
                 <td className="input-cell price-cell">
-                  <div className="input-wrapper">
-                    <div className="price-input-container">
-                      <input
-                        type="number"
-                        name="price"
-                        value={formData.price}
-                        onChange={handleChange}
-                        className={`form-input price-input ${errors.price ? "has-error" : ""}`}
-                        min="0"
-                        placeholder="숫자만 입력"
-                      />
-                      <span className="price-currency">WORK</span>
-                    </div>
-                    {errors.price && (
-                      <div className="error-hint">{errors.price}</div>
-                    )}
+                <div className="input-wrapper">
+                  <div className="price-input-container">
+                    <input
+                      type="number"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleChange}
+                      onKeyDown={(e) => {
+                        // e, E, +, -를 차단
+                        if (['e', 'E', '+', '-'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
+                      className={`form-input price-input ${errors.price ? "has-error" : ""}`}
+                      min="1"
+                      max="5000"
+                      placeholder="숫자만 입력"
+                    />
+                    <span className="price-currency">WORK</span>
                   </div>
+                  <div className="field-hint">가격 범위: 1~5000 WORK</div>
+                  {errors.price && (
+                    <div className="error-hint price-error">{errors.price}</div>
+                  )}
+                </div>
                 </td>
               </tr>
 
@@ -567,12 +709,19 @@ const ProductCreatePage = () => {
                       name="quantity"
                       value={formData.quantity}
                       onChange={handleChange}
+                      onKeyDown={(e) => {
+                        // e, E, +, -를 차단
+                        if (['e', 'E', '+', '-'].includes(e.key)) {
+                          e.preventDefault();
+                        }
+                      }}
                       className={`form-input ${errors.quantity ? "has-error" : ""}`}
-                      min="0"
+                      min="1"
                       max="99"
                       step="1"
-                      placeholder="숫자만 입력 (최대 99개)"
+                      placeholder="숫자만 입력"
                     />
+                    <div className="field-hint">재고량 범위: 1~99개</div>
                     {errors.quantity && (
                       <div className="error-hint">{errors.quantity}</div>
                     )}
@@ -835,47 +984,48 @@ const ProductCreatePage = () => {
                     <div className="details-section">
                       <h4>{selectedImg.title}</h4>
                       <div className="image-details">
-  <p>원본 크기: {selectedImg.info.width} x {selectedImg.info.height}px</p>
-  <p>크롭 영역: {selectedImg.info.cropInfo.size} x {selectedImg.info.cropInfo.size}px</p>
-  <p>시작 위치: X={selectedImg.info.cropInfo.x}, Y={selectedImg.info.cropInfo.y}</p>
+                        <p>원본 크기: {selectedImg.info.width} x {selectedImg.info.height}px</p>
+                        <p>크롭 영역: {selectedImg.info.cropInfo.size} x {selectedImg.info.cropInfo.size}px</p>
+                        <p>시작 위치: X={selectedImg.info.cropInfo.x}, Y={selectedImg.info.cropInfo.y}</p>
                       
-                      <div className="original-image-container">
-                        <h5>원본 이미지와 크롭 영역</h5>
-                        <div className="original-image-wrapper" style={{
-                          position: 'relative',
-                          width: '100%',
-                          // 원본 이미지 비율 유지
-                          paddingBottom: `${(selectedImg.info.height / selectedImg.info.width) * 100}%`
-                        }}>
-                          {/* 원본 이미지 */}
-                          <img 
-                            src={imageSrc} 
-                            alt="원본 이미지" 
-                            className="original-image"
-                          />
-                          
-                          {/* 크롭 영역 오버레이 */}
-                          <div className="crop-overlay">
-                            <div className="crop-area" style={{
-                              left: `${(selectedImg.info.cropInfo.x / selectedImg.info.width) * 100}%`,
-                              top: `${(selectedImg.info.cropInfo.y / selectedImg.info.height) * 100}%`,
-                              width: `${(selectedImg.info.cropInfo.size / selectedImg.info.width) * 100}%`,
-                              height: `${(selectedImg.info.cropInfo.size / selectedImg.info.height) * 100}%`,
-                            }}></div>
+                        <div className="original-image-container">
+                          <h5>원본 이미지와 크롭 영역</h5>
+                          <div className="original-image-wrapper" style={{
+                            position: 'relative',
+                            width: '100%',
+                            // 원본 이미지 비율 유지
+                            paddingBottom: `${(selectedImg.info.height / selectedImg.info.width) * 100}%`
+                          }}>
+                            {/* 원본 이미지 */}
+                            <img 
+                              src={imageSrc} 
+                              alt="원본 이미지" 
+                              className="original-image"
+                            />
+                            
+                            {/* 크롭 영역 오버레이 */}
+                            <div className="crop-overlay">
+                              <div className="crop-area" style={{
+                                left: `${(selectedImg.info.cropInfo.x / selectedImg.info.width) * 100}%`,
+                                top: `${(selectedImg.info.cropInfo.y / selectedImg.info.height) * 100}%`,
+                                width: `${(selectedImg.info.cropInfo.size / selectedImg.info.width) * 100}%`,
+                                height: `${(selectedImg.info.cropInfo.size / selectedImg.info.height) * 100}%`,
+                              }}></div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="cropped-preview-container">
-                        <h5>크롭 결과 미리보기</h5>
-                        <div className="cropped-preview">
-                          <img 
-                            src={selectedImageIndex === -1 ? mainImage : subImages[selectedImageIndex]} 
-                            alt="크롭된 이미지 미리보기" 
-                            className="cropped-image"
-                          />
+                        
+                        <div className="cropped-preview-container">
+                          <h5>크롭 결과 미리보기</h5>
+                          <div className="cropped-preview">
+                            <img 
+                              src={selectedImageIndex === -1 ? mainImage : subImages[selectedImageIndex]} 
+                              alt="크롭된 이미지 미리보기" 
+                              className="cropped-image"
+                            />
+                          </div>
                         </div>
-                      </div></div> 
+                      </div> 
                     </div>
                   );
                 } else {
