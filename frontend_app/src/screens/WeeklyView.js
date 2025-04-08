@@ -361,7 +361,14 @@ const navigateWeek = (direction) => {
       )} */}
 
       {/* 공통 앱 사용 통계 컴포넌트 사용 */}
-      <AppUsageStats viewType="weekly" appUsage={appUsage} />
+      <AppUsageStats 
+  viewType="weekly" 
+  appUsage={appUsage} 
+  weekInfo={{
+    title: `${currentWeek.start} - ${currentWeek.end}`,
+    currentWeekIndex: currentWeekIndex
+  }}
+/>
     </ScrollView>
   );
 };
