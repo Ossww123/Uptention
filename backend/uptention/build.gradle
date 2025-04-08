@@ -17,6 +17,10 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+    // Spring Boot 기본 로깅 제외
+    all {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
 }
 
 repositories {
@@ -28,6 +32,11 @@ repositories {
 def querydslDir = "$buildDir/generated/querydsl"
 
 dependencies {
+    // 기존 spring-boot-starter-logging 대신 log4j2 사용
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    // Log4j2 JSON 형식 지원
+    implementation 'org.apache.logging.log4j:log4j-layout-template-json:2.24.3'
+
     // spring data jpa
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.mysql:mysql-connector-j'
