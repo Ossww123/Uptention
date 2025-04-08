@@ -98,9 +98,9 @@ const StoreScreen = ({ navigation }) => {
   const onEndReachedTimeoutRef = useRef(null);
   const isInitialLoadRef = useRef(true);
   const currentApiCallIdRef = useRef(null);
-  const requestTimerRef = useRef(null);
+  // 요청 타입을 구분하기 위한 ref 추가
+  const requestTypeRef = useRef(null);
   const loadRequestedRef = useRef(false);
-  const productGridRef = useRef(null);
 
    // 카테고리 로드 함수 추가
    const fetchCategories = async () => {
@@ -131,9 +131,6 @@ const StoreScreen = ({ navigation }) => {
       if (onEndReachedTimeoutRef.current) {
         clearTimeout(onEndReachedTimeoutRef.current);
       }
-      if (requestTimerRef.current) {
-        clearTimeout(requestTimerRef.current);
-      }
     };
   }, []);
 
@@ -151,6 +148,8 @@ const StoreScreen = ({ navigation }) => {
     if (isMounted.current && !isInitialLoadRef.current) {
       // 최초 로드가 아니고, 마운트된 상태일 때만 실행
       console.log("카테고리/정렬 변경으로 인한 로드");
+      // 요청 타입을 설정하여 카테고리/정렬 변경임을 표시
+      requestTypeRef.current = 'filter_change';
       loadProducts(true);
     }
   }, [selectedCategory, currentSort.id]);
@@ -169,6 +168,7 @@ const StoreScreen = ({ navigation }) => {
         if (isInitialLoadRef.current) {
           console.log("최초 로드 실행");
           loadRequestedRef.current = true; // 요청 플래그 설정
+          requestTypeRef.current = 'initial_load';
           loadProducts(true);
           isInitialLoadRef.current = false;
         } else {
@@ -196,6 +196,8 @@ const StoreScreen = ({ navigation }) => {
 
     searchTimeoutRef.current = setTimeout(() => {
       if (isMounted.current && !isInitialLoadRef.current) {
+        // 검색 요청임을 표시
+        requestTypeRef.current = 'search';
         loadProducts(true);
       }
     }, 500);
@@ -228,41 +230,39 @@ const StoreScreen = ({ navigation }) => {
   const loadProducts = async (isRefresh = false) => {
     try {
       const callId = Date.now(); // 각 호출의 고유 ID
-      console.log(`loadProducts 시작 (${callId})`, {
+      const requestType = requestTypeRef.current || 'default';
+      
+      console.log(`loadProducts 시작 (${callId}, ${requestType})`, {
         isRefresh,
         loading,
         hasNextPage,
-        currentApiCallId: currentApiCallIdRef.current,
-        requestTimer: requestTimerRef.current !== null
+        currentApiCallId: currentApiCallIdRef.current
       });
 
-      // 더블 요청 방지 타이머 체크
-      if (requestTimerRef.current) {
-        console.log(`더블 요청 방지 타이머 활성화, 요청 무시 (${callId})`);
+      // 카테고리 변경, 검색, 초기 로드의 경우 무조건 실행하도록 수정
+      const isUserInitiatedAction = ['filter_change', 'search', 'initial_load'].includes(requestType);
+      
+      // 진행 중인 API 호출이 있고, 유저가 직접 요청한 액션이 아닌 경우에만 중복 요청 방지
+      if (loading && currentApiCallIdRef.current && !isUserInitiatedAction) {
+        console.log(`이미 로딩 중이고 사용자 액션이 아님, 요청 무시 (${callId}, ${requestType})`);
         return;
       }
-
-      // 진행 중인 API 호출 체크
-      if (loading || currentApiCallIdRef.current) {
-        console.log(`이미 로딩 중, 요청 무시 (${callId})`);
-        return;
+      
+      // 유저 액션인 경우 이전 API 호출 취소 로직을 추가할 수 있음
+      if (isUserInitiatedAction && currentApiCallIdRef.current) {
+        console.log(`사용자 액션으로 인한 새 요청, 이전 요청 우선순위 낮춤 (${callId}, ${requestType})`);
+        // 여기서 실제 API 취소는 어렵지만, 결과를 무시하는 로직을 추가할 수 있음
       }
 
-      // 더블 요청 방지 타이머 설정 (300ms로 조정)
-      requestTimerRef.current = setTimeout(() => {
-        requestTimerRef.current = null;
-      }, 300); // 300ms로 변경
+      // 다음 페이지가 없고 리프레시가 아니고 유저 액션이 아닌 경우 무시
+      if (!hasNextPage && !isRefresh && !isUserInitiatedAction) {
+        console.log(`다음 페이지 없음, 요청 무시 (${callId}, ${requestType})`);
+        return;
+      }
 
       // 현재 API 호출 ID 설정
       currentApiCallIdRef.current = callId;
-
-      // 다음 페이지가 없고 리프레시가 아닐 경우 무시
-      if (!hasNextPage && !isRefresh) {
-        console.log(`다음 페이지 없음, 요청 무시 (${callId})`);
-        currentApiCallIdRef.current = null; // ID 초기화
-        return;
-      }
-
+      
       setLoading(true);
       if (isRefresh) {
         setRefreshing(true);
@@ -298,7 +298,7 @@ const StoreScreen = ({ navigation }) => {
         });
 
         const endpoint = `/items?${queryParams.toString()}`;
-        console.log(`API 요청 URL (${callId}):`, endpoint);
+        console.log(`API 요청 URL (${callId}, ${requestType}):`, endpoint);
 
         // API 요청
         const { data, ok } = await get(endpoint);
@@ -306,6 +306,13 @@ const StoreScreen = ({ navigation }) => {
         // 에러 처리
         if (!ok) {
           throw new Error(data.message || "상품을 불러오지 못했습니다.");
+        }
+
+        // API 호출이 완료됐을 때 현재 진행 중인 호출 ID와 일치하는지 확인
+        // 다른 요청이 중간에 들어왔다면 결과를 무시
+        if (currentApiCallIdRef.current !== callId) {
+          console.log(`API 응답이 왔지만 다른 요청이 진행 중, 결과 무시 (${callId}, ${requestType})`);
+          return;
         }
 
         // 유효한 itemId를 가진 항목만 필터링
@@ -321,28 +328,29 @@ const StoreScreen = ({ navigation }) => {
 
         setHasNextPage(data.hasNextPage);
         setNextCursor(data.nextCursor);
-        console.log(`loadProducts 완료 (${callId})`);
+        console.log(`loadProducts 완료 (${callId}, ${requestType})`);
       } catch (error) {
-        console.error(`상품 로드 에러 (${callId}):`, error);
+        console.error(`상품 로드 에러 (${callId}, ${requestType}):`, error);
         Alert.alert(
           "오류",
           error.message || "상품을 불러오는데 문제가 발생했습니다."
         );
       } finally {
-        setLoading(false);
-        setRefreshing(false);
-        // API 호출 완료 후 ID 초기화
-        currentApiCallIdRef.current = null;
+        // 현재 API 호출 ID와 일치할 때만 로딩 상태 변경
+        if (currentApiCallIdRef.current === callId) {
+          setLoading(false);
+          setRefreshing(false);
+          currentApiCallIdRef.current = null;
+        }
       }
     } catch (error) {
       console.error(`loadProducts 예외 처리 (${Date.now()}):`, error);
       setLoading(false);
       setRefreshing(false);
-      currentApiCallIdRef.current = null; // 예외 발생 시에도 ID 초기화
-      if (requestTimerRef.current) {
-        clearTimeout(requestTimerRef.current);
-        requestTimerRef.current = null;
-      }
+      currentApiCallIdRef.current = null;
+    } finally {
+      // 요청 타입 초기화
+      requestTypeRef.current = null;
     }
   };
 
@@ -353,10 +361,6 @@ const StoreScreen = ({ navigation }) => {
         setSelectedCategory(null);
       } else {
         setSelectedCategory(categoryId);
-      }
-      // 카테고리 변경 시 스크롤 초기화
-      if (productGridRef.current) {
-        productGridRef.current.scrollToOffset({ offset: 0, animated: true });
       }
     },
     [selectedCategory]
@@ -373,6 +377,8 @@ const StoreScreen = ({ navigation }) => {
     if (searchInputRef.current) {
       searchInputRef.current.blur();
     }
+    // 검색 요청임을 표시
+    requestTypeRef.current = 'search';
     loadProducts(true);
   }, []);
 
@@ -383,6 +389,8 @@ const StoreScreen = ({ navigation }) => {
     }
 
     onEndReachedTimeoutRef.current = setTimeout(() => {
+      // 무한 스크롤 요청임을 표시
+      requestTypeRef.current = 'scroll';
       loadProducts(false);
     }, 200);
   }, [loading, hasNextPage]);
@@ -538,7 +546,6 @@ const StoreScreen = ({ navigation }) => {
 
         {/* 상품 그리드 - 별도 컴포넌트로 분리 */}
         <ProductGridView
-          ref={productGridRef}
           products={products}
           onProductPress={navigateToProductDetail}
           onEndReached={handleEndReached}

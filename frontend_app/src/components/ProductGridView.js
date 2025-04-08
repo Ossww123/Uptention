@@ -69,7 +69,7 @@ const ProductGridView = memo(
       }, [products]);
 
       const keyExtractor = useCallback(
-        (item, index) => `product-${item.itemId || index}-${timestamp}`,
+        (item, index) => `product-${item.itemId}-${index}-${timestamp}`,
         [timestamp]
       );
 
