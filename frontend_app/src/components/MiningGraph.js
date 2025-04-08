@@ -30,7 +30,7 @@ const MiningGraph = ({
   const renderBar = ({ item, index }) => {
     const MAX_MINING_TIME = 480; // 8시간 = 480분
     const cappedValue = Math.min(item.value, MAX_MINING_TIME);
-    const barHeight = (cappedValue / maxValue) * 100;
+    const barHeight = (cappedValue / maxValue) * 95;
     const isSelected = selectedItem && selectedItem.id === item.id;
     const isToday = item.isToday || false;
 
@@ -175,18 +175,19 @@ const styles = StyleSheet.create({
   },
   chartContent: {
     paddingBottom: 5,
-    paddingTop: 30, // 상단에 표시선을 위한 공간 확보
+    paddingTop: 0,
     position: "relative",
-    height: 170, // 높이 일관성을 위해 조정
+    height: 185,
+    overflow: "visible", // 추가: 내용이 넘쳐도 잘리지 않게 함
   },
   hourLine: {
     position: "absolute",
-    top: 0,
+    top: 5,
     width: "100%",
-    zIndex: 1,
+    zIndex: 0,
   },
   hourLineHalf: {
-    top: 45,
+    top: 62,
   },
   hourLineDivider: {
     height: 1,
@@ -195,10 +196,11 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   barsContainer: {
-    height: 115,
+    height: 160,
     alignItems: "flex-end",
-    paddingBottom: 40, // 더 큰 패딩으로 텍스트 공간 확보
+    paddingBottom: 40,
     zIndex: 5,
+    overflow: "visible", // 추가: 내용이 넘쳐도 잘리지 않게 함
   },
   fixedBarsContainer: {
     justifyContent: "space-between", // 7개 막대를 균일하게 분포
@@ -211,8 +213,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   barWrapper: {
+    paddingTop: 30,
     height: "100%",
     justifyContent: "flex-end",
+    overflow: "visible", // 추가: 내용이 넘쳐도 잘리지 않게 함
   },
   bar: {
     width: 16,
