@@ -39,7 +39,8 @@ const ProfileScreen = ({ navigation }) => {
     solBalance,
     handleConnectWallet,
     handleDisconnectWallet,
-    connecting
+    connecting,
+    fetchBalances
   } = useWallet();
   
   const { userId, authToken, logout } = useAuth();
@@ -50,6 +51,21 @@ const ProfileScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // 잔액 변화 감지 및 화면 업데이트
+  useEffect(() => {
+    if (publicKey) {
+      fetchBalances(publicKey);
+    }
+  }, [publicKey, fetchBalances]);
+
+  useEffect(() => {
+    console.log('WORK 토큰 잔액 변화 감지:', tokenBalance);
+  }, [tokenBalance]);
+
+  useEffect(() => {
+    console.log('SOL 잔액 변화 감지:', solBalance);
+  }, [solBalance]);
 
   // 로그아웃 함수 수정
   const handleLogout = async () => {
@@ -110,32 +126,6 @@ const ProfileScreen = ({ navigation }) => {
     } catch (error) {
       console.error('로그아웃 처리 오류:', error);
       Alert.alert('오류', '로그아웃 중 문제가 발생했습니다.');
-    }
-  };
-
-  // 잔액 조회 함수
-  const fetchBalances = async (walletAddress) => {
-    try {
-      // SOL 잔액 조회
-      const solBalance = await DEVNET_CONNECTION.getBalance(new PublicKey(walletAddress));
-      setSolBalance(solBalance / LAMPORTS_PER_SOL);
-
-      // SPL 토큰 잔액 조회
-      const tokenAccounts = await DEVNET_CONNECTION.getParsedTokenAccountsByOwner(
-        new PublicKey(walletAddress),
-        { mint: YOUR_TOKEN_MINT }
-      );
-
-      if (tokenAccounts.value.length > 0) {
-        const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-        setTokenBalance(balance);
-      } else {
-        setTokenBalance(0);
-      }
-    } catch (error) {
-      console.error('잔액 조회 오류:', error);
-      setSolBalance(null);
-      setTokenBalance(null);
     }
   };
 
@@ -331,7 +321,9 @@ const ProfileScreen = ({ navigation }) => {
               style={styles.editButton}
               onPress={handleEditPress}
             >
-              <Ionicons name="pencil" size={15} color="black" />
+              <View style={styles.editIconContainer}>
+                <Ionicons name="settings-outline" size={22} color="#FF8C00" />
+              </View>
             </TouchableOpacity>
             <View style={styles.profileInfo}>
               <View style={styles.profileImageContainer}>
@@ -367,14 +359,14 @@ const ProfileScreen = ({ navigation }) => {
             <View style={styles.tokenContainer}>
               <View style={styles.tokenItem}>
                 <Text style={styles.tokenLabel}>WORK</Text>
-                <Text style={styles.tokenValue}>
-                  {tokenBalance !== null ? `${tokenBalance}` : '연결 필요'}
+                <Text style={[styles.tokenValue, { color: '#FF8C00' }]}>
+                  {tokenBalance !== null ? `${tokenBalance} WORK` : '연결 필요'}
                 </Text>
               </View>
               <View style={styles.tokenItem}>
                 <Text style={styles.tokenLabel}>SOLANA</Text>
-                <Text style={styles.tokenValue}>
-                  {solBalance !== null ? `${solBalance}` : '연결 필요'}
+                <Text style={[styles.tokenValue, { color: '#FF8C00' }]}>
+                  {solBalance !== null ? `${Number(solBalance).toFixed(4)} SOL` : '연결 필요'}
                 </Text>
               </View>
             </View>
@@ -622,9 +614,19 @@ const styles = StyleSheet.create({
   },
   editButton: {
     position: 'absolute',
-    right: 8,
-    top: 5,
+    right: -12,
+    top: -12,
     zIndex: 1,
+  },
+  editIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
   },
   walletSection: {
     backgroundColor: '#FFFFFF',
