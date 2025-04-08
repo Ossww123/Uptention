@@ -41,10 +41,36 @@ const UserCreatePage = () => {
   // 폼 필드 상태 변경 시 에러 메시지 초기화
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    
+    // 이모지 제거 함수
+    const removeEmojis = (text) => {
+      return text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]/gu, '');
+    };
+
+    if (name === "name" || name === "username" || name === "password" || name === "confirmPassword") {
+      // 이모지 제거 처리
+      const processedValue = removeEmojis(value);
+      
+      setFormData({
+        ...formData,
+        [name]: processedValue
+      });
+    }
+    else if (name === "employeeNumber") {
+      // 사원번호: 영어와 숫자만 허용
+      const processedValue = removeEmojis(value).replace(/[^a-zA-Z0-9]/g, '');
+      
+      setFormData({
+        ...formData,
+        [name]: processedValue
+      });
+    }
+    else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
 
     // 값이 변경되면 중복 확인 상태 초기화
     if (name === "username") {
