@@ -23,7 +23,6 @@ const ProductEditPage = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState("");
 
   // 상품 상세 정보 로드
   useEffect(() => {
@@ -95,11 +94,6 @@ const ProductEditPage = () => {
         [name]: ""
       });
     }
-    
-    // 성공 메시지가 있다면 초기화
-    if (successMessage) {
-      setSuccessMessage("");
-    }
   };
 
   // 유효성 검사
@@ -150,7 +144,7 @@ const ProductEditPage = () => {
       (editableFields.quantity !== "" && editableFields.quantity !== product.quantity);
     
     if (!isAnyFieldChanged) {
-      newErrors.global = "변경된 내용이 없습니다";
+      alert("변경된 내용이 없습니다");
       isValid = false;
     }
 
@@ -208,7 +202,7 @@ const ProductEditPage = () => {
       console.log(response)
 
       // 성공 처리
-      setSuccessMessage("상품이 성공적으로 수정되었습니다.");
+      alert("상품이 성공적으로 수정되었습니다.");
       
       // 상품 데이터 업데이트
       setProduct({
@@ -308,9 +302,6 @@ const ProductEditPage = () => {
         
         {/* 전역 에러 메시지 표시 */}
         {errors.global && <div className="form-error-message">{errors.global}</div>}
-        
-        {/* 성공 메시지 표시 */}
-        {successMessage && <div className="form-success-message">{successMessage}</div>}
         
         <div className="sub-title">상품 정보</div>
         
