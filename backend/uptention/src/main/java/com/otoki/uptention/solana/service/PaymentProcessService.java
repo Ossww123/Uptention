@@ -123,6 +123,9 @@ public class PaymentProcessService {
 				// 주문 취소 처리는 계속 진행
 			}
 
+			// 결제 실패 알림 처리
+			sendPaymentFailureNotification(order, reason);
+
 			log.info("주문 ID({})에 대한 결제 실패 처리 완료", orderId);
 			return true;
 		} catch (Exception e) {
@@ -282,4 +285,54 @@ public class PaymentProcessService {
 		}
 	}
 
+	/**
+	 * 결제 실패 알림 처리
+	 */
+	private void sendPaymentFailureNotification(Order order, String reason) {
+		try {
+			User user = order.getUser();
+			List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(order.getId());
+
+			if (orderItems.isEmpty()) {
+				log.warn("주문 ID({})에 대한 주문 항목이 없습니다.", order.getId());
+				return;
+			}
+
+			// 첫 번째 상품 이름 가져오기
+			String firstItemName = orderItems.get(0).getItem().getName();
+
+			// 알림 메시지 구성
+			String title = "⚠️ 결제 실패 ⚠️";
+			String body;
+
+			if (orderItems.size() > 1) {
+				body = firstItemName + " 외 " + (orderItems.size() - 1) + "건 결제가 실패하였습니다.";
+			} else {
+				body = firstItemName + " 결제가 실패하였습니다.";
+			}
+
+			// 실패 이유가 있는 경우 추가
+			if (reason != null && !reason.trim().isEmpty()) {
+				body += " 사유: " + reason;
+			}
+
+			// FCM 알림 전송
+			fcmSendService.sendNotificationToUser(user, title, body);
+
+			// 알림 내역 저장
+			Notification notification = Notification.builder()
+				.user(user)
+				.title(title)
+				.message(body)
+				.read(false)
+				.build();
+
+			notificationService.saveNotification(notification);
+
+			log.info("결제 실패 알림이 성공적으로 전송되었습니다. 주문 ID: {}, 사용자: {}", order.getId(), user.getId());
+		} catch (Exception e) {
+			// 알림 전송 실패가 결제 처리 성공에 영향을 주지 않도록 예외 처리
+			log.error("결제 실패 알림 처리 중 오류 발생: 주문 ID: {}, 오류: {}", order.getId(), e.getMessage(), e);
+		}
+	}
 }
