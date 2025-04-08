@@ -564,8 +564,10 @@ const styles = StyleSheet.create({
   },
   userListContainer: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: height * 0.7,
+    width: '100%'
   },
   userListHeader: {
     flexDirection: 'row',
@@ -574,6 +576,9 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20
   },
   userListTitle: {
     fontSize: 18,

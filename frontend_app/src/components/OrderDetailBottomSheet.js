@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   ActivityIndicator,
+  PanResponder
 } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
@@ -24,6 +25,30 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
   const [error, setError] = useState(null);
   const [isLayoutReady, setIsLayoutReady] = useState(false);
   const { authToken } = useAuth();
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) { // 아래로 드래그할 때만
+          slideAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) { // 100px 이상 드래그하면 닫기
+          onClose();
+        } else {
+          // 원위치로 돌아가기
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   // 데이터 로딩 상태 추적을 위한 ref
   const loadingRef = useRef({
@@ -246,7 +271,9 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
                 console.log('[OrderDetail] 바텀시트 레이아웃 계산 완료');
               }}
             >
-              <View style={styles.handle} />
+              <View {...panResponder.panHandlers} style={styles.handleContainer}>
+                <View style={styles.handle} />
+              </View>
               <ScrollView 
                 style={styles.scrollView} 
                 showsVerticalScrollIndicator={false}
@@ -280,13 +307,16 @@ const styles = StyleSheet.create({
     padding: 20,
     maxHeight: height * 0.8,
   },
+  handleContainer: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
   handle: {
     width: 40,
     height: 4,
     backgroundColor: '#E0E0E0',
     borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   scrollView: {
     maxHeight: height * 0.75,
