@@ -103,7 +103,7 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Image
-          source={require("../../../assets/넥타이.png")}
+          source={require("../../../assets/tie_icon.png")}
           style={styles.walletLogo}
           defaultSource={require("../../../assets/phantom-logo.png")}
         />

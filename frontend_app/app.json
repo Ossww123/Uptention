@@ -4,12 +4,12 @@
     "slug": "uptention",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app_logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "com.anonymous.uptention",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/symbol.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/app_logo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.uptention",

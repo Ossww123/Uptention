@@ -149,7 +149,7 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../../assets/캐릭터움직임.gif')}
+              source={require('../../../assets/character_animation.gif')}
               style={styles.logo}
               resizeMode="contain"
             />
