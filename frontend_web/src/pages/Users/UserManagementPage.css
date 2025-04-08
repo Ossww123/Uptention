@@ -215,21 +215,35 @@
 
 /* 지갑 연동 뱃지 스타일 */
 .wallet-badge {
-  padding: 8px 12px;
-  border-radius: 20px;
+  padding: 6px 12px;
+  border-radius: 15px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   display: inline-block;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  animation: bounce 1s infinite;
 }
 
 .wallet-connected {
-  background-color: #4CAF50;
-  color: white;
+  background-color: #e6f3ff;
+  color: #1976d2;
+  border: 1px solid #90caf9;
 }
 
 .wallet-disconnected {
-  background-color: #FF9800;
-  color: white;
+  background-color: #fff3e0;
+  color: #f57c00;
+  border: 1px solid #ffb74d;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 /* 삭제 버튼 스타일 개선 */
@@ -237,11 +251,11 @@
   background-color: #ffebee;
   color: #e53935;
   border: none;
-  padding: 8px 15px;
+  padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s;
   font-size: 13px;
-  transition: all 0.2s;
 }
 
 .delete-button:hover {

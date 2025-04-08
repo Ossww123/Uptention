@@ -13,10 +13,11 @@ const ProductManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [hasMore, setHasMore] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
+  const [categories, setCategories] = useState([]);
   
   // 정렬 및 필터링 상태
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [sortOption, setSortOption] = useState('SALES'); // 기본 정렬: 인기순
+  const [sortOption, setSortOption] = useState('ID_ASC'); // 기본 정렬: ID 오름차순
   const pageSize = 20; // 페이지당 아이템 수
   
   // Refs
@@ -49,20 +50,37 @@ const ProductManagementPage = () => {
     };
   }, [loading, hasMore, nextCursor, sortOption, selectedCategory, searchTerm]);
   
-  // 카테고리 목록
-  const categories = [
-    { id: "1", name: "가전디지털" },
-    { id: "2", name: "뷰티" },
-    { id: "3", name: "리빙/키친" },
-    { id: "4", name: "패션의류/잡화" },
-    { id: "5", name: "문화여가" },
-    { id: "6", name: "생활용품" },
-    { id: "7", name: "식품" },
-    { id: "8", name: "키즈" },
-  ];
+  // 카테고리 목록을 API에서 가져오는 함수
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/api/category`, {
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('카테고리 데이터:', response.data); // 카테고리 데이터 확인
+      setCategories(response.data);
+    } catch (err) {
+      console.error('카테고리 로딩 오류:', err);
+      setError('카테고리 정보를 불러오는 데 실패했습니다.');
+    }
+  };
+
+  // 컴포넌트 마운트 시 카테고리 로드
+  useEffect(() => {
+    fetchCategories();
+  }, []);
   
   // 정렬 옵션
   const sortOptions = [
+    { id: "ID_ASC", name: "상품ID 순" },
     { id: "SALES", name: "인기 순" },
     { id: "LOW_PRICE", name: "가격 낮은순" },
     { id: "HIGH_PRICE", name: "가격 높은순" },
@@ -78,7 +96,6 @@ const ProductManagementPage = () => {
     setError(null);
     
     try {
-      // 토큰 가져오기
       const token = localStorage.getItem('auth-token');
       if (!token) {
         throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
@@ -86,12 +103,13 @@ const ProductManagementPage = () => {
 
       const params = {
         size: pageSize,
-        sort: state.sortOption
+        sort: state.sortOption || 'ID_ASC' // 기본값 설정
       };
       
       // 카테고리 필터 추가
       if (state.selectedCategory) {
         params.categoryId = state.selectedCategory;
+        console.log('카테고리 ID (숫자):', params.categoryId); // 카테고리 ID 확인
       }
       
       // 검색어 필터 추가
@@ -104,7 +122,7 @@ const ProductManagementPage = () => {
         params.cursor = state.nextCursor;
       }
 
-      console.log('요청 파라미터:', params);
+      console.log('API 요청 파라미터:', params);
       
       const response = await axios.get(`${API_BASE_URL}/api/items`, {
         headers: {
@@ -235,7 +253,7 @@ const ProductManagementPage = () => {
   
   // 상품 수정 페이지로 이동
   const handleEditProduct = (productId) => {
-    navigate(`/admin/products/edit/${productId}`);
+    navigate(`/admin/products/${productId}`);
   };
   
   // 상품 삭제 핸들러
@@ -274,7 +292,8 @@ const ProductManagementPage = () => {
   // 카테고리 변경 핸들러
   const handleCategoryChange = (e) => {
     const categoryId = e.target.value;
-    setSelectedCategory(categoryId === "all" ? null : categoryId);
+    console.log('선택된 카테고리 ID:', categoryId); // 선택된 카테고리 ID 확인
+    setSelectedCategory(categoryId === "all" ? null : parseInt(categoryId));
   };
   
   // 정렬 옵션 변경 핸들러
@@ -302,8 +321,8 @@ const ProductManagementPage = () => {
         className="filter-select"
       >
         <option value="all">전체</option>
-        {categories.map(category => (
-          <option key={category.id} value={category.id}>
+        {categories && categories.map((category) => (
+          <option key={category.categoryId} value={category.categoryId}>
             {category.name}
           </option>
         ))}
@@ -372,24 +391,38 @@ const ProductManagementPage = () => {
           <tr 
             key={product.itemId}
             ref={index === products.length - 1 ? lastProductElementRef : null}
+            onClick={() => handleEditProduct(product.itemId)}
+            className="product-row"
           >
             <td>{product.itemId}</td>
             <td>{product.name}</td>
             <td>{product.brand}</td>
             <td>{product.categoryName}</td>
             <td>{product.price}</td>
-            <td>{product.quantity}</td>
+            <td>
+              {product.quantity === 0 ? (
+                <span className="sold-out-badge">품절😢</span>
+              ) : (
+                product.quantity
+              )}
+            </td>
             <td>{product.salesCount}</td>
             <td className="product-table-action-buttons">
               <button 
                 className="product-table-edit-button"
-                onClick={() => handleEditProduct(product.itemId)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditProduct(product.itemId);
+                }}
               >
                 수정
               </button>
               <button 
                 className="product-table-delete-button"
-                onClick={() => handleDeleteProduct(product.itemId)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteProduct(product.itemId);
+                }}
               >
                 삭제
               </button>
