@@ -17,7 +17,7 @@ const ProductManagementPage = () => {
   
   // 정렬 및 필터링 상태
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [sortOption, setSortOption] = useState('SALES'); // 기본 정렬: 인기순
+  const [sortOption, setSortOption] = useState('ID_ASC'); // 기본 정렬: ID 오름차순
   const pageSize = 20; // 페이지당 아이템 수
   
   // Refs
@@ -80,6 +80,7 @@ const ProductManagementPage = () => {
   
   // 정렬 옵션
   const sortOptions = [
+    { id: "ID_ASC", name: "상품ID 순" },
     { id: "SALES", name: "인기 순" },
     { id: "LOW_PRICE", name: "가격 낮은순" },
     { id: "HIGH_PRICE", name: "가격 높은순" },
@@ -102,7 +103,7 @@ const ProductManagementPage = () => {
 
       const params = {
         size: pageSize,
-        sort: state.sortOption
+        sort: state.sortOption || 'ID_ASC' // 기본값 설정
       };
       
       // 카테고리 필터 추가
