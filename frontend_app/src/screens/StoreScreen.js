@@ -101,6 +101,8 @@ const StoreScreen = ({ navigation }) => {
   // 요청 타입을 구분하기 위한 ref 추가
   const requestTypeRef = useRef(null);
   const loadRequestedRef = useRef(false);
+  // ProductGridView의 FlatList ref 추가
+  const productListRef = useRef(null);
 
    // 카테고리 로드 함수 추가
    const fetchCategories = async () => {
@@ -151,8 +153,20 @@ const StoreScreen = ({ navigation }) => {
       // 요청 타입을 설정하여 카테고리/정렬 변경임을 표시
       requestTypeRef.current = 'filter_change';
       loadProducts(true);
+      
+      // 스크롤 위치를 최상단으로 리셋
+      scrollToTop();
     }
   }, [selectedCategory, currentSort.id]);
+
+  // 스크롤 위치를 최상단으로 이동하는 함수
+  const scrollToTop = useCallback(() => {
+    if (productListRef.current) {
+      console.log("스크롤 위치 최상단으로 이동");
+      // FlatList를 최상단으로 스크롤
+      productListRef.current.scrollToOffset({ offset: 0, animated: true });
+    }
+  }, []);
 
   // 화면에 포커스가 될 때만 실행
   useFocusEffect(
@@ -199,6 +213,8 @@ const StoreScreen = ({ navigation }) => {
         // 검색 요청임을 표시
         requestTypeRef.current = 'search';
         loadProducts(true);
+        // 검색 시에도 스크롤 위치를 최상단으로 리셋
+        scrollToTop();
       }
     }, 500);
 
@@ -239,14 +255,20 @@ const StoreScreen = ({ navigation }) => {
         currentApiCallId: currentApiCallIdRef.current
       });
 
+      // 추가된 체크: 스크롤 타입이고 이미 로딩 중이면 즉시 반환
+    if (requestType === 'scroll' && loading) {
+      console.log(`이미 로딩 중이고 스크롤 요청임, 요청 무시 (${callId}, ${requestType})`);
+      return;
+    }
+
       // 카테고리 변경, 검색, 초기 로드의 경우 무조건 실행하도록 수정
-      const isUserInitiatedAction = ['filter_change', 'search', 'initial_load'].includes(requestType);
-      
-      // 진행 중인 API 호출이 있고, 유저가 직접 요청한 액션이 아닌 경우에만 중복 요청 방지
-      if (loading && currentApiCallIdRef.current && !isUserInitiatedAction) {
-        console.log(`이미 로딩 중이고 사용자 액션이 아님, 요청 무시 (${callId}, ${requestType})`);
-        return;
-      }
+    const isUserInitiatedAction = ['filter_change', 'search', 'initial_load'].includes(requestType);
+    
+    // 진행 중인 API 호출이 있고, 유저가 직접 요청한 액션이 아닌 경우에만 중복 요청 방지
+    if (loading && currentApiCallIdRef.current && !isUserInitiatedAction) {
+      console.log(`이미 로딩 중이고 사용자 액션이 아님, 요청 무시 (${callId}, ${requestType})`);
+      return;
+    }
       
       // 유저 액션인 경우 이전 API 호출 취소 로직을 추가할 수 있음
       if (isUserInitiatedAction && currentApiCallIdRef.current) {
@@ -380,19 +402,24 @@ const StoreScreen = ({ navigation }) => {
     // 검색 요청임을 표시
     requestTypeRef.current = 'search';
     loadProducts(true);
-  }, []);
+    // 검색 시 스크롤 위치를 최상단으로 리셋
+    scrollToTop();
+  }, [scrollToTop]);
 
   // 무한 스크롤 처리 (디바운싱 적용)
   const handleEndReached = useCallback(() => {
-    if (onEndReachedTimeoutRef.current) {
-      clearTimeout(onEndReachedTimeoutRef.current);
+    // 이미 로딩 중이거나, 다음 페이지가 없거나, 타임아웃이 이미 설정된 경우 중단
+    if (loading || !hasNextPage || onEndReachedTimeoutRef.current) {
+      return;
     }
-
+  
     onEndReachedTimeoutRef.current = setTimeout(() => {
       // 무한 스크롤 요청임을 표시
       requestTypeRef.current = 'scroll';
       loadProducts(false);
-    }, 200);
+      // 타임아웃 레퍼런스 초기화
+      onEndReachedTimeoutRef.current = null;
+    }, 300); // 시간을 조금 늘려 더 안정적으로 만듦
   }, [loading, hasNextPage]);
 
   // 상품 상세 페이지로 이동
@@ -546,6 +573,7 @@ const StoreScreen = ({ navigation }) => {
 
         {/* 상품 그리드 - 별도 컴포넌트로 분리 */}
         <ProductGridView
+          ref={productListRef}
           products={products}
           onProductPress={navigateToProductDetail}
           onEndReached={handleEndReached}
