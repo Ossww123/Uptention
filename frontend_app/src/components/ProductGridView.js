@@ -28,7 +28,7 @@ const ProductItem = memo(({ item, onPress, imageWidth }) => {
         defaultSource={require("../../assets/product-placeholder.png")}
       />
       <Text style={styles.productBrand}>{item.brand}</Text>
-      <Text style={styles.productName} numberOfLines={2}>
+      <Text style={styles.productName} numberOfLines={2} ellipsizeMode="tail">
         {item.name}
       </Text>
       <Text style={styles.productPrice}>{item.price} WORK</Text>
@@ -91,13 +91,16 @@ const ProductGridView = memo(
     }, []);
 
     // 상품 렌더링 함수
-    const renderItem = useCallback(({ item }) => (
-      <ProductItem 
-        item={item} 
-        onPress={() => onProductPress(item.itemId)}
-        imageWidth={imageWidth}
-      />
-    ), [onProductPress, imageWidth]);
+    const renderItem = useCallback(
+      ({ item }) => (
+        <ProductItem
+          item={item}
+          onPress={() => onProductPress(item.itemId)}
+          imageWidth={imageWidth}
+        />
+      ),
+      [onProductPress, imageWidth]
+    );
 
     return (
       <FlatList
@@ -171,7 +174,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     marginVertical: 2,
-    height: 36, // 2줄 높이 제한
+    minHeight: 36, // 최소 높이 보장
+    lineHeight: 18, // 라인 간 간격 조정
   },
   productPrice: {
     fontSize: 16,
