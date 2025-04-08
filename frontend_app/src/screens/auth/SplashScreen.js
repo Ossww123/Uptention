@@ -1,16 +1,50 @@
-// src/screens/auth/SplashScreen.js
 import React, { useEffect, useState } from 'react';
 import { View, Image, StyleSheet, StatusBar, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
+import ScreenTime from '../../utils/ScreenTime'; // 권한 체크를 위한 유틸리티 임포트
+import { useAuth } from '../../contexts/AuthContext'; // 인증 컨텍스트 임포트
+import { useWallet } from '../../contexts/WalletContext'; // 지갑 컨텍스트 임포트
 
 const SplashScreen = ({ navigation }) => {
   const [timePassed, setTimePassed] = useState(false);
+  const [permissionsChecked, setPermissionsChecked] = useState(false);
+  const [allPermissionsGranted, setAllPermissionsGranted] = useState(false);
+  const { isAuthenticated , isLoading} = useAuth();
+  const { publicKey } = useWallet();
   
   console.log('SplashScreen 렌더링됨');
 
+  // 필요한 권한들을 확인하는 함수
+  const checkPermissions = async () => {
+    try {
+      // 세 가지 권한을 동시에 확인
+      const [screenTimeGranted, overlayGranted, accessibilityGranted] = await Promise.all([
+        ScreenTime.hasUsageStatsPermission(),
+        ScreenTime.hasOverlayPermission(),
+        ScreenTime.hasAccessibilityPermission()
+      ]);
+      
+      // 모든 권한이 허용되었는지 확인
+      const granted = screenTimeGranted && overlayGranted && accessibilityGranted;
+      setAllPermissionsGranted(granted);
+      setPermissionsChecked(true);
+      
+      console.log('권한 상태 확인 완료:', { 
+        screenTime: screenTimeGranted, 
+        overlay: overlayGranted, 
+        accessibility: accessibilityGranted 
+      });
+    } catch (error) {
+      console.error('권한 확인 중 오류 발생:', error);
+      setPermissionsChecked(true); // 오류가 발생해도 체크는 완료된 것으로 표시
+    }
+  };
+
+  // 컴포넌트 마운트 시 권한 확인 시작
   useEffect(() => {
     console.log('SplashScreen useEffect 실행됨');
+    checkPermissions();
     
     // 첫 번째 타이머 - 상태 변경
     const timer = setTimeout(() => {
@@ -24,25 +58,53 @@ const SplashScreen = ({ navigation }) => {
     };
   }, []);
   
-  // 상태가 변경되면 네비게이션 실행
+  // 타이머와 권한 체크가 모두 완료되면 적절한 화면으로 이동
   useEffect(() => {
-    if (timePassed) {
+    if (timePassed && permissionsChecked && !isLoading) {
       console.log('상태 변경 감지: 다음 화면으로 이동 시도');
+      console.log('권한 상태:', allPermissionsGranted ? '모두 허용됨' : '일부 권한 필요');
       
-      // 두 번째 타이머 - 실제 네비게이션
+      // 네비게이션 타이머
       const navigationTimer = setTimeout(() => {
         try {
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            })
-          );
+          if (!isAuthenticated) {
+            // 로그인되지 않았으면 로그인 화면으로
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              })
+            );
+          } else if (!allPermissionsGranted) {
+            // 로그인은 되었지만 권한이 없으면 권한 화면으로
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Permissions' }],
+              })
+            );
+          } else if (!publicKey) {
+            // 로그인과 권한은 있지만 지갑 연결이 안 되어 있으면
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'WalletConnect' }],
+              })
+            );
+          } else {
+            // 모든 조건이 충족되면 메인 앱으로
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'MainApp' }],
+              })
+            );
+          }
           console.log('네비게이션 명령 실행됨');
         } catch (error) {
           console.error('네비게이션 오류:', error);
           
-          // 오류 발생 시 다시 시도
+          // 오류 발생 시 기본적으로 로그인 화면으로
           setTimeout(() => {
             console.log('네비게이션 재시도');
             navigation.reset({
@@ -55,7 +117,7 @@ const SplashScreen = ({ navigation }) => {
       
       return () => clearTimeout(navigationTimer);
     }
-  }, [timePassed, navigation]);
+  }, [timePassed, permissionsChecked, allPermissionsGranted, isAuthenticated, publicKey, navigation,isLoading]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -66,7 +128,6 @@ const SplashScreen = ({ navigation }) => {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.loadingText}>로딩 중{timePassed ? '...' : ''}</Text>
       </View>
     </SafeAreaView>
   );

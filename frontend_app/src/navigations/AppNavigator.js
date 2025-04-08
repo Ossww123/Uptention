@@ -164,7 +164,7 @@ const AppNavigator = forwardRef((props, ref) => {
   return (
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator 
-        initialRouteName={getInitialRoute()}
+        initialRouteName="Splash"
         screenOptions={{ 
           headerShown: false,
           animation: 'fade',
