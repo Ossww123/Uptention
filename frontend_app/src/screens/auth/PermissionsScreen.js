@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import ScreenTime from "../../utils/ScreenTime";
+import { useFocusEffect } from '@react-navigation/native';
+import { AppState } from 'react-native';
 
 const PermissionsScreen = ({ onPermissionsGranted, permissions: initialPermissions }) => {
   const [loading, setLoading] = useState(false);
@@ -22,6 +24,27 @@ const PermissionsScreen = ({ onPermissionsGranted, permissions: initialPermissio
   useEffect(() => {
     checkAllPermissions();
   }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      // 앱이 백그라운드에서 포그라운드로 돌아올 때 권한 재확인
+      if (nextAppState === 'active') {
+        checkAllPermissions();
+      }
+    });
+  
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      // 화면에 포커스가 돌아올 때마다 권한 재확인
+      checkAllPermissions();
+      return () => {};
+    }, [])
+  );
 
   // 모든 권한 상태 확인 함수
   const checkAllPermissions = async () => {
