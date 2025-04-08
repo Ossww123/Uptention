@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flexDirection: 'row',
-    marginBottom: 24,
+    marginBottom: 0,
   },
   labelColumn: {
     flex: 1,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginTop: 8,
-    marginBottom: 24,
+    marginBottom: 0,
   },
   descriptionLabel: {
     fontSize: 14,

@@ -59,7 +59,7 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
   const fetchOrderDetail = async () => {
     try {
       setLoading(true);
-      setIsLayoutReady(false); // 데이터 로딩 시작 시 레이아웃 준비 상태 초기화
+      setIsLayoutReady(false);
       setError(null);
       
       const currentRequestId = loadingRef.current.requestId + 1;
@@ -68,12 +68,6 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
         requestId: currentRequestId
       };
       
-      console.log('[OrderDetail] 데이터 로딩 시작:', {
-        requestId: currentRequestId,
-        orderId,
-        orderItemId
-      });
-
       const response = await axios.get(
         `${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`,
         {
@@ -93,18 +87,14 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
         };
         
         setOrderDetail(enrichedData);
-        
-        // 데이터 설정 후 즉시 로딩 상태 해제
         setLoading(false);
         loadingRef.current.isLoading = false;
         
-        // 데이터 설정 후 레이아웃 준비 상태 업데이트
         requestAnimationFrame(() => {
           setIsLayoutReady(true);
         });
       }
     } catch (err) {
-      console.error('[OrderDetail] 데이터 로딩 실패:', err);
       setError('주문 상세 정보를 불러오는데 실패했습니다.');
       setLoading(false);
       loadingRef.current.isLoading = false;
@@ -205,6 +195,13 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
               </View>
             )}
           </>
+        )}
+
+        {type === 'GIFT' && orderDetail.receiverName && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>받는 사람</Text>
+            <Text style={styles.value}>{orderDetail.receiverName}</Text>
+          </View>
         )}
       </View>
     );
