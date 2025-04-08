@@ -248,18 +248,6 @@ const fetchFirstPage = async () => {
  return (
    <SafeAreaView style={styles.container}>
      <StatusBar barStyle="dark-content" />
-     
-     {/* 헤더 */}
-     <View style={styles.header}>
-       <TouchableOpacity 
-         style={styles.backButton}
-         onPress={() => navigation.goBack()}
-       >
-         <Ionicons name="chevron-back" size={28} color="#000000" />
-       </TouchableOpacity>
-       <Text style={styles.headerTitle}>알림</Text>
-       <View style={{width: 40}} />
-     </View>
 
      {/* 새 알림 수신 배너 */}
      {newNotificationReceived && (
@@ -286,7 +274,7 @@ const fetchFirstPage = async () => {
          refreshing={refreshing}
          onRefresh={handleRefresh}
          onEndReached={handleLoadMore}
-         onEndReachedThreshold={0.1} // 목록의 하단 10%에 도달했을 때 추가 로딩
+         onEndReachedThreshold={0.1}
          removeClippedSubviews={false}
        />
      )}
@@ -298,22 +286,6 @@ const styles = StyleSheet.create({
  container: {
    flex: 1,
    backgroundColor: '#FFFFFF',
- },
- header: {
-   flexDirection: 'row',
-   alignItems: 'center',
-   justifyContent: 'space-between',
-   paddingHorizontal: 15,
-   paddingVertical: 10,
-   borderBottomWidth: 1,
-   borderBottomColor: '#EEEEEE',
- },
- backButton: {
-   padding: 5,
- },
- headerTitle: {
-   fontSize: 18,
-   fontWeight: 'bold',
  },
  loadingContainer: {
    flex: 1,
@@ -398,7 +370,7 @@ const styles = StyleSheet.create({
  },
  newNotificationBanner: {
    position: 'absolute',
-   top: 60, // 헤더 아래에 표시
+   top: 0, // 헤더가 제거되었으므로 top 값 수정
    left: 20,
    right: 20,
    backgroundColor: '#FF8C00',

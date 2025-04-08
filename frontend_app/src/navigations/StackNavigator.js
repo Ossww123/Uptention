@@ -31,13 +31,35 @@ const StackNavigator = () => {
       <Stack.Screen 
         name="Ranking" 
         component={RankingScreen} 
-        options={{ headerShown: false }}
+        options={{
+          headerShown: true,
+          headerTitle: '랭킹',
+          headerTitleAlign: 'center',
+          headerShadowVisible: false,
+          headerTitleStyle: {
+            fontSize: 16,
+            fontWeight: '600',
+          },
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+          },
+        }}
       />
       <Stack.Screen 
         name="Notification" 
         component={NotificationScreen} 
         options={{
-          headerShown: false,
+          headerShown: true,
+          headerTitle: '알림',
+          headerTitleAlign: 'center',
+          headerShadowVisible: false,
+          headerTitleStyle: {
+            fontSize: 16,
+            fontWeight: '600',
+          },
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+          },
           presentation: 'card',
           animation: 'slide_from_right'
         }}
