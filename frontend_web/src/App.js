@@ -7,10 +7,11 @@ import UserManagementPage from './pages/Users/UserManagementPage';
 import UserCreatePage from './pages/Users/UserCreatePage';
 import ProductManagementPage from './pages/Products/ProductManagementPage';
 import ProductCreatePage from './pages/Products/ProductCreatePage';
-import ProductEditPage from './pages/Products/ProductEditPage'; // 추가된 부분
+import ProductEditPage from './pages/Products/ProductEditPage';
+import ProductDetailPage from './pages/Products/ProductDetailPage';
 import AppManagementPage from './pages/Apps/AppManagementPage';
 import AdminLayout from './components/layout/AdminLayout/AdminLayout';
-import NotFoundPage from './pages/NotFound/NotFoundPage'; // 추가된 부분
+import NotFoundPage from './pages/NotFound/NotFoundPage';
 
 // 임시 인증 상태 체크 함수 (나중에 실제 인증 로직으로 대체)
 const isAuthenticated = () => {
@@ -93,7 +94,19 @@ function App() {
           } 
         />
         
-        앱 관리 라우트
+        {/* 상품 조회 라우트 추가 */}
+        <Route 
+          path="/admin/products/:itemId" 
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <ProductDetailPage />
+              </AdminLayout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* 앱 관리 라우트 */}
         <Route 
           path="/admin/apps" 
           element={

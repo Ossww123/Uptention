@@ -388,6 +388,8 @@ const ProductManagementPage = () => {
           <tr 
             key={product.itemId}
             ref={index === products.length - 1 ? lastProductElementRef : null}
+            onClick={() => navigate(`/admin/products/${product.itemId}`)}
+            className="product-row"
           >
             <td>{product.itemId}</td>
             <td>{product.name}</td>
@@ -399,13 +401,19 @@ const ProductManagementPage = () => {
             <td className="product-table-action-buttons">
               <button 
                 className="product-table-edit-button"
-                onClick={() => handleEditProduct(product.itemId)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditProduct(product.itemId);
+                }}
               >
                 수정
               </button>
               <button 
                 className="product-table-delete-button"
-                onClick={() => handleDeleteProduct(product.itemId)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteProduct(product.itemId);
+                }}
               >
                 삭제
               </button>
