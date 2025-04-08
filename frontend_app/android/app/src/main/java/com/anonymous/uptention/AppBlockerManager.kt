@@ -119,7 +119,8 @@ class AppBlockerManager(private val context: Context) {
             "com.google.android.googlequicksearchbox",   // 구글 검색
             "com.samsung.android.app.contacts",          // 삼성 연락처
             "com.google.android.contacts",               // Google 주소록
-            
+            "com.samsung.android.spay",
+
             // 업무용 도구
             "com.android.calculator2",                   // 안드로이드 계산기
             "com.sec.android.calculator",                // 삼성 계산기

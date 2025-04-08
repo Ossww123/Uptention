@@ -32,11 +32,13 @@ const ProductItem = memo(({ item, onPress, imageWidth }) => {
         {item.name}
       </Text>
       <Text style={styles.productPrice}>{item.price} WORK</Text>
-      {item.quantity <= 5 && (
+      {item.quantity === 0 ? (
+        <Text style={styles.lowStockText}>품절입니다.</Text>
+      ) : item.quantity <= 5 ? (
         <Text style={styles.lowStockText}>
           품절 임박! ({item.quantity}개 남음)
         </Text>
-      )}
+      ) : null}
     </TouchableOpacity>
   );
 });

@@ -165,26 +165,37 @@ const fetchFirstPage = async () => {
 
  // 날짜 포맷팅 함수
  const formatDate = (dateString) => {
-   const date = new Date(dateString);
+   const utcDate = new Date(dateString); // UTC 시간으로 변환
+   const kstOffset = 9 * 60 * 60 * 1000; // KST는 UTC+9
+   const kstDate = new Date(utcDate.getTime() + kstOffset); // KST로 변환
+
    const now = new Date();
-   const diffTime = Math.abs(now - date);
-   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-   
-   if (diffDays === 0) {
+   const kstNow = new Date(now.getTime() + kstOffset); // 현재 시간도 KST로 변환
+
+   // KST 기준으로 연도, 월, 일 비교
+   const isToday = kstDate.getFullYear() === kstNow.getFullYear() &&
+                   kstDate.getMonth() === kstNow.getMonth() &&
+                   kstDate.getDate() === kstNow.getDate();
+
+   const isYesterday = kstDate.getFullYear() === kstNow.getFullYear() &&
+                       kstDate.getMonth() === kstNow.getMonth() &&
+                       kstDate.getDate() === kstNow.getDate() - 1;
+
+   if (isToday) {
      // 오늘
-     const hours = date.getHours();
-     const minutes = date.getMinutes();
+     const hours = kstDate.getHours();
+     const minutes = kstDate.getMinutes();
      return `오늘 ${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0' + minutes : minutes}`;
-   } else if (diffDays === 1) {
+   } else if (isYesterday) {
      // 어제
      return '어제';
-   } else if (diffDays < 7) {
+   } else if (Math.abs(kstNow.getTime() - kstDate.getTime()) < 7 * 24 * 60 * 60 * 1000) {
      // 이번 주
      const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-     return days[date.getDay()];
+     return days[kstDate.getDay()];
    } else {
      // 그 이전
-     return `${date.getFullYear()}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getDate().toString().padStart(2, '0')}`;
+     return `${kstDate.getFullYear()}.${(kstDate.getMonth() + 1).toString().padStart(2, '0')}.${kstDate.getDate().toString().padStart(2, '0')}`;
    }
  };
 
@@ -211,6 +222,7 @@ const fetchFirstPage = async () => {
        styles.notificationItem, 
        item.read ? styles.readNotification : styles.unreadNotification
      ]}
+     activeOpacity={1}
    >
      <View style={styles.notificationIconContainer}>
        <Ionicons name="notifications-outline" size={24} color="#FF8C00" />

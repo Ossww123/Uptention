@@ -126,9 +126,12 @@ const GiftBottomSheet = ({
   };
 
   // 사용자 목록 렌더링
-  const renderUserItem = ({ item }) => (
+  const renderUserItem = ({ item, index }) => (
     <TouchableOpacity
-      style={styles.userItem}
+      style={[
+        styles.userItem,
+        index !== users.length - 1 && styles.userItemWithBorder
+      ]}
       onPress={() => handleSelectUser(item)}
     >
       <Text style={styles.userName}>{item.name}</Text>
@@ -561,8 +564,12 @@ const styles = StyleSheet.create({
   },
   userListContainer: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     maxHeight: height * 0.7,
+    width: '100%'
   },
   userListHeader: {
     flexDirection: 'row',
@@ -571,6 +578,9 @@ const styles = StyleSheet.create({
     padding: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20
   },
   userListTitle: {
     fontSize: 18,
@@ -584,9 +594,11 @@ const styles = StyleSheet.create({
   userItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 15,
+    padding: 15
+  },
+  userItemWithBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#f0f0f0'
   },
   userName: {
     fontSize: 16,
