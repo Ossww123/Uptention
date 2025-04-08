@@ -65,6 +65,7 @@ const ProductManagementPage = () => {
         }
       });
       
+      console.log('카테고리 데이터:', response.data); // 카테고리 데이터 확인
       setCategories(response.data);
     } catch (err) {
       console.error('카테고리 로딩 오류:', err);
@@ -94,7 +95,6 @@ const ProductManagementPage = () => {
     setError(null);
     
     try {
-      // 토큰 가져오기
       const token = localStorage.getItem('auth-token');
       if (!token) {
         throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
@@ -108,6 +108,7 @@ const ProductManagementPage = () => {
       // 카테고리 필터 추가
       if (state.selectedCategory) {
         params.categoryId = state.selectedCategory;
+        console.log('카테고리 ID (숫자):', params.categoryId); // 카테고리 ID 확인
       }
       
       // 검색어 필터 추가
@@ -120,7 +121,7 @@ const ProductManagementPage = () => {
         params.cursor = state.nextCursor;
       }
 
-      console.log('요청 파라미터:', params);
+      console.log('API 요청 파라미터:', params);
       
       const response = await axios.get(`${API_BASE_URL}/api/items`, {
         headers: {
@@ -290,7 +291,8 @@ const ProductManagementPage = () => {
   // 카테고리 변경 핸들러
   const handleCategoryChange = (e) => {
     const categoryId = e.target.value;
-    setSelectedCategory(categoryId === "all" ? null : categoryId);
+    console.log('선택된 카테고리 ID:', categoryId); // 선택된 카테고리 ID 확인
+    setSelectedCategory(categoryId === "all" ? null : parseInt(categoryId));
   };
   
   // 정렬 옵션 변경 핸들러
@@ -318,8 +320,8 @@ const ProductManagementPage = () => {
         className="filter-select"
       >
         <option value="all">전체</option>
-        {categories.map(category => (
-          <option key={category.id} value={category.id}>
+        {categories && categories.map((category) => (
+          <option key={category.categoryId} value={category.categoryId}>
             {category.name}
           </option>
         ))}
