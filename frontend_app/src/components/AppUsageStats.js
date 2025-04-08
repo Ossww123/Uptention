@@ -42,7 +42,7 @@ const AppUsageStats = ({
       // 앱 아이콘이 없는 경우 기본 이미지 사용
       return (
         <Image
-          source={require("../../assets/chrome-icon.png")}
+          source={require("../../assets/android-icon.png")}
           style={styles.appIcon}
           resizeMode="contain"
         />

@@ -25,7 +25,7 @@ const DailyView = () => {
 
   // 선택된 날짜의 데이터
   const [selectedDayData, setSelectedDayData] = useState(null);
-  
+
   // 전날 대비 채굴 시간 차이
   const [miningDifference, setMiningDifference] = useState(0);
 
@@ -83,9 +83,13 @@ const DailyView = () => {
           const dayOfWeek = days[date.getDay()];
           const formattedDate = date.toISOString().split("T")[0]; // YYYY-MM-DD 형식
 
+          const capMiningTime = (totalMinutes) => {
+            return Math.min(totalMinutes, 480); // 8시간(480분) 제한
+          };
+
           // API 응답에서 해당 날짜의 데이터 찾기
           const dayData = apiData.find((item) => item.date === formattedDate);
-          const totalTime = dayData ? dayData.totalTime : 0; // 데이터가 없으면 0
+          const totalTime = dayData ? capMiningTime(dayData.totalTime) : 0;
 
           // 시간과 분 계산
           const hours = Math.floor(totalTime / 60);
@@ -101,7 +105,7 @@ const DailyView = () => {
             miningTime: {
               hours: hours,
               minutes: minutes,
-              totalMinutes: totalTime
+              totalMinutes: totalTime,
             },
           });
         }
@@ -111,13 +115,15 @@ const DailyView = () => {
         // 오늘 데이터를 기본 선택으로 설정
         const todayData = miningDataArray.find((item) => item.isToday);
         setSelectedDayData(todayData);
-        
+
         // 오늘과 어제의 채굴 시간 차이 계산
         if (miningDataArray.length >= 2) {
-          const todayIndex = miningDataArray.findIndex(item => item.isToday);
-          if (todayIndex >= 1) { // 어제 데이터가 있는지 확인
+          const todayIndex = miningDataArray.findIndex((item) => item.isToday);
+          if (todayIndex >= 1) {
+            // 어제 데이터가 있는지 확인
             const today = miningDataArray[todayIndex].miningTime.totalMinutes;
-            const yesterday = miningDataArray[todayIndex - 1].miningTime.totalMinutes;
+            const yesterday =
+              miningDataArray[todayIndex - 1].miningTime.totalMinutes;
             setMiningDifference(today - yesterday);
           }
         }
@@ -133,10 +139,10 @@ const DailyView = () => {
 
         const todayData = dummyData.find((item) => item.isToday);
         setSelectedDayData(todayData);
-        
+
         // 더미 데이터로 채굴 시간 차이 계산
         if (dummyData.length >= 2) {
-          const todayIndex = dummyData.findIndex(item => item.isToday);
+          const todayIndex = dummyData.findIndex((item) => item.isToday);
           if (todayIndex >= 1) {
             const today = dummyData[todayIndex].miningTime.totalMinutes;
             const yesterday = dummyData[todayIndex - 1].miningTime.totalMinutes;
@@ -156,10 +162,10 @@ const DailyView = () => {
 
       const todayData = dummyData.find((item) => item.isToday);
       setSelectedDayData(todayData);
-      
+
       // 더미 데이터로 채굴 시간 차이 계산
       if (dummyData.length >= 2) {
-        const todayIndex = dummyData.findIndex(item => item.isToday);
+        const todayIndex = dummyData.findIndex((item) => item.isToday);
         if (todayIndex >= 1) {
           const today = dummyData[todayIndex].miningTime.totalMinutes;
           const yesterday = dummyData[todayIndex - 1].miningTime.totalMinutes;
@@ -180,10 +186,16 @@ const DailyView = () => {
       if (!selectedDay) return;
 
       // 선택한 날짜 객체 생성
-      const selectedDateObj = new Date(2025, selectedDay.month - 1, selectedDay.day);
-      
+      const selectedDateObj = new Date(
+        2025,
+        selectedDay.month - 1,
+        selectedDay.day
+      );
+
       // 선택한 날짜의 스크린타임 데이터 가져오기
-      const screenTimeData = await ScreenTime.getScreenTimeByDate(selectedDateObj);
+      const screenTimeData = await ScreenTime.getScreenTimeByDate(
+        selectedDateObj
+      );
 
       if (screenTimeData.hasPermission) {
         setDailyScreenTime(screenTimeData.totalScreenTimeMinutes);
@@ -203,18 +215,18 @@ const DailyView = () => {
       "com.google.android.youtube": {
         appName: "YouTube",
         usageTime: 85,
-        iconBase64: null
+        iconBase64: null,
       },
       "com.kakao.talk": {
         appName: "카카오톡",
         usageTime: 65,
-        iconBase64: null
+        iconBase64: null,
       },
       "com.instagram.android": {
         appName: "Instagram",
         usageTime: 45,
-        iconBase64: null
-      }
+        iconBase64: null,
+      },
     };
     setAppUsage(dummyAppUsage);
   };
@@ -251,7 +263,7 @@ const DailyView = () => {
         miningTime: {
           hours: hours,
           minutes: minutes,
-          totalMinutes: totalMinutes
+          totalMinutes: totalMinutes,
         },
       });
     }
@@ -266,10 +278,11 @@ const DailyView = () => {
     // 선택한 날짜 객체 생성
     const selectedDateObj = new Date(2025, item.month - 1, item.day);
     setSelectedDate(selectedDateObj);
-    
+
     // 선택된 날짜와 전날의 채굴 시간 차이 계산
-    const selectedIndex = miningData.findIndex(data => data.id === item.id);
-    if (selectedIndex > 0) { // 선택된 날짜 이전 데이터가 있는지 확인
+    const selectedIndex = miningData.findIndex((data) => data.id === item.id);
+    if (selectedIndex > 0) {
+      // 선택된 날짜 이전 데이터가 있는지 확인
       const selectedTime = miningData[selectedIndex].miningTime.totalMinutes;
       const prevDayTime = miningData[selectedIndex - 1].miningTime.totalMinutes;
       setMiningDifference(selectedTime - prevDayTime);
@@ -291,7 +304,7 @@ const DailyView = () => {
   }
 
   // 데이트 타이틀 포맷팅
-  const dateTitle = selectedDayData 
+  const dateTitle = selectedDayData
     ? `${selectedDayData.month}월 ${selectedDayData.day}일 ${selectedDayData.dayOfWeek}요일`
     : "";
 
@@ -317,17 +330,14 @@ const DailyView = () => {
           comparisonValue={miningDifference}
           totalMiningTime={{
             hours: selectedDayData.miningTime.hours,
-            minutes: selectedDayData.miningTime.minutes
+            minutes: selectedDayData.miningTime.minutes,
           }}
           maxPossibleHours={8} // 하루 최대 8시간 채굴 가능
         />
       )}
 
       {/* 공통 앱 사용 통계 컴포넌트 사용 */}
-      <AppUsageStats
-        viewType="daily"
-        appUsage={appUsage}
-      />
+      <AppUsageStats viewType="daily" appUsage={appUsage} />
     </ScrollView>
   );
 };
