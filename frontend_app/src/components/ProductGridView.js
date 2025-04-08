@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, memo } from "react";
+import React, { useRef, useCallback, memo, useMemo } from "react";
 import {
   View,
   Text,
@@ -56,10 +56,21 @@ const ProductGridView = memo(
   }) => {
     const flatListRef = useRef(null);
 
+    // 상품 리스트 처리 - 홀수일 경우 더미 아이템 추가
+    const processedProducts = useMemo(() => {
+      if (products.length % 2 === 1) {
+        // 홀수일 경우 더미 아이템 추가
+        return [...products, { isDummy: true, itemId: 'dummy-item' }];
+      }
+      return products;
+    }, [products]);
+
     const keyExtractor = useCallback(
       (item, index) => `product-${item.itemId || index}-${timestamp}`,
       [timestamp]
     );
+
+    
 
     const renderFooter = useCallback(() => {
       if (!loading || refreshing) return null;
@@ -91,14 +102,22 @@ const ProductGridView = memo(
     }, []);
 
     // 상품 렌더링 함수
+    // 상품 렌더링 함수 수정
     const renderItem = useCallback(
-      ({ item }) => (
-        <ProductItem
-          item={item}
-          onPress={() => onProductPress(item.itemId)}
-          imageWidth={imageWidth}
-        />
-      ),
+      ({ item }) => {
+        // 더미 아이템이면 투명한 뷰 반환
+        if (item.isDummy) {
+          return <View style={[styles.productItem, styles.dummyItem]} />;
+        }
+        
+        return (
+          <ProductItem
+            item={item}
+            onPress={() => onProductPress(item.itemId)}
+            imageWidth={imageWidth}
+          />
+        );
+      },
       [onProductPress, imageWidth]
     );
 
@@ -107,7 +126,7 @@ const ProductGridView = memo(
         ref={flatListRef}
         removeClippedSubviews={false}
         extraData={[selectedCategory, currentSort, timestamp]}
-        data={products}
+        data={processedProducts}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         numColumns={2}
@@ -214,6 +233,20 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 5,
     textAlign: "center",
+  },
+  productItem: {
+    flex: 1,
+    margin: 5,
+    marginBottom: 20,
+    width: '50%', // 명시적으로 너비 지정
+    maxWidth: '50%', // 최대 너비 제한
+  },
+  
+  // 더미 아이템용 스타일 추가
+  dummyItem: {
+    backgroundColor: 'transparent', // 투명하게 처리
+    elevation: 0, // 그림자 제거
+    borderWidth: 0, // 테두리 제거
   },
 });
 
