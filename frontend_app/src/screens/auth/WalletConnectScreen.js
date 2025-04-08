@@ -103,7 +103,7 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Image
-          source={require("../../../assets/phantom-logo.png")}
+          source={require("../../../assets/넥타이.png")}
           style={styles.walletLogo}
           defaultSource={require("../../../assets/phantom-logo.png")}
         />
@@ -143,16 +143,6 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={() => {
-            console.log('건너뛰기 버튼 클릭됨');
-            navigation.replace('MainApp');
-          }}
-        >
-          <Text style={styles.skipButtonText}>건너뛰기</Text>
-        </TouchableOpacity>
-
         <View style={styles.benefitsContainer}>
           <Text style={styles.benefitsTitle}>지갑 연동 시 혜택</Text>
 
@@ -173,7 +163,7 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
         </View>
 
         <Text style={styles.securityNote}>
-          UPTENTION은 사용자의 지갑 보안을 최우선으로 생각합니다. 개인 키는 절대
+          UPTENTION은 사용자의 지갑 보안을 최우선으로 생각합니다.  개인 키는 
           저장하지 않으며, 블록체인 상의 거래만 진행합니다.
         </Text>
       </View>
@@ -190,6 +180,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     alignItems: "center",
+    justifyContent: "center",
   },
   walletLogo: {
     width: 100,
@@ -315,14 +306,6 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 30,
     fontStyle: "italic",
-  },
-  skipButton: {
-    marginTop: 15,
-    padding: 10,
-  },
-  skipButtonText: {
-    color: '#888888',
-    fontSize: 16,
   },
 });
 

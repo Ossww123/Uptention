@@ -17,18 +17,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { post } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { parseJwt } from '../../services/AuthService';
+import { parseJwt, saveToken, saveUserId } from '../../services/AuthService';
 import FCMUtils from '../../utils/FCMUtils';
+import { CommonActions } from '@react-navigation/native';
 
-const LoginScreen = ({ onLoginSuccess }) => {
+const LoginScreen = ({ navigation, onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
+  console.log('LoginScreen 렌더링됨');
+
   // 컴포넌트 마운트 시 FCM 토큰 초기화
   useEffect(() => {
+    console.log('LoginScreen useEffect 실행됨');
     FCMUtils.initializeFCM();
   }, []);
 
@@ -41,6 +45,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
     }
   
     try {
+      console.log('로그인 시도:', { username, password: '********' });
       setLoading(true);
       
       // FCM 토큰 가져오기 (이미 api.js에서 자동으로 헤더에 추가됨)
@@ -53,10 +58,14 @@ const LoginScreen = ({ onLoginSuccess }) => {
         loginType: 'member'
       });
       
+      console.log('로그인 응답:', { ok, data: data || '응답 데이터 없음' });
+      console.log('응답 헤더:', headers || '헤더 없음');
+      
       // 응답 처리
       if (ok) {
         // 헤더에서 토큰 추출
         const authToken = headers['authorization'] || headers['Authorization'];
+        console.log('인증 토큰:', authToken ? '토큰 있음' : '토큰 없음');
         
         if (authToken) {
           // "Bearer " 접두사 제거
@@ -64,11 +73,49 @@ const LoginScreen = ({ onLoginSuccess }) => {
           
           // 토큰에서 userId 추출
           const payload = parseJwt(token);
+          console.log('토큰 페이로드:', payload || '페이로드 추출 실패');
+          
           if (payload && payload.userId) {
+            console.log('추출된 userId:', payload.userId);
+            
+            // 직접 AsyncStorage에 저장
+            try {
+              await saveToken(token);
+              await saveUserId(payload.userId.toString());
+              console.log('토큰과 userId 저장 성공');
+            } catch (storageError) {
+              console.error('토큰/userId 저장 오류:', storageError);
+            }
+            
             // AuthContext를 통해 로그인 처리
+            console.log('AuthContext login 함수 호출');
             const loginSuccess = await login(token, payload.userId.toString());
+            console.log('로그인 결과:', loginSuccess ? '성공' : '실패');
+            
             if (loginSuccess) {
-              onLoginSuccess();
+              console.log('onLoginSuccess 호출');
+              
+              // 네비게이션 명령 직접 실행
+              setTimeout(() => {
+                try {
+                  console.log('네비게이션 명령 실행 (타이머)');
+                  
+                  if (onLoginSuccess) {
+                    onLoginSuccess();
+                  }
+                  
+                  // 직접 네비게이션 명령도 추가로 실행
+                  navigation.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [{ name: 'Permissions' }],
+                    })
+                  );
+                } catch (navError) {
+                  console.error('네비게이션 오류:', navError);
+                  Alert.alert('오류', '화면 전환 중 문제가 발생했습니다.');
+                }
+              }, 1000);
             } else {
               Alert.alert('로그인 실패', '로그인 정보 저장에 실패했습니다.');
             }
@@ -102,7 +149,7 @@ const LoginScreen = ({ onLoginSuccess }) => {
         >
           <View style={styles.logoContainer}>
             <Image
-              source={require('../../../assets/logo.png')}
+              source={require('../../../assets/캐릭터움직임.gif')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -187,14 +234,15 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 200,
+    height: 200,
   },
   logoText: {
     fontSize: 24,
     fontWeight: 'bold',
     marginTop: 10,
     color: '#FF8C00',
+    marginBottom: -20,
   },
   formContainer: {
     paddingHorizontal: 30,
