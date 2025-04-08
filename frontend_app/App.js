@@ -12,7 +12,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 백그라운드 메시지 핸들러 등록
 messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-  console.log('백그라운드 메시지 수신:', remoteMessage);
   // 필요한 경우 AsyncStorage에 알림 데이터 저장
   if (remoteMessage.data) {
     await AsyncStorage.setItem('lastNotification', JSON.stringify(remoteMessage.data));
@@ -27,7 +26,6 @@ const App = () => {
   // 앱 초기화 시 isFirstRender 설정
   useEffect(() => {
     global.isFirstRender = true;
-    console.log('App.js: 앱 초기화, isFirstRender를 true로 설정');
   }, []);
 
   // requestNotificationPermission를 컴포넌트 내부로 이동
@@ -36,10 +34,6 @@ const App = () => {
     const enabled =
       authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-    if (enabled) {
-      console.log('Authorization status:', authStatus);
-    }
   };
 
   // FCM 권한 요청 useEffect
@@ -55,7 +49,6 @@ const App = () => {
       
       // 포그라운드 메시지 리스너 설정
       const unsubscribe = messaging().onMessage(async (remoteMessage) => {
-        console.log('포그라운드 메시지 수신:', remoteMessage);
         
         // 알림 데이터 추출
         const notificationData = {
@@ -86,7 +79,6 @@ const App = () => {
       .getInitialNotification()
       .then(async (remoteMessage) => {
         if (remoteMessage) {
-          console.log('종료된 상태에서 알림을 통해 앱 열림:', remoteMessage);
           
           // AsyncStorage에서 알림 데이터 확인
           const storedNotification = await AsyncStorage.getItem('lastNotification');
@@ -103,7 +95,6 @@ const App = () => {
 
     // 백그라운드 상태에서 알림을 클릭하는 경우
     const unsubscribe = messaging().onNotificationOpenedApp(async (remoteMessage) => {
-      console.log('백그라운드에서 알림 클릭으로 앱 열림:', remoteMessage);
       
       // AsyncStorage에서 알림 데이터 확인
       const storedNotification = await AsyncStorage.getItem('lastNotification');

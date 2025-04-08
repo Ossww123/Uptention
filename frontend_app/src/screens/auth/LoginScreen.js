@@ -1,4 +1,3 @@
-// src/screens/auth/LoginScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -29,11 +28,8 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
   const { login } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  console.log('LoginScreen 렌더링됨');
-
   // 컴포넌트 마운트 시 FCM 토큰 초기화
   useEffect(() => {
-    console.log('LoginScreen useEffect 실행됨');
     FCMUtils.initializeFCM();
   }, []);
 
@@ -49,7 +45,6 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
     }
   
     try {
-      console.log('로그인 시도:', { username, password: '********' });
       setLoading(true);
       setIsProcessing(true);
 
@@ -63,14 +58,10 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
         loginType: 'member'
       });
       
-      console.log('로그인 응답:', { ok, data: data || '응답 데이터 없음' });
-      console.log('응답 헤더:', headers || '헤더 없음');
-      
       // 응답 처리
       if (ok) {
         // 헤더에서 토큰 추출
         const authToken = headers['authorization'] || headers['Authorization'];
-        console.log('인증 토큰:', authToken ? '토큰 있음' : '토큰 없음');
         
         if (authToken) {
           // "Bearer " 접두사 제거
@@ -78,46 +69,29 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
           
           // 토큰에서 userId 추출
           const payload = parseJwt(token);
-          console.log('토큰 페이로드:', payload || '페이로드 추출 실패');
           
           if (payload && payload.userId) {
-            console.log('추출된 userId:', payload.userId);
-            
             // 직접 AsyncStorage에 저장
             try {
               await saveToken(token);
               await saveUserId(payload.userId.toString());
-              console.log('토큰과 userId 저장 성공');
             } catch (storageError) {
-              console.error('토큰/userId 저장 오류:', storageError);
+              // 저장 오류 처리
             }
             
             // AuthContext를 통해 로그인 처리
-            console.log('AuthContext login 함수 호출');
             const loginSuccess = await login(token, payload.userId.toString());
-            console.log('로그인 결과:', loginSuccess ? '성공' : '실패');
             
             if (loginSuccess) {
-              console.log('onLoginSuccess 호출');
-              
               // 네비게이션 명령 직접 실행
               setTimeout(() => {
                 try {
-                  console.log('네비게이션 명령 실행 (타이머)');
-                  
                   if (onLoginSuccess) {
                     onLoginSuccess();
                   }
                   
-                  // 직접 네비게이션 명령도 추가로 실행
-                  navigation.dispatch(
-                    CommonActions.reset({
-                      index: 0,
-                      routes: [{ name: 'Permissions' }],
-                    })
-                  );
+                  
                 } catch (navError) {
-                  console.error('네비게이션 오류:', navError);
                   Alert.alert('오류', '화면 전환 중 문제가 발생했습니다.');
                 }
               }, 1000);
@@ -135,7 +109,6 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
         Alert.alert('로그인 실패', data.message || '아이디 또는 비밀번호가 올바르지 않습니다.');
       }
     } catch (error) {
-      console.error('Login error:', error);
       Alert.alert('로그인 실패', '서버 연결에 문제가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setLoading(false);
@@ -202,19 +175,19 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
             </View>
 
             <TouchableOpacity
-      style={[
-        styles.submitButton,
-        (loading || isProcessing) && styles.disabledButton // 비활성화 스타일 추가
-      ]}
-      onPress={handleLogin}
-      disabled={loading || isProcessing} // 두 상태 모두 체크
-    >
-      {loading ? (
-        <ActivityIndicator color="#FFFFFF" size="small" />
-      ) : (
-        <Text style={styles.submitButtonText}>로그인</Text>
-      )}
-    </TouchableOpacity>
+              style={[
+                styles.submitButton,
+                (loading || isProcessing) && styles.disabledButton
+              ]}
+              onPress={handleLogin}
+              disabled={loading || isProcessing}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.submitButtonText}>로그인</Text>
+              )}
+            </TouchableOpacity>
 
             <Text style={styles.noteText}>
               * 계정이 없으신 경우 관리자에게 문의하세요.
@@ -307,7 +280,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   disabledButton: {
-    backgroundColor: '#CCCCCC', // 비활성화 상태의 버튼 색상
+    backgroundColor: '#CCCCCC',
   },
 });
 

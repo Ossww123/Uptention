@@ -73,7 +73,6 @@ export const WalletProvider = ({ children }) => {
 
       return JSON.parse(Buffer.from(decryptedData).toString("utf8"));
     } catch (error) {
-      console.error('Decryption error:', error);
       throw error;
     }
   }, []);
@@ -96,13 +95,8 @@ export const WalletProvider = ({ children }) => {
 
       const url = `https://phantom.app/ul/v1/connect?${params.toString()}`;
       
-      console.log('=== 연결 시도 로그 ===');
-      console.log('Redirect URL:', redirectUrl);
-      console.log('Connection URL:', url);
-      
       await Linking.openURL(url);
     } catch (error) {
-      console.error('Connection error:', error);
       throw error;
     } finally {
       setConnecting(false);
@@ -130,7 +124,6 @@ export const WalletProvider = ({ children }) => {
       // 저장된 지갑 정보 삭제
       await clearWalletInfo();
     } catch (error) {
-      console.error('Disconnect error:', error);
       throw error;
     }
   };
@@ -162,9 +155,7 @@ export const WalletProvider = ({ children }) => {
         solSubscriptionId = DEVNET_CONNECTION.onAccountChange(
           new PublicKey(publicKey),
           (accountInfo) => {
-            console.log('=== SOL 잔액 변화 감지 ===');
             const newBalance = accountInfo.lamports / LAMPORTS_PER_SOL;
-            console.log('새로운 SOL 잔액:', newBalance);
             setSolBalance(newBalance);
           },
           'confirmed'
@@ -183,13 +174,11 @@ export const WalletProvider = ({ children }) => {
           tokenSubscriptionId = DEVNET_CONNECTION.onAccountChange(
             tokenAccountPubkey,
             (accountInfo) => {
-              console.log('=== 토큰 잔액 변화 감지 ===');
               const data = accountInfo.data;
               if (data) {
                 const balance = DEVNET_CONNECTION.getParsedAccountInfo(accountInfo)
                   .then((parsedInfo) => {
                     const newBalance = parsedInfo.value.data.parsed.info.tokenAmount.uiAmount;
-                    console.log('새로운 토큰 잔액:', newBalance);
                     setTokenBalance(newBalance);
                   });
               }
@@ -202,7 +191,7 @@ export const WalletProvider = ({ children }) => {
         fetchBalances(publicKey);
 
       } catch (error) {
-        console.error('구독 설정 오류:', error);
+        // 오류 처리 (조용히)
       }
     };
 
@@ -212,24 +201,21 @@ export const WalletProvider = ({ children }) => {
     return () => {
       if (solSubscriptionId) {
         DEVNET_CONNECTION.removeAccountChangeListener(solSubscriptionId)
-          .catch(error => console.error('SOL 구독 해제 오류:', error));
+          .catch(() => {});
       }
       if (tokenSubscriptionId) {
         DEVNET_CONNECTION.removeAccountChangeListener(tokenSubscriptionId)
-          .catch(error => console.error('토큰 구독 해제 오류:', error));
+          .catch(() => {});
       }
     };
   }, [publicKey]);
 
-  // fetchBalances 함수 수정 (로그 추가)
+  // fetchBalances 함수 수정 (로그 제거)
   const fetchBalances = async (walletAddress) => {
     try {
-      console.log('=== 잔액 조회 시작 ===');
-      
       // SOL 잔액 조회
       const solBalance = await DEVNET_CONNECTION.getBalance(new PublicKey(walletAddress));
       const solBalanceInSol = solBalance / LAMPORTS_PER_SOL;
-      console.log('SOL 잔액:', solBalanceInSol);
       setSolBalance(solBalanceInSol);
 
       // SPL 토큰 잔액 조회
@@ -240,16 +226,11 @@ export const WalletProvider = ({ children }) => {
 
       if (tokenAccounts.value.length > 0) {
         const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-        console.log('토큰 잔액:', balance);
         setTokenBalance(balance);
       } else {
-        console.log('토큰 계정이 없음');
         setTokenBalance(0);
       }
-      
-      console.log('=== 잔액 조회 완료 ===');
     } catch (error) {
-      console.error('잔액 조회 오류:', error);
       setSolBalance(null);
       setTokenBalance(null);
     }
@@ -268,9 +249,8 @@ export const WalletProvider = ({ children }) => {
         dappSecretKey: bs58.encode(dappKeyPair.secretKey)
       };
       await AsyncStorage.setItem(WALLET_STORAGE_KEY, JSON.stringify(walletData));
-      console.log('지갑 정보 저장 완료');
     } catch (error) {
-      console.error('지갑 정보 저장 오류:', error);
+      // 조용히 실패 처리
     }
   };
 
@@ -299,11 +279,8 @@ export const WalletProvider = ({ children }) => {
         if (walletData.publicKey) {
           fetchBalances(walletData.publicKey);
         }
-        
-        console.log('지갑 정보 로드 완료');
       }
     } catch (error) {
-      console.error('지갑 정보 로드 오류:', error);
       await clearWalletInfo();
     }
   };
@@ -312,9 +289,8 @@ export const WalletProvider = ({ children }) => {
   const clearWalletInfo = async () => {
     try {
       await AsyncStorage.removeItem(WALLET_STORAGE_KEY);
-      console.log('지갑 정보 삭제 완료');
     } catch (error) {
-      console.error('지갑 정보 삭제 오류:', error);
+      // 조용히 실패 처리
     }
   };
 
@@ -335,7 +311,6 @@ export const WalletProvider = ({ children }) => {
         const params = new URLSearchParams(queryString);
 
         if (params.get("errorCode")) {
-          console.error('Connection error:', params.get("errorMessage"));
           return;
         }
 
@@ -343,10 +318,6 @@ export const WalletProvider = ({ children }) => {
           const phantom_encryption_public_key = params.get("phantom_encryption_public_key");
           const data = params.get("data");
           const nonce = params.get("nonce");
-
-          console.log('phantom_encryption_public_key:', phantom_encryption_public_key);
-          console.log('data 존재:', !!data);
-          console.log('nonce 존재:', !!nonce);
 
           if (!phantom_encryption_public_key || !data || !nonce) {
             return;
@@ -386,29 +357,14 @@ export const WalletProvider = ({ children }) => {
           setTokenBalance(null);
           // 저장된 지갑 정보 삭제
           await clearWalletInfo();
-          console.log('지갑 연결 해제 및 정보 초기화 완료');
         }
       } catch (error) {
-        console.error('Error processing deeplink:', error);
+        // 조용히 실패 처리
       }
     };
 
     processDeepLink();
   }, [deepLink, decryptPayload, dappKeyPair.secretKey]);
-
-  useEffect(() => {
-    console.log('=== 지갑 상태 로그 ===');
-    console.log('deepLink:', deepLink);
-    console.log('dappKeyPair:', {
-      publicKey: dappKeyPair ? bs58.encode(dappKeyPair.publicKey) : null,
-      secretKey: '비공개'
-    });
-    console.log('sharedSecret:', sharedSecret ? '존재함' : '없음');
-    console.log('session:', session);
-    console.log('publicKey:', publicKey);
-    console.log('tokenBalance:', tokenBalance);
-    console.log('==================');
-  }, [deepLink, dappKeyPair, sharedSecret, session, publicKey, tokenBalance]);
 
   // 토큰 전송 함수 추가
   const sendSPLToken = async (recipientAddress, tokenAmount, memo) => {
@@ -417,7 +373,6 @@ export const WalletProvider = ({ children }) => {
     }
 
     try {
-      console.log('트랜잭션 시작');
       const transaction = new Transaction();
       
       const senderPubKey = new PublicKey(publicKey);
@@ -446,21 +401,17 @@ export const WalletProvider = ({ children }) => {
         YOUR_TOKEN_MINT,
         senderPubKey
       );
-      console.log('보내는 사람 토큰 계정:', senderTokenAccount.toString());
 
       const recipientTokenAccount = await getAssociatedTokenAddress(
         YOUR_TOKEN_MINT,
         recipientPubKey
       );
-      console.log('받는 사람 토큰 계정:', recipientTokenAccount.toString());
 
       // 받는 사람의 토큰 계정이 있는지 확인
       const recipientTokenAccountInfo = await DEVNET_CONNECTION.getAccountInfo(recipientTokenAccount);
-      console.log('받는 사람 토큰 계정 정보:', recipientTokenAccountInfo ? '존재함' : '존재하지 않음');
 
       // 받는 사람의 토큰 계정이 없다면 생성
       if (!recipientTokenAccountInfo) {
-        console.log('받는 사람의 토큰 계정 생성 중...');
         const createAtaInstruction = createAssociatedTokenAccountInstruction(
           senderPubKey,
           recipientTokenAccount,
@@ -475,11 +426,9 @@ export const WalletProvider = ({ children }) => {
       // 토큰 데시멀 정보 가져오기
       const tokenInfo = await DEVNET_CONNECTION.getParsedAccountInfo(YOUR_TOKEN_MINT);
       const decimals = tokenInfo.value?.data.parsed.info.decimals || 0;
-      console.log('토큰 데시멀:', decimals);
 
       // 전송할 실제 토큰 수량 계산 (데시멀 적용)
       const actualAmount = Math.floor(parsedAmount * Math.pow(10, decimals));
-      console.log('전송할 토큰 수량:', actualAmount, '(원래 수량:', parsedAmount, ')');
 
       // TransferChecked 인스트럭션 생성
       const transferInstruction = createTransferCheckedInstruction(
@@ -534,12 +483,6 @@ export const WalletProvider = ({ children }) => {
       
       const url = `${baseUrl}?${params.toString()}`;
       
-      console.log('생성된 URL:', {
-        baseUrl,
-        redirectLink: Linking.createURL("onSignAndSendTransaction"),
-        params: Object.fromEntries(params.entries()),
-        fullUrl: url
-      });
 
       await Linking.openURL(url);
       return true;

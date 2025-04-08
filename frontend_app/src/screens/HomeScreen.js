@@ -37,7 +37,7 @@ const HomeScreen = ({ navigation }) => {
   const [hasOverlayPermission, setHasOverlayPermission] = useState(false);
   
   // 읽지 않은 알림 개수 상태 (FCM 푸시 알림으로 업데이트)
-  const [unreadNotifications, setUnreadNotifications] = useState(3);
+  const [unreadNotifications, setUnreadNotifications] = useState(null);
   
   // 프로그레스바 관련 계산
   const size = 280;
