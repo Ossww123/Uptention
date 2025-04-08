@@ -100,6 +100,7 @@ const StoreScreen = ({ navigation }) => {
   const currentApiCallIdRef = useRef(null);
   const requestTimerRef = useRef(null);
   const loadRequestedRef = useRef(false);
+  const productGridRef = useRef(null);
 
    // 카테고리 로드 함수 추가
    const fetchCategories = async () => {
@@ -247,10 +248,10 @@ const StoreScreen = ({ navigation }) => {
         return;
       }
 
-      // 더블 요청 방지 타이머 설정 (1초)
+      // 더블 요청 방지 타이머 설정 (300ms로 조정)
       requestTimerRef.current = setTimeout(() => {
         requestTimerRef.current = null;
-      }, 1000);
+      }, 300); // 300ms로 변경
 
       // 현재 API 호출 ID 설정
       currentApiCallIdRef.current = callId;
@@ -352,6 +353,10 @@ const StoreScreen = ({ navigation }) => {
         setSelectedCategory(null);
       } else {
         setSelectedCategory(categoryId);
+      }
+      // 카테고리 변경 시 스크롤 초기화
+      if (productGridRef.current) {
+        productGridRef.current.scrollToOffset({ offset: 0, animated: true });
       }
     },
     [selectedCategory]
@@ -533,6 +538,7 @@ const StoreScreen = ({ navigation }) => {
 
         {/* 상품 그리드 - 별도 컴포넌트로 분리 */}
         <ProductGridView
+          ref={productGridRef}
           products={products}
           onProductPress={navigateToProductDetail}
           onEndReached={handleEndReached}
