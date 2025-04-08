@@ -16,7 +16,7 @@ const StoreStackNavigator = () => {
       screenOptions={{
         headerShown: false,
         animation: "slide_from_right",
-        freezeOnBlur: false,
+        freezeOnBlur: true,
         detachPreviousScreen: false,
         detachInactiveScreens: false,
       }}

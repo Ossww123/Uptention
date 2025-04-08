@@ -279,8 +279,10 @@ const WeeklyView = () => {
   };
 
   // 이전/다음 주 이동 처리
-  const navigateWeek = (direction) => {
-    if (direction === "prev") {
+const navigateWeek = (direction) => {
+  if (direction === "prev") {
+    // 이전 주로 이동할 때 최대 2주(14일) 전까지만 허용
+    if (currentWeekIndex < 1) { // 현재 인덱스가 0이면 첫 번째 주, 1이면 두 번째 주
       // 이전 7일로 이동
       const newEndDate = new Date(currentWeek.startDate);
       newEndDate.setDate(newEndDate.getDate() - 1); // 현재 시작일 하루 전
@@ -290,28 +292,29 @@ const WeeklyView = () => {
 
       setCurrentWeekRange(newStartDate, newEndDate);
       setCurrentWeekIndex(currentWeekIndex + 1);
-    } else if (direction === "next" && currentWeekIndex > 0) {
-      // 다음 7일로 이동 (최신 주까지만)
-      const newStartDate = new Date(currentWeek.endDate);
-      newStartDate.setDate(newStartDate.getDate() + 1); // 현재 종료일 다음날
-
-      const newEndDate = new Date(newStartDate);
-      newEndDate.setDate(newStartDate.getDate() + 6); // 7일 후
-
-      // 오늘 이후로는 설정 안함
-      const today = new Date();
-      if (newEndDate > today) {
-        newEndDate.setTime(today.getTime());
-
-        // 시작일 재조정 (endDate에서 6일 전)
-        newStartDate.setTime(newEndDate.getTime());
-        newStartDate.setDate(newEndDate.getDate() - 6);
-      }
-
-      setCurrentWeekRange(newStartDate, newEndDate);
-      setCurrentWeekIndex(currentWeekIndex - 1);
     }
-  };
+  } else if (direction === "next" && currentWeekIndex > 0) {
+    // 다음 주로 이동 (최신 주까지만)
+    const newStartDate = new Date(currentWeek.endDate);
+    newStartDate.setDate(newStartDate.getDate() + 1); // 현재 종료일 다음날
+
+    const newEndDate = new Date(newStartDate);
+    newEndDate.setDate(newStartDate.getDate() + 6); // 7일 후
+
+    // 오늘 이후로는 설정 안함
+    const today = new Date();
+    if (newEndDate > today) {
+      newEndDate.setTime(today.getTime());
+
+      // 시작일 재조정 (endDate에서 6일 전)
+      newStartDate.setTime(newEndDate.getTime());
+      newStartDate.setDate(newEndDate.getDate() - 6);
+    }
+
+    setCurrentWeekRange(newStartDate, newEndDate);
+    setCurrentWeekIndex(currentWeekIndex - 1);
+  }
+};
 
   if (loading) {
     return (
@@ -329,13 +332,14 @@ const WeeklyView = () => {
     >
       {/* 공통 그래프 컴포넌트 사용 */}
       <MiningGraph
-        data={weeklyMiningData}
-        isScrollable={false}
-        dateRangeTitle={`${currentWeek.start} - ${currentWeek.end}`}
-        onPrevWeek={() => navigateWeek("prev")}
-        onNextWeek={() => navigateWeek("next")}
-        isCurrentWeek={currentWeekIndex === 0}
-      />
+  data={weeklyMiningData}
+  isScrollable={false}
+  dateRangeTitle={`${currentWeek.start} - ${currentWeek.end}`}
+  onPrevWeek={() => navigateWeek("prev")}
+  onNextWeek={() => navigateWeek("next")}
+  isCurrentWeek={currentWeekIndex === 0}
+  isPrevDisabled={currentWeekIndex >= 1} // 이 prop 추가
+/>
 
       {/* 공통 채굴 통계 컴포넌트 사용 */}
       <MiningStats

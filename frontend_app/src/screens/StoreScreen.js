@@ -19,22 +19,6 @@ import { get } from '../services/api';
 // 화면 너비 가져오기
 const { width } = Dimensions.get("window");
 
-// 카테고리 데이터
-const categories = [
-  { id: "1", name: "가전디지털", icon: require("../../assets/category1.png") },
-  { id: "2", name: "뷰티", icon: require("../../assets/category2.png") },
-  { id: "3", name: "리빙/키친", icon: require("../../assets/category3.png") },
-  {
-    id: "4",
-    name: "패션의류/잡화",
-    icon: require("../../assets/category4.png"),
-  },
-  { id: "5", name: "문화여가", icon: require("../../assets/category5.png") },
-  { id: "6", name: "생활용품", icon: require("../../assets/category6.png") },
-  { id: "7", name: "식품", icon: require("../../assets/category7.png") },
-  { id: "8", name: "키즈", icon: require("../../assets/category8.png") },
-];
-
 // 정렬 옵션
 const sortOptions = [
   { id: "SALES", name: "인기 순" },
@@ -42,16 +26,35 @@ const sortOptions = [
   { id: "HIGH_PRICE", name: "가격 높은순" },
 ];
 
+const categoryIcons = {
+  1: require("../../assets/category1.png"),
+  2: require("../../assets/category2.png"),
+  3: require("../../assets/category3.png"),
+  4: require("../../assets/category4.png"),
+  5: require("../../assets/category5.png"),
+  6: require("../../assets/category6.png"),
+  7: require("../../assets/category7.png"),
+  8: require("../../assets/category8.png")
+};
+
 // 메모이제이션된 카테고리 아이템 컴포넌트
-const CategoryItem = memo(({ item, isSelected, onSelect }) => (
-  <TouchableOpacity
-    style={[styles.sidebarCategoryItem, isSelected && styles.selectedCategory]}
-    onPress={() => onSelect(item.id)}
-  >
-    <Image source={item.icon} style={styles.categoryIcon} />
-    <Text style={styles.categoryName}>{item.name}</Text>
-  </TouchableOpacity>
-));
+const CategoryItem = memo(({ item, isSelected, onSelect }) => {
+  // 해당 카테고리의 아이콘이 없으면 기본 아이콘 사용
+  const categoryIcon = categoryIcons[item.categoryId] || require("../../assets/category1.png");
+
+  return (
+    <TouchableOpacity
+      style={[styles.sidebarCategoryItem, isSelected && styles.selectedCategory]}
+      onPress={() => onSelect(item.categoryId)}
+    >
+      <Image 
+        source={categoryIcon} 
+        style={styles.categoryIcon} 
+      />
+      <Text style={styles.categoryName}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+});
 
 // 메모이제이션된 정렬 옵션 아이템 컴포넌트
 const SortOptionItem = memo(({ option, isSelected, onSelect }) => (
@@ -73,6 +76,7 @@ const SortOptionItem = memo(({ option, isSelected, onSelect }) => (
 
 const StoreScreen = ({ navigation }) => {
   // 상태 관리
+  const [categories, setCategories] = useState([]);
   const [showCategories, setShowCategories] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [products, setProducts] = useState([]);
@@ -97,9 +101,26 @@ const StoreScreen = ({ navigation }) => {
   const requestTimerRef = useRef(null);
   const loadRequestedRef = useRef(false);
 
+   // 카테고리 로드 함수 추가
+   const fetchCategories = async () => {
+    try {
+      const { data, ok } = await get('/category');
+      
+      if (ok && data && data.length > 0) {
+        setCategories(data);
+      } else {
+        throw new Error('카테고리를 불러오지 못했습니다.');
+      }
+    } catch (error) {
+      console.error('카테고리 로드 오류:', error);
+      Alert.alert('오류', '카테고리를 불러오는 중 문제가 발생했습니다.');
+    }
+  };
+
   // 첫 마운트 시에만 실행되는 useEffect
   useEffect(() => {
     // 최초 1회만 실행되는 초기화 코드
+    fetchCategories();
     fetchCartItemCount();
 
     return () => {
@@ -401,11 +422,11 @@ const StoreScreen = ({ navigation }) => {
     ({ item }) => (
       <CategoryItem
         item={item}
-        isSelected={selectedCategory === item.id}
+        isSelected={selectedCategory === item.categoryId}
         onSelect={handleCategorySelect}
       />
     ),
-    [selectedCategory, handleCategorySelect]
+    [selectedCategory, handleCategorySelect, categories]
   );
 
   // 정렬 옵션 드롭다운 렌더링
@@ -503,7 +524,7 @@ const StoreScreen = ({ navigation }) => {
             <FlatList
               data={categories}
               renderItem={renderCategoryItem}
-              keyExtractor={(item) => `category-${item.id}`}
+              keyExtractor={(item) => `category-${item.categoryId}`}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={false}
             />

@@ -20,6 +20,7 @@ const MiningGraph = ({
   onPrevWeek = null,
   onNextWeek = null,
   isCurrentWeek = true,
+  isPrevDisabled = false,
 }) => {
   // 최대 채굴 시간 계산 (8시간 = 480분)
   const MAX_MINING_TIME = 480;
@@ -36,59 +37,77 @@ const MiningGraph = ({
 
     // 바의 색상 결정
   let barStyle;
-  if (isSelected) {
-    // 선택된 경우 주황색
+  
+  if (!isScrollable) {
+    // WeeklyView인 경우 모든 막대를 주황색으로
     barStyle = styles.selectedBar;
-  } else if (isToday) {
-    // 오늘인데 선택되지 않은 경우 진한 회색
-    barStyle = styles.todayBar;
   } else {
-    // 그 외 일반적인 경우 기본 회색
-    barStyle = styles.inactiveBar;
+    // DailyView인 경우
+    if (isSelected && isToday) {
+      // 오늘이면서 선택된 경우 진한 주황색
+      barStyle = styles.todaySelectedBar; // 이 스타일을 새로 추가해야 함
+    } else if (isSelected) {
+      // 선택되었지만 오늘이 아닌 경우 주황색
+      barStyle = styles.selectedBar;
+    } else if (isToday) {
+      // 오늘이지만 선택되지 않은 경우 진한 회색
+      barStyle = styles.todayBar; // 이 스타일을 새로 추가해야 함
+    } else {
+      // 그 외 일반적인 경우 기본 회색
+      barStyle = styles.inactiveBar;
+    }
   }
 
-  // 텍스트 색상 결정
+  // 텍스트 색상도 동일한 로직으로 결정
   let textStyle;
-  if (isSelected) {
-    // 선택된 경우 텍스트도 주황색
+  
+  if (!isScrollable) {
+    // WeeklyView에서는 모든 텍스트를 주황색으로
     textStyle = styles.selectedBarText;
-  } else if (isToday) {
-    // 오늘인데 선택되지 않은 경우 텍스트는 진한 회색
-    textStyle = styles.todayBarText;
   } else {
-    // 그 외 일반적인 경우 기본 텍스트 색상
-    textStyle = styles.barText;
+    // DailyView인 경우
+    if (isSelected && isToday) {
+      // 오늘이면서 선택된 경우 진한 주황색
+      textStyle = styles.todaySelectedBarText; // 이 스타일을 새로 추가해야 함
+    } else if (isSelected) {
+      // 선택되었지만 오늘이 아닌 경우 주황색
+      textStyle = styles.selectedBarText;
+    } else if (isToday) {
+      // 오늘이지만 선택되지 않은 경우 진한 회색
+      textStyle = styles.todayBarText; // 이 스타일을 새로 추가해야 함
+    } else {
+      // 그 외 일반적인 경우 기본 텍스트 색상
+      textStyle = styles.barText;
+    }
   }
 
-    return (
-      <TouchableOpacity
-        style={[styles.barContainer, !isScrollable && { width: width / 9 }]}
-        onPress={() => onSelectBar(item)}
-        disabled={!isScrollable}
-      >
-        <View style={styles.barWrapper}>
-          <View
-            style={[
-              styles.bar,
-              { height: `${barHeight}%` },
-              isToday ? styles.activeBar : styles.inactiveBar,
-              isSelected && !isToday && styles.selectedBar,
-            ]}
-          />
-        </View>
-
-        <Text
+  return (
+    <TouchableOpacity
+      style={[styles.barContainer, !isScrollable && { width: width / 9 }]}
+      onPress={() => onSelectBar(item)}
+      disabled={!isScrollable}
+    >
+      <View style={styles.barWrapper}>
+        <View
           style={[
-            styles.barText,
-            isToday && styles.activeBarText,
-            isSelected && !isToday && styles.selectedBarText,
+            styles.bar,
+            { height: `${barHeight}%` },
+            barStyle,
           ]}
-        >
-          {item.day || "?"} {/* 값이 없는 경우 ? 표시 */}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+        />
+      </View>
+
+      <Text
+        style={[
+          styles.barText,
+          textStyle,
+        ]}
+      >
+        {item.day || "?"} {/* 값이 없는 경우 ? 표시 */}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
   return (
     <View style={styles.chartContainer}>
@@ -96,8 +115,15 @@ const MiningGraph = ({
       <View style={styles.titleContainer}>
         {onPrevWeek && onNextWeek ? (
           <View style={styles.weekNavigator}>
-            <TouchableOpacity onPress={onPrevWeek}>
-              <Text style={styles.navButton}>{"<"}</Text>
+            <TouchableOpacity 
+              onPress={onPrevWeek}
+              disabled={isPrevDisabled} // 비활성화 조건 추가
+              style={isPrevDisabled ? styles.disabledNavButton : {}}
+            >
+              <Text style={[
+                styles.navButton,
+                isPrevDisabled && styles.disabledNavButtonText
+              ]}>{"<"}</Text>
             </TouchableOpacity>
             <Text style={styles.dateTitle}>{dateRangeTitle}</Text>
             <TouchableOpacity
@@ -249,6 +275,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     minHeight: 10,
   },
+  // 바 스타일
   activeBar: {
     backgroundColor: "#909090",
   },
@@ -258,6 +285,13 @@ const styles = StyleSheet.create({
   selectedBar: {
     backgroundColor: "#FFA54F",
   },
+  todayBar: {
+    backgroundColor: "#707070", // 오늘이지만 선택되지 않은 경우 진한 회색
+  },
+  todaySelectedBar: {
+    backgroundColor: "#FF8C00", // 오늘이면서 선택된 경우 진한 주황색
+  },
+  // 텍스트 스타일
   barText: {
     marginTop: 10,
     fontSize: 16,
@@ -270,6 +304,14 @@ const styles = StyleSheet.create({
   selectedBarText: {
     color: "#FFA54F",
     fontWeight: "500",
+  },
+  todayBarText: {
+    color: "#505050", // 오늘이지만 선택되지 않은 경우 진한 회색
+    fontWeight: "500",
+  },
+  todaySelectedBarText: {
+    color: "#FF8C00", // 오늘이면서 선택된 경우 진한 주황색
+    fontWeight: "bold", // 더 강조하기 위해 bold로 설정
   },
   chartDivider: {
     height: 1,
