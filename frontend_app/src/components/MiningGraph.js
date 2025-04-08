@@ -34,6 +34,32 @@ const MiningGraph = ({
     const isSelected = selectedItem && selectedItem.id === item.id;
     const isToday = item.isToday || false;
 
+    // 바의 색상 결정
+  let barStyle;
+  if (isSelected) {
+    // 선택된 경우 주황색
+    barStyle = styles.selectedBar;
+  } else if (isToday) {
+    // 오늘인데 선택되지 않은 경우 진한 회색
+    barStyle = styles.todayBar;
+  } else {
+    // 그 외 일반적인 경우 기본 회색
+    barStyle = styles.inactiveBar;
+  }
+
+  // 텍스트 색상 결정
+  let textStyle;
+  if (isSelected) {
+    // 선택된 경우 텍스트도 주황색
+    textStyle = styles.selectedBarText;
+  } else if (isToday) {
+    // 오늘인데 선택되지 않은 경우 텍스트는 진한 회색
+    textStyle = styles.todayBarText;
+  } else {
+    // 그 외 일반적인 경우 기본 텍스트 색상
+    textStyle = styles.barText;
+  }
+
     return (
       <TouchableOpacity
         style={[styles.barContainer, !isScrollable && { width: width / 9 }]}
@@ -224,7 +250,7 @@ const styles = StyleSheet.create({
     minHeight: 10,
   },
   activeBar: {
-    backgroundColor: "#FF8C00",
+    backgroundColor: "#909090",
   },
   inactiveBar: {
     backgroundColor: "#D0D0D0",
