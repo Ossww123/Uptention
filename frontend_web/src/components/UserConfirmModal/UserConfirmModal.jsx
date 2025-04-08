@@ -1,4 +1,3 @@
-// UserConfirmModal.jsx 수정
 import React, { useState } from 'react';
 import './UserConfirmModal.css';
 
@@ -27,33 +26,38 @@ const UserConfirmModal = ({ isOpen, userData, onConfirm, onCancel }) => {
         </div>
         <div className="modal-body">
           <p className="modal-description">다음 정보로 회원을 등록하시겠습니까?</p>
+          <br></br>
           
           <div className="user-info-container">
-            <div className="user-info-item">
-              <span className="info-label">성명</span>
-              <span className="info-value">{userData.name}</span>
-            </div>
-            <div className="user-info-item">
-              <span className="info-label">사원번호</span>
-              <span className="info-value">{userData.employeeNumber}</span>
-            </div>
-            <div className="user-info-item">
-              <span className="info-label">회원 ID</span>
-              <span className="info-value">{userData.username}</span>
-            </div>
-            <div className="user-info-item password-info-item">
-              <span className="info-label">비밀번호</span>
-              <div className="password-value-container">
-                <span className="info-value">{maskedPassword()}</span>
-                <button 
-                  type="button" 
-                  className="modal-password-toggle"
-                  onClick={togglePasswordVisibility}
-                >
-                  {showPassword ? "숨기기" : "보기"}
-                </button>
-              </div>
-            </div>
+            <table className="user-info-table">
+              <tbody>
+                <tr className="user-info-row">
+                  <td className="info-label">성명</td>
+                  <td className="info-value">{userData.name}</td>
+                </tr>
+                <tr className="user-info-row">
+                  <td className="info-label">사원번호</td>
+                  <td className="info-value">{userData.employeeNumber}</td>
+                </tr>
+                <tr className="user-info-row">
+                  <td className="info-label">회원 ID</td>
+                  <td className="info-value">{userData.username}</td>
+                </tr>
+                <tr className="user-info-row password-row">
+                  <td className="info-label">비밀번호</td>
+                  <td className="info-value password-cell">
+                    <span className="password-text">{maskedPassword()}</span>
+                    <button 
+                      type="button" 
+                      className="modal-password-toggle"
+                      onClick={togglePasswordVisibility}
+                    >
+                      {showPassword ? "숨기기" : "보기"}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
         <div className="modal-footer">
