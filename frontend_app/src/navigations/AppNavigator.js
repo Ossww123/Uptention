@@ -48,40 +48,43 @@ const AppNavigator = forwardRef((props, ref) => {
     
     // 강제 화면이 있으면 우선 적용
     if (forceScreen) {
-      setPreviousRoute(forceScreen);
       return forceScreen;
     }
     
     if (global.isFirstRender) {
       global.isFirstRender = false;
-      setPreviousRoute("Splash");
       return "Splash";
     }
     
-    let route;
-    
     if (!isAuthenticated) {
-      route = "Login";
-    }
-    // 권한이 있고 지갑도 있으면 바로 MainApp으로
-    else if (hasScreenTimePermission && publicKey) {
-      route = "MainApp";
-    }
-    // 권한은 있지만 지갑이 없으면 WalletConnect로
-    else if (hasScreenTimePermission && !publicKey) {
-      route = "WalletConnect";
-    }
-    // 권한이 없으면 Permissions로
-    else if (!hasScreenTimePermission) {
-      route = "Permissions";
-    }
-    else {
-      route = "MainApp"; // 기본값
+      return "Login";
     }
     
-    setPreviousRoute(route);
-    return route;
+    // 권한이 있고 지갑도 있으면 바로 MainApp으로
+    if (hasScreenTimePermission && publicKey) {
+      return "MainApp";
+    }
+    
+    // 권한은 있지만 지갑이 없으면 WalletConnect로
+    if (hasScreenTimePermission && !publicKey) {
+      return "WalletConnect";
+    }
+    
+    // 권한이 없으면 Permissions로
+    if (!hasScreenTimePermission) {
+      return "Permissions";
+    }
+    
+    return "MainApp";
   };
+  
+  // 라우트 변경 추적을 위한 useEffect 추가
+  useEffect(() => {
+    const currentRoute = getInitialRoute();
+    if (currentRoute !== previousRoute && !isTransitioning) {
+      setPreviousRoute(currentRoute);
+    }
+  }, [isAuthenticated, hasScreenTimePermission, publicKey, forceScreen, isTransitioning]);
 
   useImperativeHandle(ref, () => ({
     navigate: (screen, params) => {
