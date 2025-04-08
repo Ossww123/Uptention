@@ -397,8 +397,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 				log.info("NFT 전송 API 호출 성공: {}, 응답 일부: {}", identifier,
 					response != null ? response.substring(0, Math.min(response.length(), 100)) : "null");
 
-				String title = "🎉" + user.getName() + "님 축하드립니다.🎉";
-				String message = "우수 사원으로 선정되어 팬텀 지갑으로 NFT가 도착했습니다.";
+				String title = "🎉우수 사원 NFT가 도착했습니다!🎉";
+				String message = user.getName() + "님 축하드립니다!, 우수 사원으로 선정되셨습니다!";
 
 				// 알림
 				Notification notification = Notification.builder()
@@ -412,7 +412,6 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 				// 알림 전송
 				fcmSendService.sendNotificationToUser(user, title, message);
-
 
 			} catch (RestClientException e) {
 				log.error("NFT 전송 API 호출 실패: {}, 오류: {}", identifier, e.getMessage());
