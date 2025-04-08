@@ -197,7 +197,7 @@ const FocusModeScreen = ({ navigation }) => {
         <View style={styles.characterContainer}>
           <View style={styles.characterBackground} />
           <Image 
-            source={require('../../assets/포커스모드사진.png')}
+            source={require('../../assets/focus_work.png')}
             style={styles.characterImage}
             resizeMode="contain"
           />
