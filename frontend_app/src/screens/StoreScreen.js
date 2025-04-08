@@ -607,16 +607,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   sortDropdown: {
+    position: 'absolute', // 절대 위치 지정
+    top: 120, // 필터 컨테이너 아래에 위치하도록 조정
+    left: 15,
+    right: 15,
     backgroundColor: "#fff",
     borderRadius: 10,
-    marginHorizontal: 15,
-    marginBottom: 5,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    zIndex: 1000,
+    zIndex: 1000, // 다른 요소 위에 표시되도록
   },
   sortOption: {
     flexDirection: "row",
