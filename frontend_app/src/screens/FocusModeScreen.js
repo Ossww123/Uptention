@@ -14,6 +14,7 @@ const FocusModeScreen = ({ navigation }) => {
   const [appState, setAppState] = useState(AppState.currentState);
   const [isExiting, setIsExiting] = useState(false);
   const totalSecondsRef = useRef(0);
+  const pointsIntervalRef = useRef(null);
   const { userId, authToken } = useAuth();
 
   // 포인트 계산 함수
@@ -61,9 +62,13 @@ const FocusModeScreen = ({ navigation }) => {
     updatePoints();
 
     // 3초마다 포인트 업데이트 (더 부드러운 UX를 위해)
-    const pointsInterval = setInterval(updatePoints, 3000);
+    pointsIntervalRef.current = setInterval(updatePoints, 3000);
 
-    return () => clearInterval(pointsInterval);
+    return () => {
+      if (pointsIntervalRef.current) {
+        clearInterval(pointsIntervalRef.current);
+      }
+    };
   }, [updatePoints]);
 
   // 컴포넌트 마운트 시 자동으로 타이머 시작 및 앱 제한 기능 활성화
@@ -108,11 +113,14 @@ const FocusModeScreen = ({ navigation }) => {
 
     setIsExiting(true);
     stopTimer();  // 타이머 즉시 중지
+    
+    // 현재 포인트를 즉시 저장하고 업데이트 중지
+    const finalPoints = points;
+    if (pointsIntervalRef.current) {
+      clearInterval(pointsIntervalRef.current);
+    }
 
     try {
-      // 현재 화면에 표시된 포인트 값을 사용
-      const finalPoints = points;
-
       // 포커스 모드 종료 API 호출
       const response = await axios.patch(
         `${API_BASE_URL}/api/mining-time/focus`,
