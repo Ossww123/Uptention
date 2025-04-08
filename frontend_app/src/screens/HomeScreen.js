@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 15,
+    gap: 5,
   },
   iconButton: {
     padding: 5,

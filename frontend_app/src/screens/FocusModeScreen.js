@@ -137,7 +137,7 @@ const FocusModeScreen = ({ navigation }) => {
 
         // 포인트 업데이트를 위해 최대 3번까지 시도
         let updatedPoint = 0;
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 2; i++) {
           // 2초씩 대기
           await new Promise(resolve => setTimeout(resolve, 2000));
 
