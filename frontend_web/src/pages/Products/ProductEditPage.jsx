@@ -383,11 +383,9 @@ const ProductEditPage = () => {
     }
   };
 
-  // 취소 버튼 핸들러
-  const handleCancel = () => {
-    if (window.confirm("수정을 취소하시겠습니까?")) {
-      navigate('/admin/products');
-    }
+  // 목록 버튼 핸들러
+  const handleGoToList = () => {
+    navigate('/admin/products');
   };
 
   // 로딩 중 표시
@@ -625,10 +623,10 @@ const ProductEditPage = () => {
             <button
               type="button"
               className="cancel-button"
-              onClick={handleCancel}
+              onClick={handleGoToList}
               disabled={submitting}
             >
-              취소
+              목록
             </button>
             <button 
               type="submit" 
