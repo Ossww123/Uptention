@@ -120,7 +120,10 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
 
     // 실제 컨텐츠 렌더링
     return (
-      <View style={styles.contentContainer}>
+      <View style={[
+        styles.contentContainer,
+        type === 'PURCHASE' && { minHeight: 'auto', paddingBottom: 0 }
+      ]}>
         <View style={styles.detailRow}>
           <Text style={styles.label}>주문 상태</Text>
           <Text style={styles.value}>{orderDetail.status}</Text>
@@ -165,15 +168,18 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
           </Text>
         </View>
 
-        <View style={styles.divider} />
-
-        {type === 'PURCHASE' && orderDetail.address && (
-          <View style={styles.deliveryInfo}>
-            <Text style={styles.orderTitle}>배송 주소</Text>
-            <Text style={styles.addressText} numberOfLines={2}>
-              {orderDetail.address}
-            </Text>
-          </View>
+        {type === 'PURCHASE' && (
+          <>
+            <View style={styles.divider} />
+            {orderDetail.address && (
+              <View style={styles.deliveryInfo}>
+                <Text style={styles.orderTitle}>배송 주소</Text>
+                <Text style={styles.addressText} numberOfLines={2}>
+                  {orderDetail.address}
+                </Text>
+              </View>
+            )}
+          </>
         )}
       </View>
     );
@@ -286,7 +292,7 @@ const styles = StyleSheet.create({
     maxHeight: height * 0.75,
   },
   content: {
-    paddingBottom: 20,
+    paddingBottom: 0,
   },
   title: {
     fontSize: 18,
@@ -324,12 +330,14 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: '#EEEEEE',
-    marginVertical: 20,
+    marginTop: 16,
+    marginBottom: 16,
   },
   deliveryInfo: {
     backgroundColor: '#F8F8F8',
     padding: 16,
     borderRadius: 12,
+    marginBottom: 0,
   },
   orderTitle: {
     fontSize: 14,
@@ -351,8 +359,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   contentContainer: {
-    minHeight: 200,
-    paddingBottom: 20,
+    minHeight: 'auto',
+    paddingBottom: 0,
   },
 });
 
