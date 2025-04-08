@@ -43,7 +43,8 @@ const AddressSearchScreen = ({ navigation, route }) => {
       navigation.navigate('AddressDetail', { 
         address: completeAddress,
         prevItems: route.params?.prevItems,
-        prevTotalPrice: route.params?.prevTotalPrice
+        prevTotalPrice: route.params?.prevTotalPrice,
+        productId: route.params?.productId
       });
     }
   };

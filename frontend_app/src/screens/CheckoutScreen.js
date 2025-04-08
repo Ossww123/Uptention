@@ -371,6 +371,7 @@ const CheckoutScreen = ({ navigation, route }) => {
     navigation.navigate("AddressSearch", {
       prevItems: selectedItems,
       prevTotalPrice: totalPrice,
+      productId: route.params?.productId,
     });
   };
 

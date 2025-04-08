@@ -1,46 +1,94 @@
 // AddressDetailScreen.js
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
 
 const AddressDetailScreen = ({ navigation, route }) => {
-  const { address, prevScreen, product, prevItems, prevTotalPrice, orderId, item } = route.params;
-  const [detailAddress, setDetailAddress] = useState('');
+  const {
+    address,
+    prevScreen,
+    product,
+    prevItems,
+    prevTotalPrice,
+    orderId,
+    item,
+  } = route.params;
+  const [detailAddress, setDetailAddress] = useState("");
 
+  // AddressDetailScreen.js 파일 내부의 handleSave 함수 수정
   const handleSave = () => {
     const completeAddress = {
       ...address,
-      detailAddress
+      detailAddress,
     };
 
     // PaymentBottomSheet에서 온 경우
-    if (prevScreen === 'PaymentBottomSheet') {
-      navigation.navigate('ProductDetail', {
+    if (prevScreen === "PaymentBottomSheet") {
+      navigation.navigate("ProductDetail", {
         address: completeAddress,
         product: product,
         productId: product.itemId,
-        showPaymentSheet: true
+        showPaymentSheet: true,
       });
-    } 
+    }
     // DeliveryAddressBottomSheet에서 온 경우
-    else if (prevScreen === 'DeliveryAddressBottomSheet') {
+    else if (prevScreen === "DeliveryAddressBottomSheet") {
       // 기존 item의 모든 정보를 유지하고 주소만 업데이트
       const updatedItem = {
         ...item,
-        address: `${address.roadAddress} ${detailAddress}`
+        address: `${address.roadAddress} ${detailAddress}`,
       };
 
-      navigation.navigate('GiftDetail', {
+      navigation.navigate("GiftDetail", {
         item: updatedItem,
         refreshKey: Date.now(),
-        showDeliveryAddressBottomSheet: true
+        showDeliveryAddressBottomSheet: true,
       });
     }
-    // CheckoutScreen에서 온 경우
+    // CheckoutScreen에서 온 경우 (이 부분 수정)
     else {
-      navigation.navigate('CheckoutScreen', { 
-        address: completeAddress,
-        selectedItems: prevItems,
-        totalPrice: prevTotalPrice
+      // route.params에서 필요한 모든 파라미터 추출
+      const { productId } = route.params || {};
+
+      // navigation.reset({
+      //   index: 3,
+      //   routes: [
+      //     { name: 'StoreMain' },
+      //     {
+      //       name: 'ProductDetail',
+      //       params: { productId: productId }  // 저장된 productId 사용
+      //     },
+      //     { name: 'Cart' },
+      //     {
+      //       name: 'CheckoutScreen',
+      //       params: {
+      //         address: completeAddress,
+      //         selectedItems: prevItems,
+      //         totalPrice: prevTotalPrice,
+      //         productId: productId  // productId도 함께 전달 (필요시)
+      //       }
+      //     }
+      //   ]
+      // });
+      navigation.reset({
+        index: 2, // 2번째 화면(결제페이지)으로 이동
+        routes: [
+          { name: "StoreMain" },
+          { name: "Cart" },
+          {
+            name: "CheckoutScreen",
+            params: {
+              address: completeAddress,
+              selectedItems: prevItems,
+              totalPrice: prevTotalPrice,
+            },
+          },
+        ],
       });
     }
   };
@@ -49,7 +97,9 @@ const AddressDetailScreen = ({ navigation, route }) => {
     <View style={styles.container}>
       <View style={styles.addressContainer}>
         <Text style={styles.label}>도로명 주소</Text>
-        <Text style={styles.addressText}>[{address.zonecode}] {address.roadAddress}</Text>
+        <Text style={styles.addressText}>
+          [{address.zonecode}] {address.roadAddress}
+        </Text>
         {address.buildingName && (
           <Text style={styles.buildingName}>{address.buildingName}</Text>
         )}
@@ -66,8 +116,8 @@ const AddressDetailScreen = ({ navigation, route }) => {
         />
       </View>
 
-      <TouchableOpacity 
-        style={[styles.button, !detailAddress && styles.buttonDisabled]} 
+      <TouchableOpacity
+        style={[styles.button, !detailAddress && styles.buttonDisabled]}
         onPress={handleSave}
         disabled={!detailAddress}
       >
@@ -81,7 +131,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   addressContainer: {
     marginBottom: 20,
@@ -91,40 +141,40 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 8,
   },
   addressText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 4,
   },
   buildingName: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   input: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderColor: "#CCCCCC",
     borderRadius: 8,
     paddingHorizontal: 15,
     fontSize: 16,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: "#F8F8F8",
   },
   button: {
-    backgroundColor: '#FF8C00',
+    backgroundColor: "#FF8C00",
     paddingVertical: 15,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
   },
   buttonDisabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: "#CCCCCC",
   },
   buttonText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontWeight: "bold",
+    color: "#FFFFFF",
   },
 });
 
