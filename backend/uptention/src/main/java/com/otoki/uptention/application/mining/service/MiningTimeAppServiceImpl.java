@@ -31,10 +31,13 @@ import com.otoki.uptention.domain.company.entity.Company;
 import com.otoki.uptention.domain.mining.dto.response.MiningTimeRankResponseDto;
 import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.domain.mining.service.MiningTimeService;
+import com.otoki.uptention.domain.notification.entity.Notification;
+import com.otoki.uptention.domain.notification.service.NotificationService;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
+import com.otoki.uptention.global.service.FcmSendService;
 import com.otoki.uptention.solana.service.ExpressApiService;
 
 import lombok.AllArgsConstructor;
@@ -53,6 +56,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	private final SecurityService securityService;
 	private final ExpressApiService expressApiService;
 	private final ObjectMapper objectMapper;
+	private final NotificationService notificationService;
+	private final FcmSendService fcmSendService;
 
 	@Transactional
 	@Override
@@ -344,7 +349,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 					log.info("NFT 생성 API 호출 성공. User ID: {}, Rank: {}, Response: {}", userId, s, response);
 					CreateNftApiResponse createNftApiResponse = objectMapper.readValue(response,
 						CreateNftApiResponse.class);
-					MintAddressResponse mintAddressResponse = new MintAddressResponse(
+					MintAddressResponse mintAddressResponse = new MintAddressResponse(user.getId(),
 						createNftApiResponse.getMintAddress(), user.getWallet());
 					result.add(mintAddressResponse);
 				} catch (RestClientException e) {
@@ -378,6 +383,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 				return; // 다음 항목으로 (forEach의 continue 역할)
 			}
 
+			User user = userService.getUserById(target.id);
 			String recipientWallet = target.getWallet();
 			String nftMintAddress = target.getAddress();
 			// 로깅을 위한 식별자 (지갑/민트 주소 활용)
@@ -390,6 +396,23 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 				log.info("NFT 전송 API 호출 성공: {}, 응답 일부: {}", identifier,
 					response != null ? response.substring(0, Math.min(response.length(), 100)) : "null");
+
+				String title = "🎉" + user.getName() + "님 축하드립니다.🎉";
+				String message = "우수 사원으로 선정되어 팬텀 지갑으로 NFT가 도착했습니다.";
+
+				// 알림
+				Notification notification = Notification.builder()
+					.title(title)
+					.message(message)
+					.user(user)
+					.build();
+
+				// 알림 저장
+				notificationService.saveNotification(notification);
+
+				// 알림 전송
+				fcmSendService.sendNotificationToUser(user, title, message);
+
 
 			} catch (RestClientException e) {
 				log.error("NFT 전송 API 호출 실패: {}, 오류: {}", identifier, e.getMessage());
@@ -492,6 +515,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	@Getter
 	@AllArgsConstructor
 	public static class MintAddressResponse {
+		private Integer id;
 		private String address;
 		private String wallet;
 	}
