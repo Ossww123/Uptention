@@ -33,11 +33,13 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
     publicKey
   } = useWallet();
   const { userId, authToken } = useAuth();
+  const [isConnecting, setIsConnecting] = React.useState(false);
 
   // publicKey가 변경될 때마다 실행
   React.useEffect(() => {
     const connectWallet = async () => {
-      if (publicKey) {
+      if (publicKey && !isConnecting) {
+        setIsConnecting(true);
         try {
           console.log('API 요청 정보:', {
             url: `${API_BASE_URL}/api/users/${userId}/wallet?wallet=${publicKey}`,
@@ -61,9 +63,7 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
 
           if (response.status === 200) {
             console.log('지갑 연결 성공:', response.data);
-            // onWalletConnected 콜백만 호출
             onWalletConnected();
-            navigation.replace('MainApp');
           }
         } catch (error) {
           console.error('지갑 연결 API 오류:', error);
@@ -77,12 +77,13 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
             `지갑 연결에 실패했습니다: ${error.response?.data?.message || error.message}`,
             [{ text: '확인' }]
           );
+          setIsConnecting(false);
         }
       }
     };
 
     connectWallet();
-  }, [publicKey, userId, authToken, onWalletConnected, navigation]);
+  }, [publicKey, userId, authToken, onWalletConnected, isConnecting]);
 
   const handleConnect = async () => {
     try {

@@ -201,8 +201,10 @@ const AppNavigator = forwardRef((props, ref) => {
             <WalletConnectScreen
               {...props}
               onWalletConnected={() => {
-                setForceScreen(null);
-                props.navigation.replace('MainApp');
+                navigationRef.current?.reset({
+                  index: 0,
+                  routes: [{ name: 'MainApp' }],
+                });
               }}
             />
           )}
