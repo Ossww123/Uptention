@@ -253,7 +253,7 @@ const ProductManagementPage = () => {
   
   // 상품 수정 페이지로 이동
   const handleEditProduct = (productId) => {
-    navigate(`/admin/products/edit/${productId}`);
+    navigate(`/admin/products/${productId}`);
   };
   
   // 상품 삭제 핸들러
@@ -391,7 +391,7 @@ const ProductManagementPage = () => {
           <tr 
             key={product.itemId}
             ref={index === products.length - 1 ? lastProductElementRef : null}
-            onClick={() => navigate(`/admin/products/${product.itemId}`)}
+            onClick={() => handleEditProduct(product.itemId)}
             className="product-row"
           >
             <td>{product.itemId}</td>

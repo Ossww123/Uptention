@@ -257,7 +257,8 @@
   }
   
   .delete-button:hover {
-    background-color: #ffcdd2;
+    background-color: #ef5350;
+    color: white;
   }
   
   .no-apps-message {

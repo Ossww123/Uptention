@@ -8,7 +8,6 @@ import UserCreatePage from './pages/Users/UserCreatePage';
 import ProductManagementPage from './pages/Products/ProductManagementPage';
 import ProductCreatePage from './pages/Products/ProductCreatePage';
 import ProductEditPage from './pages/Products/ProductEditPage';
-import ProductDetailPage from './pages/Products/ProductDetailPage';
 import AppManagementPage from './pages/Apps/AppManagementPage';
 import AdminLayout from './components/layout/AdminLayout/AdminLayout';
 import NotFoundPage from './pages/NotFound/NotFoundPage';
@@ -82,9 +81,9 @@ function App() {
           } 
         />
         
-        {/* 상품 수정 라우트 추가 */}
+        {/* 상품 조회/수정 라우트 추가 */}
         <Route 
-          path="/admin/products/edit/:itemId" 
+          path="/admin/products/:itemId" 
           element={
             <ProtectedRoute>
               <AdminLayout>
@@ -94,17 +93,6 @@ function App() {
           } 
         />
         
-        {/* 상품 조회 라우트 추가 */}
-        <Route 
-          path="/admin/products/:itemId" 
-          element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <ProductDetailPage />
-              </AdminLayout>
-            </ProtectedRoute>
-          } 
-        />
         
         {/* 앱 관리 라우트 */}
         <Route 
