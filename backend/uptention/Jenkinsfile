@@ -135,6 +135,7 @@ pipeline {
                                         -e RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD}" \\
                                         -e REDIS_HOST="${REDIS_HOST}" \\
                                         -e REDIS_PORT="${REDIS_PORT}" \\
+                                        -v /home/ubuntu/uptention/spring-logs:/app/logs \\
                                         ${DOCKER_IMAGE}:latest
 
                                     echo "신규 컨테이너 헬스 체크 중..."
