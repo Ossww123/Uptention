@@ -44,7 +44,7 @@ const MiningStats = ({
 
   // 채굴 달성률 계산 (하루 최대 8시간 기준)
   const calculateDailyProgress = () => {
-    const totalMinutes = totalMiningTime.hours * 60 + totalMiningTime.minutes;
+    const totalMinutes = Math.min(totalMiningTime.hours * 60 + totalMiningTime.minutes, 480);
     const maxMinutes = maxPossibleHours * 60;
     return Math.min(Math.round((totalMinutes / maxMinutes) * 100), 100);
   };

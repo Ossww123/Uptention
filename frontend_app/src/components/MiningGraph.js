@@ -28,18 +28,15 @@ const MiningGraph = ({
 
   // 개별 막대 렌더링 함수 - 날짜(일)만 표시
   const renderBar = ({ item, index }) => {
-    
-    // 상대적 높이 계산 (8시간 초과 시에도 표현 가능하도록)
-    const barHeight = (item.value / maxValue) * 100;
+    const MAX_MINING_TIME = 480; // 8시간 = 480분
+    const cappedValue = Math.min(item.value, MAX_MINING_TIME);
+    const barHeight = (cappedValue / maxValue) * 100;
     const isSelected = selectedItem && selectedItem.id === item.id;
     const isToday = item.isToday || false;
-  
+
     return (
       <TouchableOpacity
-        style={[
-          styles.barContainer,
-          !isScrollable && { width: width / 9 }
-        ]}
+        style={[styles.barContainer, !isScrollable && { width: width / 9 }]}
         onPress={() => onSelectBar(item)}
         disabled={!isScrollable}
       >
@@ -53,7 +50,7 @@ const MiningGraph = ({
             ]}
           />
         </View>
-        
+
         <Text
           style={[
             styles.barText,
@@ -61,7 +58,7 @@ const MiningGraph = ({
             isSelected && !isToday && styles.selectedBarText,
           ]}
         >
-          {item.day || '?'} {/* 값이 없는 경우 ? 표시 */}
+          {item.day || "?"} {/* 값이 없는 경우 ? 표시 */}
         </Text>
       </TouchableOpacity>
     );
@@ -74,7 +71,7 @@ const MiningGraph = ({
         {onPrevWeek && onNextWeek ? (
           <View style={styles.weekNavigator}>
             <TouchableOpacity onPress={onPrevWeek}>
-              <Text style={styles.navButton}>{'<'}</Text>
+              <Text style={styles.navButton}>{"<"}</Text>
             </TouchableOpacity>
             <Text style={styles.dateTitle}>{dateRangeTitle}</Text>
             <TouchableOpacity
@@ -88,7 +85,7 @@ const MiningGraph = ({
                   isCurrentWeek && styles.disabledNavButtonText,
                 ]}
               >
-                {'>'}
+                {">"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -120,7 +117,7 @@ const MiningGraph = ({
           scrollEnabled={isScrollable} // DailyView만 스크롤 가능
           contentContainerStyle={[
             styles.barsContainer,
-            !isScrollable && styles.fixedBarsContainer // WeeklyView인 경우 추가 스타일 적용
+            !isScrollable && styles.fixedBarsContainer, // WeeklyView인 경우 추가 스타일 적용
           ]}
           initialNumToRender={isScrollable ? 7 : data.length}
         />
@@ -149,7 +146,7 @@ const styles = StyleSheet.create({
   // 날짜 타이틀 영역을 위한 공통 컨테이너 - 일관된 높이 유지
   titleContainer: {
     height: 50, // 날짜 표시 영역 높이 고정
-    justifyContent: 'center', // 수직 중앙 정렬
+    justifyContent: "center", // 수직 중앙 정렬
     marginBottom: 10,
   },
   weekNavigator: {
@@ -241,7 +238,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   selectedBarText: {
-    color: "#FFA54F", 
+    color: "#FFA54F",
     fontWeight: "500",
   },
   chartDivider: {

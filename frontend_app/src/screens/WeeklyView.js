@@ -28,7 +28,7 @@ const WeeklyView = () => {
   const [weeklyTotalTime, setWeeklyTotalTime] = useState({
     hours: 0,
     minutes: 0,
-    totalMinutes: 0
+    totalMinutes: 0,
   });
 
   // 주간 비교값 (전주 대비)
@@ -132,18 +132,17 @@ const WeeklyView = () => {
 
           // API 응답에서 해당 날짜의 데이터 찾기
           const dayData = apiData.find((item) => item.date === formattedDate);
-          const value = dayData ? dayData.totalTime : 0;
+          const value = dayData ? Math.min(dayData.totalTime, 480) : 0;
 
           // 총 시간 누적
           totalMinutes += value;
 
           // 오늘 날짜인지 확인
           const today = new Date();
-          const isToday = (
+          const isToday =
             date.getDate() === today.getDate() &&
             date.getMonth() === today.getMonth() &&
-            date.getFullYear() === today.getFullYear()
-          );
+            date.getFullYear() === today.getFullYear();
 
           miningDataArray.push({
             id: `${month}-${day}`,
@@ -155,8 +154,8 @@ const WeeklyView = () => {
             miningTime: {
               hours: Math.floor(value / 60),
               minutes: value % 60,
-              totalMinutes: value
-            }
+              totalMinutes: value,
+            },
           });
         }
 
@@ -168,7 +167,7 @@ const WeeklyView = () => {
         setWeeklyTotalTime({
           hours: hours,
           minutes: minutes,
-          totalMinutes: totalMinutes
+          totalMinutes: totalMinutes,
         });
 
         // 임의의 전주 대비 증감값 설정 (실제로는 API에서 제공하는 값을 사용)
@@ -178,9 +177,12 @@ const WeeklyView = () => {
 
         // 앱 사용 정보 가져오기
         const weeklyScreenTimeData = await ScreenTime.getWeeklyScreenTime();
-        console.log('WeeklyView - ScreenTime Data:', weeklyScreenTimeData);
+        console.log("WeeklyView - ScreenTime Data:", weeklyScreenTimeData);
         if (weeklyScreenTimeData.hasPermission) {
-          console.log('WeeklyView - App Usage Data:', weeklyScreenTimeData.appUsageWithNames);
+          console.log(
+            "WeeklyView - App Usage Data:",
+            weeklyScreenTimeData.appUsageWithNames
+          );
           setAppUsage(weeklyScreenTimeData.appUsageWithNames || {});
         }
       } else {
@@ -211,18 +213,17 @@ const WeeklyView = () => {
       const day = date.getDate();
       const month = date.getMonth() + 1;
       const dayOfWeek = days[date.getDay()];
-      
+
       // 랜덤 채굴 시간 생성 (분 단위)
       const value = Math.floor(Math.random() * 480) + 30; // 30-510분 사이 랜덤값
       totalMinutes += value;
-      
+
       // 오늘 날짜인지 확인
       const today = new Date();
-      const isToday = (
+      const isToday =
         date.getDate() === today.getDate() &&
         date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear()
-      );
+        date.getFullYear() === today.getFullYear();
 
       dummyMiningData.push({
         id: `${month}-${day}`,
@@ -234,8 +235,8 @@ const WeeklyView = () => {
         miningTime: {
           hours: Math.floor(value / 60),
           minutes: value % 60,
-          totalMinutes: value
-        }
+          totalMinutes: value,
+        },
       });
     }
 
@@ -249,30 +250,30 @@ const WeeklyView = () => {
     setWeeklyTotalTime({
       hours: hours,
       minutes: minutes,
-      totalMinutes: totalMinutes
+      totalMinutes: totalMinutes,
     });
 
     // 임의의 전주 대비 증감값 설정
     const randomComparisonValue = Math.floor(Math.random() * 600) - 300; // -300 ~ 300 사이의 임의 값 (분 단위)
     setWeeklyComparison(randomComparisonValue);
-    
+
     // 더미 앱 사용 데이터 설정
     const dummyAppUsage = {
       "com.google.android.youtube": {
         appName: "YouTube",
         usageTime: 185,
-        iconBase64: null
+        iconBase64: null,
       },
       "com.kakao.talk": {
         appName: "카카오톡",
         usageTime: 120,
-        iconBase64: null
+        iconBase64: null,
       },
       "com.instagram.android": {
         appName: "Instagram",
         usageTime: 90,
-        iconBase64: null
-      }
+        iconBase64: null,
+      },
     };
     setAppUsage(dummyAppUsage);
   };
@@ -343,20 +344,19 @@ const WeeklyView = () => {
         comparisonValue={weeklyComparison}
         totalMiningTime={{
           hours: weeklyTotalTime.hours,
-          minutes: weeklyTotalTime.minutes
+          minutes: weeklyTotalTime.minutes,
         }}
       />
 
       {/* 앱 사용 통계 로그 */}
-    {console.log('WeeklyView Render - App Usage:', appUsage)}
-    {console.log('WeeklyView Render - Has Data:', Object.keys(appUsage).length > 0)}
-    
+      {console.log("WeeklyView Render - App Usage:", appUsage)}
+      {console.log(
+        "WeeklyView Render - Has Data:",
+        Object.keys(appUsage).length > 0
+      )}
 
       {/* 공통 앱 사용 통계 컴포넌트 사용 */}
-      <AppUsageStats
-        viewType="weekly"
-        appUsage={appUsage}
-      />
+      <AppUsageStats viewType="weekly" appUsage={appUsage} />
     </ScrollView>
   );
 };
