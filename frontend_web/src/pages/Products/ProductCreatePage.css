@@ -7,7 +7,7 @@
 
 .content-card {
   background-color: white;
-  border-radius: 8px;
+  border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 20px;
   margin-bottom: 20px;
@@ -55,13 +55,13 @@
   position: relative;
 }
 
-/* 새로운 입력 래퍼 컨테이너 - 회원 등록 페이지에서 가져옴 */
+/* 여기서 인풋 래퍼의 높이를 조정 (상품 수정 페이지와 일치시키기) */
 .input-wrapper {
   display: flex;
   flex-direction: column;
   width: 100%;
-  position: relative; /* 상대 위치 설정 */
-  min-height: 70px; /* 높이를 충분히 설정하여 오류 메시지 공간 확보 */
+  position: relative;
+  min-height: auto; /* 기존 70px에서 auto로 변경 */
 }
 
 .form-input, .form-select, .form-textarea {
@@ -90,33 +90,33 @@
   margin-left: 3px;
 }
 
-/* 기존 에러 메시지 스타일 (주석 처리 또는 제거) */
+/* 기존 에러 메시지 스타일 (상품 수정 페이지와 동일하게) */
 .error-message {
   color: #e74c3c;
   font-size: 12px;
   margin-top: 5px;
 }
 
-/* 회원 등록 페이지의 에러 메시지 스타일 적용 */
+/* 에러 힌트 메시지 스타일 조정 */
 .error-hint {
   color: #e74c3c;
   font-size: 12px;
   margin-top: 5px;
   text-align: right;
   display: block;
-  height: 20px; /* 고정 높이 설정 */
+  height: auto; /* 고정 높이 20px에서 auto로 변경 */
   position: static;
   width: 100%;
 }
 
-/* 성공 힌트 메시지 스타일 */
+/* 성공 힌트 메시지 스타일 조정 */
 .success-hint {
   color: #2ecc71;
   font-size: 12px;
   margin-top: 5px;
   text-align: right;
   display: block;
-  height: 20px; /* 고정 높이 설정 */
+  height: auto; /* 고정 높이 20px에서 auto로 변경 */
   position: static;
   width: 100%;
 }
@@ -207,12 +207,16 @@
 }
 
 .price-input-container + .error-hint {
-  text-align: right;
+  text-align: left;
 }
 
 .price-currency {
   color: #666;
   font-weight: 500;
+}
+
+.price-error {
+  text-align: left !important; /* 가격 필드의 에러만 왼쪽 정렬 */
 }
 
 /* 이미지 업로드 관련 스타일 */
