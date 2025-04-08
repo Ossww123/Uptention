@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,15 +13,15 @@ import {
   FlatList,
   Animated,
   BackHandler,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { get, post } from '../services/api';
-import PaymentBottomSheet from '../components/PaymentBottomSheet';
-import GiftBottomSheet from '../components/GiftBottomSheet';
-import axios from 'axios';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import { get, post } from "../services/api";
+import PaymentBottomSheet from "../components/PaymentBottomSheet";
+import GiftBottomSheet from "../components/GiftBottomSheet";
+import axios from "axios";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const ProductDetailScreen = ({ route, navigation }) => {
   const { productId } = route.params;
@@ -37,8 +37,8 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
   // 더미 배송 정보 (실제로는 사용자 정보에서 가져와야 함)
   const deliveryInfo = {
-    address: '경상북도 진평시 진평길 55-5',
-    detail: '최강아파트 211호'
+    address: "경상북도 진평시 진평길 55-5",
+    detail: "최강아파트 211호",
   };
 
   useEffect(() => {
@@ -46,8 +46,11 @@ const ProductDetailScreen = ({ route, navigation }) => {
     fetchCartItemCount();
 
     // 하드웨어 백 버튼 처리
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-    
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      handleBackPress
+    );
+
     // 컴포넌트 언마운트 시 정리
     return () => {
       backHandler.remove();
@@ -68,7 +71,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchCartItemCount();
-      
+
       return () => {
         // 포커스 해제 시 정리 작업
         if (showCartMessage) {
@@ -83,7 +86,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
   // 카트 메시지가 표시되면 자동으로 사라지게 하는 효과
   useEffect(() => {
     let timer;
-    
+
     if (showCartMessage) {
       // 메시지 표시 애니메이션
       Animated.timing(fadeAnim, {
@@ -119,27 +122,27 @@ const ProductDetailScreen = ({ route, navigation }) => {
     if (showCartMessage) {
       setShowCartMessage(false);
     }
-    
+
     // 약간의 지연 후 네비게이션 수행
     setTimeout(() => {
       navigation.goBack();
     }, 150);
-    
+
     return true; // 이벤트 처리됨을 표시
   }, [showCartMessage, navigation]);
 
   // 장바구니 개수 가져오기
   const fetchCartItemCount = async () => {
     try {
-      const { data, ok } = await get('/shopping-cart/count');
-      
+      const { data, ok } = await get("/shopping-cart/count");
+
       if (!ok) {
-        throw new Error('장바구니 개수 조회에 실패했습니다.');
+        throw new Error("장바구니 개수 조회에 실패했습니다.");
       }
-      
+
       setCartItemCount(data);
     } catch (error) {
-      console.error('장바구니 개수 조회 오류:', error);
+      console.error("장바구니 개수 조회 오류:", error);
       // 오류 발생 시 기본값으로 0 설정 (UI에 아무것도 표시하지 않음)
       setCartItemCount(0);
     }
@@ -149,17 +152,17 @@ const ProductDetailScreen = ({ route, navigation }) => {
     try {
       setLoading(true);
       const { data, ok } = await get(`/items/${productId}`);
-      
+
       // API에서 에러 응답이 왔는지 확인
       if (!ok) {
-        throw new Error(data.message || '상품 정보를 불러오지 못했습니다.');
+        throw new Error(data.message || "상품 정보를 불러오지 못했습니다.");
       }
-      
+
       setProduct(data);
       setError(null);
     } catch (error) {
-      console.error('상품 상세 정보 로드 에러:', error);
-      setError(error.message || '상품 정보를 불러오는데 문제가 발생했습니다.');
+      console.error("상품 상세 정보 로드 에러:", error);
+      setError(error.message || "상품 정보를 불러오는데 문제가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -168,22 +171,22 @@ const ProductDetailScreen = ({ route, navigation }) => {
   // 장바구니에 추가 기능
   const addToCart = async () => {
     try {
-      const { data, ok } = await post('/shopping-cart', {
+      const { data, ok } = await post("/shopping-cart", {
         itemId: productId,
-        quantity: 1
+        quantity: 1,
       });
-      
+
       if (!ok) {
-        throw new Error(data.message || '장바구니 추가에 실패했습니다.');
+        throw new Error(data.message || "장바구니 추가에 실패했습니다.");
       }
-      
+
       setShowCartMessage(true);
       fetchCartItemCount();
     } catch (error) {
-      console.error('장바구니 추가 오류:', error);
+      console.error("장바구니 추가 오류:", error);
       Alert.alert(
-        '오류',
-        error.message || '장바구니 추가 중 오류가 발생했습니다.'
+        "오류",
+        error.message || "장바구니 추가 중 오류가 발생했습니다."
       );
     }
   };
@@ -213,18 +216,20 @@ const ProductDetailScreen = ({ route, navigation }) => {
           onScrollToIndexFailed={() => {}}
           onMomentumScrollEnd={(event) => {
             const slideIndex = Math.floor(
-              event.nativeEvent.contentOffset.x / 
-              event.nativeEvent.layoutMeasurement.width
+              event.nativeEvent.contentOffset.x /
+                event.nativeEvent.layoutMeasurement.width
             );
             setCurrentImageIndex(slideIndex);
           }}
           renderItem={({ item }) => {
             // 기본 URL에 width와 height 파라미터 추가
-            const optimizedImageUrl = `${item}?w=${Math.round(width)}&h=${Math.round(width)}&t=cover&f=webp`;
-            
+            const optimizedImageUrl = `${item}?w=${Math.round(
+              width
+            )}&h=${Math.round(width)}&t=cover&f=webp`;
+
             return (
-              <Image 
-                source={{ uri: optimizedImageUrl }} 
+              <Image
+                source={{ uri: optimizedImageUrl }}
                 style={styles.productImage}
                 resizeMode="contain"
                 fadeDuration={0}
@@ -233,23 +238,25 @@ const ProductDetailScreen = ({ route, navigation }) => {
           }}
           keyExtractor={(item, index) => `image-${index}`}
         />
-        
+
         {/* 이미지 페이지 인디케이터 */}
         <View style={styles.pageIndicator}>
           <Text style={styles.pageIndicatorText}>
             {currentImageIndex + 1}/{product.images.length}
           </Text>
         </View>
-        
+
         {/* 이미지 도트 인디케이터 */}
         <View style={styles.dotIndicatorContainer}>
           {product.images.map((_, index) => (
-            <View 
-              key={`dot-${index}`} 
+            <View
+              key={`dot-${index}`}
               style={[
                 styles.dot,
-                currentImageIndex === index ? styles.activeDot : styles.inactiveDot
-              ]} 
+                currentImageIndex === index
+                  ? styles.activeDot
+                  : styles.inactiveDot,
+              ]}
             />
           ))}
         </View>
@@ -262,14 +269,18 @@ const ProductDetailScreen = ({ route, navigation }) => {
     if (!showCartMessage) return null;
 
     return (
-      <Animated.View style={[styles.cartMessageContainer, { opacity: fadeAnim }]}>
+      <Animated.View
+        style={[styles.cartMessageContainer, { opacity: fadeAnim }]}
+      >
         <View style={styles.cartMessageContent}>
           <View style={styles.checkIconContainer}>
             <Ionicons name="checkmark" size={20} color="#FFFFFF" />
           </View>
-          <Text style={styles.cartMessageText}>성공적으로 장바구니에 추가되었습니다.</Text>
-          <TouchableOpacity 
-            style={styles.closeButton} 
+          <Text style={styles.cartMessageText}>
+            성공적으로 장바구니에 추가되었습니다.
+          </Text>
+          <TouchableOpacity
+            style={styles.closeButton}
             onPress={() => {
               Animated.timing(fadeAnim, {
                 toValue: 0,
@@ -298,7 +309,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
     return (
       <SafeAreaView style={styles.errorContainer}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.retryButton}
           onPress={fetchProductDetails}
         >
@@ -312,7 +323,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
     return (
       <SafeAreaView style={styles.errorContainer}>
         <Text style={styles.errorText}>상품 정보를 찾을 수 없습니다.</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.retryButton}
           onPress={() => navigation.goBack()}
         >
@@ -326,19 +337,17 @@ const ProductDetailScreen = ({ route, navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* 헤더 */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={handleBackPress}
-        >
-          <Text style={styles.backButtonText}>{'<'}</Text>
+        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+          <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <View style={styles.headerRight}>
-          <TouchableOpacity 
+          {/* 기존 장바구니 버튼 코드 그대로 유지 */}
+          <TouchableOpacity
             style={styles.cartButton}
-            onPress={() => navigation.navigate('Cart')}
+            onPress={() => navigation.navigate("Cart")}
           >
-            <Image 
-              source={require('../../assets/cart-icon.png')}
+            <Image
+              source={require("../../assets/cart-icon.png")}
               style={styles.cartIcon}
             />
             {cartItemCount > 0 && (
@@ -350,10 +359,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
         </View>
       </View>
 
-      <ScrollView 
-        style={styles.scrollView}
-        removeClippedSubviews={false}
-      >
+      <ScrollView style={styles.scrollView} removeClippedSubviews={false}>
         {/* 상품 이미지 슬라이더 */}
         {renderImageSlider()}
 
@@ -364,13 +370,15 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={styles.category}>{product.categoryName}</Text>
           <Text style={styles.name}>{product.name}</Text>
           <Text style={styles.price}>{product.price} WORK</Text>
-          
+
           {product.quantity <= 5 && (
-            <Text style={styles.lowStockText}>품절 임박! ({product.quantity}개 남음)</Text>
+            <Text style={styles.lowStockText}>
+              품절 임박! ({product.quantity}개 남음)
+            </Text>
           )}
-          
+
           <View style={styles.divider} />
-          
+
           {/* 상품 설명 */}
           <View style={styles.descriptionContainer}>
             <Text style={styles.descriptionTitle}>상품 설명</Text>
@@ -384,24 +392,15 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
       {/* 하단 버튼 영역 - 3개 버튼으로 변경 */}
       <View style={styles.threeButtonContainer}>
-        <TouchableOpacity 
-          style={styles.buttonOutline}
-          onPress={addToCart}
-        >
+        <TouchableOpacity style={styles.buttonOutline} onPress={addToCart}>
           <Text style={styles.buttonOutlineText}>장바구니</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.buttonOutline}
-          onPress={buyNow}
-        >
+
+        <TouchableOpacity style={styles.buttonOutline} onPress={buyNow}>
           <Text style={styles.buttonOutlineText}>바로 구매</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.buttonFilled}
-          onPress={sendGift}
-        >
+
+        <TouchableOpacity style={styles.buttonFilled} onPress={sendGift}>
           <Text style={styles.buttonFilledText}>선물하기</Text>
         </TouchableOpacity>
       </View>
@@ -429,86 +428,86 @@ const ProductDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
+    color: "#666",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff",
     padding: 20,
   },
   errorText: {
     fontSize: 16,
-    color: '#ff3b30',
-    textAlign: 'center',
+    color: "#ff3b30",
+    textAlign: "center",
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#FF8C00',
+    backgroundColor: "#FF8C00",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 15,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   backButton: {
     padding: 5,
   },
   backButtonText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   cartButton: {
     padding: 5,
-    position: 'relative',
+    position: "relative",
   },
   cartIcon: {
     width: 24,
     height: 24,
   },
   cartBadge: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     top: 0,
-    backgroundColor: 'red',
+    backgroundColor: "red",
     borderRadius: 10,
     width: 20,
     height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   cartBadgeText: {
-    color: 'white',
+    color: "white",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   scrollView: {
     flex: 1,
@@ -516,34 +515,34 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: width,
     height: width,
-    position: 'relative',
+    position: "relative",
   },
   productImage: {
     width: width,
     height: width,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
   },
   pageIndicator: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     bottom: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
   },
   pageIndicatorText: {
-    color: 'white',
+    color: "white",
     fontSize: 12,
   },
   dotIndicatorContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 10,
     left: 0,
     right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
   dot: {
     width: 8,
@@ -552,118 +551,118 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   activeDot: {
-    backgroundColor: '#FF8C00',
+    backgroundColor: "#FF8C00",
   },
   inactiveDot: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
   },
   productInfo: {
     padding: 20,
   },
   brand: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     marginVertical: 15,
   },
   category: {
     fontSize: 14,
-    color: '#888',
+    color: "#888",
     marginBottom: 8,
   },
   name: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   price: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   lowStockText: {
     fontSize: 14,
-    color: 'red',
+    color: "red",
     marginTop: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   descriptionContainer: {
     marginTop: 10,
   },
   descriptionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   description: {
     fontSize: 14,
     lineHeight: 22,
-    color: '#666',
+    color: "#666",
   },
   threeButtonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: "#f0f0f0",
     padding: 15,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   buttonOutline: {
     flex: 1,
     height: 50,
     borderWidth: 1,
-    borderColor: '#FF8C00',
+    borderColor: "#FF8C00",
     borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginHorizontal: 5,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   buttonOutlineText: {
-    color: '#FF8C00',
+    color: "#FF8C00",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   buttonFilled: {
     flex: 1,
     height: 50,
-    backgroundColor: '#FF8C00',
+    backgroundColor: "#FF8C00",
     borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginHorizontal: 5,
   },
   buttonFilledText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   cartMessageContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 80,
     left: 15,
     right: 15,
-    alignItems: 'center',
+    alignItems: "center",
     zIndex: 1000,
   },
   cartMessageContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#00C851',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#00C851",
     borderRadius: 6,
     paddingVertical: 12,
     paddingHorizontal: 15,
-    width: '100%',
+    width: "100%",
   },
   checkIconContainer: {
     marginRight: 10,
   },
   cartMessageText: {
     flex: 1,
-    color: 'white',
+    color: "white",
     fontSize: 14,
   },
   closeButton: {

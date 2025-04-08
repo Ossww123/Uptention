@@ -56,7 +56,7 @@ const AddressSearchScreen = ({ navigation, route }) => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="chevron-back" size={24} color="#000000" />
+          <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>주소 검색</Text>
         <View style={styles.emptySpace} />

@@ -446,7 +446,7 @@ const CartScreen = ({ navigation }) => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="chevron-back" size={28} color="#000000" />
+          <Ionicons name="arrow-back" size={28} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>장바구니</Text>
         <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
