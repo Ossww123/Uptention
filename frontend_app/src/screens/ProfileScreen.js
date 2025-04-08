@@ -157,6 +157,11 @@ const ProfileScreen = ({ navigation }) => {
       return;
     }
 
+    // iOS의 경우 ActionSheet가 자동으로 닫히므로 Android에서만 모달을 닫음
+    if (Platform.OS === 'android') {
+      setShowEditModal(false);
+    }
+
     try {
       const result = await launchImageLibrary({
         mediaType: 'photo',
@@ -490,9 +495,12 @@ const ProfileScreen = ({ navigation }) => {
                 <Text style={styles.editModalTitle}>프로필 편집</Text>
                 <TouchableOpacity
                   style={styles.editModalButton}
-                  onPress={() => {
+                  onPress={async () => {
                     setShowEditModal(false);
-                    handleImageUpload();
+                    // 약간의 딜레이 후 갤러리 실행
+                    setTimeout(() => {
+                      handleImageUpload();
+                    }, 100);
                   }}
                 >
                   <Text style={styles.editModalButtonText}>프로필 사진 변경</Text>
