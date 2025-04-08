@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
   categoryIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 5,
   },
   categoryName: {
     fontSize: 12,
