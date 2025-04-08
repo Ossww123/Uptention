@@ -126,9 +126,12 @@ const GiftBottomSheet = ({
   };
 
   // 사용자 목록 렌더링
-  const renderUserItem = ({ item }) => (
+  const renderUserItem = ({ item, index }) => (
     <TouchableOpacity
-      style={styles.userItem}
+      style={[
+        styles.userItem,
+        index !== users.length - 1 && styles.userItemWithBorder
+      ]}
       onPress={() => handleSelectUser(item)}
     >
       <Text style={styles.userName}>{item.name}</Text>
@@ -584,9 +587,11 @@ const styles = StyleSheet.create({
   userItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 15,
+    padding: 15
+  },
+  userItemWithBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#f0f0f0'
   },
   userName: {
     fontSize: 16,
