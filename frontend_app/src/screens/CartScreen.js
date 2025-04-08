@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { get, post, patch, del } from "../services/api";
@@ -93,6 +94,137 @@ const CartScreen = ({ navigation }) => {
         return item;
       })
     );
+  };
+
+  // 키보드 입력으로 수량 변경 함수
+  const handleQuantityChange = (cartId, text) => {
+    // 숫자만 입력 가능하도록 필터링
+    const numericValue = text.replace(/[^0-9]/g, '');
+    
+    // 빈 문자열은 그대로 허용 (임시 상태로 저장)
+    let newValue = numericValue;
+    
+    // 앞에 오는 0 제거 (예: "01" -> "1"), 단 완전히 비어있게 되면 빈 문자열 유지
+    if (newValue !== '') {
+      newValue = newValue.replace(/^0+/, '') || '';
+    }
+    
+    // 숫자로 변환 (빈 문자열이면 0으로 처리)
+    let numValue = newValue === '' ? 0 : parseInt(newValue, 10);
+    
+    // 99 초과 값 처리
+    if (numValue > 99) numValue = 99;
+    
+    // 문자열 값으로 변환 (빈 문자열이면 그대로 유지)
+    newValue = newValue === '' ? '' : numValue.toString();
+
+    setCartItems((prevItems) =>
+      prevItems.map((item) => {
+        if (item.cartId === cartId) {
+          // 이전 타이머가 있다면 취소
+          if (quantityTimersRef.current[cartId]) {
+            clearTimeout(quantityTimersRef.current[cartId]);
+          }
+
+          // 빈 문자열이 아닌 경우에만 API 호출과 totalPrice 계산
+          if (newValue !== '') {
+            // 새 타이머 설정 (1초 후 API 호출)
+            quantityTimersRef.current[cartId] = setTimeout(() => {
+              // 실제 API 호출 전에 유효성 검사 (1~99 범위)
+              const validValue = Math.max(1, Math.min(99, numValue));
+              updateCartItemQuantity(cartId, validValue);
+              delete quantityTimersRef.current[cartId];
+              
+              // 입력값이 0이었다면 UI에서 1로 표시 (API 호출 후)
+              if (numValue === 0) {
+                setCartItems(prevItems => 
+                  prevItems.map(item => 
+                    item.cartId === cartId 
+                      ? {...item, quantity: 1, totalPrice: item.price} 
+                      : item
+                  )
+                );
+              }
+            }, 1000);
+
+            return {
+              ...item,
+              quantity: newValue, // 임시로 빈 문자열 혹은 입력된 값 그대로 표시
+              totalPrice: numValue * item.price,
+            };
+          } else {
+            // 빈 문자열인 경우 quantity만 업데이트하고 totalPrice는 유지
+            return {
+              ...item,
+              quantity: newValue, // 빈 문자열 그대로 표시
+            };
+          }
+        }
+        return item;
+      })
+    );
+  };
+
+  // 키보드 입력이 끝난 후 호출되는 함수
+  const handleQuantityBlur = (cartId, quantity) => {
+    // 빈 문자열이거나 0인 경우 기본값 1로 설정
+    if (quantity === '' || quantity === '0') {
+      setCartItems((prevItems) =>
+        prevItems.map((item) => {
+          if (item.cartId === cartId) {
+            return {
+              ...item,
+              quantity: 1,
+              totalPrice: 1 * item.price,
+            };
+          }
+          return item;
+        })
+      );
+      
+      // API 호출로 서버에 업데이트
+      updateCartItemQuantity(cartId, 1);
+      return;
+    }
+    
+    // 문자열을 숫자로 변환
+    const numValue = parseInt(quantity, 10);
+    
+    // 숫자가 유효하지 않은 경우 기본값 1로 설정
+    if (isNaN(numValue) || numValue < 1) {
+      setCartItems((prevItems) =>
+        prevItems.map((item) => {
+          if (item.cartId === cartId) {
+            return {
+              ...item,
+              quantity: 1,
+              totalPrice: 1 * item.price,
+            };
+          }
+          return item;
+        })
+      );
+      
+      // API 호출로 서버에 업데이트
+      updateCartItemQuantity(cartId, 1);
+    } else if (numValue > 99) {
+      // 99 초과인 경우 최대값 99로 설정
+      setCartItems((prevItems) =>
+        prevItems.map((item) => {
+          if (item.cartId === cartId) {
+            return {
+              ...item,
+              quantity: 99,
+              totalPrice: 99 * item.price,
+            };
+          }
+          return item;
+        })
+      );
+      
+      // API 호출로 서버에 업데이트
+      updateCartItemQuantity(cartId, 99);
+    }
   };
 
   // 수량 변경 API 호출
@@ -316,7 +448,32 @@ const CartScreen = ({ navigation }) => {
               >
                 <Text style={styles.quantityButtonText}>-</Text>
               </TouchableOpacity>
-              <Text style={styles.quantity}>{item.quantity}</Text>
+              
+              {/* 키보드 입력을 위한 TextInput 추가 */}
+              <TextInput
+                style={styles.quantityInput}
+                value={String(item.quantity)}
+                onChangeText={(text) => handleQuantityChange(item.cartId, text)}
+                onBlur={() => handleQuantityBlur(item.cartId, item.quantity)}
+                keyboardType="number-pad"
+                maxLength={2} // 99까지만 입력가능하므로 최대 2자리
+                selectTextOnFocus={true} // 포커스시 전체 텍스트 선택
+                onFocus={() => {
+                  // 포커스 시 텍스트 전체 선택을 위해 기존 값 임시 저장
+                  const currentQuantity = String(item.quantity);
+                  if (currentQuantity === '1') {
+                    // 1인 경우 임시로 빈 문자열로 설정하여 새로 입력 시작
+                    setCartItems(prevItems => 
+                      prevItems.map(i => 
+                        i.cartId === item.cartId 
+                          ? {...i, quantity: ''} 
+                          : i
+                      )
+                    );
+                  }
+                }}
+              />
+              
               <TouchableOpacity
                 onPress={() => updateQuantity(item.cartId, 1)}
                 style={styles.quantityButton}
@@ -446,7 +603,7 @@ const CartScreen = ({ navigation }) => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="chevron-back" size={28} color="#000000" />
+          <Ionicons name="arrow-back" size={28} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>장바구니</Text>
         <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
@@ -617,9 +774,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  quantity: {
+  // 기존 quantity 스타일을 TextInput용으로 수정
+  quantityInput: {
     fontSize: 16,
     fontWeight: "500",
+    width: 40,
+    textAlign: "center",
+    padding: 0,
   },
   summaryContainer: {
     borderTopWidth: 1,

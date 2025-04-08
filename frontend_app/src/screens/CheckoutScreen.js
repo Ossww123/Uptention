@@ -371,6 +371,7 @@ const CheckoutScreen = ({ navigation, route }) => {
     navigation.navigate("AddressSearch", {
       prevItems: selectedItems,
       prevTotalPrice: totalPrice,
+      productId: route.params?.productId,
     });
   };
 
@@ -379,7 +380,7 @@ const CheckoutScreen = ({ navigation, route }) => {
       {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#000" />
+          <Ionicons name="arrow-back" size={28} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>주문서</Text>
         <View style={styles.placeholder} />
