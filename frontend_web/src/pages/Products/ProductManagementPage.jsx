@@ -13,6 +13,7 @@ const ProductManagementPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [hasMore, setHasMore] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
+  const [categories, setCategories] = useState([]);
   
   // 정렬 및 필터링 상태
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -49,17 +50,32 @@ const ProductManagementPage = () => {
     };
   }, [loading, hasMore, nextCursor, sortOption, selectedCategory, searchTerm]);
   
-  // 카테고리 목록
-  const categories = [
-    { id: "1", name: "가전디지털" },
-    { id: "2", name: "뷰티" },
-    { id: "3", name: "리빙/키친" },
-    { id: "4", name: "패션의류/잡화" },
-    { id: "5", name: "문화여가" },
-    { id: "6", name: "생활용품" },
-    { id: "7", name: "식품" },
-    { id: "8", name: "키즈" },
-  ];
+  // 카테고리 목록을 API에서 가져오는 함수
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 다시 로그인해주세요.');
+      }
+
+      const response = await axios.get(`${API_BASE_URL}/api/category`, {
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      setCategories(response.data);
+    } catch (err) {
+      console.error('카테고리 로딩 오류:', err);
+      setError('카테고리 정보를 불러오는 데 실패했습니다.');
+    }
+  };
+
+  // 컴포넌트 마운트 시 카테고리 로드
+  useEffect(() => {
+    fetchCategories();
+  }, []);
   
   // 정렬 옵션
   const sortOptions = [
