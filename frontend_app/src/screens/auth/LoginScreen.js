@@ -27,6 +27,7 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   console.log('LoginScreen 렌더링됨');
 
@@ -38,6 +39,9 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
 
   // 로그인 처리 함수
   const handleLogin = async () => {
+    if (loading || isProcessing) {
+      return;
+    }
     // 입력값 검증
     if (!username.trim() || !password.trim()) {
       Alert.alert('오류', '아이디와 비밀번호를 입력해주세요.');
@@ -47,7 +51,8 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
     try {
       console.log('로그인 시도:', { username, password: '********' });
       setLoading(true);
-      
+      setIsProcessing(true);
+
       // FCM 토큰 가져오기 (이미 api.js에서 자동으로 헤더에 추가됨)
       await FCMUtils.getFCMToken();
   
@@ -134,6 +139,9 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
       Alert.alert('로그인 실패', '서버 연결에 문제가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setLoading(false);
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 500);
     }
   };
 
@@ -194,16 +202,19 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
             </View>
 
             <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.submitButtonText}>로그인</Text>
-              )}
-            </TouchableOpacity>
+      style={[
+        styles.submitButton,
+        (loading || isProcessing) && styles.disabledButton // 비활성화 스타일 추가
+      ]}
+      onPress={handleLogin}
+      disabled={loading || isProcessing} // 두 상태 모두 체크
+    >
+      {loading ? (
+        <ActivityIndicator color="#FFFFFF" size="small" />
+      ) : (
+        <Text style={styles.submitButtonText}>로그인</Text>
+      )}
+    </TouchableOpacity>
 
             <Text style={styles.noteText}>
               * 계정이 없으신 경우 관리자에게 문의하세요.
@@ -294,6 +305,9 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  disabledButton: {
+    backgroundColor: '#CCCCCC', // 비활성화 상태의 버튼 색상
   },
 });
 
