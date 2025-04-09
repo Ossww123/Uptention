@@ -372,16 +372,21 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <View style={styles.divider} />
           <Text style={styles.category}>{product.categoryName}</Text>
           <Text style={styles.name}>{product.name}</Text>
-          <Text style={styles.price}>{product.price} WORK</Text>
-
-          {product && product.quantity === 0 ? (
-            <Text style={styles.lowStockText}>품절입니다.</Text>
-          ) : (
-            product && product.quantity <= 5 && (
-              <Text style={styles.lowStockText}>
-                품절 임박! ({product.quantity}개 남음)
+          <View style={styles.priceStockContainer}>
+            <Text style={styles.price}>{product.price} WORK</Text>
+            {product.quantity > 0 ? (
+              <Text style={styles.stockText}>
+                남은 재고: {product.quantity}
               </Text>
-            )
+            ) : (
+              <Text style={styles.outOfStockText}>품절</Text>
+            )}
+          </View>
+
+          {product && product.quantity <= 5 && product.quantity > 0 && (
+            <Text style={styles.lowStockText}>
+              품절 임박! 재고가 얼마 남지 않았습니다.
+            </Text>
           )}
 
           <View style={styles.divider} />
@@ -399,23 +404,20 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
       {/* 하단 버튼 영역 - 3개 버튼으로 변경 */}
       <View style={styles.threeButtonContainer}>
-        <TouchableOpacity 
-          style={styles.buttonOutline} 
-          onPress={addToCart}
-        >
+        <TouchableOpacity style={styles.buttonOutline} onPress={addToCart}>
           <Text style={styles.buttonOutlineText}>장바구니</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.buttonOutline, isOutOfStock && { opacity: 0.5 }]} 
+        <TouchableOpacity
+          style={[styles.buttonOutline, isOutOfStock && { opacity: 0.5 }]}
           onPress={buyNow}
           disabled={isOutOfStock}
         >
           <Text style={styles.buttonOutlineText}>바로 구매</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.buttonFilled, isOutOfStock && { opacity: 0.5 }]} 
+        <TouchableOpacity
+          style={[styles.buttonFilled, isOutOfStock && { opacity: 0.5 }]}
           onPress={sendGift}
           disabled={isOutOfStock}
         >
@@ -685,6 +687,22 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 5,
+  },
+  priceStockContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  stockText: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '500',
+  },
+  outOfStockText: {
+    fontSize: 14,
+    color: '#F44336',
+    fontWeight: '500',
   },
 });
 
