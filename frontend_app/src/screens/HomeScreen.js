@@ -467,7 +467,7 @@ useFocusEffect(
           source={require('../../assets/업텐션 캐릭터.png')}
           style={styles.welcomeImage}
         />
-        <Text style={styles.welcomeText}>반가워요, {userInfo?.name || '사용자'}님!</Text>
+        <Text style={styles.welcomeText}>반가워요, 오늘도 화이팅!</Text>
         <ActivityIndicator size="large" color="#FF8C00" />
       </View>
     ) : (

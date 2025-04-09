@@ -91,35 +91,20 @@ const AddressDetailScreen = ({ navigation, route }) => {
       // route.params에서 필요한 모든 파라미터 추출
       const { productId } = route.params || {};
 
-      // navigation.reset({
-      //   index: 3,
-      //   routes: [
-      //     { name: 'StoreMain' },
-      //     {
-      //       name: 'ProductDetail',
-      //       params: { productId: productId }  // 저장된 productId 사용
-      //     },
-      //     { name: 'Cart' },
-      //     {
-      //       name: 'CheckoutScreen',
-      //       params: {
-      //         address: completeAddress,
-      //         selectedItems: prevItems,
-      //         totalPrice: prevTotalPrice,
-      //         productId: productId  // productId도 함께 전달 (필요시)
-      //       }
-      //     }
-      //   ]
-      // });
       navigation.reset({
-        index: 2, // 2번째 화면(결제페이지)으로 이동
+        index: 2,
         routes: [
           { name: "StoreMain" },
           { name: "Cart" },
           {
             name: "CheckoutScreen",
             params: {
-              address: completeAddress,
+              address: {
+                zonecode: address.zonecode,
+                roadAddress: address.roadAddress,
+                detailAddress: trimmedAddress,
+                buildingName: address.buildingName || ''
+              },
               selectedItems: prevItems,
               totalPrice: prevTotalPrice,
             },
