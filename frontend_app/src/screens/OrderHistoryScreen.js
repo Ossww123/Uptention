@@ -19,6 +19,7 @@ const OrderHistoryScreen = () => {
   const [activeTab, setActiveTab] = useState('PURCHASE');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cursor, setCursor] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
@@ -51,7 +52,8 @@ const OrderHistoryScreen = () => {
       console.log('useFocusEffect 실행됨', {
         productsLength: orders.length,
         isInitialLoad: isInitialLoadRef.current,
-        loadRequested: loadRequestedRef.current
+        loadRequested: loadRequestedRef.current,
+        initialLoading
       });
 
       // 이전에 이미 요청했는지 확인
@@ -59,10 +61,12 @@ const OrderHistoryScreen = () => {
         if (isInitialLoadRef.current) {
           console.log('최초 로드 실행');
           loadRequestedRef.current = true;
+          setOrders([]); // 기존 데이터 초기화
           fetchOrders(null, true);
           isInitialLoadRef.current = false;
         } else {
           console.log('이미 로드됨, 데이터 갱신');
+          setInitialLoading(true);
           fetchOrders(null, true);
         }
       } else {
@@ -73,7 +77,7 @@ const OrderHistoryScreen = () => {
       return () => {
         loadRequestedRef.current = false;
       };
-    }, [activeTab]) // activeTab이 변경될 때마다 실행
+    }, [activeTab])
   );
 
   // 탭 변경 시 데이터 초기화 및 로드
@@ -84,6 +88,7 @@ const OrderHistoryScreen = () => {
     setOrders([]);
     setCursor(null);
     setHasNextPage(true);
+    setInitialLoading(true);
     fetchOrders(null, true);
   }, [activeTab]);
 
@@ -94,6 +99,7 @@ const OrderHistoryScreen = () => {
         refresh,
         loading,
         hasNextPage,
+        initialLoading,
         currentApiCallId: currentApiCallIdRef.current,
         requestTimer: requestTimerRef.current !== null
       });
@@ -107,21 +113,6 @@ const OrderHistoryScreen = () => {
       // 진행 중인 API 호출 체크
       if (loading || currentApiCallIdRef.current) {
         console.log(`이미 로딩 중, 요청 무시 (${callId})`);
-        return;
-      }
-
-      // 더블 요청 방지 타이머 설정 (1초)
-      requestTimerRef.current = setTimeout(() => {
-        requestTimerRef.current = null;
-      }, 1000);
-
-      // 현재 API 호출 ID 설정
-      currentApiCallIdRef.current = callId;
-
-      // 다음 페이지가 없고 리프레시가 아닐 경우 무시
-      if (!hasNextPage && !refresh) {
-        console.log(`다음 페이지 없음, 요청 무시 (${callId})`);
-        currentApiCallIdRef.current = null;
         return;
       }
 
@@ -166,6 +157,7 @@ const OrderHistoryScreen = () => {
       console.error('주문 내역 조회 오류:', error);
     } finally {
       setLoading(false);
+      setInitialLoading(false);
       setRefreshing(false);
       currentApiCallIdRef.current = null;
       if (requestTimerRef.current) {
@@ -226,7 +218,7 @@ const OrderHistoryScreen = () => {
   );
 
   const renderFooter = () => {
-    if (!loading) return null;
+    if (initialLoading || refreshing || !loading) return null;
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FF8C00" />
@@ -235,7 +227,8 @@ const OrderHistoryScreen = () => {
   };
 
   const renderEmpty = () => {
-    if (loading) return null;
+    if (initialLoading || refreshing) return null;
+
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>주문 내역이 없습니다.</Text>
@@ -274,14 +267,19 @@ const OrderHistoryScreen = () => {
         onEndReachedThreshold={0.2}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={initialLoading || refreshing}
             onRefresh={onRefresh}
+            colors={['#FF8C00']}
+            tintColor="#FF8C00"
           />
         }
         ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmpty}
         removeClippedSubviews={false}
-        contentContainerStyle={orders.length === 0 ? styles.emptyListContent : null}
+        contentContainerStyle={[
+          styles.listContentContainer,
+          orders.length === 0 && styles.emptyListContent
+        ]}
       />
 
       <OrderDetailBottomSheet
@@ -361,20 +359,24 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   emptyContainer: {
-    padding: 20,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 100,
+    marginTop: -50,
   },
   emptyText: {
     fontSize: 16,
     color: '#666666',
+    textAlign: 'center',
   },
   loadingContainer: {
     padding: 20,
     alignItems: 'center',
   },
-  emptyListContent: {
+  listContentContainer: {
     flexGrow: 1,
+  },
+  emptyListContent: {
     justifyContent: 'center',
   },
 });
