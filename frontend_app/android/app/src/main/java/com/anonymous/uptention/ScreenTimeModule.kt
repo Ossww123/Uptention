@@ -76,7 +76,20 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     // 접근성 설정 화면 열기
     @ReactMethod
     fun openAccessibilitySettings() {
+        // 안드로이드에서는 직접 앱의 접근성 권한 페이지로 이동이 제한될 수 있음
+        val componentName = ComponentName(reactApplicationContext.packageName, 
+            "com.anonymous.uptention.AppBlockerService")
+        
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        try {
+            val bundle = Bundle()
+            bundle.putString(":settings:fragment_args_key", componentName.flattenToString())
+            intent.putExtra(":settings:fragment_args_key", componentName.flattenToString())
+            intent.putExtra(":settings:show_fragment_args", bundle)
+        } catch (e: Exception) {
+            // 실패 시 일반 접근성 설정으로 이동
+        }
+        
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         reactApplicationContext.startActivity(intent)
     }
@@ -103,6 +116,12 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     @ReactMethod
     fun openUsageSettings() {
         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+        // 직접 앱의 권한 페이지로 이동 시도
+        try {
+            intent.data = Uri.parse("package:" + reactApplicationContext.packageName)
+        } catch (e: Exception) {
+            // 실패 시 일반 권한 페이지로 이동
+        }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         reactApplicationContext.startActivity(intent)
     }
