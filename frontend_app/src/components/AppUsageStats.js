@@ -1,6 +1,13 @@
 // AppUsageStats.js 수정
 import React from "react";
-import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
@@ -13,7 +20,7 @@ const AppUsageStats = ({
   weekInfo = null, // 주간 정보 추가
 }) => {
   const navigation = useNavigation();
-  
+
   // 자세히 보기 버튼 핸들러
   const handleViewDetail = () => {
     navigation.navigate("UsageStatsDetail", {
@@ -24,13 +31,13 @@ const AppUsageStats = ({
       weekInfo: weekInfo, // 주간 정보 전달
     });
   };
-  
+
   // 총 스크린 사용 시간 계산
   const calculateTotalScreenTime = () => {
     if (Object.keys(appUsage).length === 0) return 0;
-    
+
     return Object.values(appUsage).reduce(
-      (total, app) => total + app.usageTime, 
+      (total, app) => total + app.usageTime,
       0
     );
   };
@@ -50,27 +57,38 @@ const AppUsageStats = ({
   };
 
   // 앱 아이콘 렌더링 함수
-  const renderAppIcon = (data) => {
-    if (data.iconBase64) {
-      // 앱 아이콘이 있는 경우 Base64로 인코딩된 이미지 렌더링
+const renderAppIcon = (data) => {
+  if (data.iconBase64) {
+    if (data.iconBase64.type === 'resource') {
+      // 리소스 이미지인 경우
       return (
         <Image
-          source={{ uri: `data:image/png;base64,${data.iconBase64}` }}
+          source={data.iconBase64.source}
           style={styles.appIcon}
           resizeMode="contain"
         />
       );
-    } else {
-      // 앱 아이콘이 없는 경우 기본 이미지 사용
+    } else if (data.iconBase64.type === 'base64') {
+      // Base64 이미지인 경우
       return (
         <Image
-          source={require("../../assets/android-icon.png")}
+          source={{ uri: `data:image/png;base64,${data.iconBase64.data}` }}
           style={styles.appIcon}
           resizeMode="contain"
         />
       );
     }
-  };
+  }
+  
+  // 아이콘이 없는 경우 기본 이미지 사용
+  return (
+    <Image
+      source={require("../../assets/android-icon.png")}
+      style={styles.appIcon}
+      resizeMode="contain"
+    />
+  );
+};
 
   // 타이틀 텍스트 결정
   const title = (() => {

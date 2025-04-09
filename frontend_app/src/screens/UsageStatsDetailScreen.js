@@ -81,26 +81,38 @@ const UsageStatsDetailScreen = ({ route, navigation }) => {
   };
   
   // 앱 아이콘 렌더링 함수
-  const renderAppIcon = (data) => {
-    if (data.iconBase64) {
+const renderAppIcon = (data) => {
+  if (data.iconBase64) {
+    if (data.iconBase64.type === 'resource') {
+      // 리소스 이미지인 경우
       return (
         <Image
-          source={{ uri: `data:image/png;base64,${data.iconBase64}` }}
+          source={data.iconBase64.source}
           style={styles.appIcon}
           resizeMode="contain"
         />
       );
-    } else {
-      // 앱 아이콘이 없는 경우 기본 이미지 사용
+    } else if (data.iconBase64.type === 'base64') {
+      // Base64 이미지인 경우
       return (
         <Image
-          source={require("../../assets/android-icon.png")}
+          source={{ uri: `data:image/png;base64,${data.iconBase64.data}` }}
           style={styles.appIcon}
           resizeMode="contain"
         />
       );
     }
-  };
+  }
+  
+  // 아이콘이 없는 경우 기본 이미지 사용
+  return (
+    <Image
+      source={require("../../assets/android-icon.png")}
+      style={styles.appIcon}
+      resizeMode="contain"
+    />
+  );
+};
   
   // 앱 목록 아이템 렌더링
   const renderAppItem = ({ item, index }) => {

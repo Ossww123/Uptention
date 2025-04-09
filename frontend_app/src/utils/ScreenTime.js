@@ -12,6 +12,12 @@ const appNameCache = {};
  */
 const appIconCache = {};
 
+// 미리 알려진 앱들의 아이콘 로드
+const knownAppIcons = {
+  'youtube_icon': require('../../assets/app-icons/youtube.png'),
+  'phantom_icon': require('../../assets/app-icons/phantom.png'),
+};
+
 /**
  * ScreenTime 관련 기능을 제공하는 유틸리티 클래스
  */
@@ -120,12 +126,29 @@ class ScreenTime {
       return appIconCache[packageName];
     }
 
+    // 미리 알려진 앱 확인
+    if (packageName === "com.google.android.youtube") {
+      appIconCache[packageName] = { type: 'resource', source: knownAppIcons['youtube_icon'] };
+      return appIconCache[packageName];
+    }
+    
+    if (packageName === "app.phantom") {
+      appIconCache[packageName] = { type: 'resource', source: knownAppIcons['phantom_icon'] };
+      return appIconCache[packageName];
+    }
+
     // 네이티브 모듈에서 앱 아이콘 가져오기
     try {
       const base64Icon = await ScreenTimeModule.getAppIcon(packageName);
-      // 캐시에 저장
-      appIconCache[packageName] = base64Icon;
-      return base64Icon;
+      
+      if (base64Icon) {
+        // 캐시에 저장
+        appIconCache[packageName] = { type: 'base64', data: base64Icon };
+      } else {
+        appIconCache[packageName] = null;
+      }
+      
+      return appIconCache[packageName];
     } catch (error) {
       console.error(`앱 아이콘 가져오기 오류 (${packageName}):`, error);
       return null;
@@ -140,18 +163,32 @@ class ScreenTime {
   static async getMultipleAppIcons(packageNames) {
     // 캐시되지 않은 패키지명만 필터링
     const uncachedPackages = packageNames.filter((pkg) => !appIconCache[pkg]);
+    
+    // 먼저 알려진 앱들에 대해 처리
+    uncachedPackages.forEach(pkg => {
+      if (pkg === "com.google.android.youtube") {
+        appIconCache[pkg] = { type: 'resource', source: knownAppIcons['youtube_icon'] };
+      } else if (pkg === "app.phantom") {
+        appIconCache[pkg] = { type: 'resource', source: knownAppIcons['phantom_icon'] };
+      }
+    });
+    
+    // 아직 캐시되지 않은 앱들만 필터링
+    const stillUncachedPackages = uncachedPackages.filter(pkg => !appIconCache[pkg]);
 
-    if (uncachedPackages.length > 0) {
+    if (stillUncachedPackages.length > 0) {
       try {
         // 캐시되지 않은 패키지명들의 앱 아이콘 가져오기
         const newAppIcons = await ScreenTimeModule.getMultipleAppIcons(
-          uncachedPackages
+          stillUncachedPackages
         );
 
         // 캐시에 저장
         Object.keys(newAppIcons).forEach((pkg) => {
           if (newAppIcons[pkg]) {
-            appIconCache[pkg] = newAppIcons[pkg];
+            appIconCache[pkg] = { type: 'base64', data: newAppIcons[pkg] };
+          } else {
+            appIconCache[pkg] = null;
           }
         });
       } catch (error) {
@@ -233,13 +270,10 @@ class ScreenTime {
    */
   static async getWeeklyScreenTime(daysToFetch = 14) {
     const data = await ScreenTimeModule.getWeeklyScreenTime(daysToFetch);
-    // console.log("ScreenTime.js - Raw Weekly Data:", data);
+    // ScreenTime.js - Raw Weekly Data: data
 
     if (data.hasPermission && data.appUsage) {
-      // console.log(
-      //   "ScreenTime.js - App Usage Data Exists:",
-      //   Object.keys(data.appUsage)
-      // );
+      // ScreenTime.js - App Usage Data Exists: Object.keys(data.appUsage)
       // 앱 이름 정보 가져오기
       const packageNames = Object.keys(data.appUsage);
       const appNames = await this.getAllAppNames(packageNames);
@@ -248,11 +282,7 @@ class ScreenTime {
       const appIcons = await this.getMultipleAppIcons(packageNames);
 
       // 최종 데이터 확인
-      // console.log("ScreenTime.js - Processed Weekly Data:", {
-      //   packageCount: packageNames.length,
-      //   hasAppNames: !!appNames,
-      //   hasAppIcons: !!appIcons,
-      // });
+      // ScreenTime.js - Processed Weekly Data: { packageCount: packageNames.length, hasAppNames: !!appNames, hasAppIcons: !!appIcons }
 
       // 앱 사용 데이터에 앱 이름과 아이콘 정보 추가
       const appUsageWithNames = {};
