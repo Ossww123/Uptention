@@ -51,90 +51,15 @@ const HomeScreen = ({ navigation }) => {
   const progress = (remainingMinutes / maxFocusMinutes) * 100; // 남은 시간의 비율
   const svgProgress = (progress * circum) / 100; // progress가 클수록 비어있는 상태
   const [isLoading, setIsLoading] = useState(true);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false); // 초기 로딩 상태 추적
 
   // FCM 메시지 리스너 내부 수정
-useEffect(() => {
-  // 포그라운드 메시지 리스너
-  const unsubscribe = messaging().onMessage(async (remoteMessage) => {
-    console.log('HomeScreen - 포그라운드 메시지 수신:', remoteMessage);
-    
-    // 알림 받은 후 최신 알림 개수 조회
-    try {
-      const { data, ok } = await get('/notifications/count', {
-        params: { read: false }
-      });
+  useEffect(() => {
+    // 포그라운드 메시지 리스너
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      console.log('HomeScreen - 포그라운드 메시지 수신:', remoteMessage);
       
-      if (ok) {
-        setUnreadNotifications(data.count);
-      }
-    } catch (error) {
-      console.error('알림 개수 조회 오류:', error);
-      // API 호출 실패 시 기존 방식으로 알림 개수 증가
-      setUnreadNotifications(prev => prev + 1);
-    }
-    
-    // 알림 내용 확인 (옵션)
-    const notificationTitle = remoteMessage.notification?.title || '새 알림';
-    const notificationBody = remoteMessage.notification?.body || '새 알림이 도착했습니다';
-    
-    console.log(`알림 내용: ${notificationTitle} - ${notificationBody}`);
-  });
-  
-  return unsubscribe;
-}, []);
-
-useEffect(() => {
-  const loadAllData = async () => {
-    setIsLoading(true);
-    const startTime = Date.now(); // 로딩 시작 시간 기록
-    
-    try {
-      // AsyncStorage에서 이름 로드 (선택적)
-      const cachedName = await AsyncStorage.getItem('user_name');
-      if (cachedName) {
-        setUserInfo(prev => ({ ...prev, name: cachedName }));
-      }
-      
-      // 병렬로 모든 API 호출
-      const [userInfoResponse, pointResponse, focusResponse] = await Promise.all([
-        fetchUserInfo(),
-        fetchUserPoint(),
-        fetchDailyFocusTime()
-      ]);
-      
-      // 사용자 이름 캐싱 (선택적)
-      if (userInfoResponse?.name) {
-        await AsyncStorage.setItem('user_name', userInfoResponse.name);
-      }
-    } catch (error) {
-      console.error('데이터 로딩 오류:', error);
-    } finally {
-      // 최소 표시 시간 계산 (1000ms = 1초)
-      const elapsedTime = Date.now() - startTime;
-      const minimumDisplayTime = 1500; // 최소 1초
-      
-      if (elapsedTime < minimumDisplayTime) {
-        // 최소 표시 시간이 지나지 않았다면 타이머 설정
-        setTimeout(() => {
-          setIsLoading(false);
-        }, minimumDisplayTime - elapsedTime);
-      } else {
-        // 이미 최소 시간을 넘었다면 바로 로딩 상태 해제
-        setIsLoading(false);
-      }
-    }
-  };
-
-  if (userId && authToken) {
-    loadAllData();
-  }
-}, [userId, authToken]);
-
-// useFocusEffect 부분 수정
-useFocusEffect(
-  useCallback(() => {
-    // 화면이 포커스될 때마다 알림 카운트 조회 API 호출
-    const fetchUnreadNotificationCount = async () => {
+      // 알림 받은 후 최신 알림 개수 조회
       try {
         const { data, ok } = await get('/notifications/count', {
           params: { read: false }
@@ -145,16 +70,105 @@ useFocusEffect(
         }
       } catch (error) {
         console.error('알림 개수 조회 오류:', error);
+        // API 호출 실패 시 기존 방식으로 알림 개수 증가
+        setUnreadNotifications(prev => prev + 1);
+      }
+      
+      // 알림 내용 확인 (옵션)
+      const notificationTitle = remoteMessage.notification?.title || '새 알림';
+      const notificationBody = remoteMessage.notification?.body || '새 알림이 도착했습니다';
+      
+      console.log(`알림 내용: ${notificationTitle} - ${notificationBody}`);
+    });
+    
+    return unsubscribe;
+  }, []);
+
+  // 최초 한 번만 데이터 로드 (초기 로딩)
+  useEffect(() => {
+    const loadAllData = async () => {
+      // 이미 초기 로딩이 완료된 경우 로딩 오버레이를 표시하지 않음
+      if (initialLoadComplete) return;
+      
+      setIsLoading(true);
+      const startTime = Date.now(); // 로딩 시작 시간 기록
+      
+      try {
+        // AsyncStorage에서 이름 로드 (선택적)
+        const cachedName = await AsyncStorage.getItem('user_name');
+        if (cachedName) {
+          setUserInfo(prev => ({ ...prev, name: cachedName }));
+        }
+        
+        // 병렬로 모든 API 호출
+        const [userInfoResponse, pointResponse, focusResponse] = await Promise.all([
+          fetchUserInfo(),
+          fetchUserPoint(),
+          fetchDailyFocusTime()
+        ]);
+        
+        // 사용자 이름 캐싱 (선택적)
+        if (userInfoResponse?.name) {
+          await AsyncStorage.setItem('user_name', userInfoResponse.name);
+        }
+        
+        setInitialLoadComplete(true); // 초기 로딩 완료 표시
+      } catch (error) {
+        console.error('데이터 로딩 오류:', error);
+      } finally {
+        // 최소 표시 시간 계산 (1000ms = 1초)
+        const elapsedTime = Date.now() - startTime;
+        const minimumDisplayTime = 1500; // 최소 1.5초
+        
+        if (elapsedTime < minimumDisplayTime) {
+          // 최소 표시 시간이 지나지 않았다면 타이머 설정
+          setTimeout(() => {
+            setIsLoading(false);
+          }, minimumDisplayTime - elapsedTime);
+        } else {
+          // 이미 최소 시간을 넘었다면 바로 로딩 상태 해제
+          setIsLoading(false);
+        }
       }
     };
 
-    fetchUnreadNotificationCount();
-    
-    return () => {
-      // 클린업 코드 (필요시)
-    };
-  }, [])
-);
+    if (userId && authToken) {
+      loadAllData();
+    }
+  }, [userId, authToken, initialLoadComplete]);
+
+  // 화면 포커스시 로딩 화면 없이 데이터만 조용히 업데이트
+  useFocusEffect(
+    useCallback(() => {
+      const updateDataSilently = async () => {
+        // 초기 로딩이 완료된 상태에서만 조용히 데이터 업데이트
+        if (initialLoadComplete && userId && authToken) {
+          try {
+            // 알림 카운트 조회
+            const { data, ok } = await get('/notifications/count', {
+              params: { read: false }
+            });
+            
+            if (ok) {
+              setUnreadNotifications(data.count);
+            }
+            
+            // 다른 데이터 조용히 업데이트 (로딩 화면 없이)
+            fetchUserPoint();
+            fetchDailyFocusTime();
+          } catch (error) {
+            console.error('데이터 업데이트 오류:', error);
+          }
+        }
+      };
+
+      updateDataSilently();
+      
+      return () => {
+        // 클린업 코드 (필요시)
+      };
+    }, [userId, authToken, initialLoadComplete])
+  );
   
   // JWT 토큰에서 payload를 추출하는 함수
   const parseJwt = (token) => {
@@ -330,7 +344,7 @@ useFocusEffect(
 
   // 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
-    if (!userId || !authToken) return;
+    if (!userId || !authToken) return null;
 
     try {
       const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
@@ -340,14 +354,16 @@ useFocusEffect(
       });
       
       setUserInfo(response.data);
+      return response.data;
     } catch (error) {
       console.error('사용자 정보 조회 오류:', error);
+      return null;
     }
   };
 
   // 사용자 포인트 조회 함수
   const fetchUserPoint = async () => {
-    if (!userId || !authToken) return;
+    if (!userId || !authToken) return null;
 
     try {
       const response = await axios.get(`${API_BASE_URL}/api/users/${userId}/point`, {
@@ -356,14 +372,16 @@ useFocusEffect(
         }
       });
       setUserPoint(response.data.point);
+      return response.data;
     } catch (error) {
       console.error('포인트 조회 오류:', error);
+      return null;
     }
   };
 
   // 오늘의 집중 시간 조회 함수
   const fetchDailyFocusTime = async () => {
-    if (!userId || !authToken) return;
+    if (!userId || !authToken) return null;
 
     try {
       // 현재 시간을 KST로 변환
@@ -418,6 +436,8 @@ useFocusEffect(
         console.error('잘못된 응답 형식:', response.data);
         setDailyFocusTime(0);
       }
+      
+      return response.data;
     } catch (error) {
       console.error('집중 시간 조회 오류:', error);
       if (error.response) {
@@ -428,20 +448,9 @@ useFocusEffect(
         });
       }
       setDailyFocusTime(0);
+      return null;
     }
   };
-
-  // 화면이 포커스될 때마다 데이터 업데이트
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      if (userId && authToken) {
-        fetchUserPoint();
-        fetchDailyFocusTime();
-      }
-    });
-
-    return unsubscribe;
-  }, [navigation, userId, authToken]);
 
   useEffect(() => {
     // 현재 시간과 다음 자정까지의 시간 계산

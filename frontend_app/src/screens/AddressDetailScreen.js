@@ -24,6 +24,8 @@ const AddressDetailScreen = ({ navigation, route }) => {
   
   const MAX_LENGTH = 30; // 최대 글자 수 제한
 
+  
+
   // 상세주소 유효성 검사 및 필터링
   const validateAndFilterAddress = (text) => {
     // 특수문자 필터링 (허용: 숫자, 영문, 한글, 공백, 쉼표, 하이픈, 괄호)
@@ -54,14 +56,23 @@ const AddressDetailScreen = ({ navigation, route }) => {
       setError("상세주소는 최소 2자 이상 입력해주세요");
       return;
     }
-
+  
+    // 완전한 주소 객체 생성
+    const completeAddress = {
+      zonecode: address.zonecode,
+      roadAddress: address.roadAddress,
+      detailAddress: trimmedAddress,
+      buildingName: address.buildingName || ''
+    };
+  
     // PaymentBottomSheet에서 온 경우
     if (prevScreen === "PaymentBottomSheet") {
       navigation.navigate("ProductDetail", {
-        address: completeAddress,
+        address: completeAddress,  // 주소 객체 전체를 전달
         product: product,
         productId: product.itemId,
         showPaymentSheet: true,
+        fromAddressDetail: true  // 주소 입력에서 돌아왔음을 표시
       });
     }
     // DeliveryAddressBottomSheet에서 온 경우
@@ -69,40 +80,20 @@ const AddressDetailScreen = ({ navigation, route }) => {
       // 기존 item의 모든 정보를 유지하고 주소만 업데이트
       const updatedItem = {
         ...item,
-        address: `${address.roadAddress} ${detailAddress}`,
+        address: `${address.roadAddress} ${trimmedAddress}`,
       };
-
+  
       navigation.navigate("GiftDetail", {
         item: updatedItem,
         refreshKey: Date.now(),
         showDeliveryAddressBottomSheet: true,
       });
     }
-    // CheckoutScreen에서 온 경우 (이 부분 수정)
+    // CheckoutScreen에서 온 경우
     else {
       // route.params에서 필요한 모든 파라미터 추출
       const { productId } = route.params || {};
-
-      // navigation.reset({
-      //   index: 3,
-      //   routes: [
-      //     { name: 'StoreMain' },
-      //     {
-      //       name: 'ProductDetail',
-      //       params: { productId: productId }  // 저장된 productId 사용
-      //     },
-      //     { name: 'Cart' },
-      //     {
-      //       name: 'CheckoutScreen',
-      //       params: {
-      //         address: completeAddress,
-      //         selectedItems: prevItems,
-      //         totalPrice: prevTotalPrice,
-      //         productId: productId  // productId도 함께 전달 (필요시)
-      //       }
-      //     }
-      //   ]
-      // });
+  
       navigation.reset({
         index: 2, // 2번째 화면(결제페이지)으로 이동
         routes: [
@@ -111,7 +102,7 @@ const AddressDetailScreen = ({ navigation, route }) => {
           {
             name: "CheckoutScreen",
             params: {
-              address: completeAddress,
+              address: `${address.roadAddress} ${trimmedAddress}`,
               selectedItems: prevItems,
               totalPrice: prevTotalPrice,
             },
@@ -170,6 +161,7 @@ const styles = StyleSheet.create({
   },
   detailContainer: {
     marginBottom: 30,
+    position: 'relative',
   },
   label: {
     fontSize: 14,
@@ -193,6 +185,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 16,
     backgroundColor: "#F8F8F8",
+  },
+  inputError: {
+    borderColor: "#FF3B30",
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  charCount: {
+    position: 'absolute',
+    right: 0,
+    bottom: -20,
+    fontSize: 12,
+    color: '#999',
   },
   button: {
     backgroundColor: "#FF8C00",
