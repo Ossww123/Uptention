@@ -507,6 +507,7 @@ const StoreScreen = ({ navigation }) => {
             onChangeText={setSearchText}
             onSubmitEditing={handleSearch}
             returnKeyType="search"
+            maxLength={50}
           />
           {searchText.length > 0 && (
             <TouchableOpacity
