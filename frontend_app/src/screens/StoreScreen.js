@@ -539,9 +539,6 @@ const StoreScreen = ({ navigation }) => {
           onPress={() => setShowSortOptions(!showSortOptions)}
         >
           <Text style={styles.sortButtonText}>
-            {currentSort.id === "LOW_PRICE" || currentSort.id === "HIGH_PRICE"
-              ? "↑↓ "
-              : ""}
             {currentSort.name}
           </Text>
           <Ionicons

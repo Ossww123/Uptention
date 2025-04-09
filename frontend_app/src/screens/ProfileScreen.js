@@ -454,7 +454,7 @@ const ProfileScreen = ({ navigation }) => {
               <View style={styles.profileImageContainer}>
                 {userInfo?.profileImage ? (
                   <Image 
-                    source={{ uri: `${userInfo.profileImage}?w=100&h=100&t=cover&f=webp` }} 
+                    source={{ uri: `${userInfo.profileImage}?w=105&h=105&t=cover&f=webp` }} 
                     style={styles.profileImage}
                     resizeMode="cover"
                   />

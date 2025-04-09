@@ -1,5 +1,5 @@
 // src/components/PaymentBottomSheet.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,30 +10,30 @@ import {
   Animated,
   ScrollView,
   Alert,
-  ActivityIndicator
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { post } from '../services/api';
-import { API_BASE_URL } from '../config/config';
-import { useWallet } from '../contexts/WalletContext';
-import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { post } from "../services/api";
+import { API_BASE_URL } from "../config/config";
+import { useWallet } from "../contexts/WalletContext";
+import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
 
-const { height } = Dimensions.get('window');
+const { height } = Dimensions.get("window");
 
-const SHOP_WALLET_ADDRESS = '4uDQ7uwEe1iy8R5vYtSvD6vNfcyeTLy8YKyVe44RKR92';
+const SHOP_WALLET_ADDRESS = "4uDQ7uwEe1iy8R5vYtSvD6vNfcyeTLy8YKyVe44RKR92";
 
-const PaymentBottomSheet = ({ 
-  visible, 
-  onClose, 
-  product,
-  navigation
-}) => {
+const PaymentBottomSheet = ({ visible, onClose, product, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [address, setAddress] = useState(null);
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { tokenBalance, publicKey, sendSPLToken } = useWallet();
   const { authToken } = useAuth();
+
+  // 마지막 결제 시도 시간을 저장하는 ref
+  const lastPaymentAttempt = useRef(0);
+  const PAYMENT_COOLDOWN = 3000; // 3초 쿨다운
 
   // 최근 배송지 조회
   const fetchRecentAddress = async () => {
@@ -43,28 +43,28 @@ const PaymentBottomSheet = ({
         `${API_BASE_URL}/api/orders/delivery-info`,
         {
           headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${authToken}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       if (response.data && response.data.address) {
         // 주소 문자열을 파싱하여 주소 객체 형식으로 변환
-        const addressParts = response.data.address.split(' ');
-        const zonecode = addressParts[0].replace('[', '').replace(']', '');
-        const roadAddress = addressParts.slice(1, -1).join(' ');
+        const fullAddress = response.data.address;
+        const addressParts = fullAddress.split(" ");
         const detailAddress = addressParts[addressParts.length - 1];
+        const roadAddress = addressParts.slice(0, -1).join(" ");
 
         setAddress({
-          zonecode,
+          zonecode: "", // API 응답에 우편번호가 없으므로 빈 값으로 설정
           roadAddress,
           detailAddress,
-          buildingName: ''
+          buildingName: "",
         });
       }
     } catch (error) {
-      console.error('최근 배송지 조회 실패:', error);
+      console.error("최근 배송지 조회 실패:", error);
     } finally {
       setIsLoadingAddress(false);
     }
@@ -73,109 +73,163 @@ const PaymentBottomSheet = ({
   // 컴포넌트 마운트 시 최근 배송지 조회
   useEffect(() => {
     // 주소 검색에서 돌아온 경우가 아닐 때만 최근 배송지 조회
-    if (visible && !navigation.getState().routes.some(route => 
-      route.name === 'AddressSearch' || route.name === 'AddressDetail'
-    )) {
+    if (
+      visible &&
+      !navigation
+        .getState()
+        .routes.some(
+          (route) =>
+            route.name === "AddressSearch" || route.name === "AddressDetail"
+        )
+    ) {
       fetchRecentAddress();
     }
   }, [visible]);
 
   // 라우트 파라미터에서 주소 정보 받아오기
-useEffect(() => {
-  if (visible) {
-    // 현재 네비게이션 상태에서 파라미터 확인
-    const currentRoute = navigation.getState().routes[navigation.getState().routes.length - 1];
-    console.log('Current Route Params:', currentRoute.params);
-    
-    // 주소 정보가 있을 때만 주소를 업데이트
-    if (currentRoute.params?.address) {
-      console.log('받은 주소:', currentRoute.params.address);
-      
-      // 주소가 객체인 경우 (AddressDetailScreen에서 온 경우)
-      if (typeof currentRoute.params.address === 'object') {
-        const addressObj = currentRoute.params.address;
-        setAddress(addressObj);
-      } 
-      // 주소가 문자열인 경우 (이전 코드와의 호환성)
-      else if (typeof currentRoute.params.address === 'string') {
-        // 문자열 주소를 파싱하여 객체로 변환
-        const addressParts = currentRoute.params.address.split(' ');
-        const zonecode = addressParts[0].replace('[', '').replace(']', '');
-        const roadAddress = addressParts.slice(1, -1).join(' ');
-        const detailAddress = addressParts[addressParts.length - 1];
-        
-        setAddress({
-          zonecode,
-          roadAddress,
-          detailAddress,
-          buildingName: ''
-        });
+  useEffect(() => {
+    if (visible) {
+      // 현재 네비게이션 상태에서 파라미터 확인
+      const currentRoute =
+        navigation.getState().routes[navigation.getState().routes.length - 1];
+      console.log("Current Route Params:", currentRoute.params);
+
+      // 주소 정보가 있을 때만 주소를 업데이트
+      if (currentRoute.params?.address) {
+        console.log("받은 주소:", currentRoute.params.address);
+        // 주소 정보가 있을 때만 주소를 업데이트
+        if (currentRoute.params?.address) {
+          const receivedAddress = currentRoute.params.address;
+          console.log("받은 주소:", receivedAddress);
+
+          // 주소가 객체인 경우 (AddressDetailScreen에서 온 경우)
+          if (typeof receivedAddress === "object") {
+            setAddress({
+              zonecode: receivedAddress.zonecode || "",
+              roadAddress: receivedAddress.roadAddress,
+              detailAddress: receivedAddress.detailAddress,
+              buildingName: receivedAddress.buildingName || "",
+            });
+          }
+          // 주소가 문자열인 경우 (이전 코드와의 호환성)
+          else if (typeof receivedAddress === "string") {
+            // 문자열 주소를 파싱하여 객체로 변환
+            const addressParts = receivedAddress.split(" ");
+            const zonecodeMatch = addressParts[0].match(/\[(\d+)\]/);
+            const zonecode = zonecodeMatch ? zonecodeMatch[1] : "";
+            const detailAddress = addressParts[addressParts.length - 1];
+            const roadAddress = zonecode
+              ? addressParts.slice(1, -1).join(" ")
+              : addressParts.slice(0, -1).join(" ");
+
+            setAddress({
+              zonecode,
+              roadAddress,
+              detailAddress,
+              buildingName: "",
+            });
+          }
+
+          setIsLoadingAddress(false);
+        }
+
+        setIsLoadingAddress(false);
       }
-      
-      setIsLoadingAddress(false);
     }
-  }
-}, [visible, navigation.getState()]);
+  }, [visible, navigation.getState()]);
 
   const handlePayment = async () => {
     try {
+      // 현재 시간 체크
+      const now = Date.now();
+
+      // 이전 결제 시도로부터 3초가 지나지 않았다면 무시
+      if (now - lastPaymentAttempt.current < PAYMENT_COOLDOWN) {
+        console.log("결제 쿨다운 중입니다.");
+        return;
+      }
+
+      // 결제 진행 중이면 중복 실행 방지
+      if (isProcessing) {
+        console.log("결제가 이미 진행 중입니다.");
+        return;
+      }
+
       if (!address) {
-        Alert.alert('주문 실패', '배송 주소를 입력해주세요.');
+        Alert.alert("주문 실패", "배송 주소를 입력해주세요.");
         return;
       }
 
       setLoading(true);
-      
+      setIsProcessing(true);
+      lastPaymentAttempt.current = now;
+
+      // 전체 주소를 하나의 문자열로 결합 (우편번호 포함)
+      const fullAddress = address.zonecode
+        ? `[${address.zonecode}] ${address.roadAddress} ${address.detailAddress}`
+        : `${address.roadAddress} ${address.detailAddress}`;
+
       // 1. 주문 검증 API 요청 데이터 준비
-      const orderVerifyData = [{
-        itemId: product.itemId,
-        price: product.price,
-        quantity: 1
-      }];
-      
-      console.log('=== 주문 검증 시작 ===');
-      console.log('검증 요청 데이터:', JSON.stringify(orderVerifyData, null, 2));
-      
+      const orderVerifyData = [
+        {
+          itemId: product.itemId,
+          price: product.price,
+          quantity: 1,
+        },
+      ];
+
+      console.log("=== 주문 검증 시작 ===");
+      console.log(
+        "검증 요청 데이터:",
+        JSON.stringify(orderVerifyData, null, 2)
+      );
+
       // 2. 주문 검증 API 호출
-      const { data: verifyData, ok, status } = await post("/orders/verify", orderVerifyData);
-      
-      console.log('검증 응답:', JSON.stringify(verifyData, null, 2));
-      console.log('검증 상태:', ok ? '성공' : '실패');
-      
+      const {
+        data: verifyData,
+        ok,
+        status,
+      } = await post("/orders/verify", orderVerifyData);
+
+      console.log("검증 응답:", JSON.stringify(verifyData, null, 2));
+      console.log("검증 상태:", ok ? "성공" : "실패");
+
       if (ok) {
-        console.log('=== 검증 성공: 결제 진행 ===');
-        
+        console.log("=== 검증 성공: 결제 진행 ===");
+
         // 3. 결제 처리 로직
         const purchaseData = {
-          items: [{
-            itemId: product.itemId,
-            quantity: 1
-          }],
-          address: `${address.roadAddress} ${address.detailAddress}`
+          items: [
+            {
+              itemId: product.itemId,
+              quantity: 1,
+            },
+          ],
+          address: fullAddress,
         };
 
-        console.log('결제 요청 데이터:', JSON.stringify(purchaseData, null, 2));
+        console.log("결제 요청 데이터:", JSON.stringify(purchaseData, null, 2));
 
         const response = await axios.post(
           `${API_BASE_URL}/api/orders/purchase`,
           purchaseData,
           {
             headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'Content-Type': 'application/json'
-            }
+              Authorization: `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+            },
           }
         );
 
-        console.log('결제 API 응답:', JSON.stringify(response.data, null, 2));
+        console.log("결제 API 응답:", JSON.stringify(response.data, null, 2));
 
         const { orderId, paymentAmount } = response.data;
 
         if (orderId && paymentAmount) {
-          console.log('=== 토큰 전송 시작 ===');
-          console.log('주문 번호:', orderId);
-          console.log('결제 금액:', paymentAmount);
-          
+          console.log("=== 토큰 전송 시작 ===");
+          console.log("주문 번호:", orderId);
+          console.log("결제 금액:", paymentAmount);
+
           // 4. 토큰 전송
           const memo = `ORDER_${orderId}`;
           await sendSPLToken(
@@ -184,98 +238,105 @@ useEffect(() => {
             memo
           );
 
-          console.log('=== 토큰 전송 완료 ===');
+          console.log("=== 토큰 전송 완료 ===");
 
           onClose();
-          navigation.navigate('OrderComplete', {
+          navigation.navigate("OrderComplete", {
             orderId: orderId,
-            paymentAmount: paymentAmount
+            paymentAmount: paymentAmount,
           });
         }
       } else {
         // 검증 실패 처리
         let errorMessage = "상품 검증 중 오류가 발생했습니다.";
-        
+
         if (verifyData?.code) {
           switch (verifyData.code) {
-            case 'X002':
+            case "X002":
               errorMessage = "검증할 상품 목록이 없습니다.";
               break;
-            case 'ITEM_001':
+            case "ITEM_001":
               errorMessage = "상품이 존재하지 않습니다.";
               break;
-            case 'ITEM_004':
+            case "ITEM_004":
               errorMessage = "재고가 부족한 상품이 있습니다.";
               break;
-            case 'ITEM_006':
+            case "ITEM_006":
               errorMessage = "상품 가격이 변경되었습니다.";
               break;
-            case 'ITEM_007':
+            case "ITEM_007":
               errorMessage = "삭제된 상품입니다.";
               break;
             default:
-              errorMessage = verifyData.message || "상품 검증 중 오류가 발생했습니다.";
+              errorMessage =
+                verifyData.message || "상품 검증 중 오류가 발생했습니다.";
           }
         }
-        
-        console.log('=== 검증 실패 ===');
-        console.log('실패 코드:', verifyData?.code);
-        console.log('실패 사유:', errorMessage);
-        
+
+        console.log("=== 검증 실패 ===");
+        console.log("실패 코드:", verifyData?.code);
+        console.log("실패 사유:", errorMessage);
+
         Alert.alert("주문 확인", errorMessage, [
           {
             text: "확인",
             onPress: () => {
               onClose();
               navigation.goBack();
-            }
-          }
+            },
+          },
         ]);
       }
     } catch (error) {
-      console.error('=== 결제 오류 ===');
-      console.error('에러 타입:', error.name);
-      console.error('에러 메시지:', error.message);
-      console.error('에러 응답:', error.response?.data);
-      
+      console.error("=== 결제 오류 ===");
+      console.error("에러 타입:", error.name);
+      console.error("에러 메시지:", error.message);
+      console.error("에러 응답:", error.response?.data);
+
       let errorMessage = "결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.";
-      
+
       if (error.response?.data?.code) {
         switch (error.response.data.code) {
-          case 'ITEM_004':
+          case "ITEM_004":
             errorMessage = "재고가 부족한 상품이 있습니다.";
             break;
-          case 'X002':
-            errorMessage = error.response.data.message || "[address] 배송 주소는 필수입니다.";
+          case "X002":
+            errorMessage =
+              error.response.data.message ||
+              "[address] 배송 주소는 필수입니다.";
             break;
-          case 'ITEM_001':
+          case "ITEM_001":
             errorMessage = "상품이 존재하지 않습니다.";
             break;
           default:
-            errorMessage = error.response.data.message || "결제 처리 중 오류가 발생했습니다.";
+            errorMessage =
+              error.response.data.message ||
+              "결제 처리 중 오류가 발생했습니다.";
         }
       }
-      
-      Alert.alert(
-        "오류",
-        errorMessage,
-        [
-          {
-            text: "확인",
-            onPress: onClose
-          }
-        ]
-      );
+
+      Alert.alert("오류", errorMessage, [
+        {
+          text: "확인",
+          onPress: onClose,
+        },
+      ]);
     } finally {
       setLoading(false);
+      setIsProcessing(false);
+
+      // 3초 후에 다시 결제 가능하도록 설정
+      setTimeout(() => {
+        lastPaymentAttempt.current = 0;
+      }, PAYMENT_COOLDOWN);
     }
   };
 
   // 주소 검색 화면으로 이동
   const handleAddressSearch = () => {
     navigation.navigate("AddressSearch", {
-      prevScreen: 'PaymentBottomSheet',
-      product: product
+      prevScreen: "PaymentBottomSheet",
+      product: product,
     });
   };
 
@@ -306,18 +367,23 @@ useEffect(() => {
                 <View style={styles.addressTextContainer}>
                   <Text style={styles.addressLabel}>배송 주소</Text>
                   {isLoadingAddress ? (
-                    <Text style={styles.addressText}>배송지 정보를 불러오는 중...</Text>
+                    <Text style={styles.addressText}>
+                      배송지 정보를 불러오는 중...
+                    </Text>
                   ) : address ? (
                     <>
                       <Text style={styles.addressText}>
-                        [{address.zonecode}] {address.roadAddress}
+                        {address.zonecode ? `[${address.zonecode}] ` : ""}
+                        {address.roadAddress}
                       </Text>
                       <Text style={styles.addressDetail}>
                         {address.detailAddress}
                       </Text>
                     </>
                   ) : (
-                    <Text style={styles.addressText}>배송지를 입력해주세요</Text>
+                    <Text style={styles.addressText}>
+                      배송지를 입력해주세요
+                    </Text>
                   )}
                 </View>
                 <TouchableOpacity
@@ -347,7 +413,7 @@ useEffect(() => {
                 <View style={styles.paymentRow}>
                   <Text style={styles.paymentLabel}>보유 WORK</Text>
                   <Text style={styles.paymentValue}>
-                    {publicKey ? `${tokenBalance} WORK` : '지갑 연결 필요'}
+                    {publicKey ? `${tokenBalance} WORK` : "지갑 연결 필요"}
                   </Text>
                 </View>
                 <View style={styles.paymentRow}>
@@ -356,11 +422,16 @@ useEffect(() => {
                 </View>
                 <View style={[styles.paymentRow, styles.finalPaymentRow]}>
                   <Text style={styles.paymentLabel}>결제 후 WORK</Text>
-                  <Text style={[
-                    styles.paymentValue,
-                    (!publicKey || (tokenBalance - product.price) < 0) && styles.insufficientBalance
-                  ]}>
-                    {publicKey ? `${(tokenBalance - product.price).toFixed(1)} WORK` : '-'}
+                  <Text
+                    style={[
+                      styles.paymentValue,
+                      (!publicKey || tokenBalance - product.price < 0) &&
+                        styles.insufficientBalance,
+                    ]}
+                  >
+                    {publicKey
+                      ? `${(tokenBalance - product.price).toFixed(1)} WORK`
+                      : "-"}
                   </Text>
                 </View>
               </View>
@@ -369,22 +440,37 @@ useEffect(() => {
 
           {/* 결제 버튼 */}
           <View style={styles.paymentButtonContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.paymentButton,
-                (!publicKey || (tokenBalance - product.price) < 0 || !address) && styles.disabledButton
+                (!publicKey ||
+                  tokenBalance - product.price < 0 ||
+                  !address ||
+                  isProcessing) &&
+                  styles.disabledButton,
               ]}
               onPress={handlePayment}
-              disabled={loading || !publicKey || (tokenBalance - product.price) < 0 || !address}
+              disabled={
+                loading ||
+                !publicKey ||
+                tokenBalance - product.price < 0 ||
+                !address ||
+                isProcessing
+              }
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.paymentButtonText}>
-                  {!publicKey ? '지갑 연결 필요' : 
-                   !address ? '배송지 입력 필요' :
-                   (tokenBalance - product.price) < 0 ? 'WORK 부족' : 
-                   '결제하기'}
+                  {!publicKey
+                    ? "지갑 연결 필요"
+                    : !address
+                    ? "배송지 입력 필요"
+                    : tokenBalance - product.price < 0
+                    ? "WORK 부족"
+                    : isProcessing
+                    ? "결제 처리 중..."
+                    : "결제하기"}
                 </Text>
               )}
             </TouchableOpacity>
@@ -398,29 +484,29 @@ useEffect(() => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
   },
   bottomSheet: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: height * 0.8,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   closeButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 15,
     padding: 5,
   },
@@ -430,16 +516,16 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 15,
   },
   addressContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   iconContainer: {
     marginRight: 10,
@@ -450,90 +536,90 @@ const styles = StyleSheet.create({
   },
   addressLabel: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 5,
   },
   addressText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 3,
   },
   addressDetail: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   editButton: {
     padding: 5,
   },
   productItem: {
     padding: 15,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
     borderRadius: 10,
   },
   productBrand: {
     fontSize: 14,
-    color: '#888',
+    color: "#888",
     marginBottom: 5,
   },
   productName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 5,
   },
   productQuantity: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 5,
   },
   productPrice: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   paymentInfoContainer: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: "#f8f8f8",
     borderRadius: 12,
     padding: 15,
   },
   paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 10,
   },
   finalPaymentRow: {
     borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
+    borderTopColor: "#e5e5e5",
     marginTop: 10,
     paddingTop: 15,
   },
   paymentLabel: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   paymentValue: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   paymentButtonContainer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: "#f0f0f0",
   },
   paymentButton: {
-    backgroundColor: '#FF8C00',
+    backgroundColor: "#FF8C00",
     borderRadius: 25,
     paddingVertical: 15,
-    alignItems: 'center',
+    alignItems: "center",
   },
   paymentButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   insufficientBalance: {
-    color: '#FF3B30',
+    color: "#FF3B30",
   },
   disabledButton: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: "#CCCCCC",
   },
 });
 

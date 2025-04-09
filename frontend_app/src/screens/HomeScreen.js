@@ -469,7 +469,7 @@ const HomeScreen = ({ navigation }) => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {isLoading ? (
       <View style={styles.welcomeOverlay}>
         <Image
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
   subContainer: {
     width: '100%',
     height: 55,
-    marginTop: 40,
+    marginTop: 20,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     shadowColor: '#000000',
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     height: 55,
     backgroundColor: '#FF8C00',
     borderRadius: 10,
-    marginTop: 45,
+    marginTop: 20,
     justifyContent: 'center',
     alignItems: 'center'
   },

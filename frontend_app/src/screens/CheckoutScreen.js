@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,11 @@ const CheckoutScreen = ({ navigation, route }) => {
   const [totalPrice, setTotalPrice] = useState(initialPrice);
   const [address, setAddress] = useState(null);
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // 마지막 결제 시도 시간을 저장하는 ref
+  const lastPaymentAttempt = useRef(0);
+  const PAYMENT_COOLDOWN = 3000; // 3초 쿨다운
 
   const { tokenBalance, publicKey, sendSPLToken } = useWallet();
   const { authToken } = useAuth();
@@ -44,16 +49,24 @@ const CheckoutScreen = ({ navigation, route }) => {
 
       if (response.data && response.data.address) {
         // 주소 문자열을 파싱하여 주소 객체 형식으로 변환
-        const addressParts = response.data.address.split(" ");
-        const zonecode = addressParts[0].replace("[", "").replace("]", "");
-        const roadAddress = addressParts.slice(1, -1).join(" ");
+        const fullAddress = response.data.address;
+        const addressParts = fullAddress.split(' ');
+        
+        // 우편번호 추출 (대괄호 제거)
+        const zonecodeMatch = addressParts[0].match(/\[(\d+)\]/);
+        const zonecode = zonecodeMatch ? zonecodeMatch[1] : '';
+        
+        // 상세주소는 마지막 부분
         const detailAddress = addressParts[addressParts.length - 1];
+        
+        // 도로명 주소는 우편번호와 상세주소 사이의 모든 부분
+        const roadAddress = addressParts.slice(1, -1).join(' ');
 
         setAddress({
           zonecode,
           roadAddress,
           detailAddress,
-          buildingName: "",
+          buildingName: ''
         });
       }
     } catch (error) {
@@ -77,9 +90,17 @@ const CheckoutScreen = ({ navigation, route }) => {
 
     // 주소 정보가 있을 때만 주소를 업데이트
     if (route.params?.address) {
-      console.log("받은 주소:", route.params.address);
-      setAddress(route.params.address);
-      setIsLoadingAddress(false); // 주소 검색에서 돌아왔을 때 로딩 상태 해제
+      const receivedAddress = route.params.address;
+      console.log("받은 주소:", receivedAddress);
+      
+      // 주소 객체 형식 통일
+      setAddress({
+        zonecode: receivedAddress.zonecode || '',
+        roadAddress: receivedAddress.roadAddress,
+        detailAddress: receivedAddress.detailAddress,
+        buildingName: receivedAddress.buildingName || ''
+      });
+      setIsLoadingAddress(false);
 
       // 주소 검색에서 돌아올 때 이전 상품 정보 복원
       if (route.params.selectedItems) {
@@ -159,6 +180,21 @@ const CheckoutScreen = ({ navigation, route }) => {
   // 결제하기
   const handlePayment = async () => {
     try {
+      // 현재 시간 체크
+      const now = Date.now();
+      
+      // 이전 결제 시도로부터 3초가 지나지 않았다면 무시
+      if (now - lastPaymentAttempt.current < PAYMENT_COOLDOWN) {
+        console.log('결제 쿨다운 중입니다.');
+        return;
+      }
+      
+      // 결제 진행 중이면 중복 실행 방지
+      if (isProcessing) {
+        console.log('결제가 이미 진행 중입니다.');
+        return;
+      }
+
       // 입력값 검증
       if (!selectedItems || selectedItems.length === 0) {
         Alert.alert("주문 실패", "주문할 상품이 없습니다.");
@@ -169,6 +205,9 @@ const CheckoutScreen = ({ navigation, route }) => {
         Alert.alert("주문 실패", "배송 주소를 입력해주세요.");
         return;
       }
+
+      setIsProcessing(true);
+      lastPaymentAttempt.current = now;
 
       // 1. 주문 검증 API 요청 데이터 준비
       const orderVerifyData = selectedItems.map((item) => ({
@@ -203,13 +242,12 @@ const CheckoutScreen = ({ navigation, route }) => {
               itemId: item.itemId,
               quantity: item.quantity,
             })),
-            address: `${address.roadAddress} ${address.detailAddress}`,
+            address: address.zonecode 
+              ? `[${address.zonecode}] ${address.roadAddress} ${address.detailAddress}`
+              : `${address.roadAddress} ${address.detailAddress}`,
           };
 
-          console.log(
-            "주문 요청 데이터:",
-            JSON.stringify(requestData, null, 2)
-          );
+          console.log("주문 요청 데이터:", JSON.stringify(requestData, null, 2));
 
           const response = await axios.post(
             `${API_BASE_URL}/api/orders/purchase`,
@@ -363,6 +401,13 @@ const CheckoutScreen = ({ navigation, route }) => {
           onPress: () => shouldGoBack && navigation.goBack(),
         },
       ]);
+    } finally {
+      setIsProcessing(false);
+      
+      // 3초 후에 다시 결제 가능하도록 설정
+      setTimeout(() => {
+        lastPaymentAttempt.current = 0;
+      }, PAYMENT_COOLDOWN);
     }
   };
 
@@ -504,17 +549,19 @@ const CheckoutScreen = ({ navigation, route }) => {
         <TouchableOpacity
           style={[
             styles.paymentButton,
-            (!publicKey || paymentInfo.finalAmount < 0) &&
+            (!publicKey || paymentInfo.finalAmount < 0 || isProcessing) &&
               styles.disabledButton,
           ]}
           onPress={handlePayment}
-          disabled={!publicKey || paymentInfo.finalAmount < 0}
+          disabled={!publicKey || paymentInfo.finalAmount < 0 || isProcessing}
         >
           <Text style={styles.paymentButtonText}>
             {!publicKey
               ? "지갑 연결 필요"
               : paymentInfo.finalAmount < 0
               ? "WORK 부족"
+              : isProcessing
+              ? "결제 처리 중..."
               : "결제하기"}
           </Text>
         </TouchableOpacity>

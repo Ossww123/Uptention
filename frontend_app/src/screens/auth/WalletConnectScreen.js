@@ -32,10 +32,9 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
     isPhantomInstalled,
     publicKey
   } = useWallet();
-  const { userId, authToken } = useAuth();
+  const { userId, authToken, login} = useAuth();
   const [isConnecting, setIsConnecting] = React.useState(false);
 
-  // publicKey가 변경될 때마다 실행
   React.useEffect(() => {
     const connectWallet = async () => {
       if (publicKey && !isConnecting) {
@@ -48,7 +47,7 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
               'Content-Type': 'application/json'
             }
           });
-
+  
           // 지갑 연결 API 호출
           const response = await axios.post(
             `${API_BASE_URL}/api/users/${userId}/wallet?wallet=${publicKey}`,
@@ -60,9 +59,25 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
               }
             }
           );
-
+  
           if (response.status === 200) {
             console.log('지갑 연결 성공:', response.data);
+            
+            // 새로운 코드: 응답 헤더에서 새 인증 토큰 확인
+            const newAuthToken = response.headers['authorization'] || 
+                                response.headers['Authorization'];
+                                
+            if (newAuthToken) {
+              // 새 토큰이 수신되면 업데이트
+              console.log('새 인증 토큰 수신:', newAuthToken);
+              // "Bearer " 접두사가 있으면 제거
+              const token = newAuthToken.startsWith('Bearer ') 
+                ? newAuthToken.substring(7) 
+                : newAuthToken;
+              
+              await login(token, userId);
+            }
+            
             onWalletConnected();
           }
         } catch (error) {
@@ -81,7 +96,7 @@ const WalletConnectScreen = ({ navigation, onWalletConnected }) => {
         }
       }
     };
-
+  
     connectWallet();
   }, [publicKey, userId, authToken, onWalletConnected, isConnecting]);
 

@@ -21,24 +21,22 @@ const AddressDetailScreen = ({ navigation, route }) => {
   } = route.params;
   const [detailAddress, setDetailAddress] = useState("");
   const [error, setError] = useState("");
-  
-  const MAX_LENGTH = 30; // 최대 글자 수 제한
 
-  
+  const MAX_LENGTH = 30; // 최대 글자 수 제한
 
   // 상세주소 유효성 검사 및 필터링
   const validateAndFilterAddress = (text) => {
     // 특수문자 필터링 (허용: 숫자, 영문, 한글, 공백, 쉼표, 하이픈, 괄호)
     const filteredText = text.replace(/[^\w\sㄱ-ㅎㅏ-ㅣ가-힣,\-()]/g, "");
-    
+
     // 연속된 공백 하나로 변환
     const normalizedText = filteredText.replace(/\s+/g, " ");
-    
+
     // 최대 길이 제한
     const trimmedText = normalizedText.substring(0, MAX_LENGTH);
-    
+
     setDetailAddress(trimmedText);
-    
+
     // 유효성 검사
     if (trimmedText.trim().length < 2) {
       setError("상세주소는 최소 2자 이상 입력해주세요");
@@ -51,38 +49,43 @@ const AddressDetailScreen = ({ navigation, route }) => {
   const handleSave = () => {
     // 앞뒤 공백 제거
     const trimmedAddress = detailAddress.trim();
-    
+
     if (trimmedAddress.length < 2) {
       setError("상세주소는 최소 2자 이상 입력해주세요");
       return;
-    }
-  
-    // 완전한 주소 객체 생성
+    } // 완전한 주소 객체 생성
     const completeAddress = {
       zonecode: address.zonecode,
       roadAddress: address.roadAddress,
       detailAddress: trimmedAddress,
-      buildingName: address.buildingName || ''
+      buildingName: address.buildingName || "",
     };
-  
+
+    // 전체 주소 문자열 생성 (필요한 경우 사용)
+    const fullAddressString = address.zonecode
+      ? `[${address.zonecode}] ${address.roadAddress} ${trimmedAddress}`
+      : `${address.roadAddress} ${trimmedAddress}`;
+
     // PaymentBottomSheet에서 온 경우
     if (prevScreen === "PaymentBottomSheet") {
       navigation.navigate("ProductDetail", {
-        address: completeAddress,  // 주소 객체 전체를 전달
+        address: completeAddress, // 주소 객체 전체를 전달
         product: product,
         productId: product.itemId,
         showPaymentSheet: true,
-        fromAddressDetail: true  // 주소 입력에서 돌아왔음을 표시
+        fromAddressDetail: true, // 주소 입력에서 돌아왔음을 표시
       });
     }
     // DeliveryAddressBottomSheet에서 온 경우
     else if (prevScreen === "DeliveryAddressBottomSheet") {
       // 기존 item의 모든 정보를 유지하고 주소만 업데이트
+      // 기존 item의 모든 정보를 유지하고 주소만 업데이트
       const updatedItem = {
         ...item,
-        address: `${address.roadAddress} ${trimmedAddress}`,
+        address: fullAddressString, // 문자열 형식 주소 사용
+        addressObject: completeAddress, // 객체 형식 주소도 함께 저장 (필요시)
       };
-  
+
       navigation.navigate("GiftDetail", {
         item: updatedItem,
         refreshKey: Date.now(),
@@ -93,7 +96,7 @@ const AddressDetailScreen = ({ navigation, route }) => {
     else {
       // route.params에서 필요한 모든 파라미터 추출
       const { productId } = route.params || {};
-  
+
       navigation.reset({
         index: 2, // 2번째 화면(결제페이지)으로 이동
         routes: [
@@ -136,11 +139,16 @@ const AddressDetailScreen = ({ navigation, route }) => {
           returnKeyType="done"
         />
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        <Text style={styles.charCount}>{detailAddress.length}/{MAX_LENGTH}</Text>
+        <Text style={styles.charCount}>
+          {detailAddress.length}/{MAX_LENGTH}
+        </Text>
       </View>
 
       <TouchableOpacity
-        style={[styles.button, (!detailAddress.trim() || error) && styles.buttonDisabled]}
+        style={[
+          styles.button,
+          (!detailAddress.trim() || error) && styles.buttonDisabled,
+        ]}
         onPress={handleSave}
         disabled={!detailAddress.trim() || !!error}
       >
@@ -161,7 +169,7 @@ const styles = StyleSheet.create({
   },
   detailContainer: {
     marginBottom: 30,
-    position: 'relative',
+    position: "relative",
   },
   label: {
     fontSize: 14,
@@ -195,11 +203,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   charCount: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     bottom: -20,
     fontSize: 12,
-    color: '#999',
+    color: "#999",
   },
   button: {
     backgroundColor: "#FF8C00",
