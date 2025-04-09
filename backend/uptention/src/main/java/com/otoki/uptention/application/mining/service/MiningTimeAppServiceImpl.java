@@ -62,16 +62,17 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	@Transactional
 	@Override
 	public void focusModeOn(FocusModeOnRequestDto focusModeOnRequestDto) {
-		LocalDateTime now = LocalDateTime.now();
-		LocalDateTime startInspectionTime = LocalDateTime.now().toLocalDate().atTime(14, 30);
-		LocalDateTime endInspectionTime = LocalDateTime.now().toLocalDate().atTime(15, 00);
-
-		if (now.isAfter(startInspectionTime) && now.isBefore(endInspectionTime)) {
-			throw new CustomException(ErrorCode.FOCUS_MODE_INSPECTION);
-		}
 
 		User loggedInUser = securityService.getLoggedInUser();
 		Company company = loggedInUser.getCompany();
+
+		LocalDateTime banTime = LocalDateTime.now();
+		LocalDateTime startInspectionTime = LocalDateTime.now().toLocalDate().atTime(14, 30);
+		LocalDateTime endInspectionTime = LocalDateTime.now().toLocalDate().atTime(15, 00);
+
+		if (banTime.isAfter(startInspectionTime) && banTime.isBefore(endInspectionTime)) {
+			throw new CustomException(ErrorCode.FOCUS_MODE_INSPECTION);
+		}
 
 		Float companyLatitude = company.getLatitude();
 		Float companyLongitude = company.getLongitude();
