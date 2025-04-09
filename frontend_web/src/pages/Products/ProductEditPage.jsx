@@ -331,11 +331,6 @@ const ProductEditPage = () => {
         ...updateData
       });
       
-      // 성공 후 3초 뒤 상품 목록 페이지로 이동
-      setTimeout(() => {
-        navigate('/admin/products');
-      }, 3000);
-      
     } catch (error) {
       
       if (error.response) {
