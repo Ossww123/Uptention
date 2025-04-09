@@ -136,7 +136,7 @@ const SplashScreen = ({ navigation }) => {
       <StatusBar translucent backgroundColor="transparent" />
       <View style={styles.logoContainer}>
         <Image
-          source={require('../../../assets/symbol.png')}
+          source={require('../../../assets/splashscreen_logo.png')}
           style={styles.logo}
           resizeMode="contain"
         />

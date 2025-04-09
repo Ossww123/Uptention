@@ -788,8 +788,8 @@ const styles = StyleSheet.create({
   subContainer: {
     width: "100%",
     height: 55,
-    marginTop: 40,
-    backgroundColor: "#FFFFFF",
+    marginTop: 20,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
@@ -838,9 +838,9 @@ const styles = StyleSheet.create({
     height: 55,
     backgroundColor: "#FF8C00",
     borderRadius: 10,
-    marginTop: 45,
-    justifyContent: "center",
-    alignItems: "center",
+    marginTop: 20,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   buttonText: {
     color: "#FFFFFF",
