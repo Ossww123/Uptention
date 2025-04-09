@@ -506,7 +506,7 @@ const ProductCreatePage = () => {
       });
 
       // API 호출
-      const response = await axios.post(
+      await axios.post(
         `${API_BASE_URL}/api/items`,
         formDataToSend,
         {

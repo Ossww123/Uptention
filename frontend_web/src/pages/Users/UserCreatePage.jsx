@@ -119,7 +119,7 @@ const UserCreatePage = () => {
         throw new Error("인증 토큰이 없습니다. 다시 로그인해주세요.");
       }
 
-      const response = await axios.get(
+      await axios.get(
         `${BASE_URL}/api/join/check-username?username=${formData.username}`,
         {
           headers: {
@@ -188,7 +188,7 @@ const UserCreatePage = () => {
         throw new Error("인증 토큰이 없습니다. 다시 로그인해주세요.");
       }
 
-      const response = await axios.get(
+      await axios.get(
         `${BASE_URL}/api/join/check-employee-number?employeeNumber=${formData.employeeNumber}`,
         {
           headers: {
@@ -316,7 +316,7 @@ const UserCreatePage = () => {
       }
 
       // API 호출
-      const response = await axios.post(`${BASE_URL}/api/join`, dataToSubmit, {
+      await axios.post(`${BASE_URL}/api/join`, dataToSubmit, {
         headers: {
           Authorization: `${token}`,
           "Content-Type": "application/json",
