@@ -47,7 +47,7 @@ const BottomTabNavigator = () => {
             backgroundColor: '#FFFFFF',
             borderTopWidth: 1,
             borderTopColor: '#E5E5EA',
-            elevation: 0,
+            elevation: 8,
           };
         })(),
         tabBarLabelStyle: {
