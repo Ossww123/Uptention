@@ -1,5 +1,5 @@
 // DailyView.js
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -32,19 +32,49 @@ const DailyView = forwardRef(({ scrollViewRef, onScroll, scrollPosition }, ref) 
   // 채굴 데이터 상태
   const [miningData, setMiningData] = useState([]);
 
+  // FlatList에 대한 ref 추가
+  const flatListRef = useRef(null);
+  
+  // 데이터 로딩 완료 상태 추적
+  const dataLoadedRef = useRef(false);
+
   // 부모 컴포넌트에서 호출할 수 있는 메서드 노출
   useImperativeHandle(ref, () => ({
-    refreshData: fetchMiningData
+    refreshData: async () => {
+      // 데이터 새로고침 및 스크롤
+      const result = await fetchMiningData();
+      // 새로고침 후 오늘 날짜로 스크롤
+      scrollToLatestData();
+      return result;
+    }
   }));
 
   useEffect(() => {
     fetchMiningData();
   }, []);
 
+  // 데이터 로드 후 스크롤 처리를 위한 효과 추가
+  useEffect(() => {
+    if (miningData.length > 0 && !loading) {
+      scrollToLatestData();
+    }
+  }, [miningData, loading]);
+
+  // 최신 데이터로 스크롤하는 함수
+  const scrollToLatestData = () => {
+    if (flatListRef.current) {
+      // 타이밍 이슈 해결을 위해 약간의 지연 추가
+      setTimeout(() => {
+        flatListRef.current.scrollToEnd({ animated: false });
+      }, 100);
+    }
+  };
+
   // API에서 채굴 데이터 가져오기
   const fetchMiningData = async () => {
     try {
       setLoading(true);
+      dataLoadedRef.current = false;
 
       // 날짜 범위 계산 (오늘 포함 지난 14일)
       const endDate = new Date();
@@ -135,6 +165,9 @@ const DailyView = forwardRef(({ scrollViewRef, onScroll, scrollPosition }, ref) 
 
         // 현재 선택된 날짜의 앱 사용 데이터 가져오기
         fetchAppUsageData(todayData);
+
+        // 데이터 로드 완료 설정
+        dataLoadedRef.current = true;
       } else {
         console.error("채굴 시간 데이터 가져오기 실패:", response.data);
 
@@ -157,7 +190,12 @@ const DailyView = forwardRef(({ scrollViewRef, onScroll, scrollPosition }, ref) 
 
         // 더미 앱 사용 데이터 설정
         setDummyAppUsageData();
+        
+        // 데이터 로드 완료 설정
+        dataLoadedRef.current = true;
       }
+      
+      return true; // 처리 완료
     } catch (error) {
       console.error("채굴 시간 데이터 가져오기 오류:", error);
 
@@ -180,6 +218,11 @@ const DailyView = forwardRef(({ scrollViewRef, onScroll, scrollPosition }, ref) 
 
       // 더미 앱 사용 데이터 설정
       setDummyAppUsageData();
+      
+      // 데이터 로드 완료 설정
+      dataLoadedRef.current = true;
+      
+      return false; // 오류 발생
     } finally {
       setLoading(false);
     }
@@ -328,6 +371,7 @@ const DailyView = forwardRef(({ scrollViewRef, onScroll, scrollPosition }, ref) 
         selectedItem={selectedDayData}
         onSelectBar={handleSelectDay}
         dateRangeTitle={dateTitle}
+        flatListRef={flatListRef}
       />
   
       {/* 공통 채굴 통계 컴포넌트 사용 */}

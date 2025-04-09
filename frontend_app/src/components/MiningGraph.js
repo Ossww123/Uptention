@@ -21,6 +21,7 @@ const MiningGraph = ({
   onNextWeek = null,
   isCurrentWeek = true,
   isPrevDisabled = false,
+  flatListRef = null, // 추가된 prop
 }) => {
   // 최대 채굴 시간 계산 (8시간 = 480분)
   const MAX_MINING_TIME = 480;
@@ -36,78 +37,78 @@ const MiningGraph = ({
     const isToday = item.isToday || false;
 
     // 바의 색상 결정
-  let barStyle;
-  
-  if (!isScrollable) {
-    // WeeklyView인 경우 모든 막대를 주황색으로
-    barStyle = styles.selectedBar;
-  } else {
-    // DailyView인 경우
-    if (isSelected && isToday) {
-      // 오늘이면서 선택된 경우 진한 주황색
-      barStyle = styles.todaySelectedBar; // 이 스타일을 새로 추가해야 함
-    } else if (isSelected) {
-      // 선택되었지만 오늘이 아닌 경우 주황색
+    let barStyle;
+    
+    if (!isScrollable) {
+      // WeeklyView인 경우 모든 막대를 주황색으로
       barStyle = styles.selectedBar;
-    } else if (isToday) {
-      // 오늘이지만 선택되지 않은 경우 진한 회색
-      barStyle = styles.todayBar; // 이 스타일을 새로 추가해야 함
     } else {
-      // 그 외 일반적인 경우 기본 회색
-      barStyle = styles.inactiveBar;
+      // DailyView인 경우
+      if (isSelected && isToday) {
+        // 오늘이면서 선택된 경우 진한 주황색
+        barStyle = styles.todaySelectedBar; // 이 스타일을 새로 추가해야 함
+      } else if (isSelected) {
+        // 선택되었지만 오늘이 아닌 경우 주황색
+        barStyle = styles.selectedBar;
+      } else if (isToday) {
+        // 오늘이지만 선택되지 않은 경우 진한 회색
+        barStyle = styles.todayBar; // 이 스타일을 새로 추가해야 함
+      } else {
+        // 그 외 일반적인 경우 기본 회색
+        barStyle = styles.inactiveBar;
+      }
     }
-  }
 
-  // 텍스트 색상도 동일한 로직으로 결정
-  let textStyle;
-  
-  if (!isScrollable) {
-    // WeeklyView에서는 모든 텍스트를 주황색으로
-    textStyle = styles.selectedBarText;
-  } else {
-    // DailyView인 경우
-    if (isSelected && isToday) {
-      // 오늘이면서 선택된 경우 진한 주황색
-      textStyle = styles.todaySelectedBarText; // 이 스타일을 새로 추가해야 함
-    } else if (isSelected) {
-      // 선택되었지만 오늘이 아닌 경우 주황색
+    // 텍스트 색상도 동일한 로직으로 결정
+    let textStyle;
+    
+    if (!isScrollable) {
+      // WeeklyView에서는 모든 텍스트를 주황색으로
       textStyle = styles.selectedBarText;
-    } else if (isToday) {
-      // 오늘이지만 선택되지 않은 경우 진한 회색
-      textStyle = styles.todayBarText; // 이 스타일을 새로 추가해야 함
     } else {
-      // 그 외 일반적인 경우 기본 텍스트 색상
-      textStyle = styles.barText;
+      // DailyView인 경우
+      if (isSelected && isToday) {
+        // 오늘이면서 선택된 경우 진한 주황색
+        textStyle = styles.todaySelectedBarText; // 이 스타일을 새로 추가해야 함
+      } else if (isSelected) {
+        // 선택되었지만 오늘이 아닌 경우 주황색
+        textStyle = styles.selectedBarText;
+      } else if (isToday) {
+        // 오늘이지만 선택되지 않은 경우 진한 회색
+        textStyle = styles.todayBarText; // 이 스타일을 새로 추가해야 함
+      } else {
+        // 그 외 일반적인 경우 기본 텍스트 색상
+        textStyle = styles.barText;
+      }
     }
-  }
 
-  return (
-    <TouchableOpacity
-      style={[styles.barContainer, !isScrollable && { width: width / 9 }]}
-      onPress={() => onSelectBar(item)}
-      disabled={!isScrollable}
-    >
-      <View style={styles.barWrapper}>
-        <View
-          style={[
-            styles.bar,
-            { height: `${barHeight}%` },
-            barStyle,
-          ]}
-        />
-      </View>
-
-      <Text
-        style={[
-          styles.barText,
-          textStyle,
-        ]}
+    return (
+      <TouchableOpacity
+        style={[styles.barContainer, !isScrollable && { width: width / 9 }]}
+        onPress={() => onSelectBar(item)}
+        disabled={!isScrollable}
       >
-        {item.day || "?"} {/* 값이 없는 경우 ? 표시 */}
-      </Text>
-    </TouchableOpacity>
-  );
-};
+        <View style={styles.barWrapper}>
+          <View
+            style={[
+              styles.bar,
+              { height: `${barHeight}%` },
+              barStyle,
+            ]}
+          />
+        </View>
+
+        <Text
+          style={[
+            styles.barText,
+            textStyle,
+          ]}
+        >
+          {item.day || "?"} {/* 값이 없는 경우 ? 표시 */}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.chartContainer}>
@@ -161,6 +162,7 @@ const MiningGraph = ({
 
         {/* DailyView와 WeeklyView 모두 FlatList 사용 */}
         <FlatList
+          ref={flatListRef} // 추가된 ref
           data={data}
           renderItem={renderBar}
           keyExtractor={(item) => item.id || `${item.month}-${item.day}`}
@@ -171,8 +173,14 @@ const MiningGraph = ({
             styles.barsContainer,
             !isScrollable && styles.fixedBarsContainer, // WeeklyView인 경우 추가 스타일 적용
           ]}
-          initialNumToRender={isScrollable ? 7 : data.length}
+          initialNumToRender={data.length} // 모든 항목을 한번에 렌더링
           removeClippedSubviews={false}
+          onContentSizeChange={() => {
+            // 콘텐츠 크기가 변경될 때 (렌더링 완료 시) 오늘 날짜로 스크롤
+            if (isScrollable && flatListRef) {
+              flatListRef.current?.scrollToEnd({ animated: false });
+            }
+          }}
         />
 
         <View style={styles.chartDivider} />
