@@ -1,11 +1,6 @@
 // MiningStats.js
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-} from "react-native";
+import { View, Text, StyleSheet, Image } from "react-native";
 
 // 채굴 통계 공통 컴포넌트
 const MiningStats = ({
@@ -14,8 +9,8 @@ const MiningStats = ({
   comparisonValue = 0, // 비교값 (어제 대비 또는 지난주 대비)
   totalMiningTime = { hours: 0, minutes: 0 }, // 총 채굴 시간
   maxPossibleHours = 8, // 하루 최대 채굴 가능 시간
+  isCurrentPeriod = false,
 }) => {
-
   // 채굴 시간 포맷팅 함수
   const formatMiningTime = (hours, minutes) => {
     if (hours === 0 && minutes === 0) return "0분";
@@ -29,13 +24,13 @@ const MiningStats = ({
     const absValue = Math.abs(value);
     const hours = Math.floor(absValue / 60);
     const minutes = absValue % 60;
-    
+
     let timeText = "";
     if (hours > 0) {
       timeText += `${hours}시간 `;
     }
     timeText += `${minutes}분`;
-    
+
     return {
       isPositive: value > 0,
       text: timeText,
@@ -44,7 +39,10 @@ const MiningStats = ({
 
   // 채굴 달성률 계산 (하루 최대 8시간 기준)
   const calculateDailyProgress = () => {
-    const totalMinutes = Math.min(totalMiningTime.hours * 60 + totalMiningTime.minutes, 480);
+    const totalMinutes = Math.min(
+      totalMiningTime.hours * 60 + totalMiningTime.minutes,
+      480
+    );
     const maxMinutes = maxPossibleHours * 60;
     return Math.min(Math.round((totalMinutes / maxMinutes) * 100), 100);
   };
@@ -55,30 +53,52 @@ const MiningStats = ({
     const avgMinutes = Math.round(totalMinutes / 7);
     return {
       hours: Math.floor(avgMinutes / 60),
-      minutes: avgMinutes % 60
+      minutes: avgMinutes % 60,
     };
   };
 
-  // 동기부여 메시지 생성 (채굴 시간에 따라 다른 메시지)
-  const getMotivationalMessage = () => {
+   // 동기부여 메시지 생성 (채굴 시간에 따라 다른 메시지)
+   const getMotivationalMessage = () => {
     const totalMinutes = totalMiningTime.hours * 60 + totalMiningTime.minutes;
     
     if (viewType === 'daily') {
       // 일간 뷰 메시지
-      if (totalMinutes === 0) return "오늘 첫 채굴을 시작해보세요!";
-      if (totalMinutes < 30) return "조금씩이라도 꾸준히 채굴해보세요!";
-      if (totalMinutes < 60) return "좋은 시작이에요. 계속 집중해보세요!";
-      if (totalMinutes < 120) return "훌륭해요! 집중력이 좋네요.";
-      if (totalMinutes < 240) return "대단해요! 오늘 집중력이 최고에요.";
-      return "오늘 채굴 마스터! 놀라운 집중력이네요!";
+      if (isCurrentPeriod) {
+        // 오늘 데이터를 볼 때
+        if (totalMinutes === 0) return "오늘 첫 채굴을 시작해보세요!";
+        if (totalMinutes < 30) return "조금씩이라도 꾸준히 채굴해보세요!";
+        if (totalMinutes < 60) return "좋은 시작이에요. 계속 집중해보세요!";
+        if (totalMinutes < 120) return "훌륭해요! 집중력이 좋네요.";
+        if (totalMinutes < 240) return "대단해요! 오늘 집중력이 최고에요.";
+        return "오늘 채굴 마스터! 놀라운 집중력이네요!";
+      } else {
+        // 과거 날짜 데이터를 볼 때
+        if (totalMinutes === 0) return "이날은 채굴을 하지 않았네요.";
+        if (totalMinutes < 30) return "이날은 채굴 시간이 짧았네요.";
+        if (totalMinutes < 60) return "이날은 약 1시간 채굴했네요.";
+        if (totalMinutes < 120) return "이날은 꽤 집중해서 채굴했네요.";
+        if (totalMinutes < 240) return "이날은 집중력이 뛰어났네요!";
+        return "이날은 채굴 마스터! 놀라운 집중력이었네요!";
+      }
     } else {
       // 주간 뷰 메시지
-      if (totalMinutes === 0) return "이번 주 첫 채굴을 시작해보세요!";
-      if (totalMinutes < 120) return "시작이 반이에요. 조금씩 늘려보세요!";
-      if (totalMinutes < 360) return "꾸준히 채굴 중이네요. 좋아요!";
-      if (totalMinutes < 600) return "이번 주 채굴이 순조롭네요!";
-      if (totalMinutes < 1200) return "대단해요! 채굴 열심히 하고 계시네요.";
-      return "채굴 챔피언! 이번 주 정말 열심히 하셨네요!";
+      if (isCurrentPeriod) {
+        // 현재 주 데이터를 볼 때
+        if (totalMinutes === 0) return "이번 주 첫 채굴을 시작해보세요!";
+        if (totalMinutes < 120) return "시작이 반이에요. 조금씩 늘려보세요!";
+        if (totalMinutes < 360) return "꾸준히 채굴 중이네요. 좋아요!";
+        if (totalMinutes < 600) return "이번 주 채굴이 순조롭네요!";
+        if (totalMinutes < 1200) return "대단해요! 채굴 열심히 하고 계시네요.";
+        return "채굴 챔피언! 이번 주 정말 열심히 하셨네요!";
+      } else {
+        // 과거 주 데이터를 볼 때
+        if (totalMinutes === 0) return "이 주에는 채굴을 하지 않았네요.";
+        if (totalMinutes < 120) return "이 주에는 채굴 시간이 적었네요.";
+        if (totalMinutes < 360) return "이 주에는 꾸준히 채굴했네요.";
+        if (totalMinutes < 600) return "이 주에는 채굴이 순조로웠네요.";
+        if (totalMinutes < 1200) return "이 주에는 많은 시간을 채굴했네요!";
+        return "이 주는 채굴 챔피언이었네요! 정말 열심히 했네요!";
+      }
     }
   };
 
@@ -87,20 +107,20 @@ const MiningStats = ({
     return null;
 
     if (comparisonValue === 0) return null;
-    
+
     const { isPositive, text } = formatComparisonValue(comparisonValue);
-    
-    if (viewType === 'daily') {
+
+    if (viewType === "daily") {
       // 일간 뷰 비교 메시지
       return {
         prefix: isPositive ? "대단한데?" : "힘내!",
-        message: `어제보다 ${text} ${isPositive ? "더" : "적게"} 채굴했어!!`
+        message: `어제보다 ${text} ${isPositive ? "더" : "적게"} 채굴했어!!`,
       };
     } else {
       // 주간 뷰 비교 메시지
       return {
         prefix: "",
-        message: `전 주보다 ${text} ${isPositive ? "증가" : "감소"}했어요!`
+        message: `전 주보다 ${text} ${isPositive ? "증가" : "감소"}했어요!`,
       };
     }
   };
@@ -118,10 +138,8 @@ const MiningStats = ({
       </View>
 
       {/* 비교 메시지 (있는 경우만 표시) */}
-      {comparisonMessage && viewType === 'weekly' && (
-        <Text style={styles.comparisonText}>
-          {comparisonMessage.message}
-        </Text>
+      {comparisonMessage && viewType === "weekly" && (
+        <Text style={styles.comparisonText}>{comparisonMessage.message}</Text>
       )}
 
       {/* 채굴 시간 표시 */}
@@ -135,21 +153,18 @@ const MiningStats = ({
         </View>
         <View style={styles.miningTimeInfo}>
           <Text style={styles.miningTimeValue}>
-            {viewType === 'weekly' && <Text style={styles.totalPrefix}>총</Text>}{' '}
-            <Text style={styles.hoursText}>
-              {totalMiningTime.hours}
-            </Text>
-            시간{' '}
-            <Text style={styles.minutesText}>
-              {totalMiningTime.minutes}
-            </Text>
-            분
+            {viewType === "weekly" && (
+              <Text style={styles.totalPrefix}>총</Text>
+            )}{" "}
+            <Text style={styles.hoursText}>{totalMiningTime.hours}</Text>
+            시간{" "}
+            <Text style={styles.minutesText}>{totalMiningTime.minutes}</Text>분
           </Text>
         </View>
       </View>
 
       {/* 뷰 타입에 따른 추가 정보 */}
-      {viewType === 'daily' ? (
+      {viewType === "daily" ? (
         // 일간 뷰 추가 정보
         <>
           {/* 캐릭터와 비교 메시지 */}
@@ -170,7 +185,7 @@ const MiningStats = ({
               </View>
             </View>
           )}
-          
+
           {/* 채굴 달성률 프로그레스 바 (선택 사항) */}
           <View style={styles.progressContainer}>
             <View style={styles.progressInfoRow}>
@@ -178,16 +193,15 @@ const MiningStats = ({
               <Text style={styles.progressValue}>{dailyProgress}%</Text>
             </View>
             <View style={styles.progressBarContainer}>
-              <View 
-                style={[
-                  styles.progressBar,
-                  { width: `${dailyProgress}%` }
-                ]} 
+              <View
+                style={[styles.progressBar, { width: `${dailyProgress}%` }]}
               />
             </View>
-            <Text style={styles.progressNote}>일일 최대 채굴 가능 시간: 8시간</Text>
+            <Text style={styles.progressNote}>
+              일일 최대 채굴 가능 시간: 8시간
+            </Text>
           </View>
-          
+
           {/* 동기 부여 메시지 */}
           <View style={styles.motivationContainer}>
             <Text style={styles.motivationText}>{motivationalMessage}</Text>
@@ -205,23 +219,23 @@ const MiningStats = ({
                   {formatMiningTime(weeklyAverage.hours, weeklyAverage.minutes)}
                 </Text>
               </View>
-              
+
               <View style={styles.weeklyStatItem}>
                 <Text style={styles.weeklyStatLabel}>채굴 완료 일수</Text>
                 <Text style={styles.weeklyStatValue}>
-                  {miningData?.filter(day => 
-                    day.miningTime.totalMinutes > 0
-                  ).length || 0}일
+                  {miningData?.filter((day) => day.miningTime.totalMinutes > 0)
+                    .length || 0}
+                  일
                 </Text>
               </View>
             </View>
-            
+
             {/* 동기 부여 메시지 */}
             <View style={styles.motivationContainer}>
               <Text style={styles.motivationText}>{motivationalMessage}</Text>
             </View>
           </View>
-          
+
           {/* 일별 채굴 시간 목록 */}
           <View style={styles.dailyMiningContainer}>
             <Text style={styles.dailyMiningTitle}>날짜별 채굴 시간</Text>
@@ -290,7 +304,7 @@ const styles = StyleSheet.create({
   miningTimeValue: {
     fontSize: 16,
     fontWeight: "500",
-    textAlign: 'right',
+    textAlign: "right",
   },
   totalPrefix: {
     fontSize: 16,

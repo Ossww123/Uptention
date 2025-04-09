@@ -442,48 +442,60 @@ const CartScreen = ({ navigation }) => {
 
             <Text style={styles.itemPrice}>{item.price} WORK</Text>
 
-            <View style={styles.quantityContainer}>
-              <TouchableOpacity
-                onPress={() => updateQuantity(item.cartId, -1)}
-                style={styles.quantityButton}
-              >
-                <Text style={styles.quantityButtonText}>-</Text>
-              </TouchableOpacity>
-              
-              {/* 키보드 입력을 위한 TextInput 추가 */}
-              <TextInput
-                style={styles.quantityInput}
-                value={String(item.quantity)}
-                onChangeText={(text) => handleQuantityChange(item.cartId, text)}
-                onBlur={() => {
-                  handleQuantityBlur(item.cartId, item.quantity);
-                  setIsQuantityEditing(false);
-                }}
-                onFocus={() => {
-                  setIsQuantityEditing(true);
-                  const currentQuantity = String(item.quantity);
-                  if (currentQuantity === '1') {
-                    setCartItems(prevItems => 
-                      prevItems.map(i => 
-                        i.cartId === item.cartId 
-                          ? {...i, quantity: ''} 
-                          : i
-                      )
-                    );
-                  }
-                }}
-                keyboardType="number-pad"
-                maxLength={2}
-                selectTextOnFocus={true}
-              />
-              
-              <TouchableOpacity
-                onPress={() => updateQuantity(item.cartId, 1)}
-                style={styles.quantityButton}
-              >
-                <Text style={styles.quantityButtonText}>+</Text>
-              </TouchableOpacity>
-            </View>
+            <View style={styles.quantityStockContainer}>
+  <View style={styles.quantityContainer}>
+    <TouchableOpacity
+      onPress={() => updateQuantity(item.cartId, -1)}
+      style={styles.quantityButton}
+    >
+      <Text style={styles.quantityButtonText}>-</Text>
+    </TouchableOpacity>
+    
+    <TextInput
+      style={styles.quantityInput}
+      value={String(item.quantity)}
+      onChangeText={(text) => handleQuantityChange(item.cartId, text)}
+      onBlur={() => {
+        handleQuantityBlur(item.cartId, item.quantity);
+        setIsQuantityEditing(false);
+      }}
+      onFocus={() => {
+        setIsQuantityEditing(true);
+        const currentQuantity = String(item.quantity);
+        if (currentQuantity === '1') {
+          setCartItems(prevItems => 
+            prevItems.map(i => 
+              i.cartId === item.cartId 
+                ? {...i, quantity: ''} 
+                : i
+            )
+          );
+        }
+      }}
+      keyboardType="number-pad"
+      maxLength={2}
+      selectTextOnFocus={true}
+    />
+    
+    <TouchableOpacity
+      onPress={() => updateQuantity(item.cartId, 1)}
+      style={styles.quantityButton}
+    >
+      <Text style={styles.quantityButtonText}>+</Text>
+    </TouchableOpacity>
+  </View>
+  
+  {/* 재고 수량에 따른 조건부 스타일링 */}
+  {item.stockQuantity <= 5 ? (
+    <Text style={styles.lowStockText}>
+      남은 재고: {item.stockQuantity}
+    </Text>
+  ) : (
+    <Text style={styles.stockText}>
+      남은 재고: {item.stockQuantity}
+    </Text>
+  )}
+</View>
           </View>
         </View>
       );
@@ -860,6 +872,22 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  quantityStockContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%'
+  },
+  stockText: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '500',
+  },
+  lowStockText: {
+    fontSize: 14,
+    color: '#FF5722',
+    fontWeight: '500',
   },
 });
 

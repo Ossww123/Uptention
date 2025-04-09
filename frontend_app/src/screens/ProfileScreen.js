@@ -18,6 +18,7 @@ import { removeToken } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import FCMUtils from '../utils/FCMUtils';
 import { post } from '../services/api';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 if (typeof globalThis.Buffer === 'undefined') {
   globalThis.Buffer = Buffer;
@@ -33,6 +34,10 @@ const YOUR_TOKEN_MINT = new PublicKey('5ymZGsCFkfSzZN6AbwMWU2v4A4c5yeqmGj1vSpRWg
 const APP_URL_SCHEME = 'com.anonymous.uptention';
 
 const DEFAULT_PROFILE_IMAGE_URL = 'https://ddnwvg9t77g5o.cloudfront.net/profile-default.jpg';
+
+// 이미지 처리 관련 상수
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 
 const ProfileScreen = ({ navigation }) => {
   const { 
@@ -53,6 +58,11 @@ const ProfileScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  
+  // 이미지 미리보기 관련 상태 추가
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // 잔액 변화 감지 및 화면 업데이트
   useEffect(() => {
@@ -153,6 +163,70 @@ const ProfileScreen = ({ navigation }) => {
     fetchUserInfo();
   }, []);
 
+  // 이미지 파일 유효성 검사
+  const validateImageFile = (file) => {
+    // 파일 크기 검사
+    if (file.fileSize > MAX_FILE_SIZE) {
+      Alert.alert(
+        '파일 크기 초과',
+        `이미지 크기는 2MB 이하여야 합니다. 현재 크기: ${(file.fileSize / (1024 * 1024)).toFixed(2)}MB`
+      );
+      return false;
+    }
+
+    // MIME 타입 검사
+    const fileType = file.type.toLowerCase();
+    if (!ALLOWED_MIME_TYPES.includes(fileType)) {
+      Alert.alert('지원하지 않는 형식', '지원하는 이미지 형식은 JPG, JPEG, PNG 입니다.');
+      return false;
+    }
+
+    return true;
+  };
+
+  // 중앙 크롭된 미리보기 생성
+  const createCenteredCropPreview = async (imageUri, imageWidth, imageHeight) => {
+    try {
+      // 이미지의 가로/세로 중 작은 값 기준으로 정사각형 크롭
+      const size = Math.min(imageWidth, imageHeight);
+      const xOffset = Math.floor((imageWidth - size) / 2);
+      const yOffset = Math.floor((imageHeight - size) / 2);
+      
+      // expo-image-manipulator로 미리보기용 이미지 크롭
+      const manipResult = await manipulateAsync(
+        imageUri,
+        [
+          {
+            crop: {
+              originX: xOffset,
+              originY: yOffset,
+              width: size,
+              height: size,
+            },
+          },
+          // 미리보기 용도이므로 적당한 크기로 리사이징
+          { resize: { width: 300, height: 300 } }
+        ],
+        { compress: 0.8, format: SaveFormat.JPEG }
+      );
+      
+      return {
+        previewUri: manipResult.uri,
+        cropInfo: {
+          x: xOffset,
+          y: yOffset,
+          size: size,
+          originalWidth: imageWidth,
+          originalHeight: imageHeight
+        }
+      };
+    } catch (error) {
+      console.error('이미지 미리보기 생성 오류:', error);
+      return null;
+    }
+  };
+
+  // 이미지 업로드 함수 수정
   const handleImageUpload = async () => {
     if (!userId || !authToken) {
       Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
@@ -181,9 +255,42 @@ const ProfileScreen = ({ navigation }) => {
         return;
       }
 
-      const selectedImage = result.assets[0];
+      const image = result.assets[0];
       
-      // 이미지 파일로 FormData 생성
+      // 이미지 파일 유효성 검사
+      if (!validateImageFile(image)) {
+        return;
+      }
+
+      // 원본 이미지 상태 저장
+      setSelectedImage(image);
+      
+      // 중앙 크롭된 미리보기 생성
+      const previewResult = await createCenteredCropPreview(
+        image.uri,
+        image.width,
+        image.height
+      );
+      
+      if (previewResult) {
+        setPreviewImage(previewResult);
+        setShowPreviewModal(true);
+      } else {
+        Alert.alert('오류', '이미지 미리보기를 생성하는데 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('이미지 선택 오류:', error);
+      Alert.alert('오류', '이미지 선택 중 문제가 발생했습니다.');
+    }
+  };
+
+  // 미리보기 확인 후 업로드 처리
+  const confirmAndUpload = async () => {
+    try {
+      // 미리보기 모달 닫기
+      setShowPreviewModal(false);
+      
+      // 원본 이미지로 FormData 생성
       const formData = new FormData();
       formData.append('profileImage', {
         uri: selectedImage.uri,
@@ -210,6 +317,10 @@ const ProfileScreen = ({ navigation }) => {
     } catch (error) {
       console.error('이미지 업로드 오류:', error);
       Alert.alert('오류', '이미지 업로드에 실패했습니다.');
+    } finally {
+      // 임시 상태 초기화
+      setSelectedImage(null);
+      setPreviewImage(null);
     }
   };
 
@@ -345,6 +456,7 @@ const ProfileScreen = ({ navigation }) => {
                   <Image 
                     source={{ uri: `${userInfo.profileImage}?w=100&h=100&t=cover&f=webp` }} 
                     style={styles.profileImage}
+                    resizeMode="cover"
                   />
                 ) : (
                   <View style={styles.profileImage} />
@@ -450,17 +562,17 @@ const ProfileScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.inputContainer}>
-  <TextInput
-    style={styles.input}
-    placeholder="새 비밀번호"
-    value={newPassword}
-    onChangeText={setNewPassword}
-    secureTextEntry={secureTextEntry}
-  />
-</View>
-<Text style={styles.passwordHint}>
-  비밀번호는 영문, 숫자 포함 8~15자 (특수문자 !@#$%^&* 사용 가능)
-</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="새 비밀번호"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    secureTextEntry={secureTextEntry}
+                  />
+                </View>
+                <Text style={styles.passwordHint}>
+                  비밀번호는 영문, 숫자 포함 8~15자 (특수문자 !@#$%^&* 사용 가능)
+                </Text>
 
                 <View style={styles.inputContainer}>
                   <TextInput
@@ -520,6 +632,7 @@ const ProfileScreen = ({ navigation }) => {
                 <TouchableOpacity
                   style={[styles.editModalButton, userInfo?.profileImage === DEFAULT_PROFILE_IMAGE_URL && { opacity: 0.5 }]}
                   onPress={() => {
+                    setShowEditModal(false);
                     if (userInfo?.profileImage !== DEFAULT_PROFILE_IMAGE_URL) {
                       Alert.alert(
                         '프로필 사진 삭제',
@@ -557,11 +670,126 @@ const ProfileScreen = ({ navigation }) => {
               </View>
             </View>
           </Modal>
+
+          {/* 이미지 미리보기 모달 추가 */}
+          <Modal
+            visible={showPreviewModal}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowPreviewModal(false)}
+          >
+            <View style={styles.previewModalContainer}>
+              <View style={styles.previewModalContent}>
+                <Text style={styles.previewModalTitle}>프로필 이미지 미리보기</Text>
+                
+                {previewImage && (
+                  <View style={styles.previewImageContainer}>
+                    <Image 
+                      source={{ uri: previewImage.previewUri }}
+                      style={styles.previewImage}
+                      resizeMode="cover"
+                    />
+                    <Text style={styles.previewHint}>
+                      이미지는 1:1 비율로 가운데가 크롭됩니다
+                    </Text>
+                  </View>
+                )}
+                
+                <View style={styles.previewModalButtons}>
+                  <TouchableOpacity
+                    style={[styles.previewModalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowPreviewModal(false);
+                      setSelectedImage(null);
+                      setPreviewImage(null);
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>취소</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.previewModalButton, styles.confirmButton]}
+                    onPress={confirmAndUpload}
+                  >
+                    <Text style={styles.confirmButtonText}>적용</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+const additionalStyles = StyleSheet.create({
+  previewModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  previewModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    width: '85%',
+    alignItems: 'center',
+  },
+  previewModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  previewImageContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  previewImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  previewHint: {
+    fontSize: 14,
+    color: '#888',
+    textAlign: 'center',
+  },
+  previewModalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 10,
+  },
+  previewModalButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  cancelButton: {
+    backgroundColor: '#F0F0F0',
+  },
+  confirmButton: {
+    backgroundColor: '#FF8C00',
+  },
+  cancelButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -859,6 +1087,8 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingLeft: 10,
   },
+  
+  ...additionalStyles,
 });
 
 export default ProfileScreen; 

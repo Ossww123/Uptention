@@ -172,6 +172,7 @@ const MiningGraph = ({
             !isScrollable && styles.fixedBarsContainer, // WeeklyView인 경우 추가 스타일 적용
           ]}
           initialNumToRender={isScrollable ? 7 : data.length}
+          removeClippedSubviews={false}
         />
 
         <View style={styles.chartDivider} />

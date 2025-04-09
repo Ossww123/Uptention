@@ -22,12 +22,17 @@ const RecordScreen = () => {
   const [loading, setLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
   const [viewMode, setViewMode] = useState(0); // 0: 일간, 1: 주간
+  const [refreshing, setRefreshing] = useState(false);
   const pagerRef = useRef(null);
 
-   // 스크롤 위치를 공유하기 위한 상태와 ref
-   const [scrollPosition, setScrollPosition] = useState(0);
-   const dailyScrollViewRef = useRef(null);
-   const weeklyScrollViewRef = useRef(null);
+  // DailyView와 WeeklyView 컴포넌트에 대한 ref 생성
+  const dailyViewRef = useRef(null);
+  const weeklyViewRef = useRef(null);
+
+  // 스크롤 위치를 공유하기 위한 상태와 ref
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const dailyScrollViewRef = useRef(null);
+  const weeklyScrollViewRef = useRef(null);
 
   useEffect(() => {
     checkPermission();
@@ -67,6 +72,27 @@ const RecordScreen = () => {
         },
       ]
     );
+  };
+
+  // 새로고침 기능 구현
+  const handleRefresh = async () => {
+    if (!hasPermission) return;
+    
+    setRefreshing(true);
+    
+    try {
+      // 현재 선택된 탭에 따라 적절한 컴포넌트의 새로고침 메서드 호출
+      if (viewMode === 0 && dailyViewRef.current) {
+        await dailyViewRef.current.refreshData();
+      } else if (viewMode === 1 && weeklyViewRef.current) {
+        await weeklyViewRef.current.refreshData();
+      }
+    } catch (error) {
+      console.error("새로고침 오류:", error);
+      Alert.alert("오류", "데이터를 새로고침하는 중 문제가 발생했습니다.");
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const renderPermissionRequest = () => (
@@ -117,9 +143,23 @@ const RecordScreen = () => {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      {/* 헤더 */}
+      {/* 헤더 - 새로고침 버튼 추가 */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>채굴 기록</Text>
+        {hasPermission && (
+          <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={handleRefresh}
+            disabled={refreshing}
+          >
+            <Ionicons 
+              name="refresh" 
+              size={24} 
+              color="#FF8C00"
+              style={[refreshing && styles.refreshing]} 
+            />
+          </TouchableOpacity>
+        )}
       </View>
       
       {!hasPermission ? (
@@ -163,6 +203,14 @@ const RecordScreen = () => {
             </TouchableOpacity>
           </View>
 
+          {/* 로딩 인디케이터 - 새로고침 중일 때 표시 */}
+          {/* {refreshing && (
+            <View style={styles.refreshingIndicator}>
+              <ActivityIndicator size="small" color="#FF8C00" />
+              <Text style={styles.refreshingText}>새로고침 중...</Text>
+            </View>
+          )} */}
+
           {/* 페이저뷰로 슬라이드 전환 구현 */}
           <PagerView
             ref={pagerRef}
@@ -173,6 +221,7 @@ const RecordScreen = () => {
             {/* 일간 뷰 */}
             <View key="1">
               <DailyView 
+                ref={dailyViewRef}
                 scrollViewRef={dailyScrollViewRef}
                 onScroll={handleScroll}
                 scrollPosition={scrollPosition}
@@ -182,6 +231,7 @@ const RecordScreen = () => {
             {/* 주간 뷰 */}
             <View key="2">
               <WeeklyView 
+                ref={weeklyViewRef}
                 scrollViewRef={weeklyScrollViewRef}
                 onScroll={handleScroll}
                 scrollPosition={scrollPosition}
@@ -239,6 +289,26 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     color: "#000",
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  refreshing: {
+    opacity: 0.5,
+    transform: [{ rotate: '45deg' }],
+  },
+  refreshingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 140, 0, 0.1)',
+  },
+  refreshingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#FF8C00',
   },
   tabContainer: {
     flexDirection: "row",

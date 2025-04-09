@@ -1,5 +1,5 @@
 // DailyView.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import {
   View,
   StyleSheet,
@@ -14,7 +14,7 @@ import MiningGraph from "../components/MiningGraph"; // 공통 그래프 컴포�
 import MiningStats from "../components/MiningStats"; // 공통 통계 컴포넌트
 import AppUsageStats from "../components/AppUsageStats"; // 공통 앱 사용 컴포넌트
 
-const DailyView = () => {
+const DailyView = forwardRef(({ scrollViewRef, onScroll, scrollPosition }, ref) => {
   const { userId } = useAuth(); // AuthContext에서 userId 가져오기
   const [dailyScreenTime, setDailyScreenTime] = useState(0);
   const [appUsage, setAppUsage] = useState({});
@@ -31,6 +31,11 @@ const DailyView = () => {
 
   // 채굴 데이터 상태
   const [miningData, setMiningData] = useState([]);
+
+  // 부모 컴포넌트에서 호출할 수 있는 메서드 노출
+  useImperativeHandle(ref, () => ({
+    refreshData: fetchMiningData
+  }));
 
   useEffect(() => {
     fetchMiningData();
@@ -308,43 +313,47 @@ const DailyView = () => {
     ? `${selectedDayData.month}월 ${selectedDayData.day}일 ${selectedDayData.dayOfWeek}요일`
     : "";
 
-    return (
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* 공통 그래프 컴포넌트 사용 */}
-        <MiningGraph
-          data={miningData}
-          isScrollable={true}
-          selectedItem={selectedDayData}
-          onSelectBar={handleSelectDay}
-          dateRangeTitle={dateTitle}
+  return (
+    <ScrollView
+      ref={scrollViewRef}
+      style={styles.scrollContainer}
+      showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+    >
+      {/* 공통 그래프 컴포넌트 사용 */}
+      <MiningGraph
+        data={miningData}
+        isScrollable={true}
+        selectedItem={selectedDayData}
+        onSelectBar={handleSelectDay}
+        dateRangeTitle={dateTitle}
+      />
+  
+      {/* 공통 채굴 통계 컴포넌트 사용 */}
+      {selectedDayData && (
+        <MiningStats
+          viewType="daily"
+          miningData={null}
+          comparisonValue={miningDifference}
+          totalMiningTime={{
+            hours: selectedDayData.miningTime.hours,
+            minutes: selectedDayData.miningTime.minutes,
+          }}
+          maxPossibleHours={8}
+          isCurrentPeriod={selectedDayData.isToday}
         />
-    
-        {/* 공통 채굴 통계 컴포넌트 사용 */}
-        {selectedDayData && (
-          <MiningStats
-            viewType="daily"
-            miningData={null}
-            comparisonValue={miningDifference}
-            totalMiningTime={{
-              hours: selectedDayData.miningTime.hours,
-              minutes: selectedDayData.miningTime.minutes,
-            }}
-            maxPossibleHours={8}
-          />
-        )}
-    
-        {/* 공통 앱 사용 통계 컴포넌트 사용 - selectedDate 전달 */}
-        <AppUsageStats 
-          viewType="daily" 
-          appUsage={appUsage}
-          selectedDate={selectedDayData} // 선택된 날짜 정보 전달
-        />
-      </ScrollView>
-    );
-};
+      )}
+  
+      {/* 공통 앱 사용 통계 컴포넌트 사용 - selectedDate 전달 */}
+      <AppUsageStats 
+        viewType="daily" 
+        appUsage={appUsage}
+        selectedDate={selectedDayData} // 선택된 날짜 정보 전달
+      />
+    </ScrollView>
+  );
+});
 
 const styles = StyleSheet.create({
   loadingContainer: {
