@@ -24,7 +24,9 @@ public class OrderItemServiceImpl implements OrderItemService {
 
 	@Override
 	public OrderItem findGiftItemByOrderId(Integer orderId) {
-		return orderItemRepository.findById(orderId)
+		return orderItemRepository.findByOrderId(orderId)
+			.stream()
+			.findFirst()
 			.orElseThrow(() -> new CustomException(ErrorCode.ORDER_ITEM_NOT_FOUND));
 	}
 
