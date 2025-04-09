@@ -163,7 +163,7 @@ const fetchFirstPage = async () => {
   }
 };
 
- // 날짜 포맷팅 함수
+ // 날짜 포맷팅 함수 (수정됨)
  const formatDate = (dateString) => {
    const utcDate = new Date(dateString); // UTC 시간으로 변환
    const kstOffset = 9 * 60 * 60 * 1000; // KST는 UTC+9
@@ -171,6 +171,15 @@ const fetchFirstPage = async () => {
 
    const now = new Date();
    const kstNow = new Date(now.getTime() + kstOffset); // 현재 시간도 KST로 변환
+   
+   // 시간과 분 포맷팅 함수 (오전/오후 표시)
+   const formatTime = (date) => {
+     const hours = date.getHours();
+     const minutes = date.getMinutes();
+     const ampm = hours >= 12 ? '오후' : '오전';
+     const displayHours = hours % 12 || 12; // 12시간제로 변환 (0시는 12로 표시)
+     return `${ampm} ${displayHours}:${minutes < 10 ? '0' + minutes : minutes}`;
+   };
 
    // KST 기준으로 연도, 월, 일 비교
    const isToday = kstDate.getFullYear() === kstNow.getFullYear() &&
@@ -183,19 +192,17 @@ const fetchFirstPage = async () => {
 
    if (isToday) {
      // 오늘
-     const hours = kstDate.getHours();
-     const minutes = kstDate.getMinutes();
-     return `오늘 ${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+     return `오늘 ${formatTime(kstDate)}`;
    } else if (isYesterday) {
-     // 어제
-     return '어제';
+     // 어제 (시간 추가)
+     return `어제 ${formatTime(kstDate)}`;
    } else if (Math.abs(kstNow.getTime() - kstDate.getTime()) < 7 * 24 * 60 * 60 * 1000) {
-     // 이번 주
+     // 이번 주 (시간 추가)
      const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-     return days[kstDate.getDay()];
+     return `${days[kstDate.getDay()]} ${formatTime(kstDate)}`;
    } else {
      // 그 이전
-     return `${kstDate.getFullYear()}.${(kstDate.getMonth() + 1).toString().padStart(2, '0')}.${kstDate.getDate().toString().padStart(2, '0')}`;
+     return `${kstDate.getFullYear()}.${(kstDate.getMonth() + 1).toString().padStart(2, '0')}.${kstDate.getDate().toString().padStart(2, '0')} ${formatTime(kstDate)}`;
    }
  };
 

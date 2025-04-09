@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
-  Image
+  Image,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,7 +38,7 @@ const HomeScreen = ({ navigation }) => {
   const [hasOverlayPermission, setHasOverlayPermission] = useState(false);
   
   // 읽지 않은 알림 개수 상태 (FCM 푸시 알림으로 업데이트)
-  const [unreadNotifications, setUnreadNotifications] = useState(3);
+  const [unreadNotifications, setUnreadNotifications] = useState(null);
   
   // 프로그레스바 관련 계산
   const size = 280;
@@ -49,6 +50,7 @@ const HomeScreen = ({ navigation }) => {
   const remainingMinutes = maxFocusMinutes - dailyFocusTime; // 남은 시간 계산
   const progress = (remainingMinutes / maxFocusMinutes) * 100; // 남은 시간의 비율
   const svgProgress = (progress * circum) / 100; // progress가 클수록 비어있는 상태
+  const [isLoading, setIsLoading] = useState(true);
 
   // FCM 메시지 리스너 내부 수정
 useEffect(() => {
@@ -80,6 +82,53 @@ useEffect(() => {
   
   return unsubscribe;
 }, []);
+
+useEffect(() => {
+  const loadAllData = async () => {
+    setIsLoading(true);
+    const startTime = Date.now(); // 로딩 시작 시간 기록
+    
+    try {
+      // AsyncStorage에서 이름 로드 (선택적)
+      const cachedName = await AsyncStorage.getItem('user_name');
+      if (cachedName) {
+        setUserInfo(prev => ({ ...prev, name: cachedName }));
+      }
+      
+      // 병렬로 모든 API 호출
+      const [userInfoResponse, pointResponse, focusResponse] = await Promise.all([
+        fetchUserInfo(),
+        fetchUserPoint(),
+        fetchDailyFocusTime()
+      ]);
+      
+      // 사용자 이름 캐싱 (선택적)
+      if (userInfoResponse?.name) {
+        await AsyncStorage.setItem('user_name', userInfoResponse.name);
+      }
+    } catch (error) {
+      console.error('데이터 로딩 오류:', error);
+    } finally {
+      // 최소 표시 시간 계산 (1000ms = 1초)
+      const elapsedTime = Date.now() - startTime;
+      const minimumDisplayTime = 1500; // 최소 1초
+      
+      if (elapsedTime < minimumDisplayTime) {
+        // 최소 표시 시간이 지나지 않았다면 타이머 설정
+        setTimeout(() => {
+          setIsLoading(false);
+        }, minimumDisplayTime - elapsedTime);
+      } else {
+        // 이미 최소 시간을 넘었다면 바로 로딩 상태 해제
+        setIsLoading(false);
+      }
+    }
+  };
+
+  if (userId && authToken) {
+    loadAllData();
+  }
+}, [userId, authToken]);
 
 // useFocusEffect 부분 수정
 useFocusEffect(
@@ -382,14 +431,6 @@ useFocusEffect(
     }
   };
 
-  useEffect(() => {
-    if (userId && authToken) {
-      fetchUserInfo();
-      fetchUserPoint();
-      fetchDailyFocusTime();
-    }
-  }, [userId, authToken]);
-
   // 화면이 포커스될 때마다 데이터 업데이트
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -420,6 +461,16 @@ useFocusEffect(
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      {isLoading ? (
+      <View style={styles.welcomeOverlay}>
+        <Image
+          source={require('../../assets/업텐션 캐릭터.png')}
+          style={styles.welcomeImage}
+        />
+        <Text style={styles.welcomeText}>반가워요, {userInfo?.name || '사용자'}님!</Text>
+        <ActivityIndicator size="large" color="#FF8C00" />
+      </View>
+    ) : (
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
           <View style={styles.headerSection}>
@@ -539,6 +590,7 @@ useFocusEffect(
           </TouchableOpacity>
         </View>
       </ScrollView>
+    )}
     </SafeAreaView>
   );
 };
@@ -721,6 +773,23 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  welcomeOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  welcomeImage: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#FF8C00',
   },
 });
 

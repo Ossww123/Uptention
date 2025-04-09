@@ -19,22 +19,6 @@ import { get } from '../services/api';
 // 화면 너비 가져오기
 const { width } = Dimensions.get("window");
 
-// 카테고리 데이터
-const categories = [
-  { id: "1", name: "가전디지털", icon: require("../../assets/category1.png") },
-  { id: "3", name: "뷰티", icon: require("../../assets/category2.png") },
-  { id: "2", name: "리빙/키친", icon: require("../../assets/category3.png") },
-  {
-    id: "4",
-    name: "패션의류/잡화",
-    icon: require("../../assets/category4.png"),
-  },
-  { id: "5", name: "문화여가", icon: require("../../assets/category5.png") },
-  { id: "6", name: "생활용품", icon: require("../../assets/category6.png") },
-  { id: "7", name: "식품", icon: require("../../assets/category7.png") },
-  { id: "8", name: "키즈", icon: require("../../assets/category8.png") },
-];
-
 // 정렬 옵션
 const sortOptions = [
   { id: "SALES", name: "인기 순" },
@@ -42,16 +26,35 @@ const sortOptions = [
   { id: "HIGH_PRICE", name: "가격 높은순" },
 ];
 
+const categoryIcons = {
+  1: require("../../assets/category1.png"),
+  2: require("../../assets/category2.png"),
+  3: require("../../assets/category3.png"),
+  4: require("../../assets/category4.png"),
+  5: require("../../assets/category5.png"),
+  6: require("../../assets/category6.png"),
+  7: require("../../assets/category7.png"),
+  8: require("../../assets/category8.png")
+};
+
 // 메모이제이션된 카테고리 아이템 컴포넌트
-const CategoryItem = memo(({ item, isSelected, onSelect }) => (
-  <TouchableOpacity
-    style={[styles.sidebarCategoryItem, isSelected && styles.selectedCategory]}
-    onPress={() => onSelect(item.id)}
-  >
-    <Image source={item.icon} style={styles.categoryIcon} />
-    <Text style={styles.categoryName}>{item.name}</Text>
-  </TouchableOpacity>
-));
+const CategoryItem = memo(({ item, isSelected, onSelect }) => {
+  // 해당 카테고리의 아이콘이 없으면 기본 아이콘 사용
+  const categoryIcon = categoryIcons[item.categoryId] || require("../../assets/category1.png");
+
+  return (
+    <TouchableOpacity
+      style={[styles.sidebarCategoryItem, isSelected && styles.selectedCategory]}
+      onPress={() => onSelect(item.categoryId)}
+    >
+      <Image 
+        source={categoryIcon} 
+        style={styles.categoryIcon} 
+      />
+      <Text style={styles.categoryName}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+});
 
 // 메모이제이션된 정렬 옵션 아이템 컴포넌트
 const SortOptionItem = memo(({ option, isSelected, onSelect }) => (
@@ -73,6 +76,7 @@ const SortOptionItem = memo(({ option, isSelected, onSelect }) => (
 
 const StoreScreen = ({ navigation }) => {
   // 상태 관리
+  const [categories, setCategories] = useState([]);
   const [showCategories, setShowCategories] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [products, setProducts] = useState([]);
@@ -94,13 +98,32 @@ const StoreScreen = ({ navigation }) => {
   const onEndReachedTimeoutRef = useRef(null);
   const isInitialLoadRef = useRef(true);
   const currentApiCallIdRef = useRef(null);
-  const requestTimerRef = useRef(null);
+  // 요청 타입을 구분하기 위한 ref 추가
+  const requestTypeRef = useRef(null);
   const loadRequestedRef = useRef(false);
-  const productGridRef = useRef(null);
+  // ProductGridView의 FlatList ref 추가
+  const productListRef = useRef(null);
+
+   // 카테고리 로드 함수 추가
+   const fetchCategories = async () => {
+    try {
+      const { data, ok } = await get('/category');
+      
+      if (ok && data && data.length > 0) {
+        setCategories(data);
+      } else {
+        throw new Error('카테고리를 불러오지 못했습니다.');
+      }
+    } catch (error) {
+      console.error('카테고리 로드 오류:', error);
+      Alert.alert('오류', '카테고리를 불러오는 중 문제가 발생했습니다.');
+    }
+  };
 
   // 첫 마운트 시에만 실행되는 useEffect
   useEffect(() => {
     // 최초 1회만 실행되는 초기화 코드
+    fetchCategories();
     fetchCartItemCount();
 
     return () => {
@@ -109,9 +132,6 @@ const StoreScreen = ({ navigation }) => {
       }
       if (onEndReachedTimeoutRef.current) {
         clearTimeout(onEndReachedTimeoutRef.current);
-      }
-      if (requestTimerRef.current) {
-        clearTimeout(requestTimerRef.current);
       }
     };
   }, []);
@@ -130,9 +150,23 @@ const StoreScreen = ({ navigation }) => {
     if (isMounted.current && !isInitialLoadRef.current) {
       // 최초 로드가 아니고, 마운트된 상태일 때만 실행
       console.log("카테고리/정렬 변경으로 인한 로드");
+      // 요청 타입을 설정하여 카테고리/정렬 변경임을 표시
+      requestTypeRef.current = 'filter_change';
       loadProducts(true);
+      
+      // 스크롤 위치를 최상단으로 리셋
+      scrollToTop();
     }
   }, [selectedCategory, currentSort.id]);
+
+  // 스크롤 위치를 최상단으로 이동하는 함수
+  const scrollToTop = useCallback(() => {
+    if (productListRef.current) {
+      console.log("스크롤 위치 최상단으로 이동");
+      // FlatList를 최상단으로 스크롤
+      productListRef.current.scrollToOffset({ offset: 0, animated: true });
+    }
+  }, []);
 
   // 화면에 포커스가 될 때만 실행
   useFocusEffect(
@@ -148,6 +182,7 @@ const StoreScreen = ({ navigation }) => {
         if (isInitialLoadRef.current) {
           console.log("최초 로드 실행");
           loadRequestedRef.current = true; // 요청 플래그 설정
+          requestTypeRef.current = 'initial_load';
           loadProducts(true);
           isInitialLoadRef.current = false;
         } else {
@@ -175,7 +210,11 @@ const StoreScreen = ({ navigation }) => {
 
     searchTimeoutRef.current = setTimeout(() => {
       if (isMounted.current && !isInitialLoadRef.current) {
+        // 검색 요청임을 표시
+        requestTypeRef.current = 'search';
         loadProducts(true);
+        // 검색 시에도 스크롤 위치를 최상단으로 리셋
+        scrollToTop();
       }
     }, 500);
 
@@ -207,41 +246,45 @@ const StoreScreen = ({ navigation }) => {
   const loadProducts = async (isRefresh = false) => {
     try {
       const callId = Date.now(); // 각 호출의 고유 ID
-      console.log(`loadProducts 시작 (${callId})`, {
+      const requestType = requestTypeRef.current || 'default';
+      
+      console.log(`loadProducts 시작 (${callId}, ${requestType})`, {
         isRefresh,
         loading,
         hasNextPage,
-        currentApiCallId: currentApiCallIdRef.current,
-        requestTimer: requestTimerRef.current !== null
+        currentApiCallId: currentApiCallIdRef.current
       });
 
-      // 더블 요청 방지 타이머 체크
-      if (requestTimerRef.current) {
-        console.log(`더블 요청 방지 타이머 활성화, 요청 무시 (${callId})`);
-        return;
+      // 추가된 체크: 스크롤 타입이고 이미 로딩 중이면 즉시 반환
+    if (requestType === 'scroll' && loading) {
+      console.log(`이미 로딩 중이고 스크롤 요청임, 요청 무시 (${callId}, ${requestType})`);
+      return;
+    }
+
+      // 카테고리 변경, 검색, 초기 로드의 경우 무조건 실행하도록 수정
+    const isUserInitiatedAction = ['filter_change', 'search', 'initial_load'].includes(requestType);
+    
+    // 진행 중인 API 호출이 있고, 유저가 직접 요청한 액션이 아닌 경우에만 중복 요청 방지
+    if (loading && currentApiCallIdRef.current && !isUserInitiatedAction) {
+      console.log(`이미 로딩 중이고 사용자 액션이 아님, 요청 무시 (${callId}, ${requestType})`);
+      return;
+    }
+      
+      // 유저 액션인 경우 이전 API 호출 취소 로직을 추가할 수 있음
+      if (isUserInitiatedAction && currentApiCallIdRef.current) {
+        console.log(`사용자 액션으로 인한 새 요청, 이전 요청 우선순위 낮춤 (${callId}, ${requestType})`);
+        // 여기서 실제 API 취소는 어렵지만, 결과를 무시하는 로직을 추가할 수 있음
       }
 
-      // 진행 중인 API 호출 체크
-      if (loading || currentApiCallIdRef.current) {
-        console.log(`이미 로딩 중, 요청 무시 (${callId})`);
+      // 다음 페이지가 없고 리프레시가 아니고 유저 액션이 아닌 경우 무시
+      if (!hasNextPage && !isRefresh && !isUserInitiatedAction) {
+        console.log(`다음 페이지 없음, 요청 무시 (${callId}, ${requestType})`);
         return;
       }
-
-      // 더블 요청 방지 타이머 설정 (300ms로 조정)
-      requestTimerRef.current = setTimeout(() => {
-        requestTimerRef.current = null;
-      }, 300); // 300ms로 변경
 
       // 현재 API 호출 ID 설정
       currentApiCallIdRef.current = callId;
-
-      // 다음 페이지가 없고 리프레시가 아닐 경우 무시
-      if (!hasNextPage && !isRefresh) {
-        console.log(`다음 페이지 없음, 요청 무시 (${callId})`);
-        currentApiCallIdRef.current = null; // ID 초기화
-        return;
-      }
-
+      
       setLoading(true);
       if (isRefresh) {
         setRefreshing(true);
@@ -277,7 +320,7 @@ const StoreScreen = ({ navigation }) => {
         });
 
         const endpoint = `/items?${queryParams.toString()}`;
-        console.log(`API 요청 URL (${callId}):`, endpoint);
+        console.log(`API 요청 URL (${callId}, ${requestType}):`, endpoint);
 
         // API 요청
         const { data, ok } = await get(endpoint);
@@ -285,6 +328,13 @@ const StoreScreen = ({ navigation }) => {
         // 에러 처리
         if (!ok) {
           throw new Error(data.message || "상품을 불러오지 못했습니다.");
+        }
+
+        // API 호출이 완료됐을 때 현재 진행 중인 호출 ID와 일치하는지 확인
+        // 다른 요청이 중간에 들어왔다면 결과를 무시
+        if (currentApiCallIdRef.current !== callId) {
+          console.log(`API 응답이 왔지만 다른 요청이 진행 중, 결과 무시 (${callId}, ${requestType})`);
+          return;
         }
 
         // 유효한 itemId를 가진 항목만 필터링
@@ -300,28 +350,29 @@ const StoreScreen = ({ navigation }) => {
 
         setHasNextPage(data.hasNextPage);
         setNextCursor(data.nextCursor);
-        console.log(`loadProducts 완료 (${callId})`);
+        console.log(`loadProducts 완료 (${callId}, ${requestType})`);
       } catch (error) {
-        console.error(`상품 로드 에러 (${callId}):`, error);
+        console.error(`상품 로드 에러 (${callId}, ${requestType}):`, error);
         Alert.alert(
           "오류",
           error.message || "상품을 불러오는데 문제가 발생했습니다."
         );
       } finally {
-        setLoading(false);
-        setRefreshing(false);
-        // API 호출 완료 후 ID 초기화
-        currentApiCallIdRef.current = null;
+        // 현재 API 호출 ID와 일치할 때만 로딩 상태 변경
+        if (currentApiCallIdRef.current === callId) {
+          setLoading(false);
+          setRefreshing(false);
+          currentApiCallIdRef.current = null;
+        }
       }
     } catch (error) {
       console.error(`loadProducts 예외 처리 (${Date.now()}):`, error);
       setLoading(false);
       setRefreshing(false);
-      currentApiCallIdRef.current = null; // 예외 발생 시에도 ID 초기화
-      if (requestTimerRef.current) {
-        clearTimeout(requestTimerRef.current);
-        requestTimerRef.current = null;
-      }
+      currentApiCallIdRef.current = null;
+    } finally {
+      // 요청 타입 초기화
+      requestTypeRef.current = null;
     }
   };
 
@@ -332,10 +383,6 @@ const StoreScreen = ({ navigation }) => {
         setSelectedCategory(null);
       } else {
         setSelectedCategory(categoryId);
-      }
-      // 카테고리 변경 시 스크롤 초기화
-      if (productGridRef.current) {
-        productGridRef.current.scrollToOffset({ offset: 0, animated: true });
       }
     },
     [selectedCategory]
@@ -352,18 +399,27 @@ const StoreScreen = ({ navigation }) => {
     if (searchInputRef.current) {
       searchInputRef.current.blur();
     }
+    // 검색 요청임을 표시
+    requestTypeRef.current = 'search';
     loadProducts(true);
-  }, []);
+    // 검색 시 스크롤 위치를 최상단으로 리셋
+    scrollToTop();
+  }, [scrollToTop]);
 
   // 무한 스크롤 처리 (디바운싱 적용)
   const handleEndReached = useCallback(() => {
-    if (onEndReachedTimeoutRef.current) {
-      clearTimeout(onEndReachedTimeoutRef.current);
+    // 이미 로딩 중이거나, 다음 페이지가 없거나, 타임아웃이 이미 설정된 경우 중단
+    if (loading || !hasNextPage || onEndReachedTimeoutRef.current) {
+      return;
     }
-
+  
     onEndReachedTimeoutRef.current = setTimeout(() => {
+      // 무한 스크롤 요청임을 표시
+      requestTypeRef.current = 'scroll';
       loadProducts(false);
-    }, 200);
+      // 타임아웃 레퍼런스 초기화
+      onEndReachedTimeoutRef.current = null;
+    }, 300); // 시간을 조금 늘려 더 안정적으로 만듦
   }, [loading, hasNextPage]);
 
   // 상품 상세 페이지로 이동
@@ -406,11 +462,11 @@ const StoreScreen = ({ navigation }) => {
     ({ item }) => (
       <CategoryItem
         item={item}
-        isSelected={selectedCategory === item.id}
+        isSelected={selectedCategory === item.categoryId}
         onSelect={handleCategorySelect}
       />
     ),
-    [selectedCategory, handleCategorySelect]
+    [selectedCategory, handleCategorySelect, categories]
   );
 
   // 정렬 옵션 드롭다운 렌더링
@@ -508,7 +564,7 @@ const StoreScreen = ({ navigation }) => {
             <FlatList
               data={categories}
               renderItem={renderCategoryItem}
-              keyExtractor={(item) => `category-${item.id}`}
+              keyExtractor={(item) => `category-${item.categoryId}`}
               showsVerticalScrollIndicator={false}
               removeClippedSubviews={false}
             />
@@ -517,7 +573,7 @@ const StoreScreen = ({ navigation }) => {
 
         {/* 상품 그리드 - 별도 컴포넌트로 분리 */}
         <ProductGridView
-          ref={productGridRef}
+          ref={productListRef}
           products={products}
           onProductPress={navigateToProductDetail}
           onEndReached={handleEndReached}

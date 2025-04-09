@@ -308,38 +308,42 @@ const DailyView = () => {
     ? `${selectedDayData.month}월 ${selectedDayData.day}일 ${selectedDayData.dayOfWeek}요일`
     : "";
 
-  return (
-    <ScrollView
-      style={styles.scrollContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* 공통 그래프 컴포넌트 사용 */}
-      <MiningGraph
-        data={miningData}
-        isScrollable={true}
-        selectedItem={selectedDayData}
-        onSelectBar={handleSelectDay}
-        dateRangeTitle={dateTitle}
-      />
-
-      {/* 공통 채굴 통계 컴포넌트 사용 */}
-      {selectedDayData && (
-        <MiningStats
-          viewType="daily"
-          miningData={null} // 데일리뷰에서는 단일 데이터만 사용하므로 필요 없음
-          comparisonValue={miningDifference}
-          totalMiningTime={{
-            hours: selectedDayData.miningTime.hours,
-            minutes: selectedDayData.miningTime.minutes,
-          }}
-          maxPossibleHours={8} // 하루 최대 8시간 채굴 가능
+    return (
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 공통 그래프 컴포넌트 사용 */}
+        <MiningGraph
+          data={miningData}
+          isScrollable={true}
+          selectedItem={selectedDayData}
+          onSelectBar={handleSelectDay}
+          dateRangeTitle={dateTitle}
         />
-      )}
-
-      {/* 공통 앱 사용 통계 컴포넌트 사용 */}
-      <AppUsageStats viewType="daily" appUsage={appUsage} />
-    </ScrollView>
-  );
+    
+        {/* 공통 채굴 통계 컴포넌트 사용 */}
+        {selectedDayData && (
+          <MiningStats
+            viewType="daily"
+            miningData={null}
+            comparisonValue={miningDifference}
+            totalMiningTime={{
+              hours: selectedDayData.miningTime.hours,
+              minutes: selectedDayData.miningTime.minutes,
+            }}
+            maxPossibleHours={8}
+          />
+        )}
+    
+        {/* 공통 앱 사용 통계 컴포넌트 사용 - selectedDate 전달 */}
+        <AppUsageStats 
+          viewType="daily" 
+          appUsage={appUsage}
+          selectedDate={selectedDayData} // 선택된 날짜 정보 전달
+        />
+      </ScrollView>
+    );
 };
 
 const styles = StyleSheet.create({

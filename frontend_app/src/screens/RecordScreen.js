@@ -24,9 +24,20 @@ const RecordScreen = () => {
   const [viewMode, setViewMode] = useState(0); // 0: 일간, 1: 주간
   const pagerRef = useRef(null);
 
+   // 스크롤 위치를 공유하기 위한 상태와 ref
+   const [scrollPosition, setScrollPosition] = useState(0);
+   const dailyScrollViewRef = useRef(null);
+   const weeklyScrollViewRef = useRef(null);
+
   useEffect(() => {
     checkPermission();
   }, []);
+
+  // 스크롤 위치가 변경될 때 호출되는 함수
+  const handleScroll = (event) => {
+    const newPosition = event.nativeEvent.contentOffset.y;
+    setScrollPosition(newPosition);
+  };
 
   const checkPermission = async () => {
     try {
@@ -78,10 +89,19 @@ const RecordScreen = () => {
     pagerRef.current?.setPage(index);
   };
 
-  // 페이지 스와이프 이벤트 핸들러
+  // 페이지 전환 이벤트 핸들러
   const handlePageSelected = (e) => {
     const position = e.nativeEvent.position;
     setViewMode(position);
+    
+    // 페이지 전환 시 스크롤 위치 동기화
+    setTimeout(() => {
+      if (position === 0 && dailyScrollViewRef.current) {
+        dailyScrollViewRef.current.scrollTo({ y: scrollPosition, animated: false });
+      } else if (position === 1 && weeklyScrollViewRef.current) {
+        weeklyScrollViewRef.current.scrollTo({ y: scrollPosition, animated: false });
+      }
+    }, 50); // 약간의 딜레이를 주어 전환이 완료된 후 스크롤 위치를 설정
   };
 
   if (loading) {
@@ -152,12 +172,20 @@ const RecordScreen = () => {
           >
             {/* 일간 뷰 */}
             <View key="1">
-              <DailyView />
+              <DailyView 
+                scrollViewRef={dailyScrollViewRef}
+                onScroll={handleScroll}
+                scrollPosition={scrollPosition}
+              />
             </View>
             
             {/* 주간 뷰 */}
             <View key="2">
-              <WeeklyView />
+              <WeeklyView 
+                scrollViewRef={weeklyScrollViewRef}
+                onScroll={handleScroll}
+                scrollPosition={scrollPosition}
+              />
             </View>
           </PagerView>
         </>

@@ -1,4 +1,4 @@
-// StackNavigator.js
+// StackNavigator.js (수정)
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BottomTabNavigator from './BottomTabNavigator';
@@ -12,6 +12,7 @@ import AddressDetailScreen from '../screens/AddressDetailScreen';
 import GiftBoxScreen from '../screens/GiftBoxScreen';
 import GiftDetailScreen from '../screens/GiftDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import UsageStatsDetailScreen from '../screens/UsageStatsDetailScreen'; // 추가
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +44,16 @@ const StackNavigator = () => {
           headerStyle: {
             backgroundColor: '#FFFFFF',
           },
+        }}
+      />
+      {/* 앱 사용 통계 상세 화면 추가 */}
+      <Stack.Screen 
+        name="UsageStatsDetail" 
+        component={UsageStatsDetailScreen} 
+        options={{
+          headerShown: false,
+          presentation: 'card',
+          animation: 'slide_from_right'
         }}
       />
       <Stack.Screen 

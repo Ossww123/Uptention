@@ -20,6 +20,8 @@ const WeeklyView = () => {
   // 로딩 상태
   const [loading, setLoading] = useState(true);
   const [appUsage, setAppUsage] = useState({});
+  // 이전 주 앱 사용량 데이터 추가
+  const [prevWeekAppUsage, setPrevWeekAppUsage] = useState({});
 
   // 주간 채굴 데이터
   const [weeklyMiningData, setWeeklyMiningData] = useState([]);
@@ -42,6 +44,7 @@ const WeeklyView = () => {
     startDate: null,
     endDate: null,
   });
+
 
   useEffect(() => {
     // 컴포넌트 마운트 시 초기 날짜 범위 설정
@@ -95,6 +98,20 @@ const WeeklyView = () => {
     const seconds = String(date.getSeconds()).padStart(2, "0");
 
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  };
+
+  // 날짜가 주어진 범위 내에 있는지 확인하는 함수
+  const isDateInRange = (date, startDate, endDate) => {
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+    
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    
+    return targetDate >= start && targetDate <= end;
   };
 
   // 주간 데이터 가져오기
@@ -175,15 +192,81 @@ const WeeklyView = () => {
         const randomComparisonValue = Math.floor(Math.random() * 600) - 300;
         setWeeklyComparison(randomComparisonValue);
 
-        // 앱 사용 정보 가져오기
-        const weeklyScreenTimeData = await ScreenTime.getWeeklyScreenTime();
-        console.log("WeeklyView - ScreenTime Data:", weeklyScreenTimeData);
+        // 최근 14일간의 앱 사용 정보 가져오기
+        const weeklyScreenTimeData = await ScreenTime.getWeeklyScreenTime(14);
+        
         if (weeklyScreenTimeData.hasPermission) {
-          console.log(
-            "WeeklyView - App Usage Data:",
-            weeklyScreenTimeData.appUsageWithNames
-          );
-          setAppUsage(weeklyScreenTimeData.appUsageWithNames || {});
+          const appUsageData = weeklyScreenTimeData.appUsageWithNames || {};
+          
+          // 현재 주와 이전 주의 날짜 범위 계산
+          const currentWeekStart = new Date(currentWeek.startDate);
+          const currentWeekEnd = new Date(currentWeek.endDate);
+          
+          const prevWeekEnd = new Date(currentWeekStart);
+          prevWeekEnd.setDate(prevWeekEnd.getDate() - 1);
+          
+          const prevWeekStart = new Date(prevWeekEnd);
+          prevWeekStart.setDate(prevWeekEnd.getDate() - 6);
+          
+          // 날짜별 사용 시간 데이터(dailyScreenTime)에서 현재 주와 이전 주 분리
+          const currentWeekDates = {};
+          const prevWeekDates = {};
+          
+          // ScreenTimeModule에서 제공하는 dailyScreenTime은 날짜별 전체 스크린 타임 매핑
+          Object.entries(weeklyScreenTimeData.dailyScreenTime || {}).forEach(([dateStr, screenTime]) => {
+            const date = new Date(dateStr);
+            if (isDateInRange(date, currentWeekStart, currentWeekEnd)) {
+              currentWeekDates[dateStr] = screenTime;
+            } else if (isDateInRange(date, prevWeekStart, prevWeekEnd)) {
+              prevWeekDates[dateStr] = screenTime;
+            }
+          });
+          
+          // 현재 주와 이전 주의 앱별 사용 시간 데이터 분리 처리
+          const currentWeekAppUsage = {};
+          const prevWeekAppUsage = {};
+          
+          // 앱별 사용 시간 데이터
+          Object.entries(appUsageData).forEach(([packageName, appInfo]) => {
+            // 현재 일별 데이터로는 앱별 일자별 사용 시간을 직접 알 수 없으므로,
+            // 전체 앱 사용 시간 비율을 기반으로 근사치 계산
+            
+            // 현재 주와 이전 주의 총 스크린 타임 계산
+            const currentWeekTotalScreenTime = Object.values(currentWeekDates).reduce((sum, time) => sum + time, 0);
+            const prevWeekTotalScreenTime = Object.values(prevWeekDates).reduce((sum, time) => sum + time, 0);
+            const totalScreenTime = currentWeekTotalScreenTime + prevWeekTotalScreenTime;
+            
+            if (totalScreenTime > 0) {
+              // 앱의 총 사용 시간을 현재 주와 이전 주로 비율 기반 분배
+              // (더 정확한 방법이 있다면 개선 가능)
+              const currentWeekRatio = currentWeekTotalScreenTime / totalScreenTime;
+              const prevWeekRatio = prevWeekTotalScreenTime / totalScreenTime;
+              
+              // 앱 정보 복사 및 사용 시간 계산
+              currentWeekAppUsage[packageName] = {
+                ...appInfo,
+                usageTime: Math.round(appInfo.usageTime * currentWeekRatio)
+              };
+              
+              prevWeekAppUsage[packageName] = {
+                ...appInfo,
+                usageTime: Math.round(appInfo.usageTime * prevWeekRatio)
+              };
+            }
+          });
+          
+          // 현재 주가 첫 번째 주(최신 주)인 경우에만 현재 주/이전 주 데이터 업데이트
+          if (currentWeekIndex === 0) {
+            setAppUsage(currentWeekAppUsage);
+            setPrevWeekAppUsage(prevWeekAppUsage);
+          } else if (currentWeekIndex === 1) {
+            // 현재 선택된 주가 이전 주인 경우, 이전 주 데이터를 현재 표시용으로 설정
+            setAppUsage(prevWeekAppUsage);
+            
+            // 두 번째 이전 주 데이터는 여기서는 계산하지 않음
+            // 필요시 추가 구현 가능
+            setPrevWeekAppUsage({});
+          }
         }
       } else {
         console.error("주간 채굴 시간 데이터 가져오기 실패:", response.data);
@@ -257,7 +340,7 @@ const WeeklyView = () => {
     const randomComparisonValue = Math.floor(Math.random() * 600) - 300; // -300 ~ 300 사이의 임의 값 (분 단위)
     setWeeklyComparison(randomComparisonValue);
 
-    // 더미 앱 사용 데이터 설정
+    // 더미 앱 사용 데이터 설정 - 현재 주
     const dummyAppUsage = {
       "com.google.android.youtube": {
         appName: "YouTube",
@@ -275,23 +358,53 @@ const WeeklyView = () => {
         iconBase64: null,
       },
     };
+    
+    // 더미 앱 사용 데이터 설정 - 이전 주 (현재와 약간 다른 값)
+    const dummyPrevWeekAppUsage = {
+      "com.google.android.youtube": {
+        appName: "YouTube",
+        usageTime: 155,
+        iconBase64: null,
+      },
+      "com.kakao.talk": {
+        appName: "카카오톡",
+        usageTime: 140,
+        iconBase64: null,
+      },
+      "com.instagram.android": {
+        appName: "Instagram",
+        usageTime: 70,
+        iconBase64: null,
+      },
+    };
+    
     setAppUsage(dummyAppUsage);
+    setPrevWeekAppUsage(dummyPrevWeekAppUsage);
   };
 
   // 이전/다음 주 이동 처리
   const navigateWeek = (direction) => {
     if (direction === "prev") {
-      // 이전 7일로 이동
-      const newEndDate = new Date(currentWeek.startDate);
-      newEndDate.setDate(newEndDate.getDate() - 1); // 현재 시작일 하루 전
+      // 이전 주로 이동할 때 최대 2주(14일) 전까지만 허용
+      if (currentWeekIndex < 1) { // 현재 인덱스가 0이면 첫 번째 주, 1이면 두 번째 주
+        // 이전 7일로 이동
+        const newEndDate = new Date(currentWeek.startDate);
+        newEndDate.setDate(newEndDate.getDate() - 1); // 현재 시작일 하루 전
 
-      const newStartDate = new Date(newEndDate);
-      newStartDate.setDate(newEndDate.getDate() - 6); // 7일 전
+        const newStartDate = new Date(newEndDate);
+        newStartDate.setDate(newEndDate.getDate() - 6); // 7일 전
 
-      setCurrentWeekRange(newStartDate, newEndDate);
-      setCurrentWeekIndex(currentWeekIndex + 1);
+        setCurrentWeekRange(newStartDate, newEndDate);
+        setCurrentWeekIndex(currentWeekIndex + 1);
+        
+        // 이미 이전 주 데이터를 가지고 있다면, 첫 번째 주에서 두 번째 주로 이동할 때
+        // 현재 주 데이터를 이전 주 데이터로 교체
+        if (currentWeekIndex === 0 && Object.keys(prevWeekAppUsage).length > 0) {
+          setAppUsage(prevWeekAppUsage);
+        }
+      }
     } else if (direction === "next" && currentWeekIndex > 0) {
-      // 다음 7일로 이동 (최신 주까지만)
+      // 다음 주로 이동 (최신 주까지만)
       const newStartDate = new Date(currentWeek.endDate);
       newStartDate.setDate(newStartDate.getDate() + 1); // 현재 종료일 다음날
 
@@ -310,6 +423,12 @@ const WeeklyView = () => {
 
       setCurrentWeekRange(newStartDate, newEndDate);
       setCurrentWeekIndex(currentWeekIndex - 1);
+      
+      // 최신 주로 다시 이동할 때 데이터 복원
+      if (currentWeekIndex === 1) {
+        // 서버에서 다시 가져오는 대신 기존 데이터를 재활용
+        fetchWeeklyData();
+      }
     }
   };
 
@@ -335,6 +454,7 @@ const WeeklyView = () => {
         onPrevWeek={() => navigateWeek("prev")}
         onNextWeek={() => navigateWeek("next")}
         isCurrentWeek={currentWeekIndex === 0}
+        isPrevDisabled={currentWeekIndex >= 1} // 이 prop 추가
       />
 
       {/* 공통 채굴 통계 컴포넌트 사용 */}
@@ -348,15 +468,16 @@ const WeeklyView = () => {
         }}
       />
 
-      {/* 앱 사용 통계 로그 */}
-      {console.log("WeeklyView Render - App Usage:", appUsage)}
-      {console.log(
-        "WeeklyView Render - Has Data:",
-        Object.keys(appUsage).length > 0
-      )}
-
       {/* 공통 앱 사용 통계 컴포넌트 사용 */}
-      <AppUsageStats viewType="weekly" appUsage={appUsage} />
+      <AppUsageStats 
+        viewType="weekly" 
+        appUsage={appUsage} 
+        prevWeekAppUsage={prevWeekAppUsage} // 이전 주 앱 사용 데이터 전달
+        weekInfo={{
+          title: `${currentWeek.start} - ${currentWeek.end}`,
+          currentWeekIndex: currentWeekIndex
+        }}
+      />
     </ScrollView>
   );
 };

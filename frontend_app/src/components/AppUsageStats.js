@@ -1,17 +1,39 @@
-// AppUsageStats.js
+// AppUsageStats.js 수정
 import React from "react";
-import { View, Text, StyleSheet, Image, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 const { width } = Dimensions.get("window");
 
 const AppUsageStats = ({
   viewType = "daily", // 'daily' 또는 'weekly'
   appUsage = {}, // 앱 사용 데이터
+  selectedDate = null, // 선택된 날짜 정보
+  weekInfo = null, // 주간 정보 추가
 }) => {
-  console.log("AppUsageStats - ViewType:", viewType);
-  console.log("AppUsageStats - AppUsage:", appUsage);
-  console.log("AppUsageStats - Keys:", Object.keys(appUsage));
+  const navigation = useNavigation();
+  
+  // 자세히 보기 버튼 핸들러
+  const handleViewDetail = () => {
+    navigation.navigate("UsageStatsDetail", {
+      viewType: viewType,
+      appUsage: appUsage,
+      totalScreenTime: calculateTotalScreenTime(),
+      selectedDate: selectedDate,
+      weekInfo: weekInfo, // 주간 정보 전달
+    });
+  };
+  
+  // 총 스크린 사용 시간 계산
+  const calculateTotalScreenTime = () => {
+    if (Object.keys(appUsage).length === 0) return 0;
+    
+    return Object.values(appUsage).reduce(
+      (total, app) => total + app.usageTime, 
+      0
+    );
+  };
 
   // 앱 사용 시간 바 너비 계산
   const getBarWidth = (usageTime) => {
@@ -50,13 +72,27 @@ const AppUsageStats = ({
     }
   };
 
-  const title =
-    viewType === "daily" ? "가장 많이 사용한 앱" : "최근 7일간 많이 사용한 앱";
+  // 타이틀 텍스트 결정
+  const title = (() => {
+    if (viewType === "daily") {
+      return "가장 많이 사용한 앱";
+    } else {
+      // 현재 주 표시 (currentWeekIndex: 0=현재주, 1=이전주)
+      if (weekInfo && weekInfo.currentWeekIndex > 0) {
+        return `이전 주간 많이 사용한 앱`;
+      } else {
+        return "최근 7일간 많이 사용한 앱";
+      }
+    }
+  })();
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
+        <TouchableOpacity onPress={handleViewDetail}>
+          <Text style={styles.viewMoreText}>자세히 보기</Text>
+        </TouchableOpacity>
       </View>
 
       {Object.keys(appUsage).length > 0 ? (
@@ -72,7 +108,7 @@ const AppUsageStats = ({
                 <View style={styles.appInfoContainer}>
                   {renderAppIcon(data)}
                   <Text style={styles.appName}>{data.appName}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#888" />
+                  {/* <Ionicons name="chevron-forward" size={16} color="#888" /> */}
                 </View>
                 <Text style={styles.appTimeText}>
                   {hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`}
@@ -116,6 +152,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
+    fontWeight: "500",
+  },
+  viewMoreText: {
+    fontSize: 14,
+    color: "#007AFF",
     fontWeight: "500",
   },
   appItem: {
