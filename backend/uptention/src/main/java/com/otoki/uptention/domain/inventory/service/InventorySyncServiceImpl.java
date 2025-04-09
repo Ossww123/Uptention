@@ -50,8 +50,8 @@ public class InventorySyncServiceImpl implements InventorySyncService {
 					InventoryDto inventory = inventoryService.getInventory(item.getId());
 					item.updateQuantity(inventory.getQuantity());
 
-					log.info("Synchronized inventory for item {} to database: quantity={}", item.getId(),
-						inventory.getQuantity());
+					// log.info("Synchronized inventory for item {} to database: quantity={}", item.getId(),
+					// 	inventory.getQuantity());
 				} catch (Exception e) {
 					log.error("Error synchronizing inventory for item {}", item.getId(), e);
 				}
