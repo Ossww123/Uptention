@@ -70,7 +70,6 @@ const ProductManagementPage = () => {
       
       setCategories(response.data);
     } catch (err) {
-      console.error('카테고리 로딩 오류:', err);
       setError('카테고리 정보를 불러오는 데 실패했습니다.');
     }
   };
@@ -140,7 +139,6 @@ const ProductManagementPage = () => {
       setNextCursor(data.nextCursor);
       setHasMore(data.hasNextPage);
     } catch (err) {
-      console.error('API 에러:', err);
       if (err.response) {
         const { status, data } = err.response;
         if (status === 401) {
@@ -269,7 +267,6 @@ const ProductManagementPage = () => {
         setProducts(products.filter(product => product.itemId !== productId));
         alert('상품이 성공적으로 삭제되었습니다.');
       } catch (err) {
-        console.error('상품 삭제 오류:', err);
         if (err.response) {
           alert(`상품 삭제에 실패했습니다: ${err.response.data.message || '알 수 없는 오류'}`);
         } else {

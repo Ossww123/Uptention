@@ -65,9 +65,6 @@ const UserManagementPage = () => {
           params.cursor = nextCursor;
         }
 
-        console.log("요청 파라미터:", params);
-        console.log("요청 토큰:", token);
-
         const response = await axios.get(`${API_BASE_URL}/api/users`, {
           headers: {
             Authorization: token,
@@ -87,10 +84,8 @@ const UserManagementPage = () => {
         setNextCursor(data.nextCursor);
         setHasMore(data.hasNextPage);
       } catch (err) {
-        console.error("API 에러:", err);
 
         if (err.response) {
-          console.error("오류 응답 데이터:", err.response.data);
           const { status, data } = err.response;
 
           if (status === 401) {
@@ -210,7 +205,6 @@ const UserManagementPage = () => {
       setModalOpen(false);
       setUserToDelete(null);
     } catch (err) {
-      console.error("회원 삭제 오류:", err);
 
       if (err.response) {
         alert(
