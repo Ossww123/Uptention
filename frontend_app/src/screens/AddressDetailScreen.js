@@ -55,10 +55,18 @@ const AddressDetailScreen = ({ navigation, route }) => {
       return;
     }
 
+    // 전체 주소 생성
+    const completeAddress = `${address.roadAddress} ${trimmedAddress}`;
+
     // PaymentBottomSheet에서 온 경우
     if (prevScreen === "PaymentBottomSheet") {
       navigation.navigate("ProductDetail", {
-        address: completeAddress,
+        address: {
+          roadAddress: address.roadAddress,
+          detailAddress: trimmedAddress,
+          zonecode: address.zonecode,
+          buildingName: address.buildingName || ''
+        },
         product: product,
         productId: product.itemId,
         showPaymentSheet: true,
@@ -69,7 +77,7 @@ const AddressDetailScreen = ({ navigation, route }) => {
       // 기존 item의 모든 정보를 유지하고 주소만 업데이트
       const updatedItem = {
         ...item,
-        address: `${address.roadAddress} ${detailAddress}`,
+        address: completeAddress,
       };
 
       navigation.navigate("GiftDetail", {

@@ -51,13 +51,13 @@ const PaymentBottomSheet = ({
 
       if (response.data && response.data.address) {
         // 주소 문자열을 파싱하여 주소 객체 형식으로 변환
-        const addressParts = response.data.address.split(' ');
-        const zonecode = addressParts[0].replace('[', '').replace(']', '');
-        const roadAddress = addressParts.slice(1, -1).join(' ');
+        const fullAddress = response.data.address;
+        const addressParts = fullAddress.split(' ');
         const detailAddress = addressParts[addressParts.length - 1];
+        const roadAddress = addressParts.slice(0, -1).join(' ');
 
         setAddress({
-          zonecode,
+          zonecode: '',  // API 응답에 우편번호가 없으므로 빈 값으로 설정
           roadAddress,
           detailAddress,
           buildingName: ''
@@ -88,8 +88,16 @@ const PaymentBottomSheet = ({
       
       // 주소 정보가 있을 때만 주소를 업데이트
       if (currentRoute.params?.address) {
-        console.log('받은 주소:', currentRoute.params.address);
-        setAddress(currentRoute.params.address);
+        const receivedAddress = currentRoute.params.address;
+        console.log('받은 주소:', receivedAddress);
+        
+        // 주소 객체 형식 통일
+        setAddress({
+          zonecode: receivedAddress.zonecode || '',
+          roadAddress: receivedAddress.roadAddress,
+          detailAddress: receivedAddress.detailAddress,
+          buildingName: receivedAddress.buildingName || ''
+        });
         setIsLoadingAddress(false);
       }
     }
@@ -103,6 +111,11 @@ const PaymentBottomSheet = ({
       }
 
       setLoading(true);
+      
+      // 전체 주소를 하나의 문자열로 결합 (우편번호 포함)
+      const fullAddress = address.zonecode 
+        ? `[${address.zonecode}] ${address.roadAddress} ${address.detailAddress}`
+        : `${address.roadAddress} ${address.detailAddress}`;
       
       // 1. 주문 검증 API 요청 데이터 준비
       const orderVerifyData = [{
@@ -129,7 +142,7 @@ const PaymentBottomSheet = ({
             itemId: product.itemId,
             quantity: 1
           }],
-          address: `${address.roadAddress} ${address.detailAddress}`
+          address: fullAddress
         };
 
         console.log('결제 요청 데이터:', JSON.stringify(purchaseData, null, 2));
@@ -288,7 +301,7 @@ const PaymentBottomSheet = ({
                   ) : address ? (
                     <>
                       <Text style={styles.addressText}>
-                        [{address.zonecode}] {address.roadAddress}
+                        {address.zonecode ? `[${address.zonecode}] ` : ''}{address.roadAddress}
                       </Text>
                       <Text style={styles.addressDetail}>
                         {address.detailAddress}

@@ -44,16 +44,24 @@ const CheckoutScreen = ({ navigation, route }) => {
 
       if (response.data && response.data.address) {
         // 주소 문자열을 파싱하여 주소 객체 형식으로 변환
-        const addressParts = response.data.address.split(" ");
-        const zonecode = addressParts[0].replace("[", "").replace("]", "");
-        const roadAddress = addressParts.slice(1, -1).join(" ");
+        const fullAddress = response.data.address;
+        const addressParts = fullAddress.split(' ');
+        
+        // 우편번호 추출 (대괄호 제거)
+        const zonecodeMatch = addressParts[0].match(/\[(\d+)\]/);
+        const zonecode = zonecodeMatch ? zonecodeMatch[1] : '';
+        
+        // 상세주소는 마지막 부분
         const detailAddress = addressParts[addressParts.length - 1];
+        
+        // 도로명 주소는 우편번호와 상세주소 사이의 모든 부분
+        const roadAddress = addressParts.slice(1, -1).join(' ');
 
         setAddress({
           zonecode,
           roadAddress,
           detailAddress,
-          buildingName: "",
+          buildingName: ''
         });
       }
     } catch (error) {
@@ -77,9 +85,17 @@ const CheckoutScreen = ({ navigation, route }) => {
 
     // 주소 정보가 있을 때만 주소를 업데이트
     if (route.params?.address) {
-      console.log("받은 주소:", route.params.address);
-      setAddress(route.params.address);
-      setIsLoadingAddress(false); // 주소 검색에서 돌아왔을 때 로딩 상태 해제
+      const receivedAddress = route.params.address;
+      console.log("받은 주소:", receivedAddress);
+      
+      // 주소 객체 형식 통일
+      setAddress({
+        zonecode: receivedAddress.zonecode || '',
+        roadAddress: receivedAddress.roadAddress,
+        detailAddress: receivedAddress.detailAddress,
+        buildingName: receivedAddress.buildingName || ''
+      });
+      setIsLoadingAddress(false);
 
       // 주소 검색에서 돌아올 때 이전 상품 정보 복원
       if (route.params.selectedItems) {
@@ -203,13 +219,12 @@ const CheckoutScreen = ({ navigation, route }) => {
               itemId: item.itemId,
               quantity: item.quantity,
             })),
-            address: `${address.roadAddress} ${address.detailAddress}`,
+            address: address.zonecode 
+              ? `[${address.zonecode}] ${address.roadAddress} ${address.detailAddress}`
+              : `${address.roadAddress} ${address.detailAddress}`,
           };
 
-          console.log(
-            "주문 요청 데이터:",
-            JSON.stringify(requestData, null, 2)
-          );
+          console.log("주문 요청 데이터:", JSON.stringify(requestData, null, 2));
 
           const response = await axios.post(
             `${API_BASE_URL}/api/orders/purchase`,
