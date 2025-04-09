@@ -1,5 +1,5 @@
 // src/pages/Products/ProductCreatePage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./ProductCreatePage.css";
@@ -20,6 +20,7 @@ const ProductCreatePage = () => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   // 이미지 관련 상태
   const [mainImage, setMainImage] = useState(null);
@@ -35,17 +36,37 @@ const ProductCreatePage = () => {
   const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
   const ALLOWED_MIME_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 
-  // 카테고리 목록
-  const categories = [
-    { id: "1", name: "가전디지털" },
-    { id: "2", name: "뷰티" },
-    { id: "3", name: "리빙/키친" },
-    { id: "4", name: "패션의류/잡화" },
-    { id: "5", name: "문화여가" },
-    { id: "6", name: "생활용품" },
-    { id: "7", name: "식품" },
-    { id: "8", name: "키즈" },
-  ];
+  // 카테고리 데이터 가져오기
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const token = localStorage.getItem("auth-token");
+        if (!token) {
+          throw new Error("인증 토큰이 없습니다.");
+        }
+
+        const response = await axios.get(`${API_BASE_URL}/api/category`, {
+          headers: {
+            Authorization: token
+          }
+        });
+        
+        if (response.data && Array.isArray(response.data)) {
+          setCategories(response.data);
+        } else {
+          throw new Error("카테고리 데이터 형식이 올바르지 않습니다.");
+        }
+      } catch (error) {
+        console.error("카테고리 조회 실패:", error);
+        setErrors((prev) => ({
+          ...prev,
+          form: "카테고리 조회에 실패했습니다. 다시 시도해주세요."
+        }));
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -601,7 +622,7 @@ const ProductCreatePage = () => {
                     >
                       <option value="">선택해 주세요</option>
                       {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
+                        <option key={category.categoryId} value={category.categoryId}>
                           {category.name}
                         </option>
                       ))}
