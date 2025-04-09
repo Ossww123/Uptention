@@ -13,31 +13,39 @@ const FocusModeScreen = ({ navigation }) => {
   const [points, setPoints] = useState(0);
   const [appState, setAppState] = useState(AppState.currentState);
   const [isExiting, setIsExiting] = useState(false);
-  const totalSecondsRef = useRef(0);
   const pointsIntervalRef = useRef(null);
   const { userId, authToken } = useAuth();
+  // 마지막으로 계산된 포인트를 저장하는 ref 추가
+  const lastCalculatedPointsRef = useRef(0);
 
-  // 포인트 계산 함수
+  // 포인트 계산 함수 - 순수 계산 함수로 유지
   const calculatePoints = useCallback((seconds) => {
+    // 60초(1분)마다 1포인트 증가
     return Math.floor(seconds / 60);
   }, []);
 
   // 포인트 업데이트 함수
   const updatePoints = useCallback(() => {
+    // 종료 중이거나 타이머가 멈춘 상태면 업데이트하지 않음
+    if (isExiting || !isActive) {
+      return;
+    }
+
     const totalSeconds = getTimeInSeconds();
-    totalSecondsRef.current = totalSeconds;
     const newPoints = calculatePoints(totalSeconds);
     
     if (newPoints !== points) {
-      setPoints(newPoints);
-      console.log('Points Updated:', {
-        previousPoints: points,
-        newPoints,
+      console.log('포인트 업데이트:', {
         totalSeconds,
+        newPoints,
+        previousPoints: points,
         timeString: time
       });
+      setPoints(newPoints);
+      // 계산된 포인트를 ref에 저장
+      lastCalculatedPointsRef.current = newPoints;
     }
-  }, [getTimeInSeconds, points, time, calculatePoints]);
+  }, [getTimeInSeconds, points, time, isExiting, isActive, calculatePoints]);
 
   // AppState 변경 감지
   useEffect(() => {
@@ -62,14 +70,17 @@ const FocusModeScreen = ({ navigation }) => {
     updatePoints();
 
     // 3초마다 포인트 업데이트 (더 부드러운 UX를 위해)
-    pointsIntervalRef.current = setInterval(updatePoints, 3000);
+    if (isActive && !isExiting) {
+      pointsIntervalRef.current = setInterval(updatePoints, 3000);
+    }
 
     return () => {
       if (pointsIntervalRef.current) {
         clearInterval(pointsIntervalRef.current);
+        pointsIntervalRef.current = null;
       }
     };
-  }, [updatePoints]);
+  }, [updatePoints, isActive, isExiting]);
 
   // 컴포넌트 마운트 시 자동으로 타이머 시작 및 앱 제한 기능 활성화
   useEffect(() => {
@@ -111,21 +122,32 @@ const FocusModeScreen = ({ navigation }) => {
       return;
     }
 
+    // 먼저 종료 상태로 설정 - 이걸 맨 위로 이동
     setIsExiting(true);
-    stopTimer();  // 타이머 즉시 중지
     
-    // 현재 포인트를 즉시 저장하고 업데이트 중지
-    const finalPoints = points;
+    // 타이머 중지
+    stopTimer();
+
+    // 포인트 업데이트 인터벌 중지
     if (pointsIntervalRef.current) {
       clearInterval(pointsIntervalRef.current);
+      pointsIntervalRef.current = null;
     }
+    
+    // 종료 시 마지막으로 계산된 포인트 사용
+    // 화면에 표시된 포인트를 사용하는 것이 아니라 계산된 포인트를 사용
+    const finalPoints = lastCalculatedPointsRef.current;
+    
+    console.log('종료 시점 상태:', {
+      currentPoints: finalPoints,
+      displayedTime: time
+    });
 
     try {
-      // 포커스 모드 종료 API 호출
       const response = await axios.patch(
         `${API_BASE_URL}/api/mining-time/focus`,
         {
-          totalTime: finalPoints  // 현재 표시된 포인트 값 전송
+          totalTime: finalPoints
         },
         {
           headers: {
@@ -138,62 +160,46 @@ const FocusModeScreen = ({ navigation }) => {
       if (response.status === 200) {
         console.log('포커스 모드 종료 API 호출 성공');
         
-        // API 호출 성공 후 앱 차단 해제
         if (Platform.OS === 'android') {
           await AppBlockerModule.setAppBlockingEnabled(false);
         }
 
-        // 포인트 업데이트를 위해 최대 3번까지 시도
         let updatedPoint = 0;
+        // 포인트 조회 시도 (최대 2번)
         for (let i = 0; i < 2; i++) {
-          // 2초씩 대기
           await new Promise(resolve => setTimeout(resolve, 2000));
-
-          // 포인트 조회 시도
           try {
             const pointResponse = await axios.get(`${API_BASE_URL}/api/users/${userId}/point`, {
               headers: {
                 'Authorization': `Bearer ${authToken}`
               }
             });
-
-            console.log(`${i + 1}번째 포인트 조회 응답:`, pointResponse.data);
-            
-            // 포인트가 0보다 크면 업데이트 성공으로 간주하고 종료
             if (pointResponse.data.point > 0) {
               updatedPoint = pointResponse.data.point;
               break;
             }
           } catch (error) {
-            console.error(`${i + 1}번째 포인트 조회 실패:`, error);
+            console.error(`포인트 조회 실패 (${i + 1}번째):`, error);
           }
         }
-        
-        stopTimer();
+
         resetTimer();
-        
         navigation.goBack();
         
-        console.log('포커스 모드 종료:', {
-          totalSeconds: totalSecondsRef.current,
+        console.log('포커스 모드 종료 완료:', {
           earnedPoints: finalPoints,
-          updatedPoint: updatedPoint
+          displayedTime: time,
+          updatedPoint
         });
       }
     } catch (error) {
       console.error('포커스 모드 종료 오류:', error);
-      if (error.response) {
-        console.error('에러 상세 정보:', {
-          status: error.response.status,
-          data: error.response.data
-        });
-      }
       Alert.alert(
         '오류',
         '포커스 모드 종료 중 문제가 발생했습니다. 다시 시도해주세요.',
         [{ text: '확인' }]
       );
-    } finally {
+      // 에러 발생 시 종료 상태 해제
       setIsExiting(false);
     }
   };
@@ -235,6 +241,9 @@ const FocusModeScreen = ({ navigation }) => {
                 {isExiting ? '종료 중...' : '종료하기'}
               </Text>
             </TouchableOpacity>
+            <Text style={styles.noticeText}>
+              네트워크에 따른 1-2초의 차이가 있을 수 있습니다.
+            </Text>
           </View>
         </View>
       </View>
@@ -255,7 +264,6 @@ const styles = StyleSheet.create({
     marginBottom: 200,
   },
   coinContainer: {
-   
     alignItems: 'center',
   },
   coinText: {
@@ -314,6 +322,12 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#555555',
   },
+  noticeText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
+  },
 });
 
-export default FocusModeScreen; 
+export default FocusModeScreen;
