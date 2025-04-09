@@ -1,5 +1,5 @@
 // src/components/PaymentBottomSheet.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -32,8 +32,13 @@ const PaymentBottomSheet = ({
   const [loading, setLoading] = useState(false);
   const [address, setAddress] = useState(null);
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { tokenBalance, publicKey, sendSPLToken } = useWallet();
   const { authToken } = useAuth();
+  
+  // 마지막 결제 시도 시간을 저장하는 ref
+  const lastPaymentAttempt = useRef(0);
+  const PAYMENT_COOLDOWN = 3000; // 3초 쿨다운
 
   // 최근 배송지 조회
   const fetchRecentAddress = async () => {
@@ -105,12 +110,29 @@ const PaymentBottomSheet = ({
 
   const handlePayment = async () => {
     try {
+      // 현재 시간 체크
+      const now = Date.now();
+      
+      // 이전 결제 시도로부터 3초가 지나지 않았다면 무시
+      if (now - lastPaymentAttempt.current < PAYMENT_COOLDOWN) {
+        console.log('결제 쿨다운 중입니다.');
+        return;
+      }
+      
+      // 결제 진행 중이면 중복 실행 방지
+      if (isProcessing) {
+        console.log('결제가 이미 진행 중입니다.');
+        return;
+      }
+
       if (!address) {
         Alert.alert('주문 실패', '배송 주소를 입력해주세요.');
         return;
       }
 
       setLoading(true);
+      setIsProcessing(true);
+      lastPaymentAttempt.current = now;
       
       // 전체 주소를 하나의 문자열로 결합 (우편번호 포함)
       const fullAddress = address.zonecode 
@@ -259,6 +281,12 @@ const PaymentBottomSheet = ({
       );
     } finally {
       setLoading(false);
+      setIsProcessing(false);
+      
+      // 3초 후에 다시 결제 가능하도록 설정
+      setTimeout(() => {
+        lastPaymentAttempt.current = 0;
+      }, PAYMENT_COOLDOWN);
     }
   };
 
@@ -363,10 +391,10 @@ const PaymentBottomSheet = ({
             <TouchableOpacity 
               style={[
                 styles.paymentButton,
-                (!publicKey || (tokenBalance - product.price) < 0 || !address) && styles.disabledButton
+                (!publicKey || (tokenBalance - product.price) < 0 || !address || isProcessing) && styles.disabledButton
               ]}
               onPress={handlePayment}
-              disabled={loading || !publicKey || (tokenBalance - product.price) < 0 || !address}
+              disabled={loading || !publicKey || (tokenBalance - product.price) < 0 || !address || isProcessing}
             >
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
@@ -374,7 +402,8 @@ const PaymentBottomSheet = ({
                 <Text style={styles.paymentButtonText}>
                   {!publicKey ? '지갑 연결 필요' : 
                    !address ? '배송지 입력 필요' :
-                   (tokenBalance - product.price) < 0 ? 'WORK 부족' : 
+                   (tokenBalance - product.price) < 0 ? 'WORK 부족' :
+                   isProcessing ? '결제 처리 중...' : 
                    '결제하기'}
                 </Text>
               )}

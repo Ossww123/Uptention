@@ -19,7 +19,9 @@ const FocusModeScreen = ({ navigation }) => {
 
   // 포인트 계산 함수
   const calculatePoints = useCallback((seconds) => {
-    return Math.floor(seconds / 60);
+    // 60초(1분)마다 1포인트 증가
+    const minutes = Math.floor(seconds / 60);
+    return minutes;
   }, []);
 
   // 포인트 업데이트 함수
@@ -29,13 +31,14 @@ const FocusModeScreen = ({ navigation }) => {
     const newPoints = calculatePoints(totalSeconds);
     
     if (newPoints !== points) {
-      setPoints(newPoints);
-      console.log('Points Updated:', {
+      console.log('Points Update Check:', {
+        totalSeconds,
+        minutes: Math.floor(totalSeconds / 60),
         previousPoints: points,
         newPoints,
-        totalSeconds,
         timeString: time
       });
+      setPoints(newPoints);
     }
   }, [getTimeInSeconds, points, time, calculatePoints]);
 
@@ -114,8 +117,12 @@ const FocusModeScreen = ({ navigation }) => {
     setIsExiting(true);
     stopTimer();  // 타이머 즉시 중지
     
-    // 현재 포인트를 즉시 저장하고 업데이트 중지
-    const finalPoints = points;
+    // 타이머 중지 직후 최종 시간으로 포인트 계산
+    const finalSeconds = getTimeInSeconds();
+    const finalPoints = calculatePoints(finalSeconds);
+    setPoints(finalPoints); // UI 업데이트를 위해 최종 포인트 설정
+    
+    // 포인트 업데이트 중지
     if (pointsIntervalRef.current) {
       clearInterval(pointsIntervalRef.current);
     }
@@ -125,7 +132,7 @@ const FocusModeScreen = ({ navigation }) => {
       const response = await axios.patch(
         `${API_BASE_URL}/api/mining-time/focus`,
         {
-          totalTime: finalPoints  // 현재 표시된 포인트 값 전송
+          totalTime: finalPoints  // 최종 계산된 포인트 값 전송
         },
         {
           headers: {
@@ -134,6 +141,12 @@ const FocusModeScreen = ({ navigation }) => {
           }
         }
       );
+
+      console.log('종료 시 최종 포인트 계산:', {
+        finalSeconds,
+        finalPoints,
+        displayedPoints: points
+      });
 
       if (response.status === 200) {
         console.log('포커스 모드 종료 API 호출 성공');
@@ -235,6 +248,9 @@ const FocusModeScreen = ({ navigation }) => {
                 {isExiting ? '종료 중...' : '종료하기'}
               </Text>
             </TouchableOpacity>
+            <Text style={styles.noticeText}>
+              네트워크에 따른 1-2초의 차이가 있을 수 있습니다.
+            </Text>
           </View>
         </View>
       </View>
@@ -313,6 +329,12 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     backgroundColor: '#555555',
+  },
+  noticeText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 
