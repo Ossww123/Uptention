@@ -201,6 +201,9 @@ const ProductDetailScreen = ({ route, navigation }) => {
     setShowGiftSheet(true);
   };
 
+  // 비활성화 상태를 확인하는 변수
+  const isOutOfStock = product && product.quantity === 0;
+
   // 이미지 슬라이더 렌더링
   const renderImageSlider = () => {
     return (
@@ -371,10 +374,14 @@ const ProductDetailScreen = ({ route, navigation }) => {
           <Text style={styles.name}>{product.name}</Text>
           <Text style={styles.price}>{product.price} WORK</Text>
 
-          {product.quantity <= 5 && (
-            <Text style={styles.lowStockText}>
-              품절 임박! ({product.quantity}개 남음)
-            </Text>
+          {product && product.quantity === 0 ? (
+            <Text style={styles.lowStockText}>품절입니다.</Text>
+          ) : (
+            product && product.quantity <= 5 && (
+              <Text style={styles.lowStockText}>
+                품절 임박! ({product.quantity}개 남음)
+              </Text>
+            )
           )}
 
           <View style={styles.divider} />
@@ -392,15 +399,26 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
       {/* 하단 버튼 영역 - 3개 버튼으로 변경 */}
       <View style={styles.threeButtonContainer}>
-        <TouchableOpacity style={styles.buttonOutline} onPress={addToCart}>
+        <TouchableOpacity 
+          style={styles.buttonOutline} 
+          onPress={addToCart}
+        >
           <Text style={styles.buttonOutlineText}>장바구니</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.buttonOutline} onPress={buyNow}>
+        <TouchableOpacity 
+          style={[styles.buttonOutline, isOutOfStock && { opacity: 0.5 }]} 
+          onPress={buyNow}
+          disabled={isOutOfStock}
+        >
           <Text style={styles.buttonOutlineText}>바로 구매</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.buttonFilled} onPress={sendGift}>
+        <TouchableOpacity 
+          style={[styles.buttonFilled, isOutOfStock && { opacity: 0.5 }]} 
+          onPress={sendGift}
+          disabled={isOutOfStock}
+        >
           <Text style={styles.buttonFilledText}>선물하기</Text>
         </TouchableOpacity>
       </View>

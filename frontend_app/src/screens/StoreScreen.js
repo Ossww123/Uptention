@@ -22,8 +22,8 @@ const { width } = Dimensions.get("window");
 // 카테고리 데이터
 const categories = [
   { id: "1", name: "가전디지털", icon: require("../../assets/category1.png") },
-  { id: "2", name: "뷰티", icon: require("../../assets/category2.png") },
-  { id: "3", name: "리빙/키친", icon: require("../../assets/category3.png") },
+  { id: "3", name: "뷰티", icon: require("../../assets/category2.png") },
+  { id: "2", name: "리빙/키친", icon: require("../../assets/category3.png") },
   {
     id: "4",
     name: "패션의류/잡화",
@@ -96,6 +96,7 @@ const StoreScreen = ({ navigation }) => {
   const currentApiCallIdRef = useRef(null);
   const requestTimerRef = useRef(null);
   const loadRequestedRef = useRef(false);
+  const productGridRef = useRef(null);
 
   // 첫 마운트 시에만 실행되는 useEffect
   useEffect(() => {
@@ -226,10 +227,10 @@ const StoreScreen = ({ navigation }) => {
         return;
       }
 
-      // 더블 요청 방지 타이머 설정 (1초)
+      // 더블 요청 방지 타이머 설정 (300ms로 조정)
       requestTimerRef.current = setTimeout(() => {
         requestTimerRef.current = null;
-      }, 1000);
+      }, 300); // 300ms로 변경
 
       // 현재 API 호출 ID 설정
       currentApiCallIdRef.current = callId;
@@ -331,6 +332,10 @@ const StoreScreen = ({ navigation }) => {
         setSelectedCategory(null);
       } else {
         setSelectedCategory(categoryId);
+      }
+      // 카테고리 변경 시 스크롤 초기화
+      if (productGridRef.current) {
+        productGridRef.current.scrollToOffset({ offset: 0, animated: true });
       }
     },
     [selectedCategory]
@@ -512,6 +517,7 @@ const StoreScreen = ({ navigation }) => {
 
         {/* 상품 그리드 - 별도 컴포넌트로 분리 */}
         <ProductGridView
+          ref={productGridRef}
           products={products}
           onProductPress={navigateToProductDetail}
           onEndReached={handleEndReached}

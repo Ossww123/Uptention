@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   ActivityIndicator,
+  PanResponder
 } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from '../config/config';
@@ -25,6 +26,30 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
   const [isLayoutReady, setIsLayoutReady] = useState(false);
   const { authToken } = useAuth();
 
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) { // 아래로 드래그할 때만
+          slideAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) { // 100px 이상 드래그하면 닫기
+          onClose();
+        } else {
+          // 원위치로 돌아가기
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   // 데이터 로딩 상태 추적을 위한 ref
   const loadingRef = useRef({
     isLoading: false,
@@ -34,7 +59,7 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
   const fetchOrderDetail = async () => {
     try {
       setLoading(true);
-      setIsLayoutReady(false); // 데이터 로딩 시작 시 레이아웃 준비 상태 초기화
+      setIsLayoutReady(false);
       setError(null);
       
       const currentRequestId = loadingRef.current.requestId + 1;
@@ -43,12 +68,6 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
         requestId: currentRequestId
       };
       
-      console.log('[OrderDetail] 데이터 로딩 시작:', {
-        requestId: currentRequestId,
-        orderId,
-        orderItemId
-      });
-
       const response = await axios.get(
         `${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`,
         {
@@ -68,18 +87,14 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
         };
         
         setOrderDetail(enrichedData);
-        
-        // 데이터 설정 후 즉시 로딩 상태 해제
         setLoading(false);
         loadingRef.current.isLoading = false;
         
-        // 데이터 설정 후 레이아웃 준비 상태 업데이트
         requestAnimationFrame(() => {
           setIsLayoutReady(true);
         });
       }
     } catch (err) {
-      console.error('[OrderDetail] 데이터 로딩 실패:', err);
       setError('주문 상세 정보를 불러오는데 실패했습니다.');
       setLoading(false);
       loadingRef.current.isLoading = false;
@@ -120,7 +135,10 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
 
     // 실제 컨텐츠 렌더링
     return (
-      <View style={styles.contentContainer}>
+      <View style={[
+        styles.contentContainer,
+        type === 'PURCHASE' && { minHeight: 'auto', paddingBottom: 0 }
+      ]}>
         <View style={styles.detailRow}>
           <Text style={styles.label}>주문 상태</Text>
           <Text style={styles.value}>{orderDetail.status}</Text>
@@ -165,14 +183,24 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
           </Text>
         </View>
 
-        <View style={styles.divider} />
+        {type === 'PURCHASE' && (
+          <>
+            <View style={styles.divider} />
+            {orderDetail.address && (
+              <View style={styles.deliveryInfo}>
+                <Text style={styles.orderTitle}>배송 주소</Text>
+                <Text style={styles.addressText} numberOfLines={2}>
+                  {orderDetail.address}
+                </Text>
+              </View>
+            )}
+          </>
+        )}
 
-        {type === 'PURCHASE' && orderDetail.address && (
-          <View style={styles.deliveryInfo}>
-            <Text style={styles.orderTitle}>배송 주소</Text>
-            <Text style={styles.addressText} numberOfLines={2}>
-              {orderDetail.address}
-            </Text>
+        {type === 'GIFT' && orderDetail.receiverName && (
+          <View style={styles.detailRow}>
+            <Text style={styles.label}>받는 사람</Text>
+            <Text style={styles.value}>{orderDetail.receiverName}</Text>
           </View>
         )}
       </View>
@@ -240,7 +268,9 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
                 console.log('[OrderDetail] 바텀시트 레이아웃 계산 완료');
               }}
             >
-              <View style={styles.handle} />
+              <View {...panResponder.panHandlers} style={styles.handleContainer}>
+                <View style={styles.handle} />
+              </View>
               <ScrollView 
                 style={styles.scrollView} 
                 showsVerticalScrollIndicator={false}
@@ -274,19 +304,22 @@ const styles = StyleSheet.create({
     padding: 20,
     maxHeight: height * 0.8,
   },
+  handleContainer: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
   handle: {
     width: 40,
     height: 4,
     backgroundColor: '#E0E0E0',
     borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   scrollView: {
     maxHeight: height * 0.75,
   },
   content: {
-    paddingBottom: 20,
+    paddingBottom: 0,
   },
   title: {
     fontSize: 18,
@@ -324,12 +357,14 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: '#EEEEEE',
-    marginVertical: 20,
+    marginTop: 16,
+    marginBottom: 16,
   },
   deliveryInfo: {
     backgroundColor: '#F8F8F8',
     padding: 16,
     borderRadius: 12,
+    marginBottom: 0,
   },
   orderTitle: {
     fontSize: 14,
@@ -351,8 +386,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   contentContainer: {
-    minHeight: 200,
-    paddingBottom: 20,
+    minHeight: 'auto',
+    paddingBottom: 0,
   },
 });
 

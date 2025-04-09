@@ -19,6 +19,7 @@ const CartScreen = ({ navigation }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isQuantityEditing, setIsQuantityEditing] = useState(false);
 
   // 수량 변경 디바운싱을 위한 타이머 ref
   const quantityTimersRef = useRef({});
@@ -454,15 +455,14 @@ const CartScreen = ({ navigation }) => {
                 style={styles.quantityInput}
                 value={String(item.quantity)}
                 onChangeText={(text) => handleQuantityChange(item.cartId, text)}
-                onBlur={() => handleQuantityBlur(item.cartId, item.quantity)}
-                keyboardType="number-pad"
-                maxLength={2} // 99까지만 입력가능하므로 최대 2자리
-                selectTextOnFocus={true} // 포커스시 전체 텍스트 선택
+                onBlur={() => {
+                  handleQuantityBlur(item.cartId, item.quantity);
+                  setIsQuantityEditing(false);
+                }}
                 onFocus={() => {
-                  // 포커스 시 텍스트 전체 선택을 위해 기존 값 임시 저장
+                  setIsQuantityEditing(true);
                   const currentQuantity = String(item.quantity);
                   if (currentQuantity === '1') {
-                    // 1인 경우 임시로 빈 문자열로 설정하여 새로 입력 시작
                     setCartItems(prevItems => 
                       prevItems.map(i => 
                         i.cartId === item.cartId 
@@ -472,6 +472,9 @@ const CartScreen = ({ navigation }) => {
                     );
                   }
                 }}
+                keyboardType="number-pad"
+                maxLength={2}
+                selectTextOnFocus={true}
               />
               
               <TouchableOpacity
@@ -536,10 +539,10 @@ const CartScreen = ({ navigation }) => {
         <TouchableOpacity
           style={[
             styles.checkoutButton,
-            selectedItems.length === 0 && styles.disabledButton,
+            (selectedItems.length === 0 || isQuantityEditing) && styles.disabledButton,
           ]}
           onPress={handleCheckout}
-          disabled={selectedItems.length === 0 || loading}
+          disabled={selectedItems.length === 0 || loading || isQuantityEditing}
         >
           {loading ? (
             <ActivityIndicator color="#FFFFFF" size="small" />

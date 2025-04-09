@@ -10,6 +10,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
   Image,
+  PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -17,6 +18,41 @@ const { height } = Dimensions.get('window');
 
 const NFTDetailBottomSheet = ({ visible, onClose, nft }) => {
   const slideAnim = useRef(new Animated.Value(height)).current;
+  const panY = useRef(new Animated.Value(0)).current;
+
+  const resetPositionAnim = Animated.timing(panY, {
+    toValue: 0,
+    duration: 200,
+    useNativeDriver: true,
+  });
+
+  const closeAnim = Animated.timing(slideAnim, {
+    toValue: height,
+    duration: 200,
+    useNativeDriver: true,
+  });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          closeAnim.start(() => {
+            panY.setValue(0);
+            onClose();
+          });
+        } else {
+          resetPositionAnim.start();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     if (visible) {
@@ -50,11 +86,16 @@ const NFTDetailBottomSheet = ({ visible, onClose, nft }) => {
               style={[
                 styles.bottomSheet,
                 {
-                  transform: [{ translateY: slideAnim }],
+                  transform: [
+                    { translateY: slideAnim },
+                    { translateY: panY },
+                  ],
                 },
               ]}
             >
-              <View style={styles.handle} />
+              <View {...panResponder.panHandlers}>
+                <View style={styles.handle} />
+              </View>
               
               <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
@@ -162,7 +203,7 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flexDirection: 'row',
-    marginBottom: 24,
+    marginBottom: 0,
   },
   labelColumn: {
     flex: 1,
@@ -187,7 +228,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginTop: 8,
-    marginBottom: 24,
+    marginBottom: 0,
   },
   descriptionLabel: {
     fontSize: 14,

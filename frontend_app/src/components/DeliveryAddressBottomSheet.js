@@ -9,6 +9,7 @@ import {
   TouchableWithoutFeedback,
   TouchableOpacity,
   Alert,
+  PanResponder
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
@@ -24,6 +25,30 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
   const [address, setAddress] = useState(null);
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const { authToken } = useAuth();
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) { // 아래로 드래그할 때만
+          slideAnim.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) { // 100px 이상 드래그하면 닫기
+          onClose();
+        } else {
+          // 원위치로 돌아가기
+          Animated.spring(slideAnim, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     if (visible) {
@@ -181,7 +206,9 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
                 },
               ]}
             >
-              <View style={styles.handle} />
+              <View {...panResponder.panHandlers} style={styles.handleContainer}>
+                <View style={styles.handle} />
+              </View>
               <Text style={styles.title}>배송지 입력</Text>
               
               <View style={styles.addressContainer}>
@@ -238,13 +265,16 @@ const styles = StyleSheet.create({
     padding: 20,
     maxHeight: height * 0.8,
   },
+  handleContainer: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
   handle: {
     width: 40,
     height: 4,
     backgroundColor: '#E0E0E0',
     borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   title: {
     fontSize: 18,

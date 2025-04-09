@@ -32,6 +32,8 @@ const YOUR_TOKEN_MINT = new PublicKey('5ymZGsCFkfSzZN6AbwMWU2v4A4c5yeqmGj1vSpRWg
 
 const APP_URL_SCHEME = 'com.anonymous.uptention';
 
+const DEFAULT_PROFILE_IMAGE_URL = 'https://ddnwvg9t77g5o.cloudfront.net/profile-default.jpg';
+
 const ProfileScreen = ({ navigation }) => {
   const { 
     publicKey,
@@ -39,7 +41,8 @@ const ProfileScreen = ({ navigation }) => {
     solBalance,
     handleConnectWallet,
     handleDisconnectWallet,
-    connecting
+    connecting,
+    fetchBalances
   } = useWallet();
   
   const { userId, authToken, logout } = useAuth();
@@ -50,6 +53,21 @@ const ProfileScreen = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // 잔액 변화 감지 및 화면 업데이트
+  useEffect(() => {
+    if (publicKey) {
+      fetchBalances(publicKey);
+    }
+  }, [publicKey, fetchBalances]);
+
+  useEffect(() => {
+    console.log('WORK 토큰 잔액 변화 감지:', tokenBalance);
+  }, [tokenBalance]);
+
+  useEffect(() => {
+    console.log('SOL 잔액 변화 감지:', solBalance);
+  }, [solBalance]);
 
   // 로그아웃 함수 수정
   const handleLogout = async () => {
@@ -113,32 +131,6 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  // 잔액 조회 함수
-  const fetchBalances = async (walletAddress) => {
-    try {
-      // SOL 잔액 조회
-      const solBalance = await DEVNET_CONNECTION.getBalance(new PublicKey(walletAddress));
-      setSolBalance(solBalance / LAMPORTS_PER_SOL);
-
-      // SPL 토큰 잔액 조회
-      const tokenAccounts = await DEVNET_CONNECTION.getParsedTokenAccountsByOwner(
-        new PublicKey(walletAddress),
-        { mint: YOUR_TOKEN_MINT }
-      );
-
-      if (tokenAccounts.value.length > 0) {
-        const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-        setTokenBalance(balance);
-      } else {
-        setTokenBalance(0);
-      }
-    } catch (error) {
-      console.error('잔액 조회 오류:', error);
-      setSolBalance(null);
-      setTokenBalance(null);
-    }
-  };
-
   // 사용자 정보 조회 함수
   const fetchUserInfo = async () => {
     if (!userId || !authToken) return;
@@ -165,6 +157,11 @@ const ProfileScreen = ({ navigation }) => {
     if (!userId || !authToken) {
       Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
       return;
+    }
+
+    // iOS의 경우 ActionSheet가 자동으로 닫히므로 Android에서만 모달을 닫음
+    if (Platform.OS === 'android') {
+      setShowEditModal(false);
     }
 
     try {
@@ -331,7 +328,9 @@ const ProfileScreen = ({ navigation }) => {
               style={styles.editButton}
               onPress={handleEditPress}
             >
-              <Ionicons name="pencil" size={15} color="black" />
+              <View style={styles.editIconContainer}>
+                <Ionicons name="settings-outline" size={22} color="#FF8C00" />
+              </View>
             </TouchableOpacity>
             <View style={styles.profileInfo}>
               <View style={styles.profileImageContainer}>
@@ -367,14 +366,14 @@ const ProfileScreen = ({ navigation }) => {
             <View style={styles.tokenContainer}>
               <View style={styles.tokenItem}>
                 <Text style={styles.tokenLabel}>WORK</Text>
-                <Text style={styles.tokenValue}>
-                  {tokenBalance !== null ? `${tokenBalance}` : '연결 필요'}
+                <Text style={[styles.tokenValue, { color: '#FF8C00' }]}>
+                  {tokenBalance !== null ? `${tokenBalance} WORK` : '연결 필요'}
                 </Text>
               </View>
               <View style={styles.tokenItem}>
                 <Text style={styles.tokenLabel}>SOLANA</Text>
-                <Text style={styles.tokenValue}>
-                  {solBalance !== null ? `${solBalance}` : '연결 필요'}
+                <Text style={[styles.tokenValue, { color: '#FF8C00' }]}>
+                  {solBalance !== null ? `${Number(solBalance).toFixed(4)} SOL` : '연결 필요'}
                 </Text>
               </View>
             </View>
@@ -498,30 +497,35 @@ const ProfileScreen = ({ navigation }) => {
                 <Text style={styles.editModalTitle}>프로필 편집</Text>
                 <TouchableOpacity
                   style={styles.editModalButton}
-                  onPress={() => {
+                  onPress={async () => {
                     setShowEditModal(false);
-                    handleImageUpload();
+                    // 약간의 딜레이 후 갤러리 실행
+                    setTimeout(() => {
+                      handleImageUpload();
+                    }, 100);
                   }}
                 >
                   <Text style={styles.editModalButtonText}>프로필 사진 변경</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.editModalButton}
+                  style={[styles.editModalButton, userInfo?.profileImage === DEFAULT_PROFILE_IMAGE_URL && { opacity: 0.5 }]}
                   onPress={() => {
-                    setShowEditModal(false);
-                    Alert.alert(
-                      '프로필 사진 삭제',
-                      '프로필 사진을 삭제하시겠습니까?',
-                      [
-                        { text: '취소', style: 'cancel' },
-                        { 
-                          text: '삭제', 
-                          style: 'destructive',
-                          onPress: handleDeleteImage 
-                        }
-                      ]
-                    );
+                    if (userInfo?.profileImage !== DEFAULT_PROFILE_IMAGE_URL) {
+                      Alert.alert(
+                        '프로필 사진 삭제',
+                        '프로필 사진을 삭제하시겠습니까?',
+                        [
+                          { text: '취소', style: 'cancel' },
+                          { 
+                            text: '삭제', 
+                            style: 'destructive',
+                            onPress: handleDeleteImage 
+                          }
+                        ]
+                      );
+                    }
                   }}
+                  disabled={userInfo?.profileImage === DEFAULT_PROFILE_IMAGE_URL}
                 >
                   <Text style={styles.editModalButtonText}>프로필 사진 삭제</Text>
                 </TouchableOpacity>
@@ -622,9 +626,19 @@ const styles = StyleSheet.create({
   },
   editButton: {
     position: 'absolute',
-    right: 8,
-    top: 5,
+    right: -12,
+    top: -12,
     zIndex: 1,
+  },
+  editIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
   },
   walletSection: {
     backgroundColor: '#FFFFFF',

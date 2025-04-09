@@ -74,9 +74,10 @@ const OrderCompleteScreen = ({ navigation, route }) => {
       </View>
 
       <View style={styles.content}>
-        {/* 로딩 인디케이터 */}
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FF8C00" />
+        <View style={styles.checkmarkContainer}>
+          <View style={styles.checkmarkCircle}>
+            <Ionicons name="checkmark" size={50} color="#FFFFFF" />
+          </View>
         </View>
 
         <Text style={styles.title}>주문이 접수되었습니다</Text>
@@ -142,8 +143,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  loadingContainer: {
+  checkmarkContainer: {
     marginBottom: 30,
+    alignItems: 'center',
+  },
+  checkmarkCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FF8C00',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
