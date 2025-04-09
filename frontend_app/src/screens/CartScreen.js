@@ -68,10 +68,12 @@ const CartScreen = ({ navigation }) => {
     setCartItems((prevItems) =>
       prevItems.map((item) => {
         if (item.cartId === cartId) {
+          const currentQuantity = item.quantity === '' ? 0 : Number(item.quantity);
+
           // 새 수량 계산 (1~99 범위 제한)
           const newQuantity = Math.max(
             1,
-            Math.min(99, item.quantity + increment)
+            Math.min(99, currentQuantity + increment)
           );
 
           // 이전 타이머가 있다면 취소
@@ -444,10 +446,18 @@ const CartScreen = ({ navigation }) => {
 
             <View style={styles.quantityStockContainer}>
   <View style={styles.quantityContainer}>
-    <TouchableOpacity
-      onPress={() => updateQuantity(item.cartId, -1)}
-      style={styles.quantityButton}
-    >
+  <TouchableOpacity
+  onPress={() => {
+    // 입력 필드에 포커스가 있는 경우 먼저 blur 처리
+    if (isQuantityEditing) {
+      handleQuantityBlur(item.cartId, item.quantity);
+      setIsQuantityEditing(false);
+    }
+    // 그 다음 수량 감소
+    updateQuantity(item.cartId, -1);
+  }}
+  style={styles.quantityButton}
+>
       <Text style={styles.quantityButtonText}>-</Text>
     </TouchableOpacity>
     
