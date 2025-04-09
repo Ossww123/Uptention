@@ -311,7 +311,7 @@ const ProductEditPage = () => {
       }
       
       // API 호출
-      const response = await axios.patch(
+      await axios.patch(
         `${API_BASE_URL}/api/items/${itemId}`,
         updateData,
         {
