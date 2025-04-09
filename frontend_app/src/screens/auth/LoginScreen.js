@@ -149,6 +149,7 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
                 value={username}
                 onChangeText={setUsername}
                 autoCapitalize="none"
+                maxLength={50}
               />
             </View>
 
@@ -161,6 +162,7 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={secureTextEntry}
+                maxLength={50}
               />
               <TouchableOpacity
                 style={styles.eyeIcon}
