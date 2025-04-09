@@ -668,31 +668,31 @@ const ProductCreatePage = () => {
                   </label>
                 </td>
                 <td className="input-cell price-cell">
-                <div className="input-wrapper">
-                  <div className="price-input-container">
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      onKeyDown={(e) => {
-                        // e, E, +, -를 차단
-                        if (['e', 'E', '+', '-'].includes(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      className={`form-input price-input ${errors.price ? "has-error" : ""}`}
-                      min="1"
-                      max="5000"
-                      placeholder="숫자만 입력"
-                    />
-                    <span className="price-currency">WORK</span>
+                  <div className="input-wrapper">
+                    <div className="price-input-container">
+                      <input
+                        type="number"
+                        name="price"
+                        value={formData.price}
+                        onChange={handleChange}
+                        onKeyDown={(e) => {
+                          // e, E, +, -를 차단
+                          if (['e', 'E', '+', '-'].includes(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                        className={`form-input price-input ${errors.price ? "has-error" : ""}`}
+                        min="1"
+                        max="5000"
+                        placeholder="숫자만 입력"
+                      />
+                      <span className="price-currency">WORK</span>
+                    </div>
+                    <div className="field-hint">가격 범위: 1~5000 WORK</div>
+                    {errors.price && (
+                      <div className="error-hint price-error">{errors.price}</div>
+                    )}
                   </div>
-                  <div className="field-hint">가격 범위: 1~5000 WORK</div>
-                  {errors.price && (
-                    <div className="error-hint price-error">{errors.price}</div>
-                  )}
-                </div>
                 </td>
               </tr>
 
@@ -702,28 +702,31 @@ const ProductCreatePage = () => {
                     재고량<span className="required">*</span>
                   </label>
                 </td>
-                <td className="input-cell">
+                <td className="input-cell price-cell">
                   <div className="input-wrapper">
-                    <input
-                      type="number"
-                      name="quantity"
-                      value={formData.quantity}
-                      onChange={handleChange}
-                      onKeyDown={(e) => {
-                        // e, E, +, -를 차단
-                        if (['e', 'E', '+', '-'].includes(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      className={`form-input ${errors.quantity ? "has-error" : ""}`}
-                      min="1"
-                      max="99"
-                      step="1"
-                      placeholder="숫자만 입력"
-                    />
+                    <div className="price-input-container">
+                      <input
+                        type="number"
+                        name="quantity"
+                        value={formData.quantity}
+                        onChange={handleChange}
+                        onKeyDown={(e) => {
+                          // e, E, +, -를 차단
+                          if (['e', 'E', '+', '-'].includes(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                        className={`form-input price-input ${errors.quantity ? "has-error" : ""}`}
+                        min="1"
+                        max="99"
+                        step="1"
+                        placeholder="숫자만 입력"
+                      />
+                      <span className="price-currency">개</span>
+                    </div>
                     <div className="field-hint">재고량 범위: 1~99개</div>
                     {errors.quantity && (
-                      <div className="error-hint">{errors.quantity}</div>
+                      <div className="error-hint price-error">{errors.quantity}</div>
                     )}
                   </div>
                 </td>
