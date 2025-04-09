@@ -101,15 +101,15 @@ pipeline {
                                 execCommand: """
                                     #!/bin/bash
                                     # 두 컨테이너의 상태를 확인
-                                    BLUE_RUNNING=$(docker ps -q -f name=uptention-spring-container-blue)
-                                    GREEN_RUNNING=$(docker ps -q -f name=uptention-spring-container-green)
+                                    BLUE_RUNNING=\$(docker ps -q -f name=uptention-spring-container-blue)
+                                    GREEN_RUNNING=\$(docker ps -q -f name=uptention-spring-container-green)
 
-                                    if [ -n "$BLUE_RUNNING" ]; then
+                                    if [ -n "\$BLUE_RUNNING" ]; then
                                       ACTIVE_CONTAINER="blue"
                                       NEW_CONTAINER="green"
                                       NEW_CONTAINER_NAME="uptention-spring-container-green"
                                       OLD_CONTAINER_NAME="uptention-spring-container-blue"
-                                    elif [ -n "$GREEN_RUNNING" ]; then
+                                    elif [ -n "\$GREEN_RUNNING" ]; then
                                       ACTIVE_CONTAINER="green"
                                       NEW_CONTAINER="blue"
                                       NEW_CONTAINER_NAME="uptention-spring-container-blue"
@@ -123,51 +123,51 @@ pipeline {
                                       OLD_CONTAINER_NAME=""
                                     fi
 
-                                    echo "현재 운영중인 컨테이너: $ACTIVE_CONTAINER. 신규 배포 컨테이너: $NEW_CONTAINER_NAME"
+                                    echo "현재 운영중인 컨테이너: \$ACTIVE_CONTAINER. 신규 배포 컨테이너: \$NEW_CONTAINER_NAME"
 
                                     docker pull ${DOCKER_IMAGE}:latest
-                                    docker run -d --name $NEW_CONTAINER_NAME \
-                                        --network uptention_network \
-                                        -e SPRING_PROFILES_ACTIVE=prod \
-                                        -e TZ=UTC \
-                                        -e SERVER_PORT=${DOCKER_PORT} \
-                                        -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \
-                                        -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \
-                                        -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \
-                                        -e S3_ACCESS_TOKEN="${S3_ACCESS_TOKEN}" \
-                                        -e S3_SECRET_TOKEN="${S3_SECRET_TOKEN}" \
-                                        -e JWT_SECRET_KEY="${JWT_SECRET_KEY}" \
-                                        -e SOLANA_COMPANY_WALLET="${SOLANA_COMPANY_WALLET}" \
-                                        -e WORK_TOKEN_MINT="${WORK_TOKEN_MINT}" \
-                                        -e RABBITMQ_HOST="${RABBITMQ_HOST}" \
-                                        -e RABBITMQ_PORT="${RABBITMQ_PORT}" \
-                                        -e RABBITMQ_USERNAME="${RABBITMQ_USERNAME}" \
-                                        -e RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD}" \
-                                        -e REDIS_HOST="${REDIS_HOST}" \
-                                        -e REDIS_PORT="${REDIS_PORT}" \
-                                        -v /home/ubuntu/uptention/spring-logs:/app/logs \
+                                    docker run -d --name \$NEW_CONTAINER_NAME \\
+                                        --network uptention_network \\
+                                        -e SPRING_PROFILES_ACTIVE=prod \\
+                                        -e TZ=UTC \\
+                                        -e SERVER_PORT=${DOCKER_PORT} \\
+                                        -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \\
+                                        -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
+                                        -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
+                                        -e S3_ACCESS_TOKEN="${S3_ACCESS_TOKEN}" \\
+                                        -e S3_SECRET_TOKEN="${S3_SECRET_TOKEN}" \\
+                                        -e JWT_SECRET_KEY="${JWT_SECRET_KEY}" \\
+                                        -e SOLANA_COMPANY_WALLET="${SOLANA_COMPANY_WALLET}" \\
+                                        -e WORK_TOKEN_MINT="${WORK_TOKEN_MINT}" \\
+                                        -e RABBITMQ_HOST="${RABBITMQ_HOST}" \\
+                                        -e RABBITMQ_PORT="${RABBITMQ_PORT}" \\
+                                        -e RABBITMQ_USERNAME="${RABBITMQ_USERNAME}" \\
+                                        -e RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD}" \\
+                                        -e REDIS_HOST="${REDIS_HOST}" \\
+                                        -e REDIS_PORT="${REDIS_PORT}" \\
+                                        -v /home/ubuntu/uptention/spring-logs:/app/logs \\
                                         ${DOCKER_IMAGE}:latest
 
                                     echo "신규 컨테이너 헬스 체크 중..."
                                     for i in {1..30}; do
-                                      STATUS=$(docker exec $NEW_CONTAINER_NAME curl -s http://localhost:${DOCKER_PORT}/actuator/health | grep '"status":"UP"')
-                                      if [ ! -z "$STATUS" ]; then
+                                      STATUS=\$(docker exec \$NEW_CONTAINER_NAME curl -s http://localhost:${DOCKER_PORT}/actuator/health | grep '"status":"UP"')
+                                      if [ ! -z "\$STATUS" ]; then
                                         echo "신규 컨테이너 헬스 체크 성공."
                                         break
                                       fi
-                                      echo "헬스 체크 시도 $i/30 실패, 2초 후 재시도..."
-                                      if [ $i -eq 30 ]; then
+                                      echo "헬스 체크 시도 \$i/30 실패, 2초 후 재시도..."
+                                      if [ \$i -eq 30 ]; then
                                         echo "헬스 체크 실패. 배포를 중단하고 로그를 확인하세요."
-                                        docker logs $NEW_CONTAINER_NAME
+                                        docker logs \$NEW_CONTAINER_NAME
                                         exit 1
                                       fi
                                       sleep 2
                                     done
 
-                                    echo "Nginx upstream 구성을 $NEW_CONTAINER_NAME로 업데이트합니다."
+                                    echo "Nginx upstream 구성을 \$NEW_CONTAINER_NAME로 업데이트합니다."
                                     cat <<EOF > /home/ubuntu/uptention/nginx/conf/upstream-spring.conf
                                     upstream spring_backend {
-                                        server $NEW_CONTAINER_NAME:${DOCKER_PORT};
+                                        server \$NEW_CONTAINER_NAME:${DOCKER_PORT};
                                     }
                                     EOF
 
@@ -178,17 +178,17 @@ pipeline {
                                     cat <<EOF > /home/ubuntu/uptention/monitoring/prometheus/config/active-spring-targets.json
                                     [
                                       {
-                                        "targets": ["$NEW_CONTAINER_NAME:${DOCKER_PORT}"]
+                                        "targets": ["\$NEW_CONTAINER_NAME:${DOCKER_PORT}"]
                                       }
                                     ]
                                     EOF
                                     echo "업데이트 완료."
 
                                     # 이전 컨테이너가 있을 경우에만 중지 및 삭제
-                                    if [ "$ACTIVE_CONTAINER" != "none" ] && [ -n "$OLD_CONTAINER_NAME" ]; then
-                                      echo "이전 컨테이너 ($OLD_CONTAINER_NAME) 중지 및 삭제 중..."
-                                      docker stop $OLD_CONTAINER_NAME || true
-                                      docker rm $OLD_CONTAINER_NAME || true
+                                    if [ "\$ACTIVE_CONTAINER" != "none" ] && [ -n "\$OLD_CONTAINER_NAME" ]; then
+                                      echo "이전 컨테이너 (\$OLD_CONTAINER_NAME) 중지 및 삭제 중..."
+                                      docker stop \$OLD_CONTAINER_NAME || true
+                                      docker rm \$OLD_CONTAINER_NAME || true
                                     else
                                       echo "이전 컨테이너가 없으므로 삭제 단계를 건너뜁니다."
                                     fi
