@@ -98,14 +98,19 @@ const AddressDetailScreen = ({ navigation, route }) => {
       const { productId } = route.params || {};
 
       navigation.reset({
-        index: 2, // 2번째 화면(결제페이지)으로 이동
+        index: 2,
         routes: [
           { name: "StoreMain" },
           { name: "Cart" },
           {
             name: "CheckoutScreen",
             params: {
-              address: `${address.roadAddress} ${trimmedAddress}`,
+              address: {
+                zonecode: address.zonecode,
+                roadAddress: address.roadAddress,
+                detailAddress: trimmedAddress,
+                buildingName: address.buildingName || ''
+              },
               selectedItems: prevItems,
               totalPrice: prevTotalPrice,
             },

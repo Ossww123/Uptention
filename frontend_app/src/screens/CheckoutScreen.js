@@ -452,7 +452,7 @@ const CheckoutScreen = ({ navigation, route }) => {
               ) : address ? (
                 <>
                   <Text style={styles.addressText}>
-                    [{address.zonecode}] {address.roadAddress}
+                    {address.zonecode ? `[${address.zonecode}] ` : ''}{address.roadAddress}
                   </Text>
                   <Text style={styles.addressDetail}>
                     {address.detailAddress}
