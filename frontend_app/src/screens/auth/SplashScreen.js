@@ -5,6 +5,7 @@ import { CommonActions } from '@react-navigation/native';
 import ScreenTime from '../../utils/ScreenTime'; // 권한 체크를 위한 유틸리티 임포트
 import { useAuth } from '../../contexts/AuthContext'; // 인증 컨텍스트 임포트
 import { useWallet } from '../../contexts/WalletContext'; // 지갑 컨텍스트 임포트
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SplashScreen = ({ navigation }) => {
   const [timePassed, setTimePassed] = useState(false);
@@ -17,7 +18,9 @@ const SplashScreen = ({ navigation }) => {
 
   // 필요한 권한들을 확인하는 함수
   const checkPermissions = async () => {
+    
     try {
+      
       // 세 가지 권한을 동시에 확인
       const [screenTimeGranted, overlayGranted, accessibilityGranted] = await Promise.all([
         ScreenTime.hasUsageStatsPermission(),
@@ -45,6 +48,15 @@ const SplashScreen = ({ navigation }) => {
   useEffect(() => {
     console.log('SplashScreen useEffect 실행됨');
     checkPermissions();
+    const setWelcomeOverlayFlag = async () => {
+      try {
+        await AsyncStorage.setItem('show_welcome_overlay', 'true');
+        console.log('Welcome overlay flag set to true');
+      } catch (error) {
+        console.error('AsyncStorage 설정 오류:', error);
+      }
+    };
+    setWelcomeOverlayFlag(); // 이 줄 추가
     
     // 첫 번째 타이머 - 상태 변경
     const timer = setTimeout(() => {
