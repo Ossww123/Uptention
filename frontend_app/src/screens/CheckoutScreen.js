@@ -47,7 +47,10 @@ const CheckoutScreen = ({ navigation, route }) => {
         }
       );
 
-      if (response.data && response.data.address) {
+      if (response.data && 
+          response.data.address && 
+          typeof response.data.address === 'string' && 
+          response.data.address.trim() !== '') {
         // 주소 문자열을 파싱하여 주소 객체 형식으로 변환
         const fullAddress = response.data.address;
         const addressParts = fullAddress.split(' ');
@@ -68,9 +71,13 @@ const CheckoutScreen = ({ navigation, route }) => {
           detailAddress,
           buildingName: ''
         });
+      } else {
+        // undefined, 빈 문자열, 빈 배열 등의 경우 address를 null로 설정
+        setAddress(null);
       }
     } catch (error) {
       console.error("최근 배송지 조회 실패:", error);
+      setAddress(null);
     } finally {
       setIsLoadingAddress(false);
     }
@@ -549,15 +556,17 @@ const CheckoutScreen = ({ navigation, route }) => {
         <TouchableOpacity
           style={[
             styles.paymentButton,
-            (!publicKey || paymentInfo.finalAmount < 0 || isProcessing) &&
+            (!publicKey || paymentInfo.finalAmount < 0 || !address || isProcessing) &&
               styles.disabledButton,
           ]}
           onPress={handlePayment}
-          disabled={!publicKey || paymentInfo.finalAmount < 0 || isProcessing}
+          disabled={!publicKey || paymentInfo.finalAmount < 0 || !address || isProcessing}
         >
           <Text style={styles.paymentButtonText}>
             {!publicKey
               ? "지갑 연결 필요"
+              : !address
+              ? "배송지 입력 필요"
               : paymentInfo.finalAmount < 0
               ? "WORK 부족"
               : isProcessing

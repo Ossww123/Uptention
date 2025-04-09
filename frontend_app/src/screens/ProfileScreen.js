@@ -384,6 +384,11 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  const validatePasswordInput = (text) => {
+    // 영문, 숫자, 허용된 특수문자만 입력 가능
+    return text.replace(/[^A-Za-z0-9!@#$%^&*]/g, '');
+  };
+
   const handlePasswordChange = async () => {
     // 비밀번호 유효성 검사
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -546,8 +551,9 @@ const ProfileScreen = ({ navigation }) => {
                     style={styles.input}
                     placeholder="현재 비밀번호"
                     value={currentPassword}
-                    onChangeText={setCurrentPassword}
+                    onChangeText={(text) => setCurrentPassword(validatePasswordInput(text))}
                     secureTextEntry={secureTextEntry}
+                    maxLength={15}
                   />
                   <TouchableOpacity
                     style={styles.eyeIcon}
@@ -566,8 +572,9 @@ const ProfileScreen = ({ navigation }) => {
                     style={styles.input}
                     placeholder="새 비밀번호"
                     value={newPassword}
-                    onChangeText={setNewPassword}
+                    onChangeText={(text) => setNewPassword(validatePasswordInput(text))}
                     secureTextEntry={secureTextEntry}
+                    maxLength={15}
                   />
                 </View>
                 <Text style={styles.passwordHint}>
@@ -579,8 +586,9 @@ const ProfileScreen = ({ navigation }) => {
                     style={styles.input}
                     placeholder="새 비밀번호 확인"
                     value={confirmPassword}
-                    onChangeText={setConfirmPassword}
+                    onChangeText={(text) => setConfirmPassword(validatePasswordInput(text))}
                     secureTextEntry={secureTextEntry}
+                    maxLength={15}
                   />
                 </View>
 

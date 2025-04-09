@@ -81,7 +81,10 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
         }
       );
 
-      if (response.data && response.data.address) {
+      if (response.data && 
+          response.data.address && 
+          typeof response.data.address === 'string' && 
+          response.data.address.trim() !== '') {
         const addressParts = response.data.address.split(' ');
         const zonecode = addressParts[0].replace('[', '').replace(']', '');
         const roadAddress = addressParts.slice(1, -1).join(' ');
@@ -93,9 +96,13 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
           detailAddress,
           buildingName: ''
         });
+      } else {
+        // undefined, 빈 문자열, 빈 배열 등의 경우 address를 null로 설정
+        setAddress(null);
       }
     } catch (error) {
       console.error('최근 배송지 조회 실패:', error);
+      setAddress(null);
     } finally {
       setIsLoadingAddress(false);
     }
