@@ -78,9 +78,15 @@ const LoginPage = () => {
       } else {
         setError('서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.');
       }
-    } finally {
+    } 
+    // 에러가 발생한 경우에만 300ms 후 버튼 다시 활성화
+    setTimeout(() => {
       setLoading(false);
-    }
+    }, 500);
+    return;
+    // finally {
+    //   setLoading(false);
+    // }
   };
 
   return (
@@ -102,6 +108,7 @@ const LoginPage = () => {
               onChange={handleChange}
               className="login-input"
               disabled={loading}
+              maxLength={20}
             />
           </div>
           
@@ -114,6 +121,7 @@ const LoginPage = () => {
               onChange={handleChange}
               className="login-input"
               disabled={loading}
+              maxLength={20}
             />
           </div>
           

@@ -160,7 +160,13 @@ const UserManagementPage = () => {
       setUsers([]);
       setNextCursor(null);
       setHasMore(true);
-      setSearchQuery(searchTerm);
+      if (searchTerm === searchQuery) {
+        // 동일한 검색어인 경우 직접 검색 API 호출
+        fetchUsers(true);
+      } else {
+        // 검색어가 변경되었을 경우 searchQuery를 업데이트하여 useEffect가 실행되도록 함
+        setSearchQuery(searchTerm);
+      }
     }, 200);
   };
 
