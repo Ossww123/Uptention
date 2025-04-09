@@ -531,27 +531,30 @@ const ProductEditPage = () => {
                 <td className="label-cell">
                   <label>재고량</label>
                 </td>
-                <td className="input-cell">
+                <td className="input-cell price-cell">
                   <div className="input-wrapper">
-                    <input
-                      type="number"
-                      name="quantity"
-                      value={editableFields.quantity}
-                      onChange={handleChange}
-                      onKeyDown={(e) => {
-                        // e, E, +, -를 차단
-                        if (['e', 'E', '+', '-'].includes(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      className={`form-input ${errors.quantity ? "has-error" : ""}`}
-                      min="1"
-                      max="99"
-                      step="1"
-                      placeholder={product.quantity}
-                    />
+                    <div className="price-input-container">
+                      <input
+                        type="number"
+                        name="quantity"
+                        value={editableFields.quantity}
+                        onChange={handleChange}
+                        onKeyDown={(e) => {
+                          // e, E, +, -를 차단
+                          if (['e', 'E', '+', '-'].includes(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                        className={`form-input price-input ${errors.quantity ? "has-error" : ""}`}
+                        min="1"
+                        max="99"
+                        step="1"
+                        placeholder={product.quantity}
+                      />
+                      <span className="price-currency">개</span>
+                    </div>
                     <div className="field-hint">재고량 범위: 1~99개</div>
-                    {errors.quantity && <div className="error-hint">{errors.quantity}</div>}
+                    {errors.quantity && <div className="error-hint price-error">{errors.quantity}</div>}
                   </div>
                 </td>
               </tr>
