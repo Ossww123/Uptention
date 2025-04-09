@@ -54,7 +54,6 @@ const ProductEditPage = () => {
         });
         
       } catch (error) {
-        console.error("상품 정보 로드 중 오류 발생:", error);
         
         let errorMessage = "상품 정보를 불러오는데 실패했습니다.";
         if (error.response) {
@@ -323,8 +322,6 @@ const ProductEditPage = () => {
         }
       );
 
-      console.log(response)
-
       // 성공 처리
       alert("상품이 성공적으로 수정되었습니다.");
       
@@ -340,7 +337,6 @@ const ProductEditPage = () => {
       }, 3000);
       
     } catch (error) {
-      console.error("상품 수정 오류:", error);
       
       if (error.response) {
         const { status, data } = error.response;

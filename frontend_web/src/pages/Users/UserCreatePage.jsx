@@ -128,8 +128,6 @@ const UserCreatePage = () => {
         }
       );
 
-      console.log(response);
-
       // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsIdAvailable(true);
       setErrors((prev) => ({
@@ -198,8 +196,6 @@ const UserCreatePage = () => {
           },
         }
       );
-
-      console.log(response);
 
       // 서버 응답 처리 - 200 OK는 사용 가능한 경우
       setIsEmpNumAvailable(true);
@@ -327,13 +323,10 @@ const UserCreatePage = () => {
         },
       });
 
-      console.log(response);
-
       // 성공 응답 처리
       alert("회원가입 성공");
       navigate("/admin/users");
     } catch (error) {
-      console.error("회원 등록 중 오류 발생:", error);
 
       if (error.response) {
         const { status, data } = error.response;

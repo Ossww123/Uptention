@@ -10,7 +10,10 @@ const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // 사용자가 입력하는 검색어 (최대 10자)
   const [searchTerm, setSearchTerm] = useState("");
+  // 실제 검색 API에 사용되는 검색어 상태 (버튼 클릭 시 업데이트)
+  const [searchQuery, setSearchQuery] = useState("");
   const [hasMore, setHasMore] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
   const [sortOption, setSortOption] = useState("REGISTER_DATE_DESC"); // 기본 정렬: 가입일 내림차순
@@ -23,11 +26,13 @@ const UserManagementPage = () => {
   // Refs
   const observer = useRef();
   const navigate = useNavigate();
+  // 디바운싱을 위한 ref
+  const searchDebounceRef = useRef(null);
 
   // API 기본 URL
   const API_BASE_URL = "https://j12d211.p.ssafy.io";
 
-  // API에서 사용자 데이터 가져오기
+  // API에서 사용자 데이터 가져오기 (searchQuery에 의존)
   const fetchUsers = useCallback(
     async (isSearch = false) => {
       setLoading(true);
@@ -45,9 +50,9 @@ const UserManagementPage = () => {
           sort: sortOption,
         };
 
-        // searchTerm이 있을 때만 keyword 파라미터 추가
-        if (searchTerm && searchTerm.trim() !== "") {
-          params.keyword = searchTerm;
+        // searchQuery가 있을 때만 keyword 파라미터 추가
+        if (searchQuery && searchQuery.trim() !== "") {
+          params.keyword = searchQuery;
         }
 
         // userRole이 있을 때만 userRole 파라미터 추가
@@ -60,12 +65,9 @@ const UserManagementPage = () => {
           params.cursor = nextCursor;
         }
 
-        console.log("요청 파라미터:", params);
-        console.log("요청 토큰:", token);
-
         const response = await axios.get(`${API_BASE_URL}/api/users`, {
           headers: {
-            Authorization: `${token}`,
+            Authorization: token,
             "Content-Type": "application/json",
           },
           params: params,
@@ -82,10 +84,8 @@ const UserManagementPage = () => {
         setNextCursor(data.nextCursor);
         setHasMore(data.hasNextPage);
       } catch (err) {
-        console.error("API 에러:", err);
 
         if (err.response) {
-          console.error("오류 응답 데이터:", err.response.data);
           const { status, data } = err.response;
 
           if (status === 401) {
@@ -108,8 +108,16 @@ const UserManagementPage = () => {
         setLoading(false);
       }
     },
-    [searchTerm, nextCursor, sortOption, userRole, navigate]
+    [searchQuery, nextCursor, sortOption, userRole, navigate]
   );
+
+  // 페이지 초기 로드 및 필터(정렬, 역할) 변경 시 검색어에 따른 데이터 로드
+  useEffect(() => {
+    setUsers([]);
+    setNextCursor(null);
+    setHasMore(true);
+    fetchUsers(true);
+  }, [sortOption, userRole, searchQuery, fetchUsers]);
 
   // 무한 스크롤을 위한 추가 데이터 로드
   const fetchMoreUsers = useCallback(() => {
@@ -135,26 +143,25 @@ const UserManagementPage = () => {
     [loading, hasMore, fetchMoreUsers]
   );
 
-  // 초기 사용자 데이터 로드
-  useEffect(() => {
-    setUsers([]);
-    setNextCursor(null);
-    setHasMore(true);
-    fetchUsers(true);
-  }, [fetchUsers, sortOption, userRole]);
-
-  // 검색어 변경 핸들러
+  // 입력창 변경 핸들러 (최대 10자 제한)
   const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value.slice(0, 10);
+    setSearchTerm(value);
   };
 
-  // 검색 기능
+  // 검색 기능: 검색 버튼 클릭 시에만 200ms 디바운싱 후 searchQuery 업데이트
   const handleSearch = (e) => {
     e.preventDefault();
-    setUsers([]);
-    setNextCursor(null);
-    setHasMore(true);
-    fetchUsers(true);
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      // 사용자가 입력한 값을 searchQuery에 반영하여 useEffect가 실행되도록 함
+      setUsers([]);
+      setNextCursor(null);
+      setHasMore(true);
+      setSearchQuery(searchTerm);
+    }, 200);
   };
 
   // 정렬 옵션 변경 핸들러
@@ -184,7 +191,7 @@ const UserManagementPage = () => {
 
       await axios.delete(`${API_BASE_URL}/api/users/${userToDelete}`, {
         headers: {
-          Authorization: `${token}`,
+          Authorization: token,
         },
       });
 
@@ -198,7 +205,6 @@ const UserManagementPage = () => {
       setModalOpen(false);
       setUserToDelete(null);
     } catch (err) {
-      console.error("회원 삭제 오류:", err);
 
       if (err.response) {
         alert(
@@ -241,32 +247,8 @@ const UserManagementPage = () => {
       <div className="content-card">
         <div className="user-management-header">
           <h1 className="page-title">회원 목록</h1>
-
-          {/* 통계 카드 컨테이너는 주석 처리
-          <div className="stats-container">
-            <div className="stat-box">
-              <span className="stat-label">총회원수</span>
-              <span className="stat-value">{users.length}명</span>
-            </div>
-
-            <div className="stat-box connected-box">
-              <span className="stat-label">지갑 연동</span>
-              <span className="stat-value">
-                {users.filter((user) => user.role === "ROLE_MEMBER").length}명
-              </span>
-            </div>
-
-            <div className="stat-box disconnected-box">
-              <span className="stat-label">지갑 미연동</span>
-              <span className="stat-value">
-                {
-                  users.filter((user) => user.role === "ROLE_TEMP_MEMBER")
-                    .length
-                }
-                명
-              </span>
-            </div>
-          </div>
+          {/*
+          통계 카드 컨테이너는 주석 처리
           */}
         </div>
 
@@ -314,6 +296,7 @@ const UserManagementPage = () => {
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="search-input"
+                maxLength="10" // 최대 10자 입력 제한
               />
               <button type="submit" className="search-button">
                 검색
@@ -361,7 +344,7 @@ const UserManagementPage = () => {
                     <button
                       className="delete-button"
                       onClick={() => openDeleteModal(user.userId)}
-                      disabled={user.role === "ROLE_ADMIN"} // 관리자는 삭제 불가
+                      disabled={user.role === "ROLE_ADMIN"}
                     >
                       삭제
                     </button>

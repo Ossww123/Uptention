@@ -63,9 +63,7 @@ const LoginPage = () => {
         // 관리자 페이지로 리다이렉트
         navigate('/admin/users');
       }
-    } catch (err) {
-      console.error('로그인 에러:', err);
-      
+    } catch (err) {      
       // 오류 응답 처리
       if (err.response) {
         const { status, data } = err.response;
