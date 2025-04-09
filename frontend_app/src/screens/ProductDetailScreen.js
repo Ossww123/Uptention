@@ -59,13 +59,29 @@ const ProductDetailScreen = ({ route, navigation }) => {
   }, [productId]);
 
   // 주소 선택 후 돌아왔을 때 PaymentBottomSheet 표시를 위한 별도의 useEffect
-  useEffect(() => {
-    if (route.params?.showPaymentSheet) {
-      setShowPaymentSheet(true);
-      // showPaymentSheet 파라미터 초기화
-      navigation.setParams({ showPaymentSheet: undefined });
-    }
-  }, [route.params?.showPaymentSheet]);
+useEffect(() => {
+  // 주소 정보가 있고 PaymentBottomSheet를 표시해야 할 경우
+  if (route.params?.showPaymentSheet && route.params?.fromAddressDetail) {
+    // 가져온 주소 정보 사용
+    const selectedAddress = route.params.address;
+    
+    // PaymentBottomSheet를 표시하고 주소 정보 전달
+    setShowPaymentSheet(true);
+    
+    // 파라미터 초기화 (중복 처리 방지)
+    navigation.setParams({ 
+      showPaymentSheet: undefined,
+      fromAddressDetail: undefined,
+      // 주소 정보는 유지
+    });
+  }
+  // 기존 조건 유지
+  else if (route.params?.showPaymentSheet) {
+    setShowPaymentSheet(true);
+    // showPaymentSheet 파라미터 초기화
+    navigation.setParams({ showPaymentSheet: undefined });
+  }
+}, [route.params?.showPaymentSheet, route.params?.fromAddressDetail, route.params?.address]);
 
   // 화면에 포커스가 될 때마다 장바구니 개수 업데이트
   useFocusEffect(

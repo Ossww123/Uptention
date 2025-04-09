@@ -257,13 +257,13 @@ const styles = StyleSheet.create({
   },
   fixedBarsContainer: {
     justifyContent: "space-between", // 7개 막대를 균일하게 분포
-    width: "100%", // 전체 너비 사용
-    minWidth: "100%", // 최소 너비 설정
+    width: "85%", // 전체 너비 사용
+    minWidth: "85%", // 최소 너비 설정
   },
   barContainer: {
     alignItems: "center",
-    width: 45,
-    marginHorizontal: 2,
+    width: 40,
+    marginHorizontal: 1,
   },
   barWrapper: {
     paddingTop: 30,
