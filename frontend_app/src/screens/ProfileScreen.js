@@ -491,13 +491,13 @@ const ProfileScreen = ({ navigation }) => {
               <View style={styles.tokenItem}>
                 <Text style={styles.tokenLabel}>WORK</Text>
                 <Text style={[styles.tokenValue, { color: '#FF8C00' }]}>
-                  {tokenBalance !== null ? `${tokenBalance} WORK` : '연결 필요'}
+                  {tokenBalance !== null ? `${tokenBalance} ` : '연결 필요'}
                 </Text>
               </View>
               <View style={styles.tokenItem}>
                 <Text style={styles.tokenLabel}>SOLANA</Text>
                 <Text style={[styles.tokenValue, { color: '#FF8C00' }]}>
-                  {solBalance !== null ? `${Number(solBalance).toFixed(4)} SOL` : '연결 필요'}
+                  {solBalance !== null ? `${Number(solBalance).toFixed(4)} ` : '연결 필요'}
                 </Text>
               </View>
             </View>
