@@ -183,6 +183,11 @@ const HomeScreen = ({ navigation }) => {
         // 초기 로딩이 완료된 상태에서만 조용히 데이터 업데이트
         if (initialLoadComplete && userId && authToken) {
           try {
+            // 전체 화면 모드 해제
+            if (Platform.OS === 'android') {
+              await AppBlockerModule.setAppBlockingEnabled(false);
+            }
+
             // 알림 카운트 조회
             const { data, ok } = await get("/notifications/count", {
               params: { read: false },
