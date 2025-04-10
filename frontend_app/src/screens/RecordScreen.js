@@ -34,6 +34,8 @@ const RecordScreen = () => {
   const dailyScrollViewRef = useRef(null);
   const weeklyScrollViewRef = useRef(null);
 
+  const [lastRefreshTime, setLastRefreshTime] = useState(0);
+
   useEffect(() => {
     checkPermission();
   }, []);
@@ -74,11 +76,20 @@ const RecordScreen = () => {
     );
   };
 
-  // 새로고침 기능 구현
   const handleRefresh = async () => {
+    const currentTime = Date.now();
+    const timeSinceLastRefresh = currentTime - lastRefreshTime;
+
+    // 0.5초(500ms) 이내에 새로고침 시도한 경우 무시
+    if (timeSinceLastRefresh < 500) {
+      return;
+    }
+
+    // 새로고침 로직 시작
     if (!hasPermission) return;
     
     setRefreshing(true);
+    setLastRefreshTime(currentTime);
     
     try {
       // 현재 선택된 탭에 따라 적절한 컴포넌트의 새로고침 메서드 호출
@@ -147,19 +158,19 @@ const RecordScreen = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>채굴 기록</Text>
         {hasPermission && (
-          <TouchableOpacity
-            style={styles.refreshButton}
-            onPress={handleRefresh}
-            disabled={refreshing}
-          >
-            <Ionicons 
-              name="refresh" 
-              size={24} 
-              color="#FF8C00"
-              style={[refreshing && styles.refreshing]} 
-            />
-          </TouchableOpacity>
-        )}
+    <TouchableOpacity
+      style={styles.refreshButton}
+      onPress={handleRefresh}
+      disabled={refreshing || (Date.now() - lastRefreshTime < 10000)}
+    >
+      <Ionicons 
+        name="refresh" 
+        size={24} 
+        color="#FF8C00"
+        style={[refreshing && styles.refreshing]} 
+      />
+    </TouchableOpacity>
+  )}
       </View>
       
       {!hasPermission ? (

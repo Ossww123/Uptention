@@ -38,7 +38,7 @@ const MiningGraph = ({
 
     // 바의 색상 결정
     let barStyle;
-    
+
     if (!isScrollable) {
       // WeeklyView인 경우 모든 막대를 주황색으로
       barStyle = styles.selectedBar;
@@ -61,7 +61,7 @@ const MiningGraph = ({
 
     // 텍스트 색상도 동일한 로직으로 결정
     let textStyle;
-    
+
     if (!isScrollable) {
       // WeeklyView에서는 모든 텍스트를 주황색으로
       textStyle = styles.selectedBarText;
@@ -89,21 +89,10 @@ const MiningGraph = ({
         disabled={!isScrollable}
       >
         <View style={styles.barWrapper}>
-          <View
-            style={[
-              styles.bar,
-              { height: `${barHeight}%` },
-              barStyle,
-            ]}
-          />
+          <View style={[styles.bar, { height: `${barHeight}%` }, barStyle]} />
         </View>
 
-        <Text
-          style={[
-            styles.barText,
-            textStyle,
-          ]}
-        >
+        <Text style={[styles.barText, textStyle]}>
           {item.day || "?"} {/* 값이 없는 경우 ? 표시 */}
         </Text>
       </TouchableOpacity>
@@ -116,15 +105,19 @@ const MiningGraph = ({
       <View style={styles.titleContainer}>
         {onPrevWeek && onNextWeek ? (
           <View style={styles.weekNavigator}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={onPrevWeek}
               disabled={isPrevDisabled} // 비활성화 조건 추가
               style={isPrevDisabled ? styles.disabledNavButton : {}}
             >
-              <Text style={[
-                styles.navButton,
-                isPrevDisabled && styles.disabledNavButtonText
-              ]}>{"<"}</Text>
+              <Text
+                style={[
+                  styles.navButton,
+                  isPrevDisabled && styles.disabledNavButtonText,
+                ]}
+              >
+                {"<"}
+              </Text>
             </TouchableOpacity>
             <Text style={styles.dateTitle}>{dateRangeTitle}</Text>
             <TouchableOpacity
@@ -162,25 +155,29 @@ const MiningGraph = ({
 
         {/* DailyView와 WeeklyView 모두 FlatList 사용 */}
         <FlatList
-          ref={flatListRef} // 추가된 ref
+          ref={flatListRef}
           data={data}
           renderItem={renderBar}
           keyExtractor={(item) => item.id || `${item.month}-${item.day}`}
           horizontal
           showsHorizontalScrollIndicator={false}
-          scrollEnabled={isScrollable} // DailyView만 스크롤 가능
+          scrollEnabled={isScrollable}
           contentContainerStyle={[
             styles.barsContainer,
-            !isScrollable && styles.fixedBarsContainer, // WeeklyView인 경우 추가 스타일 적용
+            !isScrollable && styles.fixedBarsContainer,
           ]}
-          initialNumToRender={data.length} // 모든 항목을 한번에 렌더링
+          initialNumToRender={data.length}
           removeClippedSubviews={false}
-          onContentSizeChange={() => {
-            // 콘텐츠 크기가 변경될 때 (렌더링 완료 시) 오늘 날짜로 스크롤
-            if (isScrollable && flatListRef) {
-              flatListRef.current?.scrollToEnd({ animated: false });
-            }
+          initialScrollIndex={isScrollable ? data.length - 8 : undefined} // 초기 스크롤 위치 설정 (최근 7일)
+          getItemLayout={(data, index) => ({
+            length: 40,
+            offset: 40 * index,
+            index,
+          })}
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
           }}
+          // onLayout과 onContentSizeChange 이벤트 핸들러 제거
         />
 
         <View style={styles.chartDivider} />
