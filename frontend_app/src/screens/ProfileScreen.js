@@ -485,7 +485,11 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  // 비밀번호 변경 전 최종 유효성 검사
+  const validatePasswordInput = (text) => {
+    // 영문, 숫자, 허용된 특수문자만 입력 가능
+    return text.replace(/[^A-Za-z0-9!@#$%^&*]/g, '');
+  };
+
   const handlePasswordChange = async () => {
     // 모든 필드 입력 여부 검사
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -605,16 +609,14 @@ const ProfileScreen = ({ navigation }) => {
             <View style={styles.tokenContainer}>
               <View style={styles.tokenItem}>
                 <Text style={styles.tokenLabel}>WORK</Text>
-                <Text style={[styles.tokenValue, { color: "#FF8C00" }]}>
-                  {tokenBalance !== null ? `${tokenBalance} WORK` : "연결 필요"}
+                <Text style={[styles.tokenValue, { color: '#FF8C00' }]}>
+                  {tokenBalance !== null ? `${tokenBalance} ` : '연결 필요'}
                 </Text>
               </View>
               <View style={styles.tokenItem}>
                 <Text style={styles.tokenLabel}>SOLANA</Text>
-                <Text style={[styles.tokenValue, { color: "#FF8C00" }]}>
-                  {solBalance !== null
-                    ? `${Number(solBalance).toFixed(4)} SOL`
-                    : "연결 필요"}
+                <Text style={[styles.tokenValue, { color: '#FF8C00' }]}>
+                  {solBalance !== null ? `${Number(solBalance).toFixed(4)} ` : '연결 필요'}
                 </Text>
               </View>
             </View>
@@ -665,9 +667,9 @@ const ProfileScreen = ({ navigation }) => {
                     style={styles.input}
                     placeholder="현재 비밀번호"
                     value={currentPassword}
-                    onChangeText={handleCurrentPasswordChange}
+                    onChangeText={(text) => setCurrentPassword(validatePasswordInput(text))}
                     secureTextEntry={secureTextEntry}
-                    maxLength={PASSWORD_MAX_LENGTH}
+                    maxLength={15}
                   />
                   <TouchableOpacity
                     style={styles.eyeIcon}
@@ -689,9 +691,9 @@ const ProfileScreen = ({ navigation }) => {
                     style={styles.input}
                     placeholder="새 비밀번호"
                     value={newPassword}
-                    onChangeText={handleNewPasswordChange}
+                    onChangeText={(text) => setNewPassword(validatePasswordInput(text))}
                     secureTextEntry={secureTextEntry}
-                    maxLength={PASSWORD_MAX_LENGTH}
+                    maxLength={15}
                   />
                 </View>
                 {newPasswordError ? (
@@ -708,9 +710,9 @@ const ProfileScreen = ({ navigation }) => {
                     style={styles.input}
                     placeholder="새 비밀번호 확인"
                     value={confirmPassword}
-                    onChangeText={handleConfirmPasswordChange}
+                    onChangeText={(text) => setConfirmPassword(validatePasswordInput(text))}
                     secureTextEntry={secureTextEntry}
-                    maxLength={PASSWORD_MAX_LENGTH}
+                    maxLength={15}
                   />
                 </View>
                 {confirmPasswordError ? (

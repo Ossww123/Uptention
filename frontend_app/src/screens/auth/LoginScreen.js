@@ -28,6 +28,18 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
   const { login } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // 아이디 입력 유효성 검사 함수 추가
+  const validateUsernameInput = (text) => {
+    // 영문, 숫자만 입력 가능
+    return text.replace(/[^A-Za-z0-9]/g, '');
+  };
+
+  // 비밀번호 입력 유효성 검사 함수 추가
+  const validatePasswordInput = (text) => {
+    // 영문, 숫자, 특수문자(!@#$%^&*)만 입력 가능
+    return text.replace(/[^A-Za-z0-9!@#$%^&*]/g, '');
+  };
+
   // 컴포넌트 마운트 시 FCM 토큰 초기화
   useEffect(() => {
     FCMUtils.initializeFCM();
@@ -147,9 +159,9 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
                 placeholder="아이디"
                 placeholderTextColor="#AAA"
                 value={username}
-                onChangeText={setUsername}
+                onChangeText={(text) => setUsername(validateUsernameInput(text))}
                 autoCapitalize="none"
-                maxLength={50}
+                maxLength={15}
               />
             </View>
 
@@ -160,9 +172,9 @@ const LoginScreen = ({ navigation, onLoginSuccess }) => {
                 placeholder="비밀번호"
                 placeholderTextColor="#AAA"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => setPassword(validatePasswordInput(text))}
                 secureTextEntry={secureTextEntry}
-                maxLength={50}
+                maxLength={15}
               />
               <TouchableOpacity
                 style={styles.eyeIcon}

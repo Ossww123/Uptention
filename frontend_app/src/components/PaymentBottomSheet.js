@@ -49,7 +49,10 @@ const PaymentBottomSheet = ({ visible, onClose, product, navigation }) => {
         }
       );
 
-      if (response.data && response.data.address) {
+      if (response.data && 
+          response.data.address && 
+          typeof response.data.address === 'string' && 
+          response.data.address.trim() !== '') {
         // 주소 문자열을 파싱하여 주소 객체 형식으로 변환
         const fullAddress = response.data.address;
         const addressParts = fullAddress.split(" ");
@@ -62,9 +65,13 @@ const PaymentBottomSheet = ({ visible, onClose, product, navigation }) => {
           detailAddress,
           buildingName: "",
         });
+      } else {
+        // undefined, 빈 문자열, 빈 배열 등의 경우 address를 null로 설정
+        setAddress(null);
       }
     } catch (error) {
       console.error("최근 배송지 조회 실패:", error);
+      setAddress(null);
     } finally {
       setIsLoadingAddress(false);
     }

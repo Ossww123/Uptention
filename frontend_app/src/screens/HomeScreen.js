@@ -572,7 +572,7 @@ const HomeScreen = ({ navigation }) => {
             </View>
             <View style={styles.mainContainer}>
               <View style={styles.progressContainer}>
-                <Text style={styles.dailyWorkText}>Daily $WORK</Text>
+                <Text style={styles.dailyWorkText}>Daily</Text>
 
                 <View style={styles.progressBarWrapper}>
                   <Svg width={size} height={size}>
