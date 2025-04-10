@@ -160,10 +160,6 @@ const FocusModeScreen = ({ navigation }) => {
       if (response.status === 200) {
         console.log('포커스 모드 종료 API 호출 성공');
         
-        if (Platform.OS === 'android') {
-          await AppBlockerModule.setAppBlockingEnabled(false);
-        }
-
         let updatedPoint = 0;
         // 포인트 조회 시도 (최대 2번)
         for (let i = 0; i < 2; i++) {

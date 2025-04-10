@@ -26,6 +26,9 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
   const { authToken } = useAuth();
 
+  // 최근 주소를 저장할 ref 추가
+  const cachedAddress = useRef(null);
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -70,6 +73,13 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
   // 최근 배송지 조회
   const fetchRecentAddress = async () => {
     try {
+      // 이미 캐시된 주소가 있으면 캐시된 주소 사용
+      if (cachedAddress.current) {
+        setAddress(cachedAddress.current);
+        setIsLoadingAddress(false);
+        return;
+      }
+
       setIsLoadingAddress(true);
       const response = await axios.get(
         `${API_BASE_URL}/api/orders/delivery-info`,
@@ -90,14 +100,17 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
         const roadAddress = addressParts.slice(1, -1).join(' ');
         const detailAddress = addressParts[addressParts.length - 1];
 
-        setAddress({
+        const newAddress = {
           zonecode,
           roadAddress,
           detailAddress,
           buildingName: ''
-        });
+        };
+
+        // 주소를 캐시에 저장
+        cachedAddress.current = newAddress;
+        setAddress(newAddress);
       } else {
-        // undefined, 빈 문자열, 빈 배열 등의 경우 address를 null로 설정
         setAddress(null);
       }
     } catch (error) {
@@ -110,7 +123,7 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
 
   // 컴포넌트 마운트 시 최근 배송지 조회
   useEffect(() => {
-    if (visible && navigation) {
+    if (navigation) {
       const currentState = navigation.getState();
       if (!currentState.routes.some(route => 
         route.name === 'AddressSearch' || route.name === 'AddressDetail'
@@ -118,14 +131,27 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
         fetchRecentAddress();
       }
     }
-  }, [visible, navigation]);
+  }, []);
+
+  // 바텀시트가 보일 때 주소 업데이트
+  useEffect(() => {
+    if (visible) {
+      // 캐시된 주소가 있으면 바로 표시
+      if (cachedAddress.current) {
+        setAddress(cachedAddress.current);
+        setIsLoadingAddress(false);
+      } else {
+        // 캐시된 주소가 없으면 새로 조회
+        fetchRecentAddress();
+      }
+    }
+  }, [visible]);
 
   // 라우트 파라미터에서 주소 정보 받아오기
   useEffect(() => {
     if (visible && navigation) {
       const currentState = navigation.getState();
       const currentRoute = currentState.routes[currentState.routes.length - 1];
-      console.log('Current Route Params:', currentRoute.params);
       
       // item에서 address 정보가 있는 경우
       if (item?.address) {
@@ -133,24 +159,29 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
         const roadAddress = addressParts.slice(0, -1).join(' ');
         const detailAddress = addressParts[addressParts.length - 1];
 
-        setAddress({
+        const newAddress = {
           zonecode: '',  // 우편번호는 표시하지 않음
           roadAddress,
           detailAddress,
           buildingName: ''
-        });
+        };
+
+        // 새 주소를 캐시에 저장
+        cachedAddress.current = newAddress;
+        setAddress(newAddress);
         setIsLoadingAddress(false);
       }
       // route.params에서 address 정보가 있는 경우
       else if (currentRoute.params?.address) {
-        console.log('받은 주소:', currentRoute.params.address);
+        // 새 주소를 캐시에 저장
+        cachedAddress.current = currentRoute.params.address;
         setAddress(currentRoute.params.address);
         setIsLoadingAddress(false);
       } else {
-        setIsLoadingAddress(false);  // 주소 정보가 없는 경우에도 로딩 상태 해제
+        setIsLoadingAddress(false);
       }
     }
-  }, [visible, navigation.getState(), item]);  // item 의존성 추가
+  }, [visible, navigation.getState(), item]);
 
   const handleSubmit = async () => {
     try {
