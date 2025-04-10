@@ -19,6 +19,8 @@ import java.io.ByteArrayOutputStream
 import java.util.*
 import kotlin.collections.HashMap
 import android.net.Uri
+import android.graphics.drawable.Drawable
+
 
 class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
 
@@ -179,28 +181,153 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
     // 앱 아이콘을 가져오는 메서드
     @ReactMethod
     fun getAppIcon(packageName: String, promise: Promise) {
+        val pm = reactApplicationContext.packageManager
+
+        // 미리 알려진 앱들의 패키지 이름과 대응하는 리소스 ID 매핑
+    val knownApps = mapOf(
+        "com.google.android.youtube" to "youtube_icon",
+        "app.phantom" to "phantom_icon",
+        // 더 많은 주요 앱 추가 가능
+    )
+
         try {
+            // 0차 시도: 알려진 앱 확인
+        if (knownApps.containsKey(packageName)) {
+            // React Native에서는 JS 측에서 앱 번들에 포함된 아이콘을 사용하도록 신호 전달
+            promise.resolve("KNOWN_APP:" + knownApps[packageName])
+            return
+        }
+
+            // 1차 시도: 기본 방식
+            try {
+                val drawable = pm.getApplicationIcon(packageName)
+                val base64 = drawableToBase64(drawable)
+                promise.resolve(base64)
+                return
+            } catch (e: Exception) {
+                // 1차 실패, 아래로 넘어감
+            }
+
+            // 2차 시도: 리소스 직접 접근
+            try {
+                val resources = pm.getResourcesForApplication(packageName)
+                val appInfo = pm.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+                val iconId = appInfo.icon
+                
+                if (iconId != 0) {
+                    val drawable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        resources.getDrawable(iconId, null)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        resources.getDrawable(iconId)
+                    }
+                    val base64 = drawableToBase64(drawable)
+                    promise.resolve(base64)
+                    return
+                }
+            } catch (e: Exception) {
+                // 2차 실패, 아래로 넘어감
+            }
+
+            // 3차 시도: ResolveInfo 방식
+            try {
+                val intent = Intent(Intent.ACTION_MAIN, null)
+                intent.addCategory(Intent.CATEGORY_LAUNCHER)
+                val resolveInfoList = pm.queryIntentActivities(intent, 0)
+
+                for (resolveInfo in resolveInfoList) {
+                    val resolvedPackageName = resolveInfo.activityInfo.packageName
+                    if (resolvedPackageName == packageName) {
+                        val drawable = resolveInfo.loadIcon(pm)
+                        val base64 = drawableToBase64(drawable)
+                        promise.resolve(base64)
+                        return
+                    }
+                }
+            } catch (e: Exception) {
+                // 3차 실패, 아래로 넘어감
+            }
+
+            // 4차 시도: 앱 이름 기반 대체 이미지 생성 (첫 글자를 원 안에 표시)
+            try {
+                val appName = getAppNameInternal(packageName)
+                val firstChar = appName.first().toString()
+                val base64 = generateLetterIcon(firstChar, packageName)
+                promise.resolve(base64)
+                return
+            } catch (e: Exception) {
+                // 실패 시 기본값 반환
+            }
+
+            // 모든 시도 실패 시
+            promise.resolve(null)
+
+        } catch (e: Exception) {
+            promise.resolve(null) // reject 대신 null 반환으로 앱 충돌 방지
+        }
+    }
+
+    // 내부용 앱 이름 가져오기 함수
+    private fun getAppNameInternal(packageName: String): String {
+        return try {
             val pm = reactApplicationContext.packageManager
-            val drawable = pm.getApplicationIcon(packageName)
-            
-            // Drawable을 Bitmap으로 변환
-            val bitmap = Bitmap.createBitmap(drawable.intrinsicWidth, drawable.intrinsicHeight, Bitmap.Config.ARGB_8888)
+            val appInfo = pm.getApplicationInfo(packageName, 0)
+            pm.getApplicationLabel(appInfo).toString()
+        } catch (e: Exception) {
+            val parts = packageName.split(".")
+            parts.lastOrNull()?.capitalize() ?: packageName
+        }
+    }
+
+    // 문자 기반 아이콘 생성 함수
+    private fun generateLetterIcon(letter: String, packageName: String): String {
+        // 패키지 이름에서 결정적(deterministic) 색상 생성
+        val hash = packageName.hashCode()
+        val hue = ((hash % 360) + 360) % 360  // 0-359 범위의 색조값
+        val color = android.graphics.Color.HSVToColor(floatArrayOf(hue.toFloat(), 0.8f, 0.8f))
+        
+        // 비트맵 생성
+        val size = 192  // 아이콘 크기
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        
+        // 배경 원 그리기
+        val paint = android.graphics.Paint()
+        paint.color = color
+        paint.isAntiAlias = true
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+        
+        // 문자 그리기
+        paint.color = android.graphics.Color.WHITE
+        paint.textSize = size / 2f
+        paint.textAlign = android.graphics.Paint.Align.CENTER
+        val textHeight = (paint.descent() + paint.ascent()) / 2
+        canvas.drawText(letter, size / 2f, size / 2f - textHeight, paint)
+        
+        // 비트맵을 Base64로 변환
+        val stream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        val byteArray = stream.toByteArray()
+        return Base64.encodeToString(byteArray, Base64.DEFAULT)
+    }
+
+        // Helper: Drawable -> Base64
+        private fun drawableToBase64(drawable: Drawable): String {
+            val bitmap = Bitmap.createBitmap(
+                drawable.intrinsicWidth,
+                drawable.intrinsicHeight,
+                Bitmap.Config.ARGB_8888
+            )
             val canvas = Canvas(bitmap)
             drawable.setBounds(0, 0, canvas.width, canvas.height)
             drawable.draw(canvas)
-            
-            // Bitmap을 Base64 인코딩
-            val byteArrayOutputStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-            val byteArray = byteArrayOutputStream.toByteArray()
-            val base64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
-            
-            promise.resolve(base64)
-        } catch (e: Exception) {
-            // 앱 아이콘을 가져올 수 없는 경우
-            promise.reject("ERROR", e.message)
+
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            val byteArray = stream.toByteArray()
+            return Base64.encodeToString(byteArray, Base64.DEFAULT)
         }
-    }
+
 
     // 여러 앱 아이콘을 한 번에 가져오는 메서드
     @ReactMethod
