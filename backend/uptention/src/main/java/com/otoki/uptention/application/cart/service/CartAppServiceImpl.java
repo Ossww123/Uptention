@@ -91,8 +91,7 @@ public class CartAppServiceImpl implements CartAppService {
 			cartItems.forEach(cartItem -> {
 				InventoryDto inventoryDto = inventoryMap.get(cartItem.getItemId());
 				if (inventoryDto != null) {
-					// CartItemDto에 availableQuantity 필드가 있다고 가정하고 업데이트
-					cartItem.setQuantity(inventoryDto.getAvailableQuantity());
+					cartItem.setStockQuantity(inventoryDto.getAvailableQuantity());
 				}
 			});
 		} catch (Exception e) {
