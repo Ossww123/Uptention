@@ -16,6 +16,12 @@ const appIconCache = {};
 const knownAppIcons = {
   'youtube_icon': require('../../assets/app-icons/youtube.png'),
   'phantom_icon': require('../../assets/app-icons/phantom.png'),
+  'discord_icon': require('../../assets/app-icons/discord.png'),
+  'videos_icon': require('../../assets/app-icons/videos.png'),
+  'notes_icon': require('../../assets/app-icons/notes.png'),
+  'photos_icon': require('../../assets/app-icons/photos.png'),
+  'maps_icon': require('../../assets/app-icons/maps.png'),
+  'music_icon': require('../../assets/app-icons/music.png'),
 };
 
 /**
