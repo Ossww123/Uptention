@@ -5,8 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -40,7 +42,7 @@ public class CartItemDto {
 	@Schema(description = "상품 대표 이미지 URL", example = "https://example.com/images/product_1_1.jpg")
 	private String thumbnail;
 
-	public void updateThumbnail(String thumbnail){
+	public void updateThumbnail(String thumbnail) {
 		this.thumbnail = thumbnail;
 	}
 

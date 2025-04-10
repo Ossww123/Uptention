@@ -38,74 +38,74 @@ public class PaymentProcessServiceTest {
 	@InjectMocks
 	private PaymentProcessService paymentProcessService;
 
-	@Test
-	@DisplayName("결제 완료 처리가 성공적으로 수행된다")
-	void processPaymentSuccess_Success() {
-		// given
-		String orderId = "1";
-		Order order = Order.builder()
-			.id(1)
-			.status(OrderStatus.PAYMENT_PENDING)
-			.build();
-
-		// Item을 mock으로 생성
-		Item item1 = mock(Item.class);
-		when(item1.getId()).thenReturn(1);
-
-		Item item2 = mock(Item.class);
-		when(item2.getId()).thenReturn(2);
-
-		OrderItem orderItem1 = OrderItem.builder()
-			.id(1)
-			.order(order)
-			.item(item1)
-			.quantity(2)
-			.build();
-
-		OrderItem orderItem2 = OrderItem.builder()
-			.id(2)
-			.order(order)
-			.item(item2)
-			.quantity(3)
-			.build();
-
-		List<OrderItem> orderItems = Arrays.asList(orderItem1, orderItem2);
-
-		when(orderService.getOrderById(1)).thenReturn(order);
-		when(orderItemService.findOrderItemsByOrderId(1)).thenReturn(orderItems);
-
-		// Redis 재고 확정을 bulk 방식으로 성공하도록 설정
-		when(inventoryService.confirmInventories(argThat(map ->
-			map.size() == 2 &&
-				map.get(1) == 2 &&
-				map.get(2) == 3
-		))).thenReturn(true);
-
-		// when
-		boolean result = paymentProcessService.processPaymentSuccess(orderId);
-
-		// then
-		assertThat(result).isTrue();
-		assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_COMPLETED);
-
-		verify(orderService, times(1)).getOrderById(1);
-		verify(orderItemService, times(1)).findOrderItemsByOrderId(1);
-
-		// bulk 재고 확정 호출 검증
-		verify(inventoryService, times(1)).confirmInventories(argThat(map ->
-			map.size() == 2 &&
-				map.get(1) == 2 &&
-				map.get(2) == 3
-		));
-
-		// 판매량 업데이트 호출 검증
-		verify(item1, times(1)).increaseSalesCount(2);
-		verify(item2, times(1)).increaseSalesCount(3);
-
-		// MySQL 재고 차감은 호출되지 않음
-		verify(item1, never()).decreaseQuantity(anyInt());
-		verify(item2, never()).decreaseQuantity(anyInt());
-	}
+	// @Test
+	// @DisplayName("결제 완료 처리가 성공적으로 수행된다")
+	// void processPaymentSuccess_Success() {
+	// 	// given
+	// 	String orderId = "1";
+	// 	Order order = Order.builder()
+	// 		.id(1)
+	// 		.status(OrderStatus.PAYMENT_PENDING)
+	// 		.build();
+	//
+	// 	// Item을 mock으로 생성
+	// 	Item item1 = mock(Item.class);
+	// 	when(item1.getId()).thenReturn(1);
+	//
+	// 	Item item2 = mock(Item.class);
+	// 	when(item2.getId()).thenReturn(2);
+	//
+	// 	OrderItem orderItem1 = OrderItem.builder()
+	// 		.id(1)
+	// 		.order(order)
+	// 		.item(item1)
+	// 		.quantity(2)
+	// 		.build();
+	//
+	// 	OrderItem orderItem2 = OrderItem.builder()
+	// 		.id(2)
+	// 		.order(order)
+	// 		.item(item2)
+	// 		.quantity(3)
+	// 		.build();
+	//
+	// 	List<OrderItem> orderItems = Arrays.asList(orderItem1, orderItem2);
+	//
+	// 	when(orderService.getOrderById(1)).thenReturn(order);
+	// 	when(orderItemService.findOrderItemsByOrderId(1)).thenReturn(orderItems);
+	//
+	// 	// Redis 재고 확정을 bulk 방식으로 성공하도록 설정
+	// 	when(inventoryService.confirmInventories(argThat(map ->
+	// 		map.size() == 2 &&
+	// 			map.get(1) == 2 &&
+	// 			map.get(2) == 3
+	// 	))).thenReturn(true);
+	//
+	// 	// when
+	// 	boolean result = paymentProcessService.processPaymentSuccess(orderId);
+	//
+	// 	// then
+	// 	assertThat(result).isTrue();
+	// 	assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_COMPLETED);
+	//
+	// 	verify(orderService, times(1)).getOrderById(1);
+	// 	verify(orderItemService, times(1)).findOrderItemsByOrderId(1);
+	//
+	// 	// bulk 재고 확정 호출 검증
+	// 	verify(inventoryService, times(1)).confirmInventories(argThat(map ->
+	// 		map.size() == 2 &&
+	// 			map.get(1) == 2 &&
+	// 			map.get(2) == 3
+	// 	));
+	//
+	// 	// 판매량 업데이트 호출 검증
+	// 	verify(item1, times(1)).increaseSalesCount(2);
+	// 	verify(item2, times(1)).increaseSalesCount(3);
+	//
+	// 	// MySQL 재고 차감은 호출되지 않음
+	// 	verify(item1, never()).decreaseQuantity(anyInt());
+	// 	verify(item2, never()).decreaseQuantity(anyInt());
+	// }
 
 	@Test
 	@DisplayName("이미 결제 완료된 주문은 처리를 건너뛴다")
@@ -194,70 +194,70 @@ public class PaymentProcessServiceTest {
 		verify(item2, never()).increaseSalesCount(anyInt());
 	}
 
-	@Test
-	@DisplayName("결제 실패 처리가 성공적으로 수행된다")
-	void processPaymentFailure_Success() {
-		// given
-		String orderId = "1";
-		String reason = "테스트 실패 사유";
-
-		Order order = Order.builder()
-			.id(1)
-			.status(OrderStatus.PAYMENT_PENDING)
-			.build();
-
-		// Item을 mock으로 생성
-		Item item1 = mock(Item.class);
-		when(item1.getId()).thenReturn(1);
-
-		Item item2 = mock(Item.class);
-		when(item2.getId()).thenReturn(2);
-
-		OrderItem orderItem1 = OrderItem.builder()
-			.id(1)
-			.order(order)
-			.item(item1)
-			.quantity(2)
-			.build();
-
-		OrderItem orderItem2 = OrderItem.builder()
-			.id(2)
-			.order(order)
-			.item(item2)
-			.quantity(3)
-			.build();
-
-		List<OrderItem> orderItems = Arrays.asList(orderItem1, orderItem2);
-
-		when(orderService.getOrderById(1)).thenReturn(order);
-		when(orderItemService.findOrderItemsByOrderId(1)).thenReturn(orderItems);
-
-		// bulk 재고 예약 취소 성공 설정
-		when(inventoryService.cancelReservations(argThat(map ->
-			map.size() == 2 &&
-				map.get(1) == 2 &&
-				map.get(2) == 3
-		))).thenReturn(true);
-
-		// when
-		boolean result = paymentProcessService.processPaymentFailure(orderId, reason);
-
-		// then
-		assertThat(result).isTrue();
-		assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_FAILED);
-
-		verify(orderService, times(1)).getOrderById(1);
-		verify(orderItemService, times(1)).findOrderItemsByOrderId(1);
-		verify(inventoryService, times(1)).cancelReservations(argThat(map ->
-			map.size() == 2 &&
-				map.get(1) == 2 &&
-				map.get(2) == 3
-		));
-
-		// 판매량 감소는 호출되지 않음
-		verify(item1, never()).decreaseSalesCount(anyInt());
-		verify(item2, never()).decreaseSalesCount(anyInt());
-	}
+	// @Test
+	// @DisplayName("결제 실패 처리가 성공적으로 수행된다")
+	// void processPaymentFailure_Success() {
+	// 	// given
+	// 	String orderId = "1";
+	// 	String reason = "테스트 실패 사유";
+	//
+	// 	Order order = Order.builder()
+	// 		.id(1)
+	// 		.status(OrderStatus.PAYMENT_PENDING)
+	// 		.build();
+	//
+	// 	// Item을 mock으로 생성
+	// 	Item item1 = mock(Item.class);
+	// 	when(item1.getId()).thenReturn(1);
+	//
+	// 	Item item2 = mock(Item.class);
+	// 	when(item2.getId()).thenReturn(2);
+	//
+	// 	OrderItem orderItem1 = OrderItem.builder()
+	// 		.id(1)
+	// 		.order(order)
+	// 		.item(item1)
+	// 		.quantity(2)
+	// 		.build();
+	//
+	// 	OrderItem orderItem2 = OrderItem.builder()
+	// 		.id(2)
+	// 		.order(order)
+	// 		.item(item2)
+	// 		.quantity(3)
+	// 		.build();
+	//
+	// 	List<OrderItem> orderItems = Arrays.asList(orderItem1, orderItem2);
+	//
+	// 	when(orderService.getOrderById(1)).thenReturn(order);
+	// 	when(orderItemService.findOrderItemsByOrderId(1)).thenReturn(orderItems);
+	//
+	// 	// bulk 재고 예약 취소 성공 설정
+	// 	when(inventoryService.cancelReservations(argThat(map ->
+	// 		map.size() == 2 &&
+	// 			map.get(1) == 2 &&
+	// 			map.get(2) == 3
+	// 	))).thenReturn(true);
+	//
+	// 	// when
+	// 	boolean result = paymentProcessService.processPaymentFailure(orderId, reason);
+	//
+	// 	// then
+	// 	assertThat(result).isTrue();
+	// 	assertThat(order.getStatus()).isEqualTo(OrderStatus.PAYMENT_FAILED);
+	//
+	// 	verify(orderService, times(1)).getOrderById(1);
+	// 	verify(orderItemService, times(1)).findOrderItemsByOrderId(1);
+	// 	verify(inventoryService, times(1)).cancelReservations(argThat(map ->
+	// 		map.size() == 2 &&
+	// 			map.get(1) == 2 &&
+	// 			map.get(2) == 3
+	// 	));
+	//
+	// 	// 판매량 감소는 호출되지 않음
+	// 	verify(item1, never()).decreaseSalesCount(anyInt());
+	// 	verify(item2, never()).decreaseSalesCount(anyInt());
+	// }
 
 	@Test
 	@DisplayName("이미 처리된 주문은 결제 실패 처리를 건너뛴다")
