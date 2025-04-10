@@ -143,9 +143,9 @@ const UserManagementPage = () => {
     [loading, hasMore, fetchMoreUsers]
   );
 
-  // 입력창 변경 핸들러 (최대 10자 제한)
+  // 입력창 변경 핸들러 (최대 20자 제한)
   const handleSearchChange = (e) => {
-    const value = e.target.value.slice(0, 10);
+    const value = e.target.value.slice(0, 20);
     setSearchTerm(value);
   };
 
