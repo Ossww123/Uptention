@@ -168,7 +168,7 @@ const MiningGraph = ({
           ]}
           initialNumToRender={data.length}
           removeClippedSubviews={false}
-          initialScrollIndex={isScrollable ? data.length - 8 : undefined} // 초기 스크롤 위치 설정 (최근 7일)
+          initialScrollIndex={isScrollable ? data.length - 7 : undefined} // 초기 스크롤 위치 설정 (최근 7일)
           getItemLayout={(data, index) => ({
             length: 40,
             offset: 40 * index,

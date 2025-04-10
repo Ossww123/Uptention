@@ -35,6 +35,7 @@ const WeeklyView = forwardRef(
 
     // 주간 채굴 데이터
     const [weeklyMiningData, setWeeklyMiningData] = useState([]);
+    const [dataReady, setDataReady] = useState(false); // 데이터 준비 상태 추가
 
     // 주간 총 채굴 시간 정보 (객체 형태로 변경)
     const [weeklyTotalTime, setWeeklyTotalTime] = useState({
@@ -86,18 +87,27 @@ const WeeklyView = forwardRef(
 
     // 주 전환 중복 방지를 위한 ref
     const isSwitchingWeek = useRef(false);
-    
+
     // 초기 렌더링 여부 추적
     const isInitialRender = useRef(true);
 
-    // 부모 컴포넌트에서 호출할 수 있는 메서드 노출
+    // ref로 노출할 메서드에 getWeeklyData 추가
     useImperativeHandle(ref, () => ({
       refreshData: () => {
-        // 현재 선택된 주의 데이터를 새로고침
         return refreshCurrentWeekData();
+      },
+      getWeeklyData: () => {
+        return {
+          miningData: weeklyMiningData,
+          totalTime: weeklyTotalTime,
+          appUsage: appUsage,
+          prevWeekAppUsage: prevWeekAppUsage,
+          dataReady: dataReady,
+        };
       },
     }));
 
+    // WeeklyView.js의 useEffect 수정
     useEffect(() => {
       // 컴포넌트 마운트 시 초기 날짜 범위 설정
       setInitialDateRange();
@@ -110,19 +120,35 @@ const WeeklyView = forwardRef(
       }
     }, [currentWeek]);
 
+    // 캐시된 데이터로 상태를 업데이트하는 useEffect 추가
+    useEffect(() => {
+      if (dataState.isLoaded && cachedData[currentWeekIndex]) {
+        // 캐시된 데이터가 있으면 상태 업데이트
+        const data = cachedData[currentWeekIndex];
+        if (data) {
+          setWeeklyMiningData(data.miningData);
+          setWeeklyTotalTime(data.totalTime);
+          setWeeklyComparison(data.comparison);
+          setAppUsage(data.appUsage || {}); // null 체크 추가
+          setPrevWeekAppUsage(data.prevWeekAppUsage || {}); // null 체크 추가
+          setDataReady(true);
+        }
+      }
+    }, [dataState.isLoaded, currentWeekIndex, cachedData]);
+
     // 초기 빈 데이터 플레이스홀더 생성
     const generatePlaceholderData = () => {
       const today = new Date();
       const days = ["일", "월", "화", "수", "목", "금", "토"];
       const result = [];
-      
+
       for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
         const day = date.getDate();
         const month = date.getMonth() + 1;
         const dayOfWeek = days[date.getDay()];
-        
+
         result.push({
           id: `${month}-${day}`,
           day: day.toString(),
@@ -133,36 +159,30 @@ const WeeklyView = forwardRef(
           miningTime: {
             hours: 0,
             minutes: 0,
-            totalMinutes: 0
-          }
+            totalMinutes: 0,
+          },
         });
       }
-      
+
       return result;
     };
 
     // 데이터 사전 로딩 함수
+    // WeeklyView.js의 prefetchData 함수 수정
     const prefetchData = async () => {
       setLoading(true);
 
       try {
         // 현재 주 데이터 로드
-        await fetchWeeklyData(0, {
+        const success = await fetchWeeklyData(0, {
           startDate: currentWeek.startDate,
           endDate: currentWeek.endDate,
           start: currentWeek.start,
           end: currentWeek.end,
         });
-        
-        // 첫 로딩 후 명시적으로 상태 업데이트 강제 적용
-        const initialData = cachedData[0];
-        if (initialData && initialData.miningData.length > 0) {
-          // 즉시 상태 업데이트 (setTimeout 없이)
-          setWeeklyMiningData(initialData.miningData);
-          setWeeklyTotalTime(initialData.totalTime);
-          setWeeklyComparison(initialData.comparison);
-          setAppUsage(initialData.appUsage);
-          setPrevWeekAppUsage(initialData.prevWeekAppUsage);
+
+        if (!success) {
+          console.warn("현재 주 데이터 로드 실패");
         }
 
         // 이전 주 날짜 범위 계산
@@ -188,13 +208,11 @@ const WeeklyView = forwardRef(
 
         // 이전 주 데이터 로드
         await fetchWeeklyData(1, prevDateRange);
-        
+
         // 초기 렌더링 플래그 업데이트
         isInitialRender.current = false;
       } catch (error) {
         console.error("데이터 사전 로딩 오류:", error);
-        // 초기 렌더링 플래그 업데이트
-        isInitialRender.current = false;
       } finally {
         setLoading(false);
         setDataState((prev) => ({
@@ -282,6 +300,7 @@ const WeeklyView = forwardRef(
     };
 
     // 주간 데이터 가져오기
+    // WeeklyView.js의 fetchWeeklyData 함수 수정
     const fetchWeeklyData = async (
       weekIndex = currentWeekIndex,
       dateRange = null
@@ -308,11 +327,17 @@ const WeeklyView = forwardRef(
           `/users/${userId}/mining-times?startTime=${startTime}&endTime=${endTime}`
         );
 
+        let miningDataArray = [];
+        let totalTimeObject = { hours: 0, minutes: 0, totalMinutes: 0 };
+        let randomComparisonValue = 0;
+        let currentWeekAppUsage = {};
+        let prevWeekAppUsage = {};
+
         if (response.ok) {
           const apiData = response.data;
 
           // 이 주의 각 날짜에 대한 데이터 매핑
-          const miningDataArray = [];
+          miningDataArray = [];
           const days = ["일", "월", "화", "수", "목", "금", "토"];
 
           let totalMinutes = 0;
@@ -359,21 +384,22 @@ const WeeklyView = forwardRef(
           // 주간 총 채굴 시간 계산
           const hours = Math.floor(totalMinutes / 60);
           const minutes = totalMinutes % 60;
-          const totalTimeObject = {
+          totalTimeObject = {
             hours: hours,
             minutes: minutes,
             totalMinutes: totalMinutes,
           };
 
           // 임의의 전주 대비 증감값 설정
-          // 현재는 -300 ~ 300 사이의 임의 값 (분 단위)
-          const randomComparisonValue = Math.floor(Math.random() * 600) - 300;
+          randomComparisonValue = Math.floor(Math.random() * 600) - 300;
+        } else {
+          console.error("주간 채굴 시간 데이터 가져오기 실패:", response.data);
+          // 오류 시 빈 데이터 배열 유지
+        }
 
-          // 최근 14일간의 앱 사용 정보 가져오기
+        // 최근 14일간의 앱 사용 정보 가져오기 - 별도 try/catch로 분리
+        try {
           const weeklyScreenTimeData = await ScreenTime.getWeeklyScreenTime(14);
-
-          let currentWeekAppUsage = {};
-          let prevWeekAppUsage = {};
 
           if (weeklyScreenTimeData.hasPermission) {
             const appUsageData = weeklyScreenTimeData.appUsageWithNames || {};
@@ -415,9 +441,10 @@ const WeeklyView = forwardRef(
             const totalScreenTime =
               currentWeekTotalScreenTime + prevWeekTotalScreenTime;
 
-            // 앱별 사용 시간 데이터
-            Object.entries(appUsageData).forEach(([packageName, appInfo]) => {
-              if (totalScreenTime > 0) {
+            // 앱별 사용 시간 데이터 처리 개선
+            if (totalScreenTime > 0) {
+              // 앱별 사용 시간 데이터
+              Object.entries(appUsageData).forEach(([packageName, appInfo]) => {
                 // 앱의 총 사용 시간을 현재 주와 이전 주로 비율 기반 분배
                 const currentWeekRatio =
                   currentWeekTotalScreenTime / totalScreenTime;
@@ -433,45 +460,50 @@ const WeeklyView = forwardRef(
                   ...appInfo,
                   usageTime: Math.round(appInfo.usageTime * prevWeekRatio),
                 };
-              }
-            });
+              });
+            }
           }
-
-          // 데이터 캐싱 및 상태 객체 구성
-          const newCachedData = {
-            miningData: miningDataArray,
-            totalTime: totalTimeObject,
-            appUsage: weekIndex === 0 ? currentWeekAppUsage : prevWeekAppUsage,
-            prevWeekAppUsage: prevWeekAppUsage,
-            comparison: randomComparisonValue,
-            dateRange: {
-              startDate: startDate,
-              endDate: endDate,
-              start: startText,
-              end: endText,
-            },
-          };
-          
-          // 캐시 데이터 업데이트
-          setCachedData((prev) => ({
-            ...prev,
-            [weekIndex]: newCachedData,
-          }));
-
-          // 첫번째 로딩이거나 현재 표시 중인 주 인덱스에 해당하는 데이터라면 즉시 상태 업데이트
-          if (weekIndex === currentWeekIndex || isInitialRender.current) {
-            // 즉시 상태 업데이트
-            setWeeklyMiningData(miningDataArray);
-            setWeeklyTotalTime(totalTimeObject);
-            setWeeklyComparison(randomComparisonValue);
-            setAppUsage(weekIndex === 0 ? currentWeekAppUsage : prevWeekAppUsage);
-            setPrevWeekAppUsage(prevWeekAppUsage);
-          }
-        } else {
-          console.error("주간 채굴 시간 데이터 가져오기 실패:", response.data);
+        } catch (error) {
+          console.error("주간 스크린타임 데이터 가져오기 오류:", error);
+          // 스크린타임 데이터 오류시도 채굴 데이터는 계속 표시
         }
+
+        // 데이터 캐싱 및 상태 객체 구성
+        const newCachedData = {
+          miningData: miningDataArray,
+          totalTime: totalTimeObject,
+          appUsage: weekIndex === 0 ? currentWeekAppUsage : prevWeekAppUsage,
+          prevWeekAppUsage: prevWeekAppUsage,
+          comparison: randomComparisonValue,
+          dateRange: {
+            startDate: startDate,
+            endDate: endDate,
+            start: startText,
+            end: endText,
+          },
+        };
+
+        // 캐시 데이터 업데이트
+        setCachedData((prev) => ({
+          ...prev,
+          [weekIndex]: newCachedData,
+        }));
+
+        // 첫번째 로딩이거나 현재 표시 중인 주 인덱스에 해당하는 데이터라면 즉시 상태 업데이트
+        if (weekIndex === currentWeekIndex || isInitialRender.current) {
+          // 즉시 상태 업데이트
+          setWeeklyMiningData(miningDataArray);
+          setWeeklyTotalTime(totalTimeObject);
+          setWeeklyComparison(randomComparisonValue);
+          setAppUsage(weekIndex === 0 ? currentWeekAppUsage : prevWeekAppUsage);
+          setPrevWeekAppUsage(prevWeekAppUsage);
+          setDataReady(true); // 데이터 준비 완료 표시
+        }
+
+        return true; // 데이터 로드 성공
       } catch (error) {
         console.error("주간 데이터 가져오기 오류:", error);
+        return false; // 데이터 로드 실패
       } finally {
         if (weekIndex === currentWeekIndex) {
           setTransitionLoading(false);
@@ -479,7 +511,7 @@ const WeeklyView = forwardRef(
       }
     };
 
-    // 데이터 스위칭 함수 - 캐시된 데이터로 상태 업데이트
+    // WeeklyView.js의 switchToWeekData 함수 수정
     const switchToWeekData = (weekIndex) => {
       setDataState((prev) => ({
         ...prev,
@@ -489,22 +521,20 @@ const WeeklyView = forwardRef(
       // 캐시된 데이터 가져오기
       const data = cachedData[weekIndex];
       if (data) {
-        // 일괄 업데이트를 위해 setTimeout 사용 (React 배치 업데이트 활용)
-        // 중요한 데이터는 즉시 업데이트하고, 배치 업데이트를 통해 동기화
+        // 모든 상태를 한 번에 업데이트
         setWeeklyMiningData(data.miningData);
         setWeeklyTotalTime(data.totalTime);
         setWeeklyComparison(data.comparison);
-        
-        setTimeout(() => {
-          setAppUsage(data.appUsage);
-          setPrevWeekAppUsage(data.prevWeekAppUsage);
+        setAppUsage(data.appUsage || {}); // null 체크 추가
+        setPrevWeekAppUsage(data.prevWeekAppUsage || {}); // null 체크 추가
 
+        setTimeout(() => {
           setDataState((prev) => ({
             ...prev,
             isSwitching: false,
             currentData: weekIndex,
           }));
-        }, 0);
+        }, 50); // 상태 업데이트 완료를 위한 짧은 지연
       }
     };
 
@@ -621,12 +651,15 @@ const WeeklyView = forwardRef(
     // 현재 표시할 날짜 범위
     const currentDateRange =
       cachedData[currentWeekIndex]?.dateRange || currentWeek;
-      
+
     // 캐시에서 직접 데이터 참조 (상태가 아직 업데이트되지 않았을 경우를 대비)
-    const displayMiningData = cachedData[currentWeekIndex]?.miningData?.length > 0 
-      ? cachedData[currentWeekIndex].miningData 
-      : (weeklyMiningData.length > 0 ? weeklyMiningData : generatePlaceholderData());
-    
+    const displayMiningData =
+      cachedData[currentWeekIndex]?.miningData?.length > 0
+        ? cachedData[currentWeekIndex].miningData
+        : weeklyMiningData.length > 0
+        ? weeklyMiningData
+        : generatePlaceholderData();
+
     return (
       <ScrollView
         ref={scrollViewRef}
@@ -635,7 +668,7 @@ const WeeklyView = forwardRef(
         onScroll={onScroll}
         scrollEventThrottle={16}
       >
-        {/* 공통 그래프 컴포넌트 사용 */}
+        {/* 그래프 컴포넌트 */}
         <MiningGraph
           data={displayMiningData}
           isScrollable={false}
@@ -643,7 +676,7 @@ const WeeklyView = forwardRef(
           onPrevWeek={() => navigateWeek("prev")}
           onNextWeek={() => navigateWeek("next")}
           isCurrentWeek={currentWeekIndex === 0}
-          isPrevDisabled={currentWeekIndex >= 1} // 이 prop 추가
+          isPrevDisabled={currentWeekIndex >= 1}
         />
 
         {/* 전환 로딩 인디케이터 */}
@@ -656,7 +689,7 @@ const WeeklyView = forwardRef(
           </View>
         )}
 
-        {/* 공통 채굴 통계 컴포넌트 사용 */}
+        {/* 공통 채굴 통계 컴포넌트 */}
         <MiningStats
           viewType="weekly"
           miningData={displayMiningData}
@@ -668,11 +701,11 @@ const WeeklyView = forwardRef(
           isCurrentPeriod={currentWeekIndex === 0}
         />
 
-        {/* 공통 앱 사용 통계 컴포넌트 사용 */}
+        {/* 공통 앱 사용 통계 컴포넌트 - 어떤 경우든 항상 표시 */}
         <AppUsageStats
           viewType="weekly"
-          appUsage={appUsage}
-          prevWeekAppUsage={prevWeekAppUsage} // 이전 주 앱 사용 데이터 전달
+          appUsage={appUsage || {}}
+          prevWeekAppUsage={prevWeekAppUsage || {}}
           weekInfo={{
             title: `${currentDateRange.start} - ${currentDateRange.end}`,
             currentWeekIndex: currentWeekIndex,
@@ -711,6 +744,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: "#FF8C00",
+  },
+  dataLoadingContainer: {
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 10,
+  },
+  dataLoadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: "#888888",
   },
 });
 
