@@ -18,6 +18,7 @@ const AppUsageStats = ({
   appUsage = {}, // 앱 사용 데이터
   selectedDate = null, // 선택된 날짜 정보
   weekInfo = null, // 주간 정보 추가
+  prevWeekAppUsage = {}, // 이것도 추가
 }) => {
   const navigation = useNavigation();
 
