@@ -68,7 +68,8 @@ const CartScreen = ({ navigation }) => {
     setCartItems((prevItems) =>
       prevItems.map((item) => {
         if (item.cartId === cartId) {
-          const currentQuantity = item.quantity === '' ? 0 : Number(item.quantity);
+          const currentQuantity =
+            item.quantity === "" ? 0 : Number(item.quantity);
 
           // 새 수량 계산 (1~99 범위 제한)
           const newQuantity = Math.max(
@@ -102,24 +103,24 @@ const CartScreen = ({ navigation }) => {
   // 키보드 입력으로 수량 변경 함수
   const handleQuantityChange = (cartId, text) => {
     // 숫자만 입력 가능하도록 필터링
-    const numericValue = text.replace(/[^0-9]/g, '');
-    
+    const numericValue = text.replace(/[^0-9]/g, "");
+
     // 빈 문자열은 그대로 허용 (임시 상태로 저장)
     let newValue = numericValue;
-    
+
     // 앞에 오는 0 제거 (예: "01" -> "1"), 단 완전히 비어있게 되면 빈 문자열 유지
-    if (newValue !== '') {
-      newValue = newValue.replace(/^0+/, '') || '';
+    if (newValue !== "") {
+      newValue = newValue.replace(/^0+/, "") || "";
     }
-    
+
     // 숫자로 변환 (빈 문자열이면 0으로 처리)
-    let numValue = newValue === '' ? 0 : parseInt(newValue, 10);
-    
+    let numValue = newValue === "" ? 0 : parseInt(newValue, 10);
+
     // 99 초과 값 처리
     if (numValue > 99) numValue = 99;
-    
+
     // 문자열 값으로 변환 (빈 문자열이면 그대로 유지)
-    newValue = newValue === '' ? '' : numValue.toString();
+    newValue = newValue === "" ? "" : numValue.toString();
 
     setCartItems((prevItems) =>
       prevItems.map((item) => {
@@ -130,20 +131,20 @@ const CartScreen = ({ navigation }) => {
           }
 
           // 빈 문자열이 아닌 경우에만 API 호출과 totalPrice 계산
-          if (newValue !== '') {
+          if (newValue !== "") {
             // 새 타이머 설정 (1초 후 API 호출)
             quantityTimersRef.current[cartId] = setTimeout(() => {
               // 실제 API 호출 전에 유효성 검사 (1~99 범위)
               const validValue = Math.max(1, Math.min(99, numValue));
               updateCartItemQuantity(cartId, validValue);
               delete quantityTimersRef.current[cartId];
-              
+
               // 입력값이 0이었다면 UI에서 1로 표시 (API 호출 후)
               if (numValue === 0) {
-                setCartItems(prevItems => 
-                  prevItems.map(item => 
-                    item.cartId === cartId 
-                      ? {...item, quantity: 1, totalPrice: item.price} 
+                setCartItems((prevItems) =>
+                  prevItems.map((item) =>
+                    item.cartId === cartId
+                      ? { ...item, quantity: 1, totalPrice: item.price }
                       : item
                   )
                 );
@@ -171,7 +172,7 @@ const CartScreen = ({ navigation }) => {
   // 키보드 입력이 끝난 후 호출되는 함수
   const handleQuantityBlur = (cartId, quantity) => {
     // 빈 문자열이거나 0인 경우 기본값 1로 설정
-    if (quantity === '' || quantity === '0') {
+    if (quantity === "" || quantity === "0") {
       setCartItems((prevItems) =>
         prevItems.map((item) => {
           if (item.cartId === cartId) {
@@ -184,15 +185,15 @@ const CartScreen = ({ navigation }) => {
           return item;
         })
       );
-      
+
       // API 호출로 서버에 업데이트
       updateCartItemQuantity(cartId, 1);
       return;
     }
-    
+
     // 문자열을 숫자로 변환
     const numValue = parseInt(quantity, 10);
-    
+
     // 숫자가 유효하지 않은 경우 기본값 1로 설정
     if (isNaN(numValue) || numValue < 1) {
       setCartItems((prevItems) =>
@@ -207,7 +208,7 @@ const CartScreen = ({ navigation }) => {
           return item;
         })
       );
-      
+
       // API 호출로 서버에 업데이트
       updateCartItemQuantity(cartId, 1);
     } else if (numValue > 99) {
@@ -224,7 +225,7 @@ const CartScreen = ({ navigation }) => {
           return item;
         })
       );
-      
+
       // API 호출로 서버에 업데이트
       updateCartItemQuantity(cartId, 99);
     }
@@ -445,67 +446,99 @@ const CartScreen = ({ navigation }) => {
             <Text style={styles.itemPrice}>{item.price} WORK</Text>
 
             <View style={styles.quantityStockContainer}>
-  <View style={styles.quantityContainer}>
-  <TouchableOpacity
-  onPress={() => {
-    // 입력 필드에 포커스가 있는 경우 먼저 blur 처리
-    if (isQuantityEditing) {
-      handleQuantityBlur(item.cartId, item.quantity);
-      setIsQuantityEditing(false);
-    }
-    // 그 다음 수량 감소
-    updateQuantity(item.cartId, -1);
-  }}
-  style={styles.quantityButton}
->
-      <Text style={styles.quantityButtonText}>-</Text>
-    </TouchableOpacity>
-    
-    <TextInput
-      style={styles.quantityInput}
-      value={String(item.quantity)}
-      onChangeText={(text) => handleQuantityChange(item.cartId, text)}
-      onBlur={() => {
-        handleQuantityBlur(item.cartId, item.quantity);
-        setIsQuantityEditing(false);
-      }}
-      onFocus={() => {
-        setIsQuantityEditing(true);
-        const currentQuantity = String(item.quantity);
-        if (currentQuantity === '1') {
-          setCartItems(prevItems => 
-            prevItems.map(i => 
-              i.cartId === item.cartId 
-                ? {...i, quantity: ''} 
-                : i
-            )
-          );
-        }
-      }}
-      keyboardType="number-pad"
-      maxLength={2}
-      selectTextOnFocus={true}
-    />
-    
-    <TouchableOpacity
-      onPress={() => updateQuantity(item.cartId, 1)}
-      style={styles.quantityButton}
-    >
-      <Text style={styles.quantityButtonText}>+</Text>
-    </TouchableOpacity>
-  </View>
-  
-  {/* 재고 수량에 따른 조건부 스타일링 */}
-  {item.stockQuantity <= 5 ? (
-    <Text style={styles.lowStockText}>
-      남은 재고: {item.stockQuantity}
-    </Text>
-  ) : (
-    <Text style={styles.stockText}>
-      남은 재고: {item.stockQuantity}
-    </Text>
-  )}
-</View>
+              <View style={styles.quantityContainer}>
+                <TouchableOpacity
+                  onPress={() => {
+                    // 입력 필드에 포커스가 있는 경우 먼저 blur 처리
+                    if (isQuantityEditing) {
+                      handleQuantityBlur(item.cartId, item.quantity);
+                      setIsQuantityEditing(false);
+                    }
+                    // 그 다음 수량 감소 (수량이 1보다 클 때만 작동)
+                    if (Number(item.quantity) > 1) {
+                      updateQuantity(item.cartId, -1);
+                    }
+                  }}
+                  style={[
+                    styles.quantityButton,
+                    Number(item.quantity) <= 1 && styles.quantityButtonDisabled,
+                  ]}
+                  disabled={Number(item.quantity) <= 1}
+                >
+                  <Text
+                    style={[
+                      styles.quantityButtonText,
+                      Number(item.quantity) <= 1 &&
+                        styles.quantityButtonTextDisabled,
+                    ]}
+                  >
+                    -
+                  </Text>
+                </TouchableOpacity>
+
+                <TextInput
+                  style={styles.quantityInput}
+                  value={String(item.quantity)}
+                  onChangeText={(text) =>
+                    handleQuantityChange(item.cartId, text)
+                  }
+                  onBlur={() => {
+                    handleQuantityBlur(item.cartId, item.quantity);
+                    setIsQuantityEditing(false);
+                  }}
+                  onFocus={() => {
+                    setIsQuantityEditing(true);
+                    const currentQuantity = String(item.quantity);
+                    if (currentQuantity === "1") {
+                      setCartItems((prevItems) =>
+                        prevItems.map((i) =>
+                          i.cartId === item.cartId ? { ...i, quantity: "" } : i
+                        )
+                      );
+                    }
+                  }}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  selectTextOnFocus={true}
+                />
+
+                <TouchableOpacity
+                  onPress={() => {
+                    // 수량이 99보다 작을 때만 작동
+                    if (Number(item.quantity) < 99) {
+                      updateQuantity(item.cartId, 1);
+                    }
+                  }}
+                  style={[
+                    styles.quantityButton,
+                    Number(item.quantity) >= 99 &&
+                      styles.quantityButtonDisabled,
+                  ]}
+                  disabled={Number(item.quantity) >= 99}
+                >
+                  <Text
+                    style={[
+                      styles.quantityButtonText,
+                      Number(item.quantity) >= 99 &&
+                        styles.quantityButtonTextDisabled,
+                    ]}
+                  >
+                    +
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* 재고 수량에 따른 조건부 스타일링 */}
+              {item.stockQuantity <= 5 ? (
+                <Text style={styles.lowStockText}>
+                  남은 재고: {item.stockQuantity}
+                </Text>
+              ) : (
+                <Text style={styles.stockText}>
+                  남은 재고: {item.stockQuantity}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
       );
@@ -561,7 +594,8 @@ const CartScreen = ({ navigation }) => {
         <TouchableOpacity
           style={[
             styles.checkoutButton,
-            (selectedItems.length === 0 || isQuantityEditing) && styles.disabledButton,
+            (selectedItems.length === 0 || isQuantityEditing) &&
+              styles.disabledButton,
           ]}
           onPress={handleCheckout}
           disabled={selectedItems.length === 0 || loading || isQuantityEditing}
@@ -884,20 +918,26 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   quantityStockContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%'
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
   },
   stockText: {
     fontSize: 14,
-    color: '#4CAF50',
-    fontWeight: '500',
+    color: "#4CAF50",
+    fontWeight: "500",
   },
   lowStockText: {
     fontSize: 14,
-    color: '#FF5722',
-    fontWeight: '500',
+    color: "#FF5722",
+    fontWeight: "500",
+  },
+  quantityButtonDisabled: {
+    backgroundColor: "#F5F5F5",
+  },
+  quantityButtonTextDisabled: {
+    color: "#CCCCCC",
   },
 });
 
