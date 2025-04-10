@@ -35,9 +35,19 @@ const PaymentBottomSheet = ({ visible, onClose, product, navigation }) => {
   const lastPaymentAttempt = useRef(0);
   const PAYMENT_COOLDOWN = 3000; // 3초 쿨다운
 
+  // 최근 주소를 저장할 ref 추가
+  const cachedAddress = useRef(null);
+
   // 최근 배송지 조회
   const fetchRecentAddress = async () => {
     try {
+      // 이미 캐시된 주소가 있으면 캐시된 주소 사용
+      if (cachedAddress.current) {
+        setAddress(cachedAddress.current);
+        setIsLoadingAddress(false);
+        return;
+      }
+
       setIsLoadingAddress(true);
       const response = await axios.get(
         `${API_BASE_URL}/api/orders/delivery-info`,
@@ -59,14 +69,17 @@ const PaymentBottomSheet = ({ visible, onClose, product, navigation }) => {
         const detailAddress = addressParts[addressParts.length - 1];
         const roadAddress = addressParts.slice(0, -1).join(" ");
 
-        setAddress({
-          zonecode: "", // API 응답에 우편번호가 없으므로 빈 값으로 설정
+        const newAddress = {
+          zonecode: "",
           roadAddress,
           detailAddress,
           buildingName: "",
-        });
+        };
+
+        // 주소를 캐시에 저장
+        cachedAddress.current = newAddress;
+        setAddress(newAddress);
       } else {
-        // undefined, 빈 문자열, 빈 배열 등의 경우 address를 null로 설정
         setAddress(null);
       }
     } catch (error) {
@@ -80,64 +93,65 @@ const PaymentBottomSheet = ({ visible, onClose, product, navigation }) => {
   // 컴포넌트 마운트 시 최근 배송지 조회
   useEffect(() => {
     // 주소 검색에서 돌아온 경우가 아닐 때만 최근 배송지 조회
-    if (
-      visible &&
-      !navigation
-        .getState()
-        .routes.some(
-          (route) =>
-            route.name === "AddressSearch" || route.name === "AddressDetail"
-        )
-    ) {
+    if (!navigation.getState().routes.some(
+      (route) => route.name === "AddressSearch" || route.name === "AddressDetail"
+    )) {
       fetchRecentAddress();
+    }
+  }, []);
+
+  // 바텀시트가 보일 때 주소 업데이트
+  useEffect(() => {
+    if (visible) {
+      // 캐시된 주소가 있으면 바로 표시
+      if (cachedAddress.current) {
+        setAddress(cachedAddress.current);
+        setIsLoadingAddress(false);
+      } else {
+        // 캐시된 주소가 없으면 새로 조회
+        fetchRecentAddress();
+      }
     }
   }, [visible]);
 
   // 라우트 파라미터에서 주소 정보 받아오기
   useEffect(() => {
     if (visible) {
-      // 현재 네비게이션 상태에서 파라미터 확인
-      const currentRoute =
-        navigation.getState().routes[navigation.getState().routes.length - 1];
-      console.log("Current Route Params:", currentRoute.params);
-
-      // 주소 정보가 있을 때만 주소를 업데이트
+      const currentRoute = navigation.getState().routes[navigation.getState().routes.length - 1];
+      
       if (currentRoute.params?.address) {
-        console.log("받은 주소:", currentRoute.params.address);
-        // 주소 정보가 있을 때만 주소를 업데이트
-        if (currentRoute.params?.address) {
-          const receivedAddress = currentRoute.params.address;
-          console.log("받은 주소:", receivedAddress);
+        const receivedAddress = currentRoute.params.address;
+        
+        if (typeof receivedAddress === "object") {
+          const newAddress = {
+            zonecode: receivedAddress.zonecode || "",
+            roadAddress: receivedAddress.roadAddress,
+            detailAddress: receivedAddress.detailAddress,
+            buildingName: receivedAddress.buildingName || "",
+          };
+          
+          // 새 주소를 캐시에 저장
+          cachedAddress.current = newAddress;
+          setAddress(newAddress);
+        } else if (typeof receivedAddress === "string") {
+          const addressParts = receivedAddress.split(" ");
+          const zonecodeMatch = addressParts[0].match(/\[(\d+)\]/);
+          const zonecode = zonecodeMatch ? zonecodeMatch[1] : "";
+          const detailAddress = addressParts[addressParts.length - 1];
+          const roadAddress = zonecode
+            ? addressParts.slice(1, -1).join(" ")
+            : addressParts.slice(0, -1).join(" ");
 
-          // 주소가 객체인 경우 (AddressDetailScreen에서 온 경우)
-          if (typeof receivedAddress === "object") {
-            setAddress({
-              zonecode: receivedAddress.zonecode || "",
-              roadAddress: receivedAddress.roadAddress,
-              detailAddress: receivedAddress.detailAddress,
-              buildingName: receivedAddress.buildingName || "",
-            });
-          }
-          // 주소가 문자열인 경우 (이전 코드와의 호환성)
-          else if (typeof receivedAddress === "string") {
-            // 문자열 주소를 파싱하여 객체로 변환
-            const addressParts = receivedAddress.split(" ");
-            const zonecodeMatch = addressParts[0].match(/\[(\d+)\]/);
-            const zonecode = zonecodeMatch ? zonecodeMatch[1] : "";
-            const detailAddress = addressParts[addressParts.length - 1];
-            const roadAddress = zonecode
-              ? addressParts.slice(1, -1).join(" ")
-              : addressParts.slice(0, -1).join(" ");
-
-            setAddress({
-              zonecode,
-              roadAddress,
-              detailAddress,
-              buildingName: "",
-            });
-          }
-
-          setIsLoadingAddress(false);
+          const newAddress = {
+            zonecode,
+            roadAddress,
+            detailAddress,
+            buildingName: "",
+          };
+          
+          // 새 주소를 캐시에 저장
+          cachedAddress.current = newAddress;
+          setAddress(newAddress);
         }
 
         setIsLoadingAddress(false);
