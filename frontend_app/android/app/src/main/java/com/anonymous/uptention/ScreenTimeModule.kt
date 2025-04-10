@@ -185,10 +185,16 @@ class ScreenTimeModule(reactContext: ReactApplicationContext) : ReactContextBase
 
         // 미리 알려진 앱들의 패키지 이름과 대응하는 리소스 ID 매핑
     val knownApps = mapOf(
-        "com.google.android.youtube" to "youtube_icon",
-        "app.phantom" to "phantom_icon",
-        // 더 많은 주요 앱 추가 가능
-    )
+    "com.google.android.youtube" to "youtube_icon",
+    "app.phantom" to "phantom_icon",
+    "com.discord" to "discord_icon",               // Discord
+    "com.samsung.android.video" to "videos_icon",  // Samsung Videos
+    "com.samsung.android.app.notes" to "notes_icon", // Samsung Notes
+    "com.google.android.apps.photos" to "photos_icon",  // Google Photos
+    "com.google.android.apps.maps" to "maps_icon", // Google Maps
+    "com.sec.android.app.music" to "music_icon"    // Samsung Music
+    // 더 많은 주요 앱 추가 가능
+)
 
         try {
             // 0차 시도: 알려진 앱 확인

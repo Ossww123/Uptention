@@ -9,6 +9,7 @@ import {
   Platform,
   Image,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -41,6 +42,7 @@ const HomeScreen = ({ navigation }) => {
   // 읽지 않은 알림 개수 상태 (FCM 푸시 알림으로 업데이트)
   const [unreadNotifications, setUnreadNotifications] = useState(null);
   const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // 프로그레스바 관련 계산
   const size = 280;
@@ -206,6 +208,39 @@ const HomeScreen = ({ navigation }) => {
       };
     }, [userId, authToken, initialLoadComplete])
   );
+
+  // 새로고침 함수 추가
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    
+    try {
+      // 병렬로 데이터 갱신
+      await Promise.all([
+        fetchUserInfo(),
+        fetchUserPoint(),
+        fetchDailyFocusTime(),
+        // 알림 카운트 갱신
+        (async () => {
+          try {
+            const { data, ok } = await get("/notifications/count", {
+              params: { read: false },
+            });
+            if (ok) {
+              setUnreadNotifications(data.count);
+            }
+          } catch (error) {
+            console.error("알림 개수 조회 오류:", error);
+          }
+        })()
+      ]);
+      
+      console.log("모든 데이터가 성공적으로 새로고침되었습니다.");
+    } catch (error) {
+      console.error("새로고침 중 오류 발생:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [userId, authToken]);
 
   // JWT 토큰에서 payload를 추출하는 함수
   const parseJwt = (token) => {
@@ -528,7 +563,20 @@ const HomeScreen = ({ navigation }) => {
           <ActivityIndicator size="large" color="#FF8C00" />
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          // 여기에 RefreshControl 추가
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#FF8C00"]} // 로딩 스피너 색상 (Android)
+              tintColor="#FF8C00" // 로딩 스피너 색상 (iOS)
+              title="새로고침 중..." // iOS에만 표시되는 텍스트
+              titleColor="#FF8C00" // iOS에서 텍스트 색상
+            />
+          }
+        >
           <View style={styles.content}>
             <View style={styles.headerSection}>
               {/* 첫 번째 줄: 사원번호와 아이콘들 */}
