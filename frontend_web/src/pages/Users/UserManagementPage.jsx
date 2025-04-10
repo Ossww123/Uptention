@@ -302,7 +302,7 @@ const UserManagementPage = () => {
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="search-input"
-                maxLength="10" // 최대 10자 입력 제한
+                maxLength="20" // 최대 20자 입력 제한
               />
               <button type="submit" className="search-button">
                 검색
