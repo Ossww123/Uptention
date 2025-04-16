@@ -1,4 +1,4 @@
-package com.otoki.uptention.solana.service;
+package com.otoki.uptention.application.payment.service;
 
 import java.util.HashMap;
 import java.util.List;
