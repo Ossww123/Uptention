@@ -1,4 +1,4 @@
-package com.otoki.uptention.scheduler;
+package com.otoki.uptention.global.scheduler;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -11,7 +11,7 @@ import com.otoki.uptention.domain.order.entity.Order;
 import com.otoki.uptention.domain.order.enums.OrderStatus;
 import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.global.lock.DistributedLockManager;
-import com.otoki.uptention.solana.service.PaymentProcessService;
+import com.otoki.uptention.application.payment.service.PaymentProcessService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

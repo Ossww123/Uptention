@@ -1,4 +1,4 @@
-package com.otoki.uptention.solana.service;
+package com.otoki.uptention.application.payment.service;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,12 +26,23 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 주문에 대한 트랜잭션 검증 이후, 결제 처리를 담당하는 서비스
+ * 주문에 대한 트랜잭션 검증 이후, 결제 처리를 담당하는 서비스 구현체
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class PaymentProcessService {
+public class PaymentProcessServiceImpl implements PaymentProcessService {
+
+	// 알림 메시지 관련 상수
+	private static final String PAYMENT_SUCCESS_TITLE = "💳 결제 완료 ✨";
+	private static final String PAYMENT_FAILURE_TITLE = "⚠️ 결제 실패 ⚠️";
+	private static final String PAYMENT_SUCCESS_STATUS = "결제가 완료되었습니다.";
+	private static final String PAYMENT_FAILURE_STATUS = "결제가 실패하였습니다.";
+	private static final String PAYMENT_REASON_PREFIX = " 사유: ";
+
+	// 선물 알림 관련 상수
+	private static final String GIFT_NOTIFICATION_TITLE = "🎁선물이 도착했어요!🎁";
+	private static final String GIFT_NOTIFICATION_SUFFIX = "님이 %s을(를) 선물로 보냈어요!";
 
 	private final OrderService orderService;
 	private final OrderItemService orderItemService;
@@ -46,6 +57,7 @@ public class PaymentProcessService {
 	 * @param orderId 주문 ID
 	 * @return 처리 결과 (성공/실패)
 	 */
+	@Override
 	@Transactional
 	public boolean processPaymentSuccess(String orderId) {
 		try {
@@ -58,6 +70,12 @@ public class PaymentProcessService {
 			if (OrderStatus.PAYMENT_COMPLETED.equals(order.getStatus())) {
 				log.info("주문 ID({})는 이미 결제 완료되었습니다.", orderId);
 				return true;
+			}
+
+			// 주문 상태 검증
+			if (!OrderStatus.PAYMENT_PENDING.equals(order.getStatus())) {
+				log.warn("주문 ID({})의 상태가 결제 대기 상태가 아닙니다. 현재 상태: {}", orderId, order.getStatus());
+				return false;
 			}
 
 			// 주문 항목 조회 및 매핑
@@ -81,7 +99,7 @@ public class PaymentProcessService {
 			processGiftNotificationIfNeeded(order);
 
 			// 결제 완료 알림 처리
-			sendPaymentCompletionNotification(order);
+			sendPaymentNotification(order, true, null);
 
 			log.info("주문 ID({})에 대한 결제 완료 처리 완료", orderId);
 			return true;
@@ -97,6 +115,7 @@ public class PaymentProcessService {
 	 * @param reason  실패 사유
 	 * @return 처리 결과 (성공/실패)
 	 */
+	@Override
 	@Transactional
 	public boolean processPaymentFailure(String orderId, String reason) {
 		try {
@@ -124,7 +143,7 @@ public class PaymentProcessService {
 			}
 
 			// 결제 실패 알림 처리
-			sendPaymentFailureNotification(order, reason);
+			sendPaymentNotification(order, false, reason);
 
 			log.info("주문 ID({})에 대한 결제 실패 처리 완료", orderId);
 			return true;
@@ -217,19 +236,9 @@ public class PaymentProcessService {
 				String itemName = giftItem.getItem().getName();
 
 				// FCM 알림 전송
-				String title = "🎁선물이 도착했어요!🎁";
-				String body = sender.getName() + "님이 " + itemName + "을(를) 선물로 보냈어요!";
-				fcmSendService.sendNotificationToUser(receiver, title, body);
+				String body = String.format(sender.getName() + GIFT_NOTIFICATION_SUFFIX, itemName);
 
-				// 알림 내역 저장
-				Notification notification = Notification.builder()
-					.user(receiver)
-					.title(title)
-					.message(body)
-					.read(false)
-					.build();
-
-				notificationService.saveNotification(notification);
+				sendNotificationToUser(receiver, GIFT_NOTIFICATION_TITLE, body);
 
 				log.info("선물 알림이 성공적으로 전송되었습니다. 주문 ID: {}, 수신자: {}", order.getId(), receiver.getId());
 			}
@@ -240,9 +249,9 @@ public class PaymentProcessService {
 	}
 
 	/**
-	 * 결제 완료 알림 처리
+	 * 결제 알림 처리 (성공/실패 공통)
 	 */
-	private void sendPaymentCompletionNotification(Order order) {
+	private void sendPaymentNotification(Order order, boolean isSuccess, String reason) {
 		try {
 			User user = order.getUser();
 			List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(order.getId());
@@ -256,83 +265,47 @@ public class PaymentProcessService {
 			String firstItemName = orderItems.get(0).getItem().getName();
 
 			// 알림 메시지 구성
-			String title = "💳 결제 완료 ✨";
+			String title = isSuccess ? PAYMENT_SUCCESS_TITLE : PAYMENT_FAILURE_TITLE;
+			String status = isSuccess ? PAYMENT_SUCCESS_STATUS : PAYMENT_FAILURE_STATUS;
 			String body;
 
 			if (orderItems.size() > 1) {
-				body = firstItemName + " 외 " + (orderItems.size() - 1) + "건 결제가 완료되었습니다.";
+				body = firstItemName + " 외 " + (orderItems.size() - 1) + "건 " + status;
 			} else {
-				body = firstItemName + " 결제가 완료되었습니다.";
+				body = firstItemName + " " + status;
 			}
 
-			// FCM 알림 전송
-			fcmSendService.sendNotificationToUser(user, title, body);
+			// 실패 이유가 있는 경우 추가
+			if (!isSuccess && reason != null && !reason.trim().isEmpty()) {
+				body += PAYMENT_REASON_PREFIX + reason;
+			}
 
-			// 알림 내역 저장
-			Notification notification = Notification.builder()
-				.user(user)
-				.title(title)
-				.message(body)
-				.read(false)
-				.build();
+			// 알림 전송
+			sendNotificationToUser(user, title, body);
 
-			notificationService.saveNotification(notification);
-
-			log.info("결제 완료 알림이 성공적으로 전송되었습니다. 주문 ID: {}, 사용자: {}", order.getId(), user.getId());
+			log.info("결제 {} 알림이 성공적으로 전송되었습니다. 주문 ID: {}, 사용자: {}",
+				isSuccess ? "완료" : "실패", order.getId(), user.getId());
 		} catch (Exception e) {
 			// 알림 전송 실패가 결제 처리 성공에 영향을 주지 않도록 예외 처리
-			log.error("결제 완료 알림 처리 중 오류 발생: 주문 ID: {}, 오류: {}", order.getId(), e.getMessage(), e);
+			log.error("결제 알림 처리 중 오류 발생: 주문 ID: {}, 오류: {}", order.getId(), e.getMessage(), e);
 		}
 	}
 
 	/**
-	 * 결제 실패 알림 처리
+	 * 사용자에게 알림 전송 및 저장
 	 */
-	private void sendPaymentFailureNotification(Order order, String reason) {
-		try {
-			User user = order.getUser();
-			List<OrderItem> orderItems = orderItemService.findOrderItemsByOrderId(order.getId());
+	private void sendNotificationToUser(User user, String title, String body) {
+		// FCM 알림 전송
+		fcmSendService.sendNotificationToUser(user, title, body);
 
-			if (orderItems.isEmpty()) {
-				log.warn("주문 ID({})에 대한 주문 항목이 없습니다.", order.getId());
-				return;
-			}
+		// 알림 내역 저장
+		Notification notification = Notification.builder()
+			.user(user)
+			.title(title)
+			.message(body)
+			.read(false)
+			.build();
 
-			// 첫 번째 상품 이름 가져오기
-			String firstItemName = orderItems.get(0).getItem().getName();
-
-			// 알림 메시지 구성
-			String title = "⚠️ 결제 실패 ⚠️";
-			String body;
-
-			if (orderItems.size() > 1) {
-				body = firstItemName + " 외 " + (orderItems.size() - 1) + "건 결제가 실패하였습니다.";
-			} else {
-				body = firstItemName + " 결제가 실패하였습니다.";
-			}
-
-			// 실패 이유가 있는 경우 추가
-			if (reason != null && !reason.trim().isEmpty()) {
-				body += " 사유: " + reason;
-			}
-
-			// FCM 알림 전송
-			fcmSendService.sendNotificationToUser(user, title, body);
-
-			// 알림 내역 저장
-			Notification notification = Notification.builder()
-				.user(user)
-				.title(title)
-				.message(body)
-				.read(false)
-				.build();
-
-			notificationService.saveNotification(notification);
-
-			log.info("결제 실패 알림이 성공적으로 전송되었습니다. 주문 ID: {}, 사용자: {}", order.getId(), user.getId());
-		} catch (Exception e) {
-			// 알림 전송 실패가 결제 처리 성공에 영향을 주지 않도록 예외 처리
-			log.error("결제 실패 알림 처리 중 오류 발생: 주문 ID: {}, 오류: {}", order.getId(), e.getMessage(), e);
-		}
+		notificationService.saveNotification(notification);
 	}
 }

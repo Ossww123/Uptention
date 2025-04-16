@@ -21,7 +21,7 @@ import com.otoki.uptention.domain.order.enums.OrderStatus;
 import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.domain.orderitem.entity.OrderItem;
 import com.otoki.uptention.domain.orderitem.service.OrderItemService;
-import com.otoki.uptention.solana.service.PaymentProcessService;
+import com.otoki.uptention.application.payment.service.PaymentProcessService;
 
 @ExtendWith(MockitoExtension.class)
 public class PaymentProcessServiceTest {
