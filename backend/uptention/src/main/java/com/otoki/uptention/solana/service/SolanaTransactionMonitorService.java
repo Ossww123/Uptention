@@ -23,4 +23,12 @@ public interface SolanaTransactionMonitorService {
 	 * 주기적으로 호출되어 연결 상태를 유지합니다.
 	 */
 	void checkWebSocketConnection();
+
+	/**
+	 * 토큰 계정 주소를 조회합니다.
+	 *
+	 * @param tokenMint 토큰 민트 주소
+	 * @return 토큰 계정 주소 (없으면 null)
+	 */
+	String getTokenAccount(String tokenMint);
 }
