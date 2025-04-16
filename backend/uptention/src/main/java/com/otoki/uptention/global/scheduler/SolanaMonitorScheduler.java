@@ -1,4 +1,4 @@
-package com.otoki.uptention.scheduler;
+package com.otoki.uptention.global.scheduler;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
