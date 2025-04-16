@@ -29,8 +29,8 @@ import com.otoki.uptention.domain.orderitem.service.OrderItemService;
 import com.otoki.uptention.global.config.RabbitMQConfig;
 import com.otoki.uptention.global.config.SolanaProperties;
 import com.otoki.uptention.global.exception.CustomException;
-import com.otoki.uptention.solana.event.PaymentFailedEvent;
-import com.otoki.uptention.solana.event.PaymentSuccessEvent;
+import com.otoki.uptention.global.event.PaymentFailedEvent;
+import com.otoki.uptention.global.event.PaymentSuccessEvent;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -45,7 +45,6 @@ public class SolanaTransactionMonitorService {
 	private final SolanaProperties solanaProperties;
 	private final SolanaRpcService solanaRpcService;
 	private final ObjectMapper objectMapper;
-	private final PaymentProcessService paymentProcessService;
 	private final RabbitTemplate rabbitTemplate;
 	private final OrderService orderService;
 	private final OrderItemService orderItemService;
