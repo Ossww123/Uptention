@@ -12,9 +12,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useWallet } from "../contexts/WalletContext";
 import { useAuth } from "../contexts/AuthContext";
-import axios from "axios";
-import { API_BASE_URL } from "../config/config";
-import { post, del } from "../services/api";
+import { del } from "../services/api";
+import { getRecentDeliveryInfo, verifyOrder, createOrder } from '../api/order';
 
 const CheckoutScreen = ({ navigation, route }) => {
   // CartScreen에서 전달받은 선택된 상품 정보와 총 가격
@@ -47,21 +46,13 @@ const CheckoutScreen = ({ navigation, route }) => {
       }
 
       setIsLoadingAddress(true);
-      const response = await axios.get(
-        `${API_BASE_URL}/api/orders/delivery-info`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await getRecentDeliveryInfo(authToken);
 
-      if (response.data && 
-          response.data.address && 
-          typeof response.data.address === 'string' && 
-          response.data.address.trim() !== '') {
-        const fullAddress = response.data.address;
+      if (response && 
+          response.address && 
+          typeof response.address === 'string' && 
+          response.address.trim() !== '') {
+        const fullAddress = response.address;
         const addressParts = fullAddress.split(' ');
         
         const zonecodeMatch = addressParts[0].match(/\[(\d+)\]/);
@@ -242,134 +233,95 @@ const CheckoutScreen = ({ navigation, route }) => {
       );
 
       // 2. 주문 검증 API 호출
-      const {
-        data: verifyData,
-        ok,
-        status,
-      } = await post("/orders/verify", orderVerifyData);
+      const verifyData = await verifyOrder(authToken, orderVerifyData);
 
       console.log("검증 응답:", JSON.stringify(verifyData, null, 2));
-      console.log("검증 상태:", ok ? "성공" : "실패");
 
-      if (ok) {
-        console.log("=== 검증 성공: 주문 진행 ===");
+      try {
+        // 1. 주문 생성 API 호출
+        const requestData = {
+          items: selectedItems.map((item) => ({
+            itemId: item.itemId,
+            quantity: item.quantity,
+          })),
+          address: address.zonecode 
+            ? `[${address.zonecode}] ${address.roadAddress} ${address.detailAddress}`
+            : `${address.roadAddress} ${address.detailAddress}`,
+        };
 
-        try {
-          // 1. 주문 생성 API 호출
-          const requestData = {
-            items: selectedItems.map((item) => ({
-              itemId: item.itemId,
-              quantity: item.quantity,
-            })),
-            address: address.zonecode 
-              ? `[${address.zonecode}] ${address.roadAddress} ${address.detailAddress}`
-              : `${address.roadAddress} ${address.detailAddress}`,
-          };
+        console.log("주문 요청 데이터:", JSON.stringify(requestData, null, 2));
 
-          console.log("주문 요청 데이터:", JSON.stringify(requestData, null, 2));
+        const response = await createOrder(authToken, requestData);
 
-          const response = await axios.post(
-            `${API_BASE_URL}/api/orders/purchase`,
-            requestData,
-            {
-              headers: {
-                Authorization: `Bearer ${authToken}`,
-                "Content-Type": "application/json",
-              },
-            }
+        console.log("API 응답:", response);
+
+        const { orderId, paymentAmount } = response;
+
+        if (orderId && paymentAmount) {
+          console.log("=== 토큰 전송 프로세스 시작 ===");
+          console.log("결제 금액:", paymentAmount);
+          console.log("지갑 승인 대기 중...");
+
+          // 2. SPL 토큰 전송
+          const result = await sendSPLToken(
+            SHOP_WALLET_ADDRESS,
+            paymentAmount.toString(),
+            `ORDER_${orderId}` // 주문 ID를 메모에 포함
           );
 
-          console.log("API 응답:", response.data);
+          console.log("=== 토큰 전송 완료 ===");
 
-          const { orderId, paymentAmount } = response.data;
-
-          if (orderId && paymentAmount) {
-            console.log("=== 토큰 전송 프로세스 시작 ===");
-            console.log("결제 금액:", paymentAmount);
-            console.log("지갑 승인 대기 중...");
-
-            // 2. SPL 토큰 전송
-            const result = await sendSPLToken(
-              SHOP_WALLET_ADDRESS,
-              paymentAmount.toString(),
-              `ORDER_${orderId}` // 주문 ID를 메모에 포함
-            );
-
-            console.log("=== 토큰 전송 완료 ===");
-
-            // 장바구니에서 주문한 상품 삭제
-            const cartIds = selectedItems
-              .map((item) => item.cartId)
-              .filter(Boolean);
-            if (cartIds.length > 0) {
-              try {
-                const { ok: deleteOk, data: deleteData } = await del(
-                  "/shopping-cart",
-                  {
-                    body: JSON.stringify(cartIds),
-                  }
-                );
-
-                if (!deleteOk) {
-                  console.log("장바구니 아이템 삭제 실패:", deleteData);
+          // 장바구니에서 주문한 상품 삭제
+          const cartIds = selectedItems
+            .map((item) => item.cartId)
+            .filter(Boolean);
+          if (cartIds.length > 0) {
+            try {
+              const { ok: deleteOk, data: deleteData } = await del(
+                "/shopping-cart",
+                {
+                  body: JSON.stringify(cartIds),
                 }
-              } catch (error) {
-                console.error("장바구니 아이템 삭제 중 오류:", error);
+              );
+
+              if (!deleteOk) {
+                console.log("장바구니 아이템 삭제 실패:", deleteData);
               }
+            } catch (error) {
+              console.error("장바구니 아이템 삭제 중 오류:", error);
             }
-
-            // 3. 주문 완료 화면으로 이동
-            navigation.replace("OrderComplete", {
-              orderId: orderId,
-              paymentAmount: paymentAmount,
-            });
-          } else {
-            throw new Error("주문 정보가 올바르지 않습니다.");
           }
-        } catch (error) {
-          console.error("=== 처리 오류 ===");
-          console.error("에러 내용:", error);
 
-          // 토큰 전송 거절 에러 체크
-          const isUserRejection =
-            error.message?.includes("User rejected the request") ||
-            error.message?.includes("NOBRIDGE");
-
-          if (isUserRejection) {
-            // 사용자가 거래를 거절한 경우
-            Alert.alert("결제 취소", "결제가 취소되었습니다.", [
-              { text: "확인" },
-            ]);
-          } else {
-            // 기타 오류
-            Alert.alert(
-              "결제 실패",
-              "처리 중 오류가 발생했습니다. 다시 시도해주세요.",
-              [{ text: "확인" }]
-            );
-          }
+          // 3. 주문 완료 화면으로 이동
+          navigation.replace("OrderComplete", {
+            orderId: orderId,
+            paymentAmount: paymentAmount,
+          });
+        } else {
+          throw new Error("주문 정보가 올바르지 않습니다.");
         }
-      } else {
-        // 검증 실패 처리
-        let errorMessage = "상품 검증 중 오류가 발생했습니다.";
+      } catch (error) {
+        console.error("=== 처리 오류 ===");
+        console.error("에러 내용:", error);
 
-        if (status === 400) {
-          errorMessage = verifyData.message || "재고가 부족한 상품이 있습니다.";
-        } else if (status === 404) {
-          errorMessage = verifyData.message || "존재하지 않는 상품이 있습니다.";
-        } else if (status === 409) {
-          errorMessage = verifyData.message || "상품 가격이 변경되었습니다.";
+        // 토큰 전송 거절 에러 체크
+        const isUserRejection =
+          error.message?.includes("User rejected the request") ||
+          error.message?.includes("NOBRIDGE");
+
+        if (isUserRejection) {
+          // 사용자가 거래를 거절한 경우
+          Alert.alert("결제 취소", "결제가 취소되었습니다.", [
+            { text: "확인" },
+          ]);
+        } else {
+          // 기타 오류
+          Alert.alert(
+            "결제 실패",
+            "처리 중 오류가 발생했습니다. 다시 시도해주세요.",
+            [{ text: "확인" }]
+          );
         }
-
-        console.log("=== 검증 실패 ===");
-        console.log("실패 사유:", errorMessage);
-
-        Alert.alert("주문 확인", errorMessage, [
-          {
-            text: "확인",
-            onPress: () => navigation.goBack(),
-          },
-        ]);
       }
     } catch (error) {
       console.error("=== 주문 처리 실패 ===");

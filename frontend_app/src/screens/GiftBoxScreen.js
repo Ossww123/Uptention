@@ -13,9 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/config';
 import { useAuth } from '../contexts/AuthContext';
+import { getGifts } from '../api/gift';
 
 const GiftBoxScreen = () => {
   const [activeTab, setActiveTab] = useState('PENDING');
@@ -132,18 +131,9 @@ const GiftBoxScreen = () => {
         setCursor(null);
       }
 
-      const response = await axios.get(`${API_BASE_URL}/api/gifts`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        },
-        params: {
-          cursor: newCursor,
-          size: 10,
-          type: activeTab
-        }
-      });
+      const response = await getGifts(authToken, newCursor, 10, activeTab);
 
-      const { giftItems, hasNextPage: nextPage, nextCursor } = response.data;
+      const { giftItems, hasNextPage: nextPage, nextCursor } = response;
       
       if (refresh) {
         setGifts(giftItems);

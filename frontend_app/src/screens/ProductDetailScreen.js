@@ -16,10 +16,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
-import { get, post } from "../services/api";
 import PaymentBottomSheet from "../components/PaymentBottomSheet";
 import GiftBottomSheet from "../components/GiftBottomSheet";
-import axios from "axios";
+import { getProductDetail, addToCart, getCartItemCount } from "../api/product";
 
 const { width } = Dimensions.get("window");
 
@@ -150,16 +149,10 @@ useEffect(() => {
   // 장바구니 개수 가져오기
   const fetchCartItemCount = async () => {
     try {
-      const { data, ok } = await get("/shopping-cart/count");
-
-      if (!ok) {
-        throw new Error("장바구니 개수 조회에 실패했습니다.");
-      }
-
+      const { data } = await getCartItemCount();
       setCartItemCount(data);
     } catch (error) {
       console.error("장바구니 개수 조회 오류:", error);
-      // 오류 발생 시 기본값으로 0 설정 (UI에 아무것도 표시하지 않음)
       setCartItemCount(0);
     }
   };
@@ -167,13 +160,7 @@ useEffect(() => {
   const fetchProductDetails = async () => {
     try {
       setLoading(true);
-      const { data, ok } = await get(`/items/${productId}`);
-
-      // API에서 에러 응답이 왔는지 확인
-      if (!ok) {
-        throw new Error(data.message || "상품 정보를 불러오지 못했습니다.");
-      }
-
+      const { data } = await getProductDetail(productId);
       setProduct(data);
       setError(null);
     } catch (error) {
@@ -185,17 +172,9 @@ useEffect(() => {
   };
 
   // 장바구니에 추가 기능
-  const addToCart = async () => {
+  const handleAddToCart = async () => {
     try {
-      const { data, ok } = await post("/shopping-cart", {
-        itemId: productId,
-        quantity: 1,
-      });
-
-      if (!ok) {
-        throw new Error(data.message || "장바구니 추가에 실패했습니다.");
-      }
-
+      await addToCart(productId);
       setShowCartMessage(true);
       fetchCartItemCount();
     } catch (error) {
@@ -420,7 +399,7 @@ useEffect(() => {
 
       {/* 하단 버튼 영역 - 3개 버튼으로 변경 */}
       <View style={styles.threeButtonContainer}>
-        <TouchableOpacity style={styles.buttonOutline} onPress={addToCart}>
+        <TouchableOpacity style={styles.buttonOutline} onPress={handleAddToCart}>
           <Text style={styles.buttonOutlineText}>장바구니</Text>
         </TouchableOpacity>
 

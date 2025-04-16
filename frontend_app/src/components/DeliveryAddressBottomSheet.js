@@ -12,10 +12,9 @@ import {
   PanResponder
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/config';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
+import { getRecentDeliveryInfo, registerDeliveryInfo } from '../api/order';
 
 const { height } = Dimensions.get('window');
 
@@ -81,35 +80,12 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
       }
 
       setIsLoadingAddress(true);
-      const response = await axios.get(
-        `${API_BASE_URL}/api/orders/delivery-info`,
-        {
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const response = await getRecentDeliveryInfo(authToken);
 
-      if (response.data && 
-          response.data.address && 
-          typeof response.data.address === 'string' && 
-          response.data.address.trim() !== '') {
-        const addressParts = response.data.address.split(' ');
-        const zonecode = addressParts[0].replace('[', '').replace(']', '');
-        const roadAddress = addressParts.slice(1, -1).join(' ');
-        const detailAddress = addressParts[addressParts.length - 1];
-
-        const newAddress = {
-          zonecode,
-          roadAddress,
-          detailAddress,
-          buildingName: ''
-        };
-
+      if (response.ok && response.data) {
         // 주소를 캐시에 저장
-        cachedAddress.current = newAddress;
-        setAddress(newAddress);
+        cachedAddress.current = response.data;
+        setAddress(response.data);
       } else {
         setAddress(null);
       }
@@ -192,29 +168,24 @@ const DeliveryAddressBottomSheet = ({ visible, onClose, orderId, onSuccess, item
 
       const fullAddress = `${address.roadAddress} ${address.detailAddress}`;
 
-      await axios.post(
-        `${API_BASE_URL}/api/orders/${orderId}/delivery-info`,
-        { address: fullAddress },
-        {
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
-          }
-        }
-      );
+      const response = await registerDeliveryInfo(authToken, orderId, fullAddress);
 
-      onClose(); // 먼저 바텀시트를 닫고
-      
-      setTimeout(() => {
-        Alert.alert('알림', '배송지가 등록되었습니다.', [
-          {
-            text: '확인',
-            onPress: () => {
-              onSuccess && onSuccess();
+      if (response.ok) {
+        onClose(); // 먼저 바텀시트를 닫고
+        
+        setTimeout(() => {
+          Alert.alert('알림', '배송지가 등록되었습니다.', [
+            {
+              text: '확인',
+              onPress: () => {
+                onSuccess && onSuccess();
+              }
             }
-          }
-        ]);
-      }, 100);
+          ]);
+        }, 100);
+      } else {
+        Alert.alert('오류', '배송지 등록에 실패했습니다. 다시 시도해주세요.');
+      }
     } catch (error) {
       console.error('배송지 등록 오류:', error);
       Alert.alert('오류', '배송지 등록에 실패했습니다. 다시 시도해주세요.');

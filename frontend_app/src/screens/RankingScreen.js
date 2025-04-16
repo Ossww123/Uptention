@@ -8,9 +8,8 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/config';
 import { useAuth } from '../contexts/AuthContext';
+import { getMiningTimeRanking } from '../api/ranking';
 
 const RankingScreen = ({ navigation }) => {
   const [selectedRank, setSelectedRank] = useState(1);
@@ -25,20 +24,13 @@ const RankingScreen = ({ navigation }) => {
   const fetchRankingData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/mining-time`, {
-        params: {
-          top: 3
-        },
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
+      const data = await getMiningTimeRanking(authToken, 3);
       
-      console.log('API Response:', response.data); // 응답 데이터 로깅
+      console.log('API Response:', data); // 응답 데이터 로깅
       
       // API 응답 데이터를 rankingData 형식에 맞게 변환
       const formattedData = {};
-      Object.entries(response.data).forEach(([rank, users]) => {
+      Object.entries(data).forEach(([rank, users]) => {
         formattedData[parseInt(rank)] = users.map((user, index) => ({
           id: index,
           name: user.username,

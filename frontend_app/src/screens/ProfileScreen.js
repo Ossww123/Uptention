@@ -31,6 +31,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import FCMUtils from "../utils/FCMUtils";
 import { post } from "../services/api";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import { getUserInfo, uploadProfileImage, deleteProfileImage, changePassword } from '../api/profile';
 
 if (typeof globalThis.Buffer === "undefined") {
   globalThis.Buffer = Buffer;
@@ -164,13 +165,8 @@ const ProfileScreen = ({ navigation }) => {
     if (!userId || !authToken) return;
 
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
-
-      setUserInfo(response.data);
+      const data = await getUserInfo(userId, authToken);
+      setUserInfo(data);
     } catch (error) {
       console.error("사용자 정보 조회 오류:", error);
       Alert.alert("오류", "사용자 정보를 불러오는데 실패했습니다.");
@@ -327,21 +323,9 @@ const ProfileScreen = ({ navigation }) => {
       });
 
       // 프로필 이미지 업로드 API 호출
-      const response = await axios.put(
-        `${API_BASE_URL}/api/users/${userId}/profiles`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        Alert.alert("성공", "프로필 이미지가 업데이트되었습니다.");
-        fetchUserInfo(); // 프로필 정보 새로고침
-      }
+      await uploadProfileImage(userId, authToken, formData);
+      Alert.alert("성공", "프로필 이미지가 업데이트되었습니다.");
+      fetchUserInfo(); // 프로필 정보 새로고침
     } catch (error) {
       console.error("이미지 업로드 오류:", error);
       Alert.alert("오류", "이미지 업로드에 실패했습니다.");
@@ -349,6 +333,19 @@ const ProfileScreen = ({ navigation }) => {
       // 임시 상태 초기화
       setSelectedImage(null);
       setPreviewImage(null);
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!userId || !authToken) return;
+
+    try {
+      await deleteProfileImage(userId, authToken);
+      Alert.alert("성공", "프로필 이미지가 삭제되었습니다.");
+      fetchUserInfo(); // 프로필 정보 새로고침
+    } catch (error) {
+      console.error("이미지 삭제 오류:", error);
+      Alert.alert("오류", "이미지 삭제에 실패했습니다.");
     }
   };
 
@@ -424,29 +421,6 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const handleDeleteImage = async () => {
-    if (!userId || !authToken) return;
-
-    try {
-      const response = await axios.delete(
-        `${API_BASE_URL}/api/users/${userId}/profiles`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        Alert.alert("성공", "프로필 이미지가 삭제되었습니다.");
-        fetchUserInfo(); // 프로필 정보 새로고침
-      }
-    } catch (error) {
-      console.error("이미지 삭제 오류:", error);
-      Alert.alert("오류", "이미지 삭제에 실패했습니다.");
-    }
-  };
-
   const handleEditPress = () => {
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -519,31 +493,16 @@ const ProfileScreen = ({ navigation }) => {
     }
 
     try {
-      const response = await axios.patch(
-        `${API_BASE_URL}/api/users/${userId}/password`,
-        {
-          currentPassword: currentPassword,
-          newPassword: newPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        Alert.alert("성공", "비밀번호가 성공적으로 변경되었습니다.");
-        // 모달 닫고 입력값 초기화
-        setShowPasswordModal(false);
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setCurrentPasswordError("");
-        setNewPasswordError("");
-        setConfirmPasswordError("");
-      }
+      await changePassword(userId, authToken, currentPassword, newPassword);
+      Alert.alert("성공", "비밀번호가 성공적으로 변경되었습니다.");
+      // 모달 닫고 입력값 초기화
+      setShowPasswordModal(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setCurrentPasswordError("");
+      setNewPasswordError("");
+      setConfirmPasswordError("");
     } catch (error) {
       console.error("비밀번호 변경 오류:", error);
       if (error.response?.status === 400) {
