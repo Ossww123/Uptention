@@ -4,7 +4,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.otoki.uptention.global.lock.DistributedLockManager;
-import com.otoki.uptention.solana.service.SolanaTransactionMonitorService;
+import com.otoki.uptention.infra.solana.service.SolanaTransactionMonitorService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.otoki.uptention.solana.service;
+package com.otoki.uptention.infra.solana.service;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;

@@ -1,4 +1,4 @@
-package com.otoki.uptention.solana.service;
+package com.otoki.uptention.infra.solana.service;
 
 /**
  * Solana 트랜잭션을 모니터링하는 서비스 인터페이스

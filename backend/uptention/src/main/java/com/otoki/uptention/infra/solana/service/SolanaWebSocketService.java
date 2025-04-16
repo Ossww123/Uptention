@@ -1,4 +1,4 @@
-package com.otoki.uptention.solana.service;
+package com.otoki.uptention.infra.solana.service;
 
 /**
  * Solana WebSocket 연결 및 구독을 관리하는 서비스 인터페이스

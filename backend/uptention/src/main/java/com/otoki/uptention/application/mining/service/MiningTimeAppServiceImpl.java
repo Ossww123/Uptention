@@ -38,7 +38,7 @@ import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 import com.otoki.uptention.global.service.FcmSendService;
-import com.otoki.uptention.solana.service.ExpressApiService;
+import com.otoki.uptention.infra.solana.service.ExpressApiService;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

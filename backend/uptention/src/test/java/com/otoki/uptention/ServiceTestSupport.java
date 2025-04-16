@@ -11,8 +11,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import com.otoki.uptention.global.lock.DistributedLockManager;
-import com.otoki.uptention.solana.service.SolanaRpcService;
-import com.otoki.uptention.solana.service.SolanaTransactionMonitorService;
+import com.otoki.uptention.infra.solana.service.SolanaRpcService;
+import com.otoki.uptention.infra.solana.service.SolanaTransactionMonitorService;
 
 /**
  * Application Service 레이어 테스트용 기본 지원 클래스.

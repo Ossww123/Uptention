@@ -1,4 +1,4 @@
-package com.otoki.uptention.solana.service;
+package com.otoki.uptention.infra.solana.service;
 
 import java.util.Collections;
 import java.util.List;
