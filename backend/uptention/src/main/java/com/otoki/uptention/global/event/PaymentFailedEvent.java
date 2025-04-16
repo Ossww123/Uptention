@@ -1,4 +1,4 @@
-package com.otoki.uptention.solana.event;
+package com.otoki.uptention.global.event;
 
 import java.io.Serializable;
 
