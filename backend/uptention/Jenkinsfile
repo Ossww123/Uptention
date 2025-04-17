@@ -1,0 +1,239 @@
+pipeline {
+    agent any
+
+    environment {
+        // S3 키
+        S3_ACCESS_TOKEN = credentials('S3_ACCESS_TOKEN')
+        S3_SECRET_TOKEN = credentials('S3_SECRET_TOKEN')
+
+        // Docker Hub 사용자 네임스페이스를 포함한 이미지 이름
+        DOCKER_IMAGE = 'jodaeseong/uptention-spring-image'
+        DOCKER_CONTAINER = 'uptention-spring-container'
+        DOCKER_PORT = 9090
+
+        // Spring DataSource 관련 환경 변수
+        SPRING_DATASOURCE_URL = credentials('SPRING_DATASOURCE_URL')
+        SPRING_DATASOURCE_USERNAME = credentials('SPRING_DATASOURCE_USERNAME')
+        SPRING_DATASOURCE_PASSWORD = credentials('SPRING_DATASOURCE_PASSWORD')
+
+        JWT_SECRET_KEY = credentials('JWT_SECRET_KEY')
+//         // Mattermost Notification 관련 환경 변수
+//         MATTERMOST_ENDPOINT = credentials('mattermost-webhook')
+//         MATTERMOST_CHANNEL = credentials('mattermost-channel-id')
+        // 추가된 Secret 텍스트 환경변수
+        SOLANA_COMPANY_WALLET = credentials('SOLANA_COMPANY_WALLET')
+        WORK_TOKEN_MINT = credentials('WORK_TOKEN_MINT')
+        RABBITMQ_HOST = credentials('RABBITMQ_HOST')
+        RABBITMQ_PORT = credentials('RABBITMQ_PORT')
+        RABBITMQ_USERNAME = credentials('RABBITMQ_USERNAME')
+        RABBITMQ_PASSWORD = credentials('RABBITMQ_PASSWORD')
+
+        REDIS_HOST = credentials('REDIS_HOST')
+        REDIS_PORT = credentials('REDIS_PORT')
+    }
+
+    tools {
+        jdk 'JDK17'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                echo 'Cloning the repository...'
+                git branch: 'be',
+                    url: 'https://lab.ssafy.com/s12-blockchain-nft-sub1/S12P21D211.git',
+                    credentialsId: '0d048b2d-2bdf-4166-a809-76e195d64abb'
+            }
+        }
+        // Firebase 서비스 계정 키 파일을 주입
+        stage('Inject Firebase Credentials') {
+            steps {
+                withCredentials([file(credentialsId: 'FIREBASE_ACCOUNT_KEY', variable: 'FIREBASE_ACCOUNT_KEY')]) {
+                    sh 'mkdir -p backend/uptention/src/main/resources/firebase'
+                    sh 'cp $FIREBASE_ACCOUNT_KEY backend/uptention/src/main/resources/firebase/serviceAccountKey.json'
+                }
+            }
+        }
+        stage('Build Application') {
+            steps {
+                echo 'Building the application with Gradle Wrapper...'
+                dir('backend/uptention') {
+                    sh 'chmod +x gradlew'
+                    sh './gradlew clean build -x test -Dspring.profiles.active=prod'
+                }
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Docker Pipeline 플러그인을 사용하여 Docker 이미지 빌드
+                    dir('backend/uptention') {
+                        // 이미지 이름과 태그 지정: 예) jodaeseong/uptention-spring-image:BUILD_NUMBER
+                        // def appImage = docker.build("${DOCKER_IMAGE}:${env.BUILD_NUMBER}", ".")
+                        // env.APP_IMAGE = "${DOCKER_IMAGE}:${env.BUILD_NUMBER}"
+                        def appImage = docker.build("${DOCKER_IMAGE}:latest", ".")
+                        env.APP_IMAGE = "${DOCKER_IMAGE}:latest"
+                    }
+                }
+            }
+        }
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    // Docker Hub credentials (docker-hub ID) 활용
+                    docker.withRegistry('', 'docker-hub') {
+                        // 빌드한 이미지를 푸시하고, latest 태그도 갱신
+                        docker.image(env.APP_IMAGE).push()
+//                         docker.image(env.APP_IMAGE).push('latest')
+                    }
+                }
+            }
+        }
+        stage('Deploy to EC2') {
+            steps {
+                echo 'Deploying the application on EC2 using Docker Hub image...'
+                // 배포 스크립트는 기존과 동일하게 SSHPublisher 등을 사용하여 원격 서버에서 실행
+                sshPublisher(publishers: [
+                    sshPublisherDesc(
+                        configName: 'EC2-Server',
+                        transfers: [
+                            sshTransfer(
+                                execCommand: """
+                                    #!/bin/bash
+                                    # 기존 컨테이너 판단 후 신규 배포 (위의 스크립트 내용 삽입)
+                                    if [ \$(docker ps -q -f name=uptention-spring-container-blue) ]; then
+                                      ACTIVE_CONTAINER="blue"
+                                      NEW_CONTAINER="green"
+                                      NEW_CONTAINER_NAME="uptention-spring-container-green"
+                                      OLD_CONTAINER_NAME="uptention-spring-container-blue"
+                                    else
+                                      ACTIVE_CONTAINER="green"
+                                      NEW_CONTAINER="blue"
+                                      NEW_CONTAINER_NAME="uptention-spring-container-blue"
+                                      OLD_CONTAINER_NAME="uptention-spring-container-green"
+                                    fi
+
+                                    echo "현재 운영중인 컨테이너: \$ACTIVE_CONTAINER. 신규 배포 컨테이너: \$NEW_CONTAINER_NAME"
+
+                                    docker pull ${DOCKER_IMAGE}:latest
+                                    docker run -d --name \$NEW_CONTAINER_NAME \\
+                                        --network uptention_network \\
+                                        -e SPRING_PROFILES_ACTIVE=prod \\
+                                        -e TZ=UTC \\
+                                        -e SERVER_PORT=${DOCKER_PORT} \\
+                                        -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \\
+                                        -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
+                                        -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
+                                        -e S3_ACCESS_TOKEN="${S3_ACCESS_TOKEN}" \\
+                                        -e S3_SECRET_TOKEN="${S3_SECRET_TOKEN}" \\
+                                        -e JWT_SECRET_KEY="${JWT_SECRET_KEY}" \\
+                                        -e SOLANA_COMPANY_WALLET="${SOLANA_COMPANY_WALLET}" \\
+                                        -e WORK_TOKEN_MINT="${WORK_TOKEN_MINT}" \\
+                                        -e RABBITMQ_HOST="${RABBITMQ_HOST}" \\
+                                        -e RABBITMQ_PORT="${RABBITMQ_PORT}" \\
+                                        -e RABBITMQ_USERNAME="${RABBITMQ_USERNAME}" \\
+                                        -e RABBITMQ_PASSWORD="${RABBITMQ_PASSWORD}" \\
+                                        -e REDIS_HOST="${REDIS_HOST}" \\
+                                        -e REDIS_PORT="${REDIS_PORT}" \\
+                                        -v /home/ubuntu/uptention/spring-logs:/app/logs \\
+                                        ${DOCKER_IMAGE}:latest
+
+                                    echo "신규 컨테이너 헬스 체크 중..."
+                                    for i in {1..30}; do
+                                      STATUS=\$(docker exec \$NEW_CONTAINER_NAME curl -s http://localhost:${DOCKER_PORT}/actuator/health | grep '"status":"UP"')
+                                      if [ ! -z "\$STATUS" ]; then
+                                        echo "신규 컨테이너 헬스 체크 성공."
+                                        break
+                                      fi
+                                      sleep 2
+                                    done
+
+                                    echo "Nginx upstream 구성을 \$NEW_CONTAINER_NAME로 업데이트합니다."
+                                    cat <<EOF > /home/ubuntu/uptention/nginx/conf/upstream-spring.conf
+                                    upstream spring_backend {
+                                        server \$NEW_CONTAINER_NAME:${DOCKER_PORT};
+                                    }
+                                    EOF
+
+                                    docker exec nginx nginx -s reload
+                                    echo "Nginx 설정을 리로드했습니다."
+
+                                    echo "Prometheus 타겟 파일을 업데이트합니다."
+                                    cat <<EOF > /home/ubuntu/uptention/monitoring/prometheus/config/active-spring-targets.json
+                                    [
+                                      {
+                                        "targets": ["\$NEW_CONTAINER_NAME:${DOCKER_PORT}"]
+                                      }
+                                    ]
+                                    EOF
+                                    echo "업데이트 완료."
+
+                                    echo "이전 컨테이너 (\$OLD_CONTAINER_NAME) 중지 및 삭제 중..."
+                                    docker stop \$OLD_CONTAINER_NAME || true
+                                    docker rm \$OLD_CONTAINER_NAME || true
+
+                                    docker image prune -f
+                                """.stripIndent()
+                            )
+                        ]
+                    )
+                ])
+
+
+//                 sshPublisher(publishers: [
+//                     sshPublisherDesc(
+//                         configName: 'EC2-Server',
+//                         transfers: [
+//                             sshTransfer(
+//                                 execCommand: """
+//                                     docker stop ${DOCKER_CONTAINER} || true
+//                                     docker rm ${DOCKER_CONTAINER} || true
+//                                     docker rmi ${DOCKER_IMAGE}:latest || true
+//                                     docker pull ${DOCKER_IMAGE}:latest
+//                                     docker run -d --name ${DOCKER_CONTAINER} \\
+//                                       --network uptention_network \\
+//                                       -e SPRING_PROFILES_ACTIVE=prod \\
+//                                       -e TZ=UTC \\
+//                                       -e SERVER_PORT=${DOCKER_PORT} \\
+//                                       -e SPRING_DATASOURCE_URL="${SPRING_DATASOURCE_URL}" \\
+//                                       -e SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME} \\
+//                                       -e SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD} \\
+//                                     -e S3_ACCESS_TOKEN="${S3_ACCESS_TOKEN}" \\
+//                                     -e S3_SECRET_TOKEN="${S3_SECRET_TOKEN}" \\
+//                                     -e JWT_SECRET_KEY="${JWT_SECRET_KEY}" \\
+//                                       ${DOCKER_IMAGE}:latest
+//                                     docker image prune -f
+//                                 """.stripIndent()
+//                             )
+//                         ]
+//                     )
+//                 ])
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning workspace...'
+            cleanWs()
+        }
+        success {
+            echo 'Deployment successful!'
+            script {
+                def successMsg = ':tada: [BE] 빌드 성공: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + ' :tada:' + '\n(<' + env.BUILD_URL + '|Details>)'
+                mattermostSend(color: 'good',
+                    message: successMsg,
+                )
+            }
+        }
+        failure {
+            echo 'Deployment failed.'
+            script {
+                def failureMsg = ':x: [BE] 빌드 실패: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + ' :x:' + '\n(<' + env.BUILD_URL + '|Details>)'
+                mattermostSend(color: 'danger',
+                    message: failureMsg,
+                )
+            }
+        }
+     }
+}

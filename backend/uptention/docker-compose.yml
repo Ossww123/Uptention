@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  spring-app:
+    build:
+      context: .  # Dockerfile이 위치한 폴더
+      dockerfile: Dockerfile-local  # Spring Boot Dockerfile 이름
+    restart: always
+    ports:
+      - "8080:8080"  # Spring Boot 애플리케이션 포트 매핑
+    environment:
+      SPRING_PROFILES_ACTIVE: local  # Spring Boot 활성 프로파일 설정
+      S3_ACCESS_TOKEN: ${S3_ACCESS_TOKEN}
+      S3_SECRET_TOKEN: ${S3_SECRET_TOKEN}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      SOLANA_COMPANY_WALLET: ${SOLANA_COMPANY_WALLET}
+      WORK_TOKEN_MINT: ${WORK_TOKEN_MINT}
+      TZ: UTC
+    depends_on:
+      - mysql
+      - rabbitmq
+  mysql:
+    image: mysql:8.0.36
+    restart: always
+    ports:
+      - "3300:3306"
+    volumes:
+      - uptention-mysql:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: uptention
+      MYSQL_USER: local
+      MYSQL_PASSWORD: local
+      MYSQL_ROOT_PASSWORD: root
+      TZ: UTC
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+00:00
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - "5672:5672"  # AMQP 포트
+      - "15672:15672"  # 관리 UI 포트
+    environment:
+      RABBITMQ_DEFAULT_USER: local
+      RABBITMQ_DEFAULT_PASS: local
+      TZ: UTC
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  redis:
+    image: redis:7.4.2
+    restart: always
+    ports:
+      - "6379:6379"  # Redis 포트
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes # 데이터 영속성 활성화
+
+volumes:
+  uptention-mysql:  # MySQL 데이터 저장소
+  rabbitmq-data:    # RabbitMQ 데이터 저장소
+  redis-data:       # Redis 데이터 저장소
