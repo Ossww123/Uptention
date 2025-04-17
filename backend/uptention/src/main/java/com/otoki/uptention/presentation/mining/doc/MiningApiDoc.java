@@ -1,5 +1,6 @@
 package com.otoki.uptention.presentation.mining.doc;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -119,5 +120,5 @@ public interface MiningApiDoc {
 	})
 	ResponseEntity<Map<String, List<MiningTimeRankResponseDto>>> getMiningTimes(
 		@RequestParam Integer top,
-		@RequestParam String zoneId);
+		@RequestParam ZonedDateTime zoneTime);
 }

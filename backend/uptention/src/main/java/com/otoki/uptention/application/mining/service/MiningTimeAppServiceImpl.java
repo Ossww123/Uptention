@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
@@ -137,32 +138,40 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	@Override
 	public List<MiningTimeResponseDto> findAllMiningTimes(
 		Integer userId,
-		LocalDateTime startTime,
-		LocalDateTime endTime,
-		String zoneId
+		ZonedDateTime startZoned,    // 클라이언트 로컬 타임존 정보 포함
+		ZonedDateTime endZoned       // 클라이언트 로컬 타임존 정보 포함
 	) {
 		User user = securityService.getLoggedInUser();
 		if (!user.getId().equals(userId)) {
 			throw new CustomException(ErrorCode.FORBIDDEN_USER);
 		}
-		if (endTime.isBefore(startTime)) {
+		if (endZoned.isBefore(startZoned)) {
 			throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
 		}
 
-		ZoneId clientZone = ZoneId.of(zoneId);
-		// 클라이언트 로컬 → UTC
-		LocalDateTime startUtc = DateTimeUtils.toUtc(startTime, clientZone);
-		LocalDateTime endUtc   = DateTimeUtils.toUtc(endTime,   clientZone);
+		// ——— 1) 클라이언트 로컬 → UTC LocalDateTime
+		LocalDateTime startUtc = startZoned
+			.withZoneSameInstant(ZoneOffset.UTC)
+			.toLocalDateTime();
+		LocalDateTime endUtc   = endZoned
+			.withZoneSameInstant(ZoneOffset.UTC)
+			.toLocalDateTime();
 
+		// DB 조회 (UTC 기준으로 저장·조회 중이라면)
 		List<MiningTime> sessions = miningTimeService
 			.findMiningTimesByUserIdAndTimeRange(userId, startUtc, endUtc);
 
+		// ——— 2) 그룹핑 시, UTC 저장값 → 클라이언트 로컬 날짜로 변환
+		ZoneId clientZone = startZoned.getZone();
 		return sessions.stream()
 			.collect(Collectors.groupingBy(
-				// UTC 저장된 startTime → 클라이언트 로컬 날짜
-				s -> DateTimeUtils.fromUtc(s.getStartTime(), clientZone).toLocalDate(),
-				Collectors.summingLong(s ->
-					Duration.between(s.getStartTime(), s.getEndTime()).toMinutes()
+				mt -> ZonedDateTime
+					.of(mt.getStartTime(), ZoneOffset.UTC)      // UTC → Zoned
+					.withZoneSameInstant(clientZone)           // → 클라이언트 로컬
+					.toLocalDate(),                            // → LocalDate
+				Collectors.summingLong(mt ->
+					Duration.between(mt.getStartTime(), mt.getEndTime())
+						.toMinutes()
 				)
 			))
 			.entrySet().stream()
@@ -176,24 +185,42 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	@Override
 	public Map<String, List<MiningTimeRankResponseDto>> findMiningRank(
 		Integer top,
-		String zoneId   // ← 프론트에서 전달되는 타임존 ID
+		ZonedDateTime referenceZoned    // ← 클라이언트 로컬 타임존 정보 포함
 	) {
 		if (top == null || top <= 0) {
 			throw new CustomException(ErrorCode.TOP_VARIABLE_ERROR);
 		}
-		// 클라이언트 타임존 파싱
-		ZoneId clientZone = ZoneId.of(zoneId);
-		// 클라이언트 로컬 기준 현재 시각
-		LocalDateTime reference = ZonedDateTime.now(clientZone).toLocalDateTime();
-		// 지난주 UTC 범위 계산 (clientZone 기준)
-		List<LocalDateTime> bounds = calculatePreviousWeekUtcBounds(reference, clientZone);
 
+		// 1. 지난주 월요일 00:00 (clientZone 기준)
+		ZonedDateTime startOfLastWeek = referenceZoned
+			.minusWeeks(1)
+			.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+			.truncatedTo(ChronoUnit.DAYS);
+
+		// 2. 지난주 일요일 23:59:59.999 (clientZone 기준)
+		ZonedDateTime endOfLastWeek = startOfLastWeek
+			.plusDays(6)
+			.with(LocalTime.MAX);
+
+		// 3. UTC로 변환해 DB 조회용 LocalDateTime 생성
+		LocalDateTime startUtc = startOfLastWeek
+			.withZoneSameInstant(ZoneOffset.UTC)
+			.toLocalDateTime();
+		LocalDateTime endUtc   = endOfLastWeek
+			.withZoneSameInstant(ZoneOffset.UTC)
+			.toLocalDateTime();
+
+		// 4. DB에서 UTC 범위로 랭킹 조회
 		List<MiningTimeRankResponseDto> ranks =
-			miningTimeService.findMiningRank(bounds.get(0), bounds.get(1));
-		Map<Integer, List<MiningTimeRankResponseDto>> rankMap = calculationRank(ranks, top);
+			miningTimeService.findMiningRank(startUtc, endUtc);
+
+		// 5. 등수 계산
+		Map<Integer, List<MiningTimeRankResponseDto>> rankMap =
+			calculationRank(ranks, top);
+
+		// 6. JSON 형태로 변환하여 반환
 		return convertJson(rankMap);
 	}
-
 
 	private int bulkUpdateMiningTime() {
 		LocalDateTime cutoff = LocalDateTime.now().toLocalDate().atTime(14, 30);
