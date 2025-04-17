@@ -18,7 +18,7 @@ public interface MiningTimeAppService {
 
 	void executeWeeklyNftProcesses();
 
-	List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime);
+	List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime, String zoneId);
 
-	Map<String, List<MiningTimeRankResponseDto>> findMiningRank(Integer top);
+	Map<String, List<MiningTimeRankResponseDto>> findMiningRank(Integer top, String zoneId);
 }

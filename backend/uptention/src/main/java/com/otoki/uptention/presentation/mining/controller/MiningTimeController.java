@@ -39,7 +39,9 @@ public class MiningTimeController implements MiningApiDoc {
 	}
 
 	@GetMapping()
-	public ResponseEntity<Map<String, List<MiningTimeRankResponseDto>>> getMiningTimes(@RequestParam Integer top) {
-		return ResponseEntity.ok(miningTimeAppService.findMiningRank(top));
+	public ResponseEntity<Map<String, List<MiningTimeRankResponseDto>>> getMiningTimes(
+		@RequestParam Integer top,
+		@RequestParam String zoneId) {
+		return ResponseEntity.ok(miningTimeAppService.findMiningRank(top, zoneId));
 	}
 }

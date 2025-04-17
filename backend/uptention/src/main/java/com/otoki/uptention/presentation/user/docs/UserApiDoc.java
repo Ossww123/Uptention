@@ -363,7 +363,8 @@ public interface UserApiDoc {
 	ResponseEntity<List<MiningTimeResponseDto>> getMiningTimes(
 		@PathVariable Integer userId,
 		@RequestParam LocalDateTime startTime,
-		@RequestParam LocalDateTime endTime);
+		@RequestParam LocalDateTime endTime,
+		@RequestParam String zoneId);
 
 	@Operation(summary = "지갑 연결", description = "사용자의 지갑을 연동한다. 로그인한 사용자의 권한을 확인 후, 지갑 연동 및 accessToken 재발급을 수행한다.")
 	@ApiResponses(value = {

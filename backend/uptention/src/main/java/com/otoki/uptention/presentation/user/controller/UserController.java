@@ -86,8 +86,9 @@ public class UserController implements UserApiDoc {
 	public ResponseEntity<List<MiningTimeResponseDto>> getMiningTimes(
 		@PathVariable Integer userId,
 		@RequestParam LocalDateTime startTime,
-		@RequestParam LocalDateTime endTime) {
-		return ResponseEntity.ok(miningTimeAppService.findAllMiningTimes(userId, startTime, endTime));
+		@RequestParam LocalDateTime endTime,
+		@RequestParam String zoneId) {
+		return ResponseEntity.ok(miningTimeAppService.findAllMiningTimes(userId, startTime, endTime, zoneId));
 	}
 
 	// 지갑 연결

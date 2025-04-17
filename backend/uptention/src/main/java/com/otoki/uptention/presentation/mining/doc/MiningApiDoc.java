@@ -117,5 +117,7 @@ public interface MiningApiDoc {
 			)
 		)
 	})
-	ResponseEntity<Map<String, List<MiningTimeRankResponseDto>>> getMiningTimes(@RequestParam Integer top);
+	ResponseEntity<Map<String, List<MiningTimeRankResponseDto>>> getMiningTimes(
+		@RequestParam Integer top,
+		@RequestParam String zoneId);
 }
