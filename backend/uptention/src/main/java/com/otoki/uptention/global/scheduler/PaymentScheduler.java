@@ -7,11 +7,11 @@ import java.util.List;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.otoki.uptention.application.payment.service.PaymentProcessService;
 import com.otoki.uptention.domain.order.entity.Order;
 import com.otoki.uptention.domain.order.enums.OrderStatus;
 import com.otoki.uptention.domain.order.service.OrderService;
 import com.otoki.uptention.global.lock.DistributedLockManager;
-import com.otoki.uptention.application.payment.service.PaymentProcessService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

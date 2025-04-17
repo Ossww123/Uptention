@@ -72,7 +72,8 @@ public class SolanaExpressApiServiceImpl implements SolanaExpressApiService {
 	 * @return API 응답 본문 (String)
 	 * @throws RestClientException API 호출 실패 시
 	 */
-	public String createNft(String rank, String name, String description, List<Attribute> attributes, String symbol) { // <<< 시그니처는 유지, 반환 타입 변경
+	public String createNft(String rank, String name, String description, List<Attribute> attributes,
+		String symbol) { // <<< 시그니처는 유지, 반환 타입 변경
 		String url = expressBaseUrl + "/api/nfts/create-with-uri";
 		log.info("NFT 생성(URI) API 호출 시작 (RestTemplate): {}", url);
 
@@ -121,5 +122,4 @@ public class SolanaExpressApiServiceImpl implements SolanaExpressApiService {
 			throw e;
 		}
 	}
-
 }

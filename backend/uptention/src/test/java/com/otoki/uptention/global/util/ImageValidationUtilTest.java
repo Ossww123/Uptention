@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
+import com.otoki.uptention.infra.image.util.ImageValidationUtil;
 
 public class ImageValidationUtilTest {
 

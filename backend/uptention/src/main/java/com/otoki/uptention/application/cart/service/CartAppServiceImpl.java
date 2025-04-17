@@ -13,14 +13,14 @@ import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.cart.dto.CartItemDto;
 import com.otoki.uptention.domain.cart.entity.Cart;
 import com.otoki.uptention.domain.cart.service.CartService;
-import com.otoki.uptention.domain.inventory.dto.InventoryDto;
-import com.otoki.uptention.domain.inventory.service.InventoryService;
+import com.otoki.uptention.domain.item.dto.InventoryDto;
 import com.otoki.uptention.domain.item.entity.Item;
+import com.otoki.uptention.domain.item.service.InventoryService;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
-import com.otoki.uptention.global.service.ImageUploadService;
+import com.otoki.uptention.infra.image.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -171,5 +171,4 @@ public class CartAppServiceImpl implements CartAppService {
 
 		return cartService.saveCart(cart);
 	}
-
 }

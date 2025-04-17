@@ -16,15 +16,15 @@ import com.otoki.uptention.domain.category.entity.Category;
 import com.otoki.uptention.domain.category.service.CategoryService;
 import com.otoki.uptention.domain.common.CursorDto;
 import com.otoki.uptention.domain.image.entity.Image;
-import com.otoki.uptention.domain.inventory.dto.InventoryDto;
-import com.otoki.uptention.domain.inventory.service.InventoryService;
+import com.otoki.uptention.domain.item.dto.InventoryDto;
 import com.otoki.uptention.domain.item.dto.ItemDto;
 import com.otoki.uptention.domain.item.entity.Item;
 import com.otoki.uptention.domain.item.enums.SortType;
+import com.otoki.uptention.domain.item.service.InventoryService;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
-import com.otoki.uptention.global.service.ImageUploadService;
+import com.otoki.uptention.infra.image.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

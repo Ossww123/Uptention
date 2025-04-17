@@ -1,4 +1,4 @@
-package com.otoki.uptention.domain.inventory.service;
+package com.otoki.uptention.domain.item.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,9 +13,9 @@ import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import com.otoki.uptention.domain.inventory.dto.InventoryDto;
+import com.otoki.uptention.domain.item.dto.InventoryDto;
 import com.otoki.uptention.domain.item.entity.Item;
-import com.otoki.uptention.domain.item.service.ItemService;
+import com.otoki.uptention.domain.item.repository.ItemRepository;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
@@ -34,7 +34,7 @@ public class InventoryServiceImpl implements InventoryService {
 
 	private final RedisTemplate<String, Object> redisTemplate;
 	private final RedissonClient redissonClient;
-	private final ItemService itemService;
+	private final ItemRepository itemRepository;
 
 	@Override
 	public void initializeInventory(Integer itemId, Integer quantity) {
@@ -69,7 +69,7 @@ public class InventoryServiceImpl implements InventoryService {
 			log.warn("Inventory not found in Redis for item {}, attempting to initialize from database", itemId);
 			try {
 				// 대신 아이템 서비스를 통해 DB에서 정보를 가져와 초기화 시도
-				Item item = itemService.getItemById(itemId);
+				Item item = getItemById(itemId);
 				initializeInventory(itemId, item.getQuantity());
 
 				// 다시 조회
@@ -656,5 +656,18 @@ public class InventoryServiceImpl implements InventoryService {
 			log.error("Error checking stock for item {}", itemId, e);
 			return false;
 		}
+	}
+
+	private Item getItemById(Integer id) {
+		// 먼저 ID만으로 조회 (status 상관없이)
+		Item item = itemRepository.findById(id)
+			.orElseThrow(() -> new CustomException(ErrorCode.ITEM_NOT_FOUND)); // "상품이 존재하지 않습니다"
+
+		// 그 다음 status 확인
+		if (!item.getStatus()) {
+			throw new CustomException(ErrorCode.ITEM_UNAVAILABLE); // "삭제된 상품입니다"
+		}
+
+		return item;
 	}
 }

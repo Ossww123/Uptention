@@ -4,6 +4,6 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class Attribute {
-	public String trait_type;
+	public String traitType;
 	public String value;
 }

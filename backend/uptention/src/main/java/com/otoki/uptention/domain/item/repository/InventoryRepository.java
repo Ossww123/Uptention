@@ -1,4 +1,4 @@
-package com.otoki.uptention.domain.inventory.repository;
+package com.otoki.uptention.domain.item.repository;
 
 import org.springframework.stereotype.Repository;
 

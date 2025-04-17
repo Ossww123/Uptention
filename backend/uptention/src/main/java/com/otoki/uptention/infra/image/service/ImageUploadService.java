@@ -1,4 +1,4 @@
-package com.otoki.uptention.global.service;
+package com.otoki.uptention.infra.image.service;
 
 import org.springframework.web.multipart.MultipartFile;
 

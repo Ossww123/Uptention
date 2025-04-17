@@ -19,8 +19,8 @@ import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResp
 import com.otoki.uptention.application.order.dto.response.OrderItemResponseDto;
 import com.otoki.uptention.auth.service.SecurityService;
 import com.otoki.uptention.domain.common.CursorDto;
-import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.item.entity.Item;
+import com.otoki.uptention.domain.item.service.InventoryService;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
 import com.otoki.uptention.domain.order.entity.Order;

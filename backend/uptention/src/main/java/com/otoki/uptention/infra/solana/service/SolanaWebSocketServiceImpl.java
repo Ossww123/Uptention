@@ -223,5 +223,4 @@ public class SolanaWebSocketServiceImpl implements SolanaWebSocketService {
 			log.error("WebSocket 연결 상태 확인 중 오류", e);
 		}
 	}
-
 }

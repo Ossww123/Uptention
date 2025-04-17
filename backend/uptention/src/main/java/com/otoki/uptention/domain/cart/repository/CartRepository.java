@@ -17,20 +17,20 @@ public interface CartRepository extends JpaRepository<Cart, Integer> {
 	/**
 	 * 특정 사용자의 모든 장바구니 항목 중 활성화된(status=true) 상품과 해당 상품의 첫 번째 이미지(썸네일)를 함께 조회
 	 */
-	@Query("SELECT new com.otoki.uptention.domain.cart.dto.CartItemDto(" +
-		"c.id, " +
-		"i.id, " +
-		"i.name, " +
-		"i.price, " +
-		"i.brand, " +
-		"c.quantity, " +
-		"i.price * c.quantity, " +
-		"i.quantity, " +
-		"(SELECT img.url FROM Image img WHERE img.item = i AND img.id = " +
-		"(SELECT MIN(subImg.id) FROM Image subImg WHERE subImg.item = i))) " +
-		"FROM Cart c JOIN c.item i " +
-		"WHERE c.user.id = :userId AND i.status = true " +
-		"ORDER BY c.createdAt DESC")
+	@Query("SELECT new com.otoki.uptention.domain.cart.dto.CartItemDto("
+		+ "c.id, "
+		+ "i.id, "
+		+ "i.name, "
+		+ "i.price, "
+		+ "i.brand, "
+		+ "c.quantity, "
+		+ "i.price * c.quantity, "
+		+ "i.quantity, "
+		+ "(SELECT img.url FROM Image img WHERE img.item = i AND img.id = "
+		+ "(SELECT MIN(subImg.id) FROM Image subImg WHERE subImg.item = i))) "
+		+ "FROM Cart c JOIN c.item i "
+		+ "WHERE c.user.id = :userId AND i.status = true "
+		+ "ORDER BY c.createdAt DESC")
 	List<CartItemDto> findCartItemsWithThumbnailByUserId(@Param("userId") Integer userId);
 
 	/**

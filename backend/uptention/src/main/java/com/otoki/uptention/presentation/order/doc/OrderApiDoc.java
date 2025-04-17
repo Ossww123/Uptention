@@ -11,8 +11,8 @@ import com.otoki.uptention.application.order.dto.request.DeliveryInfoRequestDto;
 import com.otoki.uptention.application.order.dto.request.GiftRequestDto;
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
-import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.DeliveryAddressResponseDto;
+import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderDetailResponseDto;
 import com.otoki.uptention.application.order.dto.response.OrderHistoryCursorResponseDto;
@@ -363,5 +363,4 @@ public interface OrderApiDoc {
 		@Parameter(description = "주문 상품 ID", required = true, example = "1")
 		@PathVariable Integer orderItemId
 	);
-
 }

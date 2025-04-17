@@ -1,4 +1,4 @@
-package com.otoki.uptention.global.service;
+package com.otoki.uptention.infra.fcm.service;
 
 import java.util.List;
 
