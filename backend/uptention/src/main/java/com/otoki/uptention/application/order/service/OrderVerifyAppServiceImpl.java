@@ -9,13 +9,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.otoki.uptention.application.order.dto.request.ItemVerificationDto;
 import com.otoki.uptention.application.order.dto.response.ItemVerificationResponseDto;
-import com.otoki.uptention.domain.inventory.dto.InventoryDto;
-import com.otoki.uptention.domain.inventory.service.InventoryService;
+import com.otoki.uptention.domain.item.dto.InventoryDto;
 import com.otoki.uptention.domain.item.dto.ItemDto;
+import com.otoki.uptention.domain.item.service.InventoryService;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
-import com.otoki.uptention.global.service.ImageUploadService;
+import com.otoki.uptention.infra.image.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

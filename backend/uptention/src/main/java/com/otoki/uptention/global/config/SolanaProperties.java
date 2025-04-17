@@ -19,5 +19,4 @@ public class SolanaProperties {
 	// SPL 토큰 관련 속성
 	private String tokenProgramId;
 	private String workTokenMint;
-
 }

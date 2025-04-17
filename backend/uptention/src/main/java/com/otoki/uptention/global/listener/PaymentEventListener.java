@@ -3,10 +3,10 @@ package com.otoki.uptention.global.listener;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import com.otoki.uptention.application.payment.service.PaymentProcessService;
 import com.otoki.uptention.global.config.RabbitMQConfig;
 import com.otoki.uptention.global.event.PaymentFailedEvent;
 import com.otoki.uptention.global.event.PaymentSuccessEvent;
-import com.otoki.uptention.application.payment.service.PaymentProcessService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

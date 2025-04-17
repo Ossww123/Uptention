@@ -37,7 +37,7 @@ import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 import com.otoki.uptention.global.util.DateTimeUtils;
-import com.otoki.uptention.global.service.FcmSendService;
+import com.otoki.uptention.infra.fcm.service.FcmSendService;
 import com.otoki.uptention.infra.solana.dto.Attribute;
 import com.otoki.uptention.infra.solana.service.SolanaExpressApiServiceImpl;
 
@@ -66,7 +66,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime startInspection = now.toLocalDate().atTime(14, 30);
-		LocalDateTime endInspection   = now.toLocalDate().atTime(15, 0);
+		LocalDateTime endInspection = now.toLocalDate().atTime(15, 0);
 		if (now.isAfter(startInspection) && now.isBefore(endInspection)) {
 			throw new CustomException(ErrorCode.FOCUS_MODE_INSPECTION);
 		}
@@ -83,7 +83,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		if (ongoing != null && ongoing.getEndTime() == null) {
 			ongoing.updateEndTime(now);
 			long minutes = Duration.between(ongoing.getStartTime(), now).toMinutes();
-			loggedInUser.setPoint(loggedInUser.getPoint() + (int) minutes);
+			loggedInUser.setPoint(loggedInUser.getPoint() + (int)minutes);
 		}
 
 		MiningTime newSession = MiningTime.builder()
@@ -105,14 +105,14 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime startInspection = now.toLocalDate().atTime(14, 30);
-		LocalDateTime endInspection   = now.toLocalDate().atTime(15, 0);
+		LocalDateTime endInspection = now.toLocalDate().atTime(15, 0);
 		if (now.isAfter(startInspection) && now.isBefore(endInspection)) {
 			throw new CustomException(ErrorCode.FOCUS_MODE_INSPECTION);
 		}
 
 		session.updateEndTime(now);
 		long minutes = Duration.between(session.getStartTime(), now).toMinutes();
-		loggedInUser.setPoint(loggedInUser.getPoint() + (int) minutes);
+		loggedInUser.setPoint(loggedInUser.getPoint() + (int)minutes);
 		miningTimeService.saveMiningTime(session);
 	}
 
@@ -153,7 +153,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		LocalDateTime startUtc = startZoned
 			.withZoneSameInstant(ZoneOffset.UTC)
 			.toLocalDateTime();
-		LocalDateTime endUtc   = endZoned
+		LocalDateTime endUtc = endZoned
 			.withZoneSameInstant(ZoneOffset.UTC)
 			.toLocalDateTime();
 
@@ -206,7 +206,7 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		LocalDateTime startUtc = startOfLastWeek
 			.withZoneSameInstant(ZoneOffset.UTC)
 			.toLocalDateTime();
-		LocalDateTime endUtc   = endOfLastWeek
+		LocalDateTime endUtc = endOfLastWeek
 			.withZoneSameInstant(ZoneOffset.UTC)
 			.toLocalDateTime();
 
@@ -246,7 +246,10 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 			return;
 		}
 		users.forEach(u -> {
-			if (u.getWallet() == null || u.getPoint() == null || u.getPoint() <= 0) return;
+			if (u.getWallet() == null || u.getPoint() == null || u.getPoint() <= 0) {
+				return;
+			}
+
 			double toSend = u.getPoint() / 10.0;
 			String amt = new DecimalFormat("0.0").format(toSend);
 			try {
@@ -278,21 +281,32 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		Map<String, List<MiningTimeRankResponseDto>> jsonMap = convertJson(rankMap);
 		jsonMap.forEach((rank, list) -> list.forEach(dto -> {
 			User user = userService.getUserById(dto.getId());
-			if (user == null || user.getWallet() == null) return;
+
+			if (user == null || user.getWallet() == null) {
+				return;
+			}
+
 			LocalDate date = LocalDate.now();
-			String weekName = String.format("%d년 %d월 %d주차", date.getYear(), date.getMonthValue(), (date.getDayOfMonth()-1)/7+1);
+			String weekName = String.format("%d년 %d월 %d주차", date.getYear(), date.getMonthValue(),
+				(date.getDayOfMonth() - 1) / 7 + 1);
 			List<Attribute> attrs = new ArrayList<>();
-			attrs.add(new Attribute("range", String.format("%d-%d-%d-%d", date.getYear(), date.getMonthValue(), date.getDayOfMonth(), (date.getDayOfMonth()-1)/7+1)));
+
+			attrs.add(new Attribute("range",
+				String.format("%d-%d-%d-%d", date.getYear(), date.getMonthValue(), date.getDayOfMonth(),
+					(date.getDayOfMonth() - 1) / 7 + 1)));
 			attrs.add(new Attribute("rank", rank));
 			attrs.add(new Attribute("name", user.getName()));
+
 			try {
-				String resp = solanaExpressApiServiceImpl.createNft(rank, weekName, rank + "위에게 수여되는 NFT", attrs, "SSAFY");
+				String resp = solanaExpressApiServiceImpl.createNft(rank, weekName, rank + "위에게 수여되는 NFT", attrs,
+					"SSAFY");
 				CreateNftApiResponse apiResp = objectMapper.readValue(resp, CreateNftApiResponse.class);
 				result.add(new MintAddressResponse(user.getId(), apiResp.getMintAddress(), user.getWallet()));
 			} catch (Exception ex) {
 				log.error("NFT creation failed for {}: {}", dto.getId(), ex.getMessage());
 			}
 		}));
+
 		log.info("NFT creation scheduler end");
 		return result;
 	}
@@ -304,7 +318,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 			return;
 		}
 		mintAddresses.forEach(target -> {
-			if (target.getWallet() == null || target.getAddress() == null) return;
+			if (target.getWallet() == null || target.getAddress() == null)
+				return;
 			try {
 				String resp = solanaExpressApiServiceImpl.transferNft(target.getWallet(), target.getAddress());
 				log.info("NFT sent: {}", resp);
@@ -314,7 +329,8 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 					.user(userService.getUserById(target.getId()))
 					.build();
 				notificationService.saveNotification(notification);
-				fcmSendService.sendNotificationToUser(notification.getUser(), notification.getTitle(), notification.getMessage());
+				fcmSendService.sendNotificationToUser(notification.getUser(), notification.getTitle(),
+					notification.getMessage());
 			} catch (Exception ex) {
 				log.error("NFT send failed for {}: {}", target.getId(), ex.getMessage());
 			}
@@ -323,13 +339,14 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 	}
 
 	private static final double EARTH_RADIUS = 6371000;
+
 	private static boolean isWithinRadius(float lat1, float lon1, float lat2, float lon2, double radius) {
 		double dLat = Math.toRadians(lat2 - lat1);
 		double dLon = Math.toRadians(lon2 - lon1);
-		double a = Math.sin(dLat/2)*Math.sin(dLat/2)
-			+ Math.cos(Math.toRadians(lat1))*Math.cos(Math.toRadians(lat2))
-			* Math.sin(dLon/2)*Math.sin(dLon/2);
-		double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+		double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+			+ Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+			* Math.sin(dLon / 2) * Math.sin(dLon / 2);
+		double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 		return EARTH_RADIUS * c <= radius;
 	}
 
@@ -338,9 +355,9 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		ZonedDateTime start = refZ.minusWeeks(1)
 			.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 			.truncatedTo(ChronoUnit.DAYS);
-		ZonedDateTime end   = start.plusDays(6).with(LocalTime.MAX);
+		ZonedDateTime end = start.plusDays(6).with(LocalTime.MAX);
 		LocalDateTime startUtc = DateTimeUtils.toUtc(start.toLocalDateTime(), zone);
-		LocalDateTime endUtc   = DateTimeUtils.toUtc(end.toLocalDateTime(), zone);
+		LocalDateTime endUtc = DateTimeUtils.toUtc(end.toLocalDateTime(), zone);
 		List<LocalDateTime> bounds = new ArrayList<>();
 		bounds.add(startUtc);
 		bounds.add(endUtc);
@@ -356,7 +373,9 @@ public class MiningTimeAppServiceImpl implements MiningTimeAppService {
 		for (MiningTimeRankResponseDto dto : ranks) {
 			if (prevTotal == null || !dto.getTotalMiningMinutes().equals(prevTotal)) {
 				currentRank = map.size() + 1;
-				if (currentRank > top) break;
+				if (currentRank > top) {
+					break;
+				}
 			}
 			map.computeIfAbsent(currentRank, k -> new ArrayList<>()).add(dto);
 			prevTotal = dto.getTotalMiningMinutes();

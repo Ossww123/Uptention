@@ -1,4 +1,4 @@
-package com.otoki.uptention.domain.inventory.service;
+package com.otoki.uptention.global.scheduler;
 
 import java.util.HashMap;
 import java.util.List;
@@ -7,8 +7,9 @@ import java.util.Map;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import com.otoki.uptention.domain.inventory.dto.InventoryDto;
+import com.otoki.uptention.domain.item.dto.InventoryDto;
 import com.otoki.uptention.domain.item.entity.Item;
+import com.otoki.uptention.domain.item.service.InventoryService;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.lock.DistributedLockManager;
 
@@ -18,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class InventorySyncServiceImpl implements InventorySyncService {
+public class InventorySchedulerImpl implements InventoryScheduler {
 	private static final String INVENTORY_SYNC_LOCK = "scheduler:inventory:sync";
 
 	private final InventoryService inventoryService;

@@ -16,15 +16,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.otoki.uptention.domain.inventory.dto.InventoryDto;
-import com.otoki.uptention.domain.inventory.service.InventoryService;
-import com.otoki.uptention.domain.inventory.service.InventorySyncServiceImpl;
+import com.otoki.uptention.domain.item.dto.InventoryDto;
 import com.otoki.uptention.domain.item.entity.Item;
+import com.otoki.uptention.domain.item.service.InventoryService;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.global.lock.DistributedLockManager;
+import com.otoki.uptention.global.scheduler.InventorySchedulerImpl;
 
 @ExtendWith(MockitoExtension.class)
-public class InventorySyncServiceTest {
+public class InventorySchedulerTest {
 
 	@Mock
 	private ItemService itemService;
@@ -36,7 +36,7 @@ public class InventorySyncServiceTest {
 	private DistributedLockManager lockManager;
 
 	@InjectMocks
-	private InventorySyncServiceImpl inventorySyncService;
+	private InventorySchedulerImpl inventorySyncService;
 
 	@BeforeEach
 	void setUp() {

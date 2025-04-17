@@ -24,7 +24,7 @@ import com.otoki.uptention.domain.user.enums.UserSortType;
 import com.otoki.uptention.domain.user.service.UserService;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
-import com.otoki.uptention.global.service.ImageUploadService;
+import com.otoki.uptention.infra.image.service.ImageUploadService;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

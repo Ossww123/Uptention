@@ -10,9 +10,15 @@ import com.otoki.uptention.domain.user.entity.User;
 public interface MiningTimeService {
 
 	void saveMiningTime(MiningTime miningTime);
+
 	MiningTime findMiningTime(User user);
+
 	int updateEndTimeForUnfinishedMining(LocalDateTime endTime);
+
 	int calculatePoint(LocalDateTime inspectionTime);
-	List<MiningTime> findMiningTimesByUserIdAndTimeRange(Integer userId, LocalDateTime startTime, LocalDateTime endTime);
+
+	List<MiningTime> findMiningTimesByUserIdAndTimeRange(Integer userId, LocalDateTime startTime,
+		LocalDateTime endTime);
+
 	List<MiningTimeRankResponseDto> findMiningRank(LocalDateTime startTime, LocalDateTime endTime);
 }

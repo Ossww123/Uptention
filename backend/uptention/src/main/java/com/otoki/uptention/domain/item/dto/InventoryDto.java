@@ -1,4 +1,4 @@
-package com.otoki.uptention.domain.inventory.dto;
+package com.otoki.uptention.domain.item.dto;
 
 import java.io.Serializable;
 

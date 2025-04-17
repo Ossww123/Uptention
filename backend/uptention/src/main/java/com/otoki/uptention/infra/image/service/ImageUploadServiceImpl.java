@@ -1,4 +1,4 @@
-package com.otoki.uptention.global.service;
+package com.otoki.uptention.infra.image.service;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.otoki.uptention.global.config.AwsS3Properties;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
-import com.otoki.uptention.global.util.ImageValidationUtil;
+import com.otoki.uptention.infra.image.util.ImageValidationUtil;
 
 import io.awspring.cloud.s3.ObjectMetadata;
 import io.awspring.cloud.s3.S3Template;

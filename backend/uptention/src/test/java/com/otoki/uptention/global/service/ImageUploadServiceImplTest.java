@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.otoki.uptention.global.config.AwsS3Properties;
 import com.otoki.uptention.global.exception.CustomException;
+import com.otoki.uptention.infra.image.service.ImageUploadServiceImpl;
 
 import io.awspring.cloud.s3.S3Template;
 

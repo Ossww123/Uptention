@@ -1,4 +1,4 @@
-package com.otoki.uptention.global.util;
+package com.otoki.uptention.infra.image.util;
 
 import java.io.IOException;
 import java.io.InputStream;

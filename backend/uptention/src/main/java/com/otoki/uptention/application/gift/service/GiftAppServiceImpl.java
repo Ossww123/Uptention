@@ -14,7 +14,7 @@ import com.otoki.uptention.domain.order.dto.GiftItemDto;
 import com.otoki.uptention.domain.order.enums.GiftStatus;
 import com.otoki.uptention.domain.order.service.GiftService;
 import com.otoki.uptention.domain.user.entity.User;
-import com.otoki.uptention.global.service.ImageUploadService;
+import com.otoki.uptention.infra.image.service.ImageUploadService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -91,8 +91,8 @@ public class GiftAppServiceImpl implements GiftAppService {
 		return resultItems.stream()
 			.map(item -> {
 				// 이미지 URL 변환
-				String fullImageUrl = item.getImageUrl() != null ?
-					imageUploadService.getImageUrl(item.getImageUrl()) : null;
+				String fullImageUrl = item.getImageUrl() != null
+					? imageUploadService.getImageUrl(item.getImageUrl()) : null;
 
 				return GiftItemResponseDto.builder()
 					.giftId(item.getGiftId())

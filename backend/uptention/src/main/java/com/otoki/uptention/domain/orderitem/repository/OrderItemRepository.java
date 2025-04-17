@@ -17,11 +17,11 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
 	Optional<OrderItem> findByIdAndOrderId(@Param("orderItemId") Integer orderItemId,
 		@Param("orderId") Integer orderId);
 
-	@Query("SELECT oi FROM OrderItem oi " +
-		"JOIN FETCH oi.item " +
-		"JOIN FETCH oi.order " +
-		"WHERE oi.order.id IN :orderIds " +
-		"ORDER BY oi.order.createdAt DESC, oi.order.id DESC")
+	@Query("SELECT oi FROM OrderItem oi "
+		+ "JOIN FETCH oi.item "
+		+ "JOIN FETCH oi.order "
+		+ "WHERE oi.order.id IN :orderIds "
+		+ "ORDER BY oi.order.createdAt DESC, oi.order.id DESC")
 	List<OrderItem> findAllByOrderIdInWithItemJoin(@Param("orderIds") List<Integer> orderIds);
 
 	List<OrderItem> findByOrderId(Integer orderId);

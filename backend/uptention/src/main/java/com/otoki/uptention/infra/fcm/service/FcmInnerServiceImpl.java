@@ -1,4 +1,4 @@
-package com.otoki.uptention.global.service;
+package com.otoki.uptention.infra.fcm.service;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;

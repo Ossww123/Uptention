@@ -1,9 +1,9 @@
-package com.otoki.uptention.domain.inventory.service;
+package com.otoki.uptention.domain.item.service;
 
 import java.util.List;
 import java.util.Map;
 
-import com.otoki.uptention.domain.inventory.dto.InventoryDto;
+import com.otoki.uptention.domain.item.dto.InventoryDto;
 
 /**
  * 재고 관리 서비스 인터페이스

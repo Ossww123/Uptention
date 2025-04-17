@@ -20,8 +20,8 @@ import com.otoki.uptention.application.order.dto.request.OrderRequestDto;
 import com.otoki.uptention.application.order.dto.response.InitiateOrderResponseDto;
 import com.otoki.uptention.application.order.service.OrderAppService;
 import com.otoki.uptention.auth.service.SecurityService;
-import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.item.entity.Item;
+import com.otoki.uptention.domain.item.service.InventoryService;
 import com.otoki.uptention.domain.item.service.ItemService;
 import com.otoki.uptention.domain.order.entity.Gift;
 import com.otoki.uptention.domain.order.entity.Order;
@@ -101,10 +101,10 @@ public class OrderAppServiceTest extends ServiceTestSupport {
 		expectedItemQuantities.put(2, 1);
 		expectedItemQuantities.put(3, 3);
 		when(inventoryService.reserveInventories(argThat(map ->
-			map.size() == 3 &&
-				map.get(1) == 2 &&
-				map.get(2) == 1 &&
-				map.get(3) == 3
+			map.size() == 3
+				&& map.get(1) == 2
+				&& map.get(2) == 1
+				&& map.get(3) == 3
 		))).thenReturn(true);
 
 		// OrderItem 생성 시 반환값 설정
@@ -122,10 +122,10 @@ public class OrderAppServiceTest extends ServiceTestSupport {
 
 		// 변경: 일괄 재고 예약 호출 확인
 		verify(inventoryService, times(1)).reserveInventories(argThat(map ->
-			map.size() == 3 &&
-				map.get(1) == 2 &&
-				map.get(2) == 1 &&
-				map.get(3) == 3
+			map.size() == 3
+				&& map.get(1) == 2
+				&& map.get(2) == 1
+				&& map.get(3) == 3
 		));
 
 		verify(orderService, times(1)).saveOrder(any(Order.class));

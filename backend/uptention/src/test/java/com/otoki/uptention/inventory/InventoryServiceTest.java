@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.DisplayName;
@@ -19,10 +20,10 @@ import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
-import com.otoki.uptention.domain.inventory.dto.InventoryDto;
-import com.otoki.uptention.domain.inventory.service.InventoryServiceImpl;
+import com.otoki.uptention.domain.item.dto.InventoryDto;
 import com.otoki.uptention.domain.item.entity.Item;
-import com.otoki.uptention.domain.item.service.ItemService;
+import com.otoki.uptention.domain.item.repository.ItemRepository;
+import com.otoki.uptention.domain.item.service.InventoryServiceImpl;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 
@@ -42,7 +43,7 @@ public class InventoryServiceTest {
 	private RLock lock;
 
 	@Mock
-	private ItemService itemService;
+	private ItemRepository itemRepository;
 
 	@InjectMocks
 	private InventoryServiceImpl inventoryService;
@@ -124,6 +125,7 @@ public class InventoryServiceTest {
 		Item item = Item.builder()
 			.id(itemId)
 			.quantity(20)
+			.status(true)
 			.build();
 
 		InventoryDto expectedDto = InventoryDto.builder()
@@ -136,7 +138,7 @@ public class InventoryServiceTest {
 		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 		// 첫 호출에서 null, 두 번째 호출에서 데이터 반환
 		when(valueOperations.get(key)).thenReturn(null).thenReturn(expectedDto);
-		when(itemService.getItemById(itemId)).thenReturn(item);
+		when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
 
 		// 초기화 시 set 메소드 호출을 모킹
 		doAnswer(invocation -> null).when(valueOperations).set(eq(key), any(InventoryDto.class));
@@ -150,7 +152,7 @@ public class InventoryServiceTest {
 		assertThat(result.getQuantity()).isEqualTo(20);
 
 		// DB에서 초기화 시도 확인
-		verify(itemService, times(1)).getItemById(itemId);
+		verify(itemRepository, times(1)).findById(itemId);
 		// 초기화 시 값을 설정하는 부분 확인
 		verify(valueOperations, times(1)).set(eq(key), any(InventoryDto.class));
 		// 두 번 호출 (초기 조회 + 초기화 후 재조회)
@@ -166,7 +168,7 @@ public class InventoryServiceTest {
 
 		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 		when(valueOperations.get(key)).thenReturn(null);
-		when(itemService.getItemById(itemId)).thenThrow(new CustomException(ErrorCode.ITEM_NOT_FOUND));
+		when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
 
 		// when & then
 		assertThatThrownBy(() -> inventoryService.getInventory(itemId))
@@ -175,7 +177,34 @@ public class InventoryServiceTest {
 
 		verify(redisTemplate, times(1)).opsForValue();
 		verify(valueOperations, times(1)).get(key);
-		verify(itemService, times(1)).getItemById(itemId);
+		verify(itemRepository, times(1)).findById(itemId);
+	}
+
+	@Test
+	@DisplayName("비활성화된 상품인 경우 예외가 발생한다")
+	void getInventory_ItemUnavailable() {
+		// given
+		Integer itemId = 999;
+		String key = "inventory:999";
+
+		Item item = Item.builder()
+			.id(itemId)
+			.quantity(20)
+			.status(false) // 비활성화된 상품
+			.build();
+
+		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+		when(valueOperations.get(key)).thenReturn(null);
+		when(itemRepository.findById(itemId)).thenReturn(Optional.of(item));
+
+		// when & then
+		assertThatThrownBy(() -> inventoryService.getInventory(itemId))
+			.isInstanceOf(CustomException.class)
+			.hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVENTORY_SYNC_FAILED);
+
+		verify(redisTemplate, times(1)).opsForValue();
+		verify(valueOperations, times(1)).get(key);
+		verify(itemRepository, times(1)).findById(itemId);
 	}
 
 	@Test

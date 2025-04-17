@@ -7,8 +7,8 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.otoki.uptention.domain.inventory.service.InventoryService;
 import com.otoki.uptention.domain.item.entity.Item;
+import com.otoki.uptention.domain.item.service.InventoryService;
 import com.otoki.uptention.domain.notification.entity.Notification;
 import com.otoki.uptention.domain.notification.service.NotificationService;
 import com.otoki.uptention.domain.order.entity.Gift;
@@ -20,7 +20,7 @@ import com.otoki.uptention.domain.orderitem.entity.OrderItem;
 import com.otoki.uptention.domain.orderitem.service.OrderItemService;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.global.exception.CustomException;
-import com.otoki.uptention.global.service.FcmSendService;
+import com.otoki.uptention.infra.fcm.service.FcmSendService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
