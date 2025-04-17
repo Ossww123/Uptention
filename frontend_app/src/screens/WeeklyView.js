@@ -273,18 +273,6 @@ const WeeklyView = forwardRef(
       });
     };
 
-    // 날짜를 'yyyy-MM-ddThh:mm:ss' 형식으로 변환
-    const formatDateForApi = (date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      const hours = String(date.getHours()).padStart(2, "0");
-      const minutes = String(date.getMinutes()).padStart(2, "0");
-      const seconds = String(date.getSeconds()).padStart(2, "0");
-
-      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-    };
-
     // 날짜가 주어진 범위 내에 있는지 확인하는 함수
     const isDateInRange = (date, startDate, endDate) => {
       const targetDate = new Date(date);
@@ -300,7 +288,6 @@ const WeeklyView = forwardRef(
     };
 
     // 주간 데이터 가져오기
-    // WeeklyView.js의 fetchWeeklyData 함수 수정
     const fetchWeeklyData = async (
       weekIndex = currentWeekIndex,
       dateRange = null
@@ -309,7 +296,7 @@ const WeeklyView = forwardRef(
         if (weekIndex === currentWeekIndex) {
           setTransitionLoading(true);
         }
-
+    
         // dateRange가 제공되지 않으면 현재 설정된 범위 사용
         const startDate = dateRange
           ? dateRange.startDate
@@ -317,55 +304,55 @@ const WeeklyView = forwardRef(
         const endDate = dateRange ? dateRange.endDate : currentWeek.endDate;
         const startText = dateRange ? dateRange.start : currentWeek.start;
         const endText = dateRange ? dateRange.end : currentWeek.end;
-
-        // API에 전달할 시작/종료 날짜 포맷팅
-        const startTime = formatDateForApi(startDate);
-        const endTime = formatDateForApi(endDate);
-
-        // API 호출
+    
+        // 타임존 정보를 포함한 ISO 문자열로 변환 (ZonedDateTime 형식으로 전송)
+        const startTime = startDate.toISOString();
+        const endTime = endDate.toISOString();
+    
+        // API 호출 - 수정된 엔드포인트와 파라미터 적용
         const response = await get(
-          `/users/${userId}/mining-times?startTime=${startTime}&endTime=${endTime}`
+          `/users/${userId}/mining-time?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`
         );
-
+    
         let miningDataArray = [];
         let totalTimeObject = { hours: 0, minutes: 0, totalMinutes: 0 };
         let randomComparisonValue = 0;
         let currentWeekAppUsage = {};
         let prevWeekAppUsage = {};
-
+    
         if (response.ok) {
           const apiData = response.data;
-
+    
           // 이 주의 각 날짜에 대한 데이터 매핑
           miningDataArray = [];
           const days = ["일", "월", "화", "수", "목", "금", "토"];
-
+    
           let totalMinutes = 0;
-
+    
           // 시작일부터 종료일까지 데이터 생성 (7일)
           for (let i = 0; i < 7; i++) {
             const date = new Date(startDate);
             date.setDate(startDate.getDate() + i);
-
+    
             const day = date.getDate();
             const month = date.getMonth() + 1;
             const dayOfWeek = days[date.getDay()];
             const formattedDate = date.toISOString().split("T")[0]; // YYYY-MM-DD 형식
-
+    
             // API 응답에서 해당 날짜의 데이터 찾기
             const dayData = apiData.find((item) => item.date === formattedDate);
             const value = dayData ? Math.min(dayData.totalTime, 480) : 0;
-
+    
             // 총 시간 누적
             totalMinutes += value;
-
+    
             // 오늘 날짜인지 확인
             const today = new Date();
             const isToday =
               date.getDate() === today.getDate() &&
               date.getMonth() === today.getMonth() &&
               date.getFullYear() === today.getFullYear();
-
+    
             miningDataArray.push({
               id: `${month}-${day}`,
               day: day.toString(),
@@ -380,7 +367,7 @@ const WeeklyView = forwardRef(
               },
             });
           }
-
+    
           // 주간 총 채굴 시간 계산
           const hours = Math.floor(totalMinutes / 60);
           const minutes = totalMinutes % 60;
@@ -389,7 +376,7 @@ const WeeklyView = forwardRef(
             minutes: minutes,
             totalMinutes: totalMinutes,
           };
-
+    
           // 임의의 전주 대비 증감값 설정
           randomComparisonValue = Math.floor(Math.random() * 600) - 300;
         } else {
