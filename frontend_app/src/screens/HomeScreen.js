@@ -17,13 +17,15 @@ import Svg, { Circle } from "react-native-svg";
 import { NativeModules } from "react-native";
 import { useWallet } from "../contexts/WalletContext";
 import { useAuth } from "../contexts/AuthContext";
-import axios from "axios";
-import { API_BASE_URL } from "../config/config";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getToken } from "../services/AuthService";
 import messaging from "@react-native-firebase/messaging";
 import { useFocusEffect } from "@react-navigation/native";
 import { get } from "../services/api";
+import { getUserInfo, getUserPoint, getDailyFocusTime } from '../api/user';
+import { startFocusMode } from '../api/focus';
+import { getUnreadNotificationCount } from '../api/notification';
 
 const { AppBlockerModule } = NativeModules;
 
@@ -65,13 +67,8 @@ const HomeScreen = ({ navigation }) => {
 
       // 알림 받은 후 최신 알림 개수 조회
       try {
-        const { data, ok } = await get("/notifications/count", {
-          params: { read: false },
-        });
-
-        if (ok) {
-          setUnreadNotifications(data.count);
-        }
+        const data = await getUnreadNotificationCount(authToken);
+        setUnreadNotifications(data.count);
       } catch (error) {
         console.error("알림 개수 조회 오류:", error);
         // API 호출 실패 시 기존 방식으로 알림 개수 증가
@@ -303,51 +300,82 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  // 사용자 정보 조회 함수
+  const fetchUserInfo = async () => {
+    if (!userId || !authToken) return null;
+    try {
+      const data = await getUserInfo(userId, authToken);
+      setUserInfo(data);
+      return data;
+    } catch (error) {
+      console.error("사용자 정보 조회 오류:", error);
+      return null;
+    }
+  };
+
+  // 사용자 포인트 조회 함수
+  const fetchUserPoint = async () => {
+    if (!userId || !authToken) return null;
+    try {
+      const data = await getUserPoint(userId, authToken);
+      setUserPoint(data.point);
+      return data;
+    } catch (error) {
+      console.error("포인트 조회 오류:", error);
+      return null;
+    }
+  };
+
+  // 오늘의 집중 시간 조회 함수
+  const fetchDailyFocusTime = async () => {
+    if (!userId || !authToken) return null;
+    try {
+      const data = await getDailyFocusTime(userId, authToken);
+      
+      if (data && Array.isArray(data)) {
+        let totalMinutes = 0;
+        data.forEach((session) => {
+          const sessionTime = parseInt(session.totalTime || 0);
+          if (!isNaN(sessionTime)) {
+            totalMinutes += sessionTime;
+          }
+        });
+        setDailyFocusTime(totalMinutes);
+      } else {
+        console.error("잘못된 응답 형식:", data);
+        setDailyFocusTime(0);
+      }
+      return data;
+    } catch (error) {
+      console.error("집중 시간 조회 오류:", error);
+      setDailyFocusTime(0);
+      return null;
+    }
+  };
+
   // 집중 모드 시작 함수
-  const startFocusMode = async () => {
+  const handleStartFocusMode = async () => {
     if (!userId || !authToken) {
       Alert.alert("오류", "사용자 정보를 불러올 수 없습니다.");
       return;
     }
 
     try {
-      // 집중 모드 시작 API 호출
-      const response = await axios.post(
-        `${API_BASE_URL}/api/mining-time/focus`,
-        {
-          latitude: 36.1071, // 위도 정보
-          longitude: 128.416, // 경도 정보
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json",
-          },
+      const response = await startFocusMode(authToken, 36.1071, 128.416);
+      console.log("집중 모드 시작 API 호출 성공");
+
+      if (Platform.OS === "android") {
+        try {
+          await AppBlockerModule.setAppBlockingEnabled(true);
+          console.log("앱 차단 기능 활성화 성공");
+        } catch (error) {
+          console.error("앱 차단 기능 활성화 실패:", error);
         }
-      );
-
-      if (response.status === 200) {
-        console.log("집중 모드 시작 API 호출 성공");
-
-        if (Platform.OS === "android") {
-          try {
-            await AppBlockerModule.setAppBlockingEnabled(true);
-            console.log("앱 차단 기능 활성화 성공");
-          } catch (error) {
-            console.error("앱 차단 기능 활성화 실패:", error);
-          }
-        }
-
-        navigation.navigate("FocusMode");
       }
+
+      navigation.navigate("FocusMode");
     } catch (error) {
-      console.error("집중 모드 시작 API 호출 실패:", error);
-      console.error("에러 상세 정보:", {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
-      });
+      console.error("집중 모드 시작 실패:", error);
       Alert.alert(
         "오류 발생",
         "집중 모드를 시작할 수 없습니다. 다시 시도해주세요.",
@@ -424,119 +452,6 @@ const HomeScreen = ({ navigation }) => {
         "권한 설정 화면을 열 수 없습니다. 설정 앱에서 직접 권한을 설정해주세요.",
         [{ text: "확인" }]
       );
-    }
-  };
-
-  // 사용자 정보 조회 함수
-  const fetchUserInfo = async () => {
-    if (!userId || !authToken) return null;
-
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
-
-      setUserInfo(response.data);
-      return response.data;
-    } catch (error) {
-      console.error("사용자 정보 조회 오류:", error);
-      return null;
-    }
-  };
-
-  // 사용자 포인트 조회 함수
-  const fetchUserPoint = async () => {
-    if (!userId || !authToken) return null;
-
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/users/${userId}/point`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
-      setUserPoint(response.data.point);
-      return response.data;
-    } catch (error) {
-      console.error("포인트 조회 오류:", error);
-      return null;
-    }
-  };
-
-  // 오늘의 집중 시간 조회 함수
-  const fetchDailyFocusTime = async () => {
-    if (!userId || !authToken) return null;
-
-    try {
-      // 현재 시간을 KST로 변환
-      const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-      const kstNow = new Date(utc + 9 * 60 * 60 * 1000);
-
-      const year = kstNow.getFullYear();
-      const month = String(kstNow.getMonth() + 1).padStart(2, "0");
-      const day = String(kstNow.getDate()).padStart(2, "0");
-
-      // ISO 형식의 시작 시간과 종료 시간 생성 (KST)
-      const startTime = `${year}-${month}-${day}T00:00:00`;
-      const endTime = `${year}-${month}-${day}T23:59:59`;
-
-      console.log("API 요청 파라미터:", {
-        startTime,
-        endTime,
-        userId,
-        현재_KST: kstNow.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }),
-      });
-
-      const response = await axios.get(
-        `${API_BASE_URL}/api/users/${userId}/mining-times`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-          params: {
-            startTime,
-            endTime,
-          },
-        }
-      );
-
-      console.log("API 응답 데이터:", response.data);
-
-      if (response.data && Array.isArray(response.data)) {
-        let totalMinutes = 0;
-
-        response.data.forEach((session) => {
-          console.log("세션 데이터:", session);
-          const sessionTime = parseInt(session.totalTime || 0);
-          if (!isNaN(sessionTime)) {
-            totalMinutes += sessionTime;
-          }
-        });
-
-        console.log("계산된 총 집중 시간:", totalMinutes, "분");
-        setDailyFocusTime(totalMinutes);
-      } else {
-        console.error("잘못된 응답 형식:", response.data);
-        setDailyFocusTime(0);
-      }
-
-      return response.data;
-    } catch (error) {
-      console.error("집중 시간 조회 오류:", error);
-      if (error.response) {
-        console.error("에러 상세 정보:", {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers,
-        });
-      }
-      setDailyFocusTime(0);
-      return null;
     }
   };
 
@@ -711,7 +626,7 @@ const HomeScreen = ({ navigation }) => {
             <TouchableOpacity
               style={styles.workModeStartButton}
               activeOpacity={0.8}
-              onPress={startFocusMode}
+              onPress={handleStartFocusMode}
             >
               <Text style={styles.buttonText}>집중하기</Text>
             </TouchableOpacity>

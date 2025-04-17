@@ -12,8 +12,7 @@ import {
   ActivityIndicator,
   PanResponder
 } from 'react-native';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/config';
+import { getOrderDetail } from '../api/order';
 import { useAuth } from '../contexts/AuthContext';
 
 const { height } = Dimensions.get('window');
@@ -68,16 +67,7 @@ const OrderDetailBottomSheet = ({ visible, onClose, orderId, orderItemId, type }
         requestId: currentRequestId
       };
       
-      const response = await axios.get(
-        `${API_BASE_URL}/api/orders/${orderId}/order-items/${orderItemId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        }
-      );
+      const response = await getOrderDetail(authToken, orderId);
 
       if (loadingRef.current.requestId === currentRequestId) {
         const enrichedData = {

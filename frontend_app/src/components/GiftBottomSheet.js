@@ -13,11 +13,10 @@ import {
   FlatList
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { post, get } from '../services/api';
-import { API_BASE_URL } from '../config/config';
 import { useWallet } from '../contexts/WalletContext';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
+import { verifyOrder } from '../api/order';
+import { getUsers, createGiftOrder } from '../api/gift';
 
 const { height } = Dimensions.get('window');
 
@@ -56,20 +55,11 @@ const GiftBottomSheet = ({
 
       console.log('API 요청 파라미터:', params);
       
-      const response = await axios.get(
-        `${API_BASE_URL}/api/users`,
-        {
-          params,
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const response = await getUsers(authToken, params);
 
-      console.log('API 응답 데이터:', response.data);
+      console.log('API 응답 데이터:', response);
 
-      if (response.status === 200) {
+      if (response.ok) {
         const newUsers = response.data.users
           .filter(user => {
             console.log('필터링 중인 사용자:', user.userId, '현재 사용자:', userId);
@@ -153,22 +143,22 @@ const GiftBottomSheet = ({
       setLoading(true);
       
       // 1. 주문 검증 API 요청 데이터 준비
-      const orderVerifyData = [{
+      const orderItems = [{
         itemId: product.itemId,
         price: product.price,
         quantity: 1
       }];
       
       console.log('=== 선물하기 검증 시작 ===');
-      console.log('검증 요청 데이터:', JSON.stringify(orderVerifyData, null, 2));
+      console.log('검증 요청 데이터:', JSON.stringify(orderItems, null, 2));
       
       // 2. 주문 검증 API 호출
-      const { data: verifyData, ok, status } = await post("/orders/verify", orderVerifyData);
+      const verifyResponse = await verifyOrder(authToken, orderItems);
       
-      console.log('검증 응답:', JSON.stringify(verifyData, null, 2));
-      console.log('검증 상태:', ok ? '성공' : '실패');
+      console.log('검증 응답:', JSON.stringify(verifyResponse, null, 2));
+      console.log('검증 상태:', verifyResponse.ok ? '성공' : '실패');
       
-      if (ok) {
+      if (verifyResponse.ok) {
         console.log('=== 검증 성공: 선물하기 진행 ===');
         
         // 3. 선물하기 처리 로직
@@ -179,50 +169,43 @@ const GiftBottomSheet = ({
 
         console.log('선물하기 요청 데이터:', JSON.stringify(giftData, null, 2));
 
-        const response = await axios.post(
-          `${API_BASE_URL}/api/orders/gift`,
-          giftData,
-          {
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'Content-Type': 'application/json'
-            }
+        const response = await createGiftOrder(authToken, giftData);
+
+        console.log('선물하기 API 응답:', JSON.stringify(response, null, 2));
+
+        if (response.ok && response.data) {
+          const { orderId, paymentAmount } = response.data;
+
+          if (orderId && paymentAmount) {
+            console.log('=== 토큰 전송 시작 ===');
+            console.log('주문 번호:', orderId);
+            console.log('결제 금액:', paymentAmount);
+            
+            // 4. 토큰 전송
+            const memo = `ORDER_${orderId}`;
+            await sendSPLToken(
+              SHOP_WALLET_ADDRESS,
+              paymentAmount.toString(),
+              memo
+            );
+
+            console.log('=== 토큰 전송 완료 ===');
+
+            onClose();
+            navigation.navigate('OrderComplete', {
+              orderId: orderId,
+              paymentAmount: paymentAmount,
+              isGift: true,
+              recipientName: selectedUser.name
+            });
           }
-        );
-
-        console.log('선물하기 API 응답:', JSON.stringify(response.data, null, 2));
-
-        const { orderId, paymentAmount } = response.data;
-
-        if (orderId && paymentAmount) {
-          console.log('=== 토큰 전송 시작 ===');
-          console.log('주문 번호:', orderId);
-          console.log('결제 금액:', paymentAmount);
-          
-          // 4. 토큰 전송
-          const memo = `ORDER_${orderId}`;
-          await sendSPLToken(
-            SHOP_WALLET_ADDRESS,
-            paymentAmount.toString(),
-            memo
-          );
-
-          console.log('=== 토큰 전송 완료 ===');
-
-          onClose();
-          navigation.navigate('OrderComplete', {
-            orderId: orderId,
-            paymentAmount: paymentAmount,
-            isGift: true,
-            recipientName: selectedUser.name
-          });
         }
       } else {
         // 검증 실패 처리
         let errorMessage = "상품 검증 중 오류가 발생했습니다.";
         
-        if (verifyData?.code) {
-          switch (verifyData.code) {
+        if (verifyResponse.data?.code) {
+          switch (verifyResponse.data.code) {
             case 'X002':
               errorMessage = "검증할 상품 목록이 없습니다.";
               break;
@@ -239,12 +222,12 @@ const GiftBottomSheet = ({
               errorMessage = "삭제된 상품입니다.";
               break;
             default:
-              errorMessage = verifyData.message || "상품 검증 중 오류가 발생했습니다.";
+              errorMessage = verifyResponse.data.message || "상품 검증 중 오류가 발생했습니다.";
           }
         }
         
         console.log('=== 검증 실패 ===');
-        console.log('실패 코드:', verifyData?.code);
+        console.log('실패 코드:', verifyResponse.data?.code);
         console.log('실패 사유:', errorMessage);
         
         Alert.alert("주문 확인", errorMessage, [

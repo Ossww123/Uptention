@@ -10,10 +10,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import axios from 'axios';
-import { API_BASE_URL } from '../config/config';
 import { useAuth } from '../contexts/AuthContext';
 import OrderDetailBottomSheet from '../components/OrderDetailBottomSheet';
+import { getOrders } from '../api/order';
 
 const OrderHistoryScreen = () => {
   const [activeTab, setActiveTab] = useState('PURCHASE');
@@ -145,16 +144,7 @@ const OrderHistoryScreen = () => {
         setOrders([]); // 탭 변경 시 즉시 목록 초기화
       }
 
-      const response = await axios.get(`${API_BASE_URL}/api/orders`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        },
-        params: {
-          cursor: newCursor,
-          size: 10,
-          type: requestedTab
-        }
-      });
+      const response = await getOrders(authToken, newCursor, 10, requestedTab);
 
       // API 호출이 완료됐을 때 현재 진행 중인 호출 ID와 일치하는지 확인
       if (currentApiCallIdRef.current !== callId || requestedTab !== activeTab) {
@@ -167,9 +157,9 @@ const OrderHistoryScreen = () => {
         return;
       }
 
-      console.log('주문 내역 응답:', response.data);
+      console.log('주문 내역 응답:', response);
 
-      const { orderItems, hasNextPage: nextPage, nextCursor } = response.data;
+      const { orderItems, hasNextPage: nextPage, nextCursor } = response;
       
       if (refresh) {
         setOrders(orderItems);
