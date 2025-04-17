@@ -1,0 +1,303 @@
+/* src/pages/Users/UserCreatePage.css */
+.user-create {
+  padding: 20px;
+  background-color: #f1f1f1;
+  /* min-height: 100vh; */
+}
+
+.content-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.sub-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.form-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.form-table tr {
+  border-bottom: 1px solid #eee;
+}
+
+.label-cell {
+  width: 15%;
+  min-width: 120px;
+  padding: 15px;
+  vertical-align: top;
+  background-color: #EDF2F5;
+  font-weight: 500;
+}
+
+.input-cell {
+  width: 85%;
+  padding: 15px;
+  vertical-align: top;
+}
+
+/* 새로운 입력 래퍼 컨테이너 */
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative; /* 상대 위치 설정 */
+  min-height: 70px; /* 높이를 충분히 설정하여 오류 메시지 공간 확보 */
+}
+
+/* 비밀번호 필드의 input-wrapper에 대한 특별 스타일 */
+input[name="password"] ~ .password-hint,
+input[name="password"] ~ .error-hint {
+  margin-top: 5px;
+}
+
+/* 비밀번호 힌트와 에러 메시지를 포함할 컨테이너 */
+.password-message-container {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: #FF8C00;
+  outline: none;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.required {
+  color: #e74c3c;
+  margin-left: 3px;
+}
+
+/* 폼 액션 버튼 */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-actions.outside-card {
+  margin-top: 0;
+  padding: 0 5px;
+}
+
+.user-cancel-button {
+  padding: 10px 20px;
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #666;
+  border-radius: 4px; 
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+.user-cancel-button:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+  color: #555;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-submit-button {
+  padding: 10px 25px;
+  background-color: #FF8C00;
+  border: none;
+  border-radius: 4px; 
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(255, 140, 0, 0.3);
+  min-width: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+.user-submit-button:hover {
+  background-color: #e67e00;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 140, 0, 0.4);
+}
+
+/* 아이디 중복확인 스타일 */
+.id-check-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.id-check-button {
+  padding: 10px 15px;
+  background-color: #FF8C00;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.id-check-button:hover {
+  background-color: #e67e00;
+}
+
+.id-check-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* 오류/성공 메시지 공간 */
+.message-space {
+  min-height: 20px; /* 오류 메시지를 위한 최소 높이 */
+  margin-top: 5px; /* 입력 필드와의 간격 */
+}
+
+/* 오류 힌트 메시지 스타일 - 수정됨 */
+.error-hint {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: right;
+  display: block;
+  height: 20px; /* 고정 높이 설정 */
+  /* 절대 위치를 제거하고 상대적 위치로 변경 */
+  position: static;
+  width: 100%;
+}
+
+/* 비밀번호 필드에서 힌트와 에러 메시지를 한 줄에 표시하기 위한 특별 스타일 */
+input[name="password"] ~ .error-hint {
+  display: inline-block;
+  width: 30%; /* 에러 메시지가 차지할 너비 */
+  vertical-align: top;
+  margin-top: 5px;
+}
+
+/* 성공 힌트 메시지 스타일 - 수정됨 */
+.success-hint {
+  color: #2ecc71;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: right;
+  display: block;
+  height: 20px; /* 고정 높이 설정 */
+  /* 절대 위치를 제거하고 상대적 위치로 변경 */
+  position: static;
+  width: 100%;
+}
+
+/* 오류 상태의 입력 필드 스타일 */
+.form-input.has-error {
+  border-color: #e74c3c;
+  background-color: #fff5f5;
+}
+
+/* 비밀번호 힌트 스타일 */
+.password-hint {
+  color: #888;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: left;
+  display: inline-block;
+  width: 70%; /* 힌트 메시지가 차지할 너비 */
+}
+
+/* 반응형 레이아웃을 위한 미디어 쿼리 */
+@media (max-width: 768px) {
+  .id-check-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .label-cell {
+    width: 100%;
+    display: block;
+  }
+  
+  .input-cell {
+    width: 100%;
+    display: block;
+  }
+  
+  .form-table, .form-table tbody, .form-table tr {
+    display: block;
+  }
+  
+  .error-hint, .success-hint {
+    position: static; /* 모바일에서는 정적 위치로 변경 */
+    text-align: left;
+  }
+}
+
+/* 비밀번호 입력 필드와 토글 버튼을 위한 컨테이너 */
+.password-input-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.password-toggle-button {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.password-toggle-button:hover {
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+/* 토글 버튼이 있는 입력 필드의 패딩 조정 */
+.password-input-container .form-input {
+  padding-right: 60px; /* 토글 버튼을 위한 공간 확보 */
+}

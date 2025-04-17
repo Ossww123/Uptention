@@ -1,0 +1,77 @@
+pipeline {
+    agent any
+
+    environment {
+        // EC2 상의 Nginx가 서빙하는 정적 파일 경로 (docker run 시 마운트할 host 경로)
+        FRONTEND_BUILD_DIR = '/home/ubuntu/uptention/frontend/build'
+        // 정적 파일 업데이트용 Docker 이미지 이름
+        STATIC_UPDATE_IMAGE = 'static-update:latest'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                echo 'Cloning the repository from branch fe-web...'
+                git branch: 'fe-web',
+                    url: 'https://lab.ssafy.com/s12-blockchain-nft-sub1/S12P21D211.git',
+                    credentialsId: '0d048b2d-2bdf-4166-a809-76e195d64abb'
+            }
+        }
+        stage('Build Frontend') {
+            steps {
+                echo 'Installing dependencies and building the frontend with npm...'
+                nodejs(nodeJSInstallationName: 'NodeJS18') {
+                    dir('frontend_web') {
+                        sh 'npm --version'
+                        sh 'npm install'
+                        sh 'npm run build'
+                    }
+                }
+            }
+        }
+        stage('Build Static Update Image') {
+            steps {
+                echo 'Building Docker image for static file update...'
+                // build 폴더를 workspace 루트로 복사
+                sh 'cp -R frontend_web/build ./build'
+                // Dockerfile과 entrypoint.sh도 workspace 루트로 복사
+                sh 'cp frontend_web/Dockerfile .'
+                sh 'cp frontend_web/entrypoint.sh .'
+                // 현재 디렉터리(즉, workspace 루트)에 Dockerfile과 build 폴더가 있으므로, docker build가 성공함
+                sh "docker build -t ${STATIC_UPDATE_IMAGE} ."
+            }
+        }
+        stage('Update Static Files on EC2') {
+            steps {
+                echo 'Cleaning old static files from host volume...'
+                sh "rm -rf ${FRONTEND_BUILD_DIR}/*"
+                echo 'Updating static files to Nginx host volume...'
+                sh "docker run -v ${FRONTEND_BUILD_DIR}:/usr/share/nginx/html ${STATIC_UPDATE_IMAGE}"
+            }
+        }
+    }
+    post {
+        always {
+            echo 'Cleaning workspace...'
+            cleanWs()
+        }
+        success {
+            echo 'Frontend static files updated successfully!'
+            script {
+                def successMsg = ':tada: [FE] 빌드 성공: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + ' :tada:' + '\n(<' + env.BUILD_URL + '|Details>)'
+                mattermostSend(color: 'good',
+                    message: successMsg,
+                )
+            }
+        }
+        failure {
+            echo 'Deployment failed.'
+            script {
+                def failureMsg = ':x: [FE] 빌드 실패: ' + env.JOB_NAME + ' #' + env.BUILD_NUMBER + ' :x:' + '\n(<' + env.BUILD_URL + '|Details>)'
+                mattermostSend(color: 'danger',
+                    message: failureMsg,
+                )
+            }
+        }
+     }
+}

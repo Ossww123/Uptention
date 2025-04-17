@@ -1,0 +1,596 @@
+/* src/pages/Products/ProductCreatePage.css */
+.product-create {
+  padding: 20px;
+  background-color: #f1f1f1;
+  min-height: 100vh;
+}
+
+.content-card {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.sub-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.form-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+}
+
+.form-table tr {
+  border-bottom: 1px solid #eee;
+}
+
+.label-cell {
+  width: 15%;
+  min-width: 120px;
+  padding: 15px;
+  vertical-align: top;
+  background-color: #EDF2F5;
+  font-weight: 500;
+}
+
+.input-cell {
+  width: 85%;
+  padding: 15px;
+  position: relative;
+}
+
+/* 여기서 인풋 래퍼의 높이를 조정 (상품 수정 페이지와 일치시키기) */
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  min-height: auto; /* 기존 70px에서 auto로 변경 */
+}
+
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: #FF8C00;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.required {
+  color: #e74c3c;
+  margin-left: 3px;
+}
+
+/* 기존 에러 메시지 스타일 (상품 수정 페이지와 동일하게) */
+.error-message {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+/* 에러 힌트 메시지 스타일 조정 */
+.error-hint {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: right;
+  display: block;
+  height: auto; /* 고정 높이 20px에서 auto로 변경 */
+  position: static;
+  width: 100%;
+}
+
+/* 성공 힌트 메시지 스타일 조정 */
+.success-hint {
+  color: #2ecc71;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: right;
+  display: block;
+  height: auto; /* 고정 높이 20px에서 auto로 변경 */
+  position: static;
+  width: 100%;
+}
+
+/* 오류 상태의 입력 필드 스타일 */
+.form-input.has-error, .form-select.has-error, .form-textarea.has-error {
+  border-color: #e74c3c;
+  background-color: #fff5f5;
+}
+
+.form-error-message {
+  background-color: #fdeaea;
+  color: #e74c3c;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  border-left: 4px solid #e74c3c;
+}
+
+.form-error-message p {
+  margin: 5px 0;
+}
+
+.char-count {
+  color: #888;
+  font-size: 12px;
+  text-align: right;
+  margin-top: 5px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel-button {
+  padding: 10px 20px;
+  background-color: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background-color: #e5e5e5;
+}
+
+.cancel-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submit-button {
+  padding: 10px 20px;
+  background-color: #FF8C00;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #e67e00;
+}
+
+.submit-button:disabled {
+  background-color: #ffbb7a;
+  cursor: not-allowed;
+}
+
+.price-cell {
+  display: flex;
+  align-items: center;
+}
+
+.price-input {
+  width: 120px;
+  margin-right: 10px;
+}
+
+.price-input-container + .error-hint {
+  text-align: left;
+}
+
+.price-currency {
+  color: #666;
+  font-weight: 500;
+}
+
+.price-error {
+  text-align: left !important; /* 가격 필드의 에러만 왼쪽 정렬 */
+}
+
+/* 이미지 업로드 관련 스타일 */
+.image-upload-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.image-upload-box {
+  width: 110px;
+  height: 110px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background-color: #f8f8f8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.image-upload-box:hover {
+  border-color: #FF8C00;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sub-images-container {
+  display: flex;
+  gap: 15px;
+}
+
+.image-upload-btn {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 10px;
+}
+
+.upload-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.upload-text span {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+.upload-text small {
+  font-size: 10px;
+  color: #999;
+}
+
+.camera-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-preview-container {
+  margin-top: 15px;
+}
+
+.preview-image {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.image-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 원본 이미지 컨테이너 스타일 */
+.original-image-container {
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.original-image-wrapper {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+  max-height: 300px; /* 모달 내에서 너무 크지 않도록 제한 */
+}
+
+.original-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.preview-label {
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  z-index: 2;
+}
+
+.info-image-btn {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1;
+  z-index: 2;
+}
+
+.remove-image-btn:hover, .info-image-btn:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.image-upload-text {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #999;
+}
+
+.image-note {
+  padding-top: 0 !important;
+}
+
+.image-note ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.image-note li {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+/* 이미지 정보 모달 */
+.preview-details-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.preview-details-content {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.preview-details-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: #333;
+  text-align: center;
+}
+
+.details-section {
+  margin-bottom: 20px;
+}
+
+.details-section h4 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+  color: #FF8C00;
+}
+
+.details-section h5 {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 5px;
+  margin-top: 15px;
+}
+
+.image-details {
+  background-color: #f8f8f8;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  border-left: 3px solid #FF8C00;
+}
+
+.image-details p {
+  font-size: 13px;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.crop-visualization {
+  width: 100%;
+  height: 150px;
+  background-color: #e0e0e0;
+  position: relative;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.crop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3); /* 크롭되지 않는 영역을 어둡게 */
+}
+
+.crop-area {
+  position: absolute;
+  border: 2px dashed #FF8C00;
+  background-color: transparent;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3); /* 크롭 영역 외부를 어둡게 */
+}
+
+/* 크롭된 이미지 미리보기 스타일 */
+.cropped-preview-container {
+  margin-top: 15px;
+}
+
+.cropped-preview {
+  width: 120px;
+  height: 120px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.cropped-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.close-modal-btn {
+  background-color: #FF8C00;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.close-modal-btn:hover {
+  background-color: #e67e00;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .label-cell, .input-cell {
+    display: block;
+    width: 100%;
+  }
+  
+  .label-cell {
+    padding: 10px 15px;
+  }
+  
+  .input-cell {
+    padding: 10px 15px 15px;
+  }
+  
+  .sub-images-container {
+    flex-wrap: wrap;
+  }
+  
+  .image-upload-box {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .error-hint, .success-hint {
+    position: static; /* 모바일에서는 정적 위치로 변경 */
+    text-align: left;
+  }
+}

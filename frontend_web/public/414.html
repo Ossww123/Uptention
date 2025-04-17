@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>요청 URL이 너무 깁니다.</title>
+  <style>
+    /* React의 NotFoundPage.css와 동일한 스타일 */
+    .not-found-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f1f1f1;
+      padding: 20px;
+    }
+    .not-found-content {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      text-align: center;
+      max-width: 600px;
+      width: 100%;
+    }
+    .not-found-code {
+      font-size: 120px;
+      font-weight: bold;
+      color: #FF8C00;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+    .not-found-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .not-found-message {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .not-found-hint {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 30px;
+    }
+    .return-button {
+      padding: 12px 25px;
+      background-color: #FF8C00;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(255, 140, 0, 0.3);
+      min-width: 120px;
+      display: inline-block;
+      transition: all 0.2s;
+    }
+    .return-button:hover {
+      background-color: #e67e00;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(255, 140, 0, 0.4);
+    }
+    @media (max-width: 768px) {
+      .not-found-code {
+        font-size: 80px;
+      }
+      .not-found-title {
+        font-size: 20px;
+      }
+      .not-found-content {
+        padding: 30px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="not-found-container">
+    <div class="not-found-content">
+      <div class="not-found-code">414</div>
+      <h1 class="not-found-title">요청 URL이 너무 깁니다.</h1>
+      <p class="not-found-message">
+        입력하신 URL이 서버에서 허용하는 길이를 초과했습니다.
+      </p>
+      <p class="not-found-hint">
+        URL을 다시 확인하시거나 홈으로 돌아가주세요.
+      </p>
+      <button class="return-button" onclick="window.history.back();">
+        돌아가기
+      </button>
+    </div>
+  </div>
+</body>
+</html>
