@@ -1,6 +1,5 @@
 package com.otoki.uptention.infra.solana.service;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -15,16 +14,20 @@ import org.springframework.web.client.RestTemplate;
 
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
+import com.otoki.uptention.infra.solana.dto.Attribute;
+import com.otoki.uptention.infra.solana.dto.NftCreateRequest;
+import com.otoki.uptention.infra.solana.dto.NftTransferRequest;
+import com.otoki.uptention.infra.solana.dto.TokenTransferRequest;
 
 @Service
-public class ExpressApiService {
+public class SolanaExpressApiServiceImpl implements SolanaExpressApiService {
 
-	private static final Logger log = LoggerFactory.getLogger(ExpressApiService.class);
+	private static final Logger log = LoggerFactory.getLogger(SolanaExpressApiServiceImpl.class);
 	private final RestTemplate restTemplate;
 	private static final String expressBaseUrl = "https://j12d211.p.ssafy.io/sol";
 
 	// 생성자 주입 (RestTemplate)
-	public ExpressApiService(RestTemplate restTemplate) {
+	public SolanaExpressApiServiceImpl(RestTemplate restTemplate) {
 		this.restTemplate = restTemplate;
 	}
 
@@ -39,7 +42,11 @@ public class ExpressApiService {
 		String url = expressBaseUrl + "/api/tokens/transfer";
 		log.info("토큰 전송 API 호출 시작 (RestTemplate): {}", url);
 
-		TokenTransferRequest requestDto = new TokenTransferRequest(recipientAddress, amount);
+		TokenTransferRequest requestDto = TokenTransferRequest.builder()
+			.recipientAddress(recipientAddress)
+			.amount(amount)
+			.build();
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON); // 헤더 설정
 		HttpEntity<TokenTransferRequest> entity = new HttpEntity<>(requestDto, headers); // 요청 엔티티 생성
@@ -95,7 +102,11 @@ public class ExpressApiService {
 		String url = expressBaseUrl + "/api/nfts/transfer";
 		log.info("NFT 전송 API 호출 시작 (RestTemplate): {}", url);
 
-		NftTransferRequest requestDto = new NftTransferRequest(recipientAddress, nftMintAddress);
+		NftTransferRequest requestDto = NftTransferRequest.builder()
+			.recipientAddress(recipientAddress)
+			.nftMintAddress(nftMintAddress)
+			.build();
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		HttpEntity<NftTransferRequest> entity = new HttpEntity<>(requestDto, headers);
@@ -111,48 +122,4 @@ public class ExpressApiService {
 		}
 	}
 
-	private static class TokenTransferRequest {
-		public String recipientAddress;
-		public String amount;
-		public TokenTransferRequest(String recipientAddress, String amount) {
-			this.recipientAddress = recipientAddress;
-			this.amount = amount;
-		}
-	}
-
-	private static class NftCreateRequest { // NftCreateWithUriRequest -> NftCreateRequest 로 이름 변경 (선택사항)
-		public String rank;
-		public String name;
-		public String description;
-		public List<Attribute> attributes;
-		public String symbol;
-
-		public NftCreateRequest(String rank, String name, String description, List<Attribute> attributes, String symbol) {
-			this.rank = rank;
-			this.name = name;
-			this.description = description;
-			this.attributes = (attributes != null) ? attributes : Collections.emptyList();
-			this.symbol = symbol;
-		}
-	}
-
-	private static class NftTransferRequest {
-		public String recipientAddress;
-		public String nftMintAddress;
-		public NftTransferRequest(String recipientAddress, String nftMintAddress) {
-			this.recipientAddress = recipientAddress;
-			this.nftMintAddress = nftMintAddress;
-		}
-	}
-
-	// Attribute 클래스 (Map<String, Object> 로 대체하거나 외부 DTO 사용 가능)
-	public static class Attribute {
-		public String trait_type;
-		public String value;
-		// 생성자나 getter/setter는 필요에 따라 추가
-		public Attribute(String trait_type, String value) {
-			this.trait_type = trait_type;
-			this.value = value;
-		}
-	}
 }
