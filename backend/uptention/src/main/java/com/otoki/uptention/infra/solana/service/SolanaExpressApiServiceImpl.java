@@ -15,9 +15,9 @@ import org.springframework.web.client.RestTemplate;
 import com.otoki.uptention.global.exception.CustomException;
 import com.otoki.uptention.global.exception.ErrorCode;
 import com.otoki.uptention.infra.solana.dto.Attribute;
-import com.otoki.uptention.infra.solana.dto.NftCreateRequest;
-import com.otoki.uptention.infra.solana.dto.NftTransferRequest;
-import com.otoki.uptention.infra.solana.dto.TokenTransferRequest;
+import com.otoki.uptention.infra.solana.dto.request.NftCreateRequest;
+import com.otoki.uptention.infra.solana.dto.request.NftTransferRequest;
+import com.otoki.uptention.infra.solana.dto.request.TokenTransferRequest;
 
 @Service
 public class SolanaExpressApiServiceImpl implements SolanaExpressApiService {
