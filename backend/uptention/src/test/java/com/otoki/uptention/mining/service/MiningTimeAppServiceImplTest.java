@@ -22,7 +22,7 @@ import com.otoki.uptention.domain.mining.entity.MiningTime;
 import com.otoki.uptention.domain.mining.service.MiningTimeService;
 import com.otoki.uptention.domain.user.entity.User;
 import com.otoki.uptention.domain.user.service.UserService;
-import com.otoki.uptention.infra.solana.service.ExpressApiService;
+import com.otoki.uptention.infra.solana.service.SolanaExpressApiServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class MiningTimeAppServiceImplTest {
@@ -34,7 +34,7 @@ class MiningTimeAppServiceImplTest {
 	private UserService userService;
 
 	@Mock
-	private ExpressApiService expressApiService;
+	private SolanaExpressApiServiceImpl solanaExpressApiServiceImpl;
 
 	@Mock
 	private ObjectMapper objectMapper;

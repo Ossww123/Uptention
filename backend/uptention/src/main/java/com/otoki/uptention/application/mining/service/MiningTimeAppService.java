@@ -1,6 +1,6 @@
 package com.otoki.uptention.application.mining.service;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +18,7 @@ public interface MiningTimeAppService {
 
 	void executeWeeklyNftProcesses();
 
-	List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, LocalDateTime startTime, LocalDateTime endTime);
+	List<MiningTimeResponseDto> findAllMiningTimes(Integer userId, ZonedDateTime startTime, ZonedDateTime endTime);
 
-	Map<String, List<MiningTimeRankResponseDto>> findMiningRank(Integer top);
+	Map<String, List<MiningTimeRankResponseDto>> findMiningRank(Integer top, ZonedDateTime zoneTime);
 }

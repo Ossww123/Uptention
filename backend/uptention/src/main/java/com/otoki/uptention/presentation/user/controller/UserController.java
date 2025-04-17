@@ -1,6 +1,6 @@
 package com.otoki.uptention.presentation.user.controller;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -85,8 +85,8 @@ public class UserController implements UserApiDoc {
 	@GetMapping("/{userId}/mining-times")
 	public ResponseEntity<List<MiningTimeResponseDto>> getMiningTimes(
 		@PathVariable Integer userId,
-		@RequestParam LocalDateTime startTime,
-		@RequestParam LocalDateTime endTime) {
+		@RequestParam ZonedDateTime startTime,
+		@RequestParam ZonedDateTime endTime) {
 		return ResponseEntity.ok(miningTimeAppService.findAllMiningTimes(userId, startTime, endTime));
 	}
 

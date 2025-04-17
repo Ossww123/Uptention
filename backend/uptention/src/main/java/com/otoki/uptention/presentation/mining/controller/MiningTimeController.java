@@ -1,5 +1,6 @@
 package com.otoki.uptention.presentation.mining.controller;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +40,9 @@ public class MiningTimeController implements MiningApiDoc {
 	}
 
 	@GetMapping()
-	public ResponseEntity<Map<String, List<MiningTimeRankResponseDto>>> getMiningTimes(@RequestParam Integer top) {
-		return ResponseEntity.ok(miningTimeAppService.findMiningRank(top));
+	public ResponseEntity<Map<String, List<MiningTimeRankResponseDto>>> getMiningTimes(
+		@RequestParam Integer top,
+		@RequestParam ZonedDateTime zoneTime) {
+		return ResponseEntity.ok(miningTimeAppService.findMiningRank(top, zoneTime));
 	}
 }
