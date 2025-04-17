@@ -118,61 +118,59 @@ const DailyView = forwardRef(
         setLoading(true);
         setGraphReady(false); // 데이터 로딩 시작할 때 그래프 준비 상태 초기화
         dataLoadedRef.current = false;
-
+    
         // 날짜 범위 계산 (오늘 포함 지난 14일)
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(endDate.getDate() - 14);
-
-        // 날짜를 'yyyy-MM-ddThh:mm:ss' 형식으로 변환
-        const formatDate = (date) => {
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, "0");
-          const day = String(date.getDate()).padStart(2, "0");
-          const hours = String(date.getHours()).padStart(2, "0");
-          const minutes = String(date.getMinutes()).padStart(2, "0");
-          const seconds = String(date.getSeconds()).padStart(2, "0");
-
-          return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+    
+        // 타임존 정보를 포함한 ISO 문자열로 변환 (ZonedDateTime 형식으로 전송)
+        const formatDateWithZone = (date) => {
+          return date.toISOString(); // ISO 8601 형식으로 타임존 정보 포함됨
         };
-
+    
         // 형식화된 날짜 문자열로 변환
-        const startTime = formatDate(startDate);
-        const endTime = formatDate(endDate);
-
-        // API 호출
+        const startTime = formatDateWithZone(startDate);
+        const endTime = formatDateWithZone(endDate);
+    
+        // API 호출 - 수정된 엔드포인트와 파라미터
         const response = await get(
-          `/users/${userId}/mining-times?startTime=${startTime}&endTime=${endTime}`
+          `/users/${userId}/mining-time?startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`
         );
-
+    
         if (response.ok) {
           const apiData = response.data;
-
+    
           // 날짜 범위에 대한 전체 데이터 배열 생성 (데이터가 없는 날짜는 0으로 설정)
           const miningDataArray = [];
           const days = ["일", "월", "화", "수", "목", "금", "토"];
-
+    
           for (let i = 14; i >= 0; i--) {
             const date = new Date();
             date.setDate(endDate.getDate() - i);
-
+    
             const day = date.getDate();
             const month = date.getMonth() + 1;
             const dayOfWeek = days[date.getDay()];
             const formattedDate = date.toISOString().split("T")[0]; // YYYY-MM-DD 형식
-
+    
             const capMiningTime = (totalMinutes) => {
               return Math.min(totalMinutes, 480); // 8시간(480분) 제한
             };
-
+    
             // API 응답에서 해당 날짜의 데이터 찾기
-            const dayData = apiData.find((item) => item.date === formattedDate);
+            // 백엔드 응답 형식에 맞게 조회 방식 수정
+            const dayData = apiData.find((item) => {
+              // date 필드는 LocalDate 형식으로 "YYYY-MM-DD" 문자열일 것으로 예상
+              return item.date === formattedDate;
+            });
+            
             const totalTime = dayData ? capMiningTime(dayData.totalTime) : 0;
-
+    
             // 시간과 분 계산
             const hours = Math.floor(totalTime / 60);
             const minutes = totalTime % 60;
-
+    
             miningDataArray.push({
               id: `${month}-${day}`,
               day: day.toString(),
@@ -187,13 +185,13 @@ const DailyView = forwardRef(
               },
             });
           }
-
+    
           setMiningData(miningDataArray);
-
+    
           // 오늘 데이터를 기본 선택으로 설정
           const todayData = miningDataArray.find((item) => item.isToday);
           setSelectedDayData(todayData);
-
+    
           // 오늘과 어제의 채굴 시간 차이 계산
           if (miningDataArray.length >= 2) {
             const todayIndex = miningDataArray.findIndex(
@@ -207,74 +205,25 @@ const DailyView = forwardRef(
               setMiningDifference(today - yesterday);
             }
           }
-
+    
           // 현재 선택된 날짜의 앱 사용 데이터 가져오기
           fetchAppUsageData(todayData);
-
+    
           // 데이터 로드 완료 설정
           dataLoadedRef.current = true;
         } else {
           console.error("채굴 시간 데이터 가져오기 실패:", response.data);
-
-          // API 오류 시 기본 더미 데이터 생성 (개발 중 테스트용)
-          const dummyData = generateDummyMiningData();
-          setMiningData(dummyData);
-
-          const todayData = dummyData.find((item) => item.isToday);
-          setSelectedDayData(todayData);
-
-          // 더미 데이터로 채굴 시간 차이 계산
-          if (dummyData.length >= 2) {
-            const todayIndex = dummyData.findIndex((item) => item.isToday);
-            if (todayIndex >= 1) {
-              const today = dummyData[todayIndex].miningTime.totalMinutes;
-              const yesterday =
-                dummyData[todayIndex - 1].miningTime.totalMinutes;
-              setMiningDifference(today - yesterday);
-            }
-          }
-
-          // 더미 앱 사용 데이터 설정
-          setDummyAppUsageData();
-
-          // 데이터 로드 완료 설정
-          dataLoadedRef.current = true;
+          return false;
         }
 
         return true; // 처리 완료
       } catch (error) {
         console.error("채굴 시간 데이터 가져오기 오류:", error);
-
-        // 오류 발생 시 기본 더미 데이터 생성
-        const dummyData = generateDummyMiningData();
-        setMiningData(dummyData);
-
-        const todayData = dummyData.find((item) => item.isToday);
-        setSelectedDayData(todayData);
-
-        // 더미 데이터로 채굴 시간 차이 계산
-        if (dummyData.length >= 2) {
-          const todayIndex = dummyData.findIndex((item) => item.isToday);
-          if (todayIndex >= 1) {
-            const today = dummyData[todayIndex].miningTime.totalMinutes;
-            const yesterday = dummyData[todayIndex - 1].miningTime.totalMinutes;
-            setMiningDifference(today - yesterday);
-          }
-        }
-
-        // 더미 앱 사용 데이터 설정
-        setDummyAppUsageData();
-
-        // 데이터 로드 완료 설정
-        dataLoadedRef.current = true;
-
         return false; // 오류 발생
       } finally {
         // 단순히 로딩 상태 해제
         setLoading(false);
         setGraphReady(true);
-
-        // 스크롤 로직 제거 - 이제 초기 렌더링에만 의존합니다
       }
     };
 
@@ -302,71 +251,7 @@ const DailyView = forwardRef(
         }
       } catch (error) {
         console.error("앱 사용 데이터 가져오기 오류:", error);
-        // 오류 발생 시 더미 데이터 설정
-        setDummyAppUsageData();
       }
-    };
-
-    // 더미 앱 사용 데이터 설정
-    const setDummyAppUsageData = () => {
-      const dummyAppUsage = {
-        "com.google.android.youtube": {
-          appName: "YouTube",
-          usageTime: 85,
-          iconBase64: null,
-        },
-        "com.kakao.talk": {
-          appName: "카카오톡",
-          usageTime: 65,
-          iconBase64: null,
-        },
-        "com.instagram.android": {
-          appName: "Instagram",
-          usageTime: 45,
-          iconBase64: null,
-        },
-      };
-      setAppUsage(dummyAppUsage);
-    };
-
-    // 백업용 더미 데이터 생성 함수 (API 오류 시 사용)
-    const generateDummyMiningData = () => {
-      const today = new Date();
-      const data = [];
-
-      // 14일 전부터 오늘까지의 데이터 생성
-      for (let i = 14; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(today.getDate() - i);
-
-        const day = date.getDate();
-        const month = date.getMonth() + 1;
-        const value = Math.floor(Math.random() * 30) + 5; // 5-35분 사이 랜덤값
-
-        const days = ["일", "월", "화", "수", "목", "금", "토"];
-        const dayOfWeek = days[date.getDay()];
-
-        // 채굴 시간 더미 데이터 (시간, 분)
-        const hours = Math.floor(Math.random() * 8) + 1; // 1-8시간
-        const minutes = Math.floor(Math.random() * 60); // 0-59분
-        const totalMinutes = hours * 60 + minutes;
-
-        data.push({
-          id: `${month}-${day}`,
-          day: day.toString(),
-          month: month,
-          value: value,
-          dayOfWeek: dayOfWeek,
-          isToday: i === 0,
-          miningTime: {
-            hours: hours,
-            minutes: minutes,
-            totalMinutes: totalMinutes,
-          },
-        });
-      }
-
-      return data;
     };
 
     // 특정 날짜 선택 처리
