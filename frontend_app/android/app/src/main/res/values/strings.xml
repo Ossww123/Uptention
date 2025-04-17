@@ -1,0 +1,11 @@
+<resources>
+  <string name="app_name">uptention</string>
+    <string name="default_notification_channel_id">uptention_default_channel</string>
+    <string name="default_notification_channel_name">일반 알림</string>
+  <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
+  <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
+  <string name="system_apps_management">시스템 앱 관리</string>
+  <string name="blocked_apps_list">차단된 앱 목록:nn%1$s</string>
+  <string name="blocked_app_item">• %1$s</string>
+  <string name="accessibility_service_description">앱 사용 제한 서비스입니다</string>
+</resources>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "953237091128",
+    "project_id": "uptention-352c8",
+    "storage_bucket": "uptention-352c8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:953237091128:android:b5381bd52073e34b58c7cd",
+        "android_client_info": {
+          "package_name": "com.anonymous.uptention"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCF7qt6uyqRr7KEfcUFdM6Cj33LQY2fMag"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
