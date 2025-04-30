@@ -10,3 +10,7 @@ spring:
         - prod
       test:
         - test
+
+springdoc:
+  swagger-ui:
+    path: /api/swagger-ui.html
