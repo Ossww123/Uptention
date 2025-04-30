@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  spring-app:
+    build:
+      context: .  # Dockerfile이 위치한 폴더
+      dockerfile: Dockerfile-local  # Spring Boot Dockerfile 이름
+    restart: always
+    ports:
+      - "8080:8080"  # Spring Boot 애플리케이션 포트 매핑
+    environment:
+      SPRING_PROFILES_ACTIVE: local
