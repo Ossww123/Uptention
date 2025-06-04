@@ -65,24 +65,24 @@
 - 집중 모드 시 업무와 무관한 앱 자동 차단
 - 실시간 앱 사용 제한 상태 표시
 
-![집중모드.gif](/assets/집중모드.gif)
+<img src="/assets/집중모드.gif" width="300" alt="집중모드">
         
 ### 2. **대시보드**
 - 누적 집중 시간, 토큰 수, 활동 이력 등 **주요 정보 시각화**
 - 주간 랭킹, 우수사원 등 **성과 요약 제공**
         
-![대시보드-ok.gif](/assets/대시보드.gif)
+<img src="/assets/대시보드.gif" width="300" alt="대시보드">
         
 ### 3. **상점 조회**
 - **무한 스크롤**을 통한 상품 목록 탐색
 - **8가지 카테고리 필터** 지원
 - 인기순/최신순 등 **상품 정렬 기능 제공**
     
-![상품 무한스크롤 조회.gif](/assets/상품-무한스크롤-조회.gif)
-    
-![상품 카테고리 8개.gif](/assets/상품-카테고리-8개.gif)
-    
-![상품 정렬 조건.gif](/assets/상품-정렬-조건.gif)
+<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+  <img src="/assets/상품-무한스크롤-조회.gif" width="200" alt="상품 무한스크롤 조회">
+  <img src="/assets/상품-카테고리-8개.gif" width="200" alt="상품 카테고리 8개">
+  <img src="/assets/상품-정렬-조건.gif" width="200" alt="상품 정렬 조건">
+</div>
     
 ### 4. **상품 구매**
 - **장바구니 담기 및 일괄 구매**
@@ -90,34 +90,33 @@
 - **배송지 등록/관리**
 - **동료에게 선물하기** 기능 지원
     
-![장바구니 구매 배속.gif](/assets/장바구니-구매-배속.gif)
-    
-![선물하기 결제.gif](/assets/선물하기-결제.gif)
-    
-![상품 바로구매.gif](/assets/상품-바로구매.gif)
-    
-![장바구니 조회.gif](/assets/장바구니-조회.gif)
+<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+  <img src="/assets/장바구니-구매-배속.gif" width="200" alt="장바구니 구매">
+  <img src="/assets/선물하기-결제.gif" width="200" alt="선물하기 결제">
+  <img src="/assets/상품-바로구매.gif" width="200" alt="상품 바로구매">
+  <img src="/assets/장바구니-조회.gif" width="200" alt="장바구니 조회">
+</div>
     
 ### 5. **구매 내역 조회**
 - 이전 주문 내역과 **배송 상태 확인 가능**
         
-![주문내역 조회.gif](/assets/주문내역-조회.gif)
+<img src="/assets/주문내역-조회.gif" width="300" alt="주문내역 조회">
         
 ### 6. **알림**
 - 선물 수령, 우수사원 선정 등 **이벤트 중심의 실시간 알림**
         
-![FCM 알림 조회-ok.gif](/assets/FCM-알림-조회.gif)
+<img src="/assets/FCM-알림-조회.gif" width="300" alt="FCM 알림 조회">
         
 ### 7. **선물함 조회 및 수령**
 - 받은 선물 목록 조회
 - **선물 수령 및 배송 요청 기능**
     
-![상품 수령하기 배속.gif](/assets/상품-수령하기-배속.gif)
+<img src="/assets/상품-수령하기-배속.gif" width="300" alt="상품 수령하기">
     
 ### 8. **NFT 조회**
 - 발급받은 **우수사원 NFT 확인 및 상태 조회**
         
-![NFT 조회.gif](/assets/NFT-조회.gif)
+<img src="/assets/NFT-조회.gif" width="300" alt="NFT 조회">
         
 
 # 🔄주요 서비스 흐름
