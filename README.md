@@ -9,6 +9,8 @@
 
 ![alt text](/assets/image-1.png)
 
+<br>
+
 # 목차
 
 - [💡 기획 배경](#기획-배경)
@@ -19,6 +21,8 @@
 - [🏗️ 아키텍처](#아키텍처)
 - [👥 팀원 소개](#팀원-소개)
 - [⚙️ 기술 스택](#️-기술-스택)
+
+<br>
 
 # 💡기획 배경
 
@@ -31,6 +35,8 @@
 이런 문제들을 해결하고, 더 나은 업무 환경을 만들기 위해 저희는 “업텐션(Uptention)”을 기획했습니다.
 
 업텐션은 사용자의 **집중 시간을 공정하게 측정하고**, **블록체인 기반의 투명한 보상**으로 연결함으로써, 누구나 자발적으로 몰입할 수 있는 건강한 근무 문화를 만들어갑니다.
+
+<br>
 
 # ✨서비스 주요 기능
 
@@ -58,6 +64,8 @@
 
 - **FCM(Firebase Cloud Messaging)** 기반의 알림 시스템
 - 선물 수령, 우수사원 선정 등 **중요 이벤트를 놓치지 않도록** 안내
+
+<br>
 
 # 📱주요 화면 및 기능 소개
 
@@ -117,7 +125,8 @@
 - 발급받은 **우수사원 NFT 확인 및 상태 조회**
         
 <img src="/assets/NFT-조회.gif" width="300" alt="NFT 조회">
-        
+
+<br>        
 
 # 🔄주요 서비스 흐름
 
@@ -126,6 +135,8 @@
 ![alt text](/assets/image-3.png)
 
 ![alt text](/assets/image-4.png)
+
+<br>
 
 # 🛠️프로젝트 핵심 기술
 
@@ -655,6 +666,8 @@ SPL Token과 Metaplex Token Metadata 프로그램을 `CpiContext`로 명확하�
 
 </details>
 
+<br>
+
 # 🏗️아키텍처
 
 ### 서비스 아키텍처
@@ -670,17 +683,19 @@ SPL Token과 Metaplex Token Metadata 프로그램을 `CpiContext`로 명확하�
 
 ![alt text](/assets/image-7.png)
 
+<br>
+
 # 👥팀원 소개
 
-[박준수](https://github.com/Parkjunsu123)
+| 🧑‍💻 **이름** | 🏆 **역할** | 🚀 **깃허브** |
+| --- | --- | --- |
+| 박준수 | 팀장, FrontEnd 개발 | https://github.com/Parkjunsu123 |
+| 오승우 | FrontEnd 개발 | https://github.com/Ossww123 |
+| 안수진 | Backend 개발 | https://github.com/ssuzyn |
+| 류재문 | BlockChain, BackEnd 개발 | https://github.com/jaemoon99 |
+| 조대성 | Infra, BackEnd 개발 | https://github.com/tfer2442 |
 
-[오승우](https://github.com/Ossww123)
-
-[조대성](https://github.com/tfer2442)
-
-[안수진](https://github.com/ssuzyn)
-
-[류재문](https://github.com/jaemoon99)
+<br>
 
 # ⚙️기술 스택
 
